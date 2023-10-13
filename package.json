@@ -1,0 +1,8 @@
+{
+  "name": "catalyst",
+  "version": "0.0.1",
+  "main": "index.js",
+  "repository": "git@github.com:orbisoperations/catalyst.git",
+  "author": "Orbis Operations",
+  "license": "Elastic-2.0"
+}
