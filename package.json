@@ -6,11 +6,12 @@
   "author": "Orbis Operations",
   "license": "Elastic-2.0",
   "private": true,
-  "dependencies": {
+  "scripts": {
+    "authx": "yarn --cwd apps/authx dev ./src/index.ts --port 4000"
   },
+  "dependencies": {},
   "devDependencies": {
     "bun-types": "latest"
   },
-  "peerDependencies": {
-  }
+  "peerDependencies": {}
 }
