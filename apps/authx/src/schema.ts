@@ -48,77 +48,6 @@ function readRelationships(
 		.catch((error) => console.log('error', error));
 }
 
-// function createRelationship(context: Context, relationshipInfo: RelationShip) {
-// 	console.log(
-// 		'resource',
-// 		{
-// 			objectId: relationshipInfo.relationOwner.objectId,
-// 			objectType: relationshipInfo.relationOwner.objectType,
-// 		},
-// 		'subject',
-// 		{
-// 			objectType: relationshipInfo.relatedItem.objectType,
-// 			objectId: relationshipInfo.relatedItem.objectId,
-// 		},
-// 		'relation',
-// 		relationshipInfo.relation
-// 	);
-// 	// const operation = {
-// 	// 	updates: [
-// 	// 		{
-// 	// 			operation: 'OPERATION_TOUCH',
-// 	// 			relationship: {
-// 	// 				resource: {
-// 	// 					objectId: relationshipInfo.relationOwner.objectId,
-// 	// 					objectType: relationshipInfo.relationOwner.objectType,
-// 	// 				},
-// 	// 				relation: relationshipInfo.relation,
-// 	// 				subject: {
-// 	// 					object: {
-// 	// 						objectType: relationshipInfo.relatedItem.objectType,
-// 	// 						objectId: relationshipInfo.relatedItem.objectId,
-// 	// 					},
-// 	// 				},
-// 	// 			},
-// 	// 		},
-// 	// 	],
-// 	// };
-// 	const operation = {
-// 		updates: [
-// 			{
-// 				operation: 'OPERATION_TOUCH',
-// 				relationship: {
-// 					resource: {
-// 						objectType: 'orbisops_tutorial/data_service',
-// 						objectId: 'data2',
-// 					},
-// 					relation: 'parent',
-// 					subject: {
-// 						object: {
-// 							objectType: 'orbisops_tutorial/organization',
-// 							objectId: 'orbis',
-// 						},
-// 					},
-// 				},
-// 			},
-// 		],
-// 	};
-// 	console.log(operation);
-// 	console.log(context.env.AUTHZED_TOKEN);
-// 	var myHeaders = new Headers();
-// 	myHeaders.append('Content-Type', 'application/json');
-// 	myHeaders.append('Authorization', context.env.AUTHZED_TOKEN);
-// 	console.log(JSON.stringify(operation));
-// 	return fetch(gateway_url + 'relationships/write', {
-// 		method: 'POST',
-// 		headers: myHeaders,
-// 		body: JSON.stringify(operation),
-// 		redirect: 'follow',
-// 	})
-// 		.then((response) => response.text())
-// 		.catch((error) => console.log('error', error));
-// }
-
 function createRelationship(context: Context, relationshipInfo: RelationShip) {
 	var myHeaders = new Headers();
 	myHeaders.append('Content-Type', 'application/json');
@@ -253,24 +182,29 @@ export default createSchema({
 				// assuming we can only be members of one organization
 				const organization = organizations?.[0];
 				// with an organization we can get the data services that belong to it.
-				// When specifying the relation we can get the data services that the user owns
-				const dataServiceResponse = await readRelationships(context, {
-					resourceType: 'orbisops_tutorial/data_service',
-					relation: relation ?? 'parent',
-					optionalSubjectFilter: {
-						subjectType: relation === 'owner' ? 'orbisops_tutorial/user' : 'orbisops_tutorial/organization',
-						optionalSubjectId: relation === 'owner' ? userId : organization,
-					},
-				});
-				// user data services, here we only want to know which data services the user owns
-				const dataServiceArray = dataServiceResponse?.split('\n').slice(0, -1);
-				const data_services = dataServiceArray?.map((r) => {
-					const result = JSON.parse(r)?.result;
-					if (result) {
-						const resource = result.relationship.resource;
-						return resource.objectId;
-					}
-				});
+				//
+				let data_services = [];
+				if (organization) {
+					const dataServiceResponse = await readRelationships(context, {
+						resourceType: 'orbisops_tutorial/data_service',
+						relation: 'parent',
+						optionalSubjectFilter: {
+							subjectType: 'orbisops_tutorial/organization',
+							optionalSubjectId: organization,
+						},
+					});
+					// user data services, here we only want to know which data services the user owns
+					const dataServiceArray = dataServiceResponse?.split('\n').slice(0, -1);
+					data_services = dataServiceArray
+						? dataServiceArray.map((r) => {
+								const result = JSON.parse(r)?.result;
+								if (result) {
+									const resource = result.relationship.resource;
+									return resource.objectId;
+								}
+						  })
+						: [];
+				}
 				const userDataServiceResponse = await readRelationships(context, {
 					resourceType: 'orbisops_tutorial/data_service',
 					relation: 'owner',
@@ -310,7 +244,6 @@ export default createSchema({
 					},
 				} as RelationShip;
 				const result = await createRelationship(context, relationship);
-				console.log(result);
 				return result;
 			},
 		},
