@@ -2,6 +2,7 @@ import { logger } from 'hono/logger';
 import { BasicAuth, BasicAuthToken, ZitadelClient } from '../../../packages/authx';
 import { createYoga, createSchema } from 'graphql-yoga';
 import { Hono, Context } from 'hono';
+import schema from './schema';
 
 /**
  * Welcome to Cloudflare Workers! This is your first worker.
@@ -47,7 +48,6 @@ class Status {
 }
 
 let zitadelClient: ZitadelClient | undefined = undefined;
-const gateway_url = 'https://gateway-alpha.authzed.com/v1/';
 
 const app = new Hono<{ Bindings: EnvBindings }>();
 app.use('*', logger());
@@ -65,83 +65,11 @@ app.get('/status', (c: Context) => {
 });
 
 const yoga = createYoga({
-	schema: createSchema({
-		typeDefs: `
-		type Health {
-			health: String!
-		}
-		type AuthzedObject {
-			objectType: String
-			objectId: String
-		}
-		type OrgOwner {
-			subject: AuthzedObject
-			resource: AuthzedObject
-			relation: String
-
-		}
-		type User {
-			relation: String
-			subject: AuthzedObject
-			resource: AuthzedObject
-		}
-		type Query {
-			users(orgId: String!, relation: String): [User]
-		}
-		`,
-		resolvers: {
-			Query: {
-				users: async (_, { orgId, relation }, context: EnvBindings) => {
-					var myHeaders = new Headers();
-					console.log({ context: context.AUTHZED_TOKEN });
-					myHeaders.append('Content-Type', 'application/json');
-					myHeaders.append('Authorization', `Bearer ${context.AUTHZED_TOKEN}`);
-					var raw = JSON.stringify({
-						consistency: {
-							minimizeLatency: true,
-						},
-						relationshipFilter: {
-							resourceType: 'orbisops_tutorial/organization',
-							optionalResourceId: orgId,
-							optionalRelation: relation,
-						},
-					});
-					const relationships = await fetch(gateway_url + 'relationships/read', {
-						method: 'POST',
-						headers: myHeaders,
-						body: raw,
-						redirect: 'follow',
-					})
-						.then((response) => response.text())
-						.catch((error) => console.log('error', error));
-					const res = relationships?.split('\n').slice(0, -1);
-					console.log(res);
-					let users = [];
-					if (res) {
-						users = res.map((r) => {
-							const result = JSON.parse(r)?.result;
-							if (result) {
-								const relation = result.relationship.relation;
-								const resource = result.relationship.resource;
-								const subject = result.relationship.subject.object;
-								console.log({ subject, relation, resource });
-								return { subject, relation, resource };
-							}
-						});
-						return users;
-					}
-					return [];
-				},
-			},
-			Health: {
-				health: () => 'ok',
-			},
-		},
-	}),
+	schema,
 });
 
 app.use('/graphql', async (c: Context) => {
-	return yoga.handle(c.req.raw as Request, c.env);
+	return yoga.handle(c.req.raw as Request, c);
 });
 
 export default app;
