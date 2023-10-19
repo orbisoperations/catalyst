@@ -1,6 +1,161 @@
-import { BuildSchemaOptions } from 'graphql';
 import { createSchema } from 'graphql-yoga';
 import { Context } from 'hono';
+type AuthzedObject = {
+	objectType: String;
+	objectId: String;
+};
+type RelationShip = {
+	relationOwner: AuthzedObject;
+	relation: String;
+	relatedItem: AuthzedObject;
+};
+const gateway_url = 'https://gateway-alpha.authzed.com/v1/';
+
+function readRelationships(
+	context: Context,
+	searchInfo: {
+		resourceType: string;
+		resourceId?: string;
+		relation?: string;
+		optionalSubjectFilter?: {
+			subjectType: string;
+			optionalSubjectId: string;
+		};
+	}
+) {
+	const { resourceType, resourceId, relation, optionalSubjectFilter } = searchInfo;
+	var myHeaders = new Headers();
+	myHeaders.append('Content-Type', 'application/json');
+	myHeaders.append('Authorization', `Bearer ${context.env.AUTHZED_TOKEN}`);
+	var raw = JSON.stringify({
+		consistency: {
+			minimizeLatency: true,
+		},
+		relationshipFilter: {
+			resourceType: resourceType,
+			optionalResourceId: resourceId,
+			optionalRelation: relation,
+			optionalSubjectFilter,
+		},
+	});
+	return fetch(gateway_url + 'relationships/read', {
+		method: 'POST',
+		headers: myHeaders,
+		body: raw,
+		redirect: 'follow',
+	})
+		.then((response) => response.text())
+		.catch((error) => console.log('error', error));
+}
+
+// function createRelationship(context: Context, relationshipInfo: RelationShip) {
+// 	console.log(
+// 		'resource',
+// 		{
+// 			objectId: relationshipInfo.relationOwner.objectId,
+// 			objectType: relationshipInfo.relationOwner.objectType,
+// 		},
+// 		'subject',
+// 		{
+// 			objectType: relationshipInfo.relatedItem.objectType,
+// 			objectId: relationshipInfo.relatedItem.objectId,
+// 		},
+// 		'relation',
+// 		relationshipInfo.relation
+// 	);
+// 	// const operation = {
+// 	// 	updates: [
+// 	// 		{
+// 	// 			operation: 'OPERATION_TOUCH',
+// 	// 			relationship: {
+// 	// 				resource: {
+// 	// 					objectId: relationshipInfo.relationOwner.objectId,
+// 	// 					objectType: relationshipInfo.relationOwner.objectType,
+// 	// 				},
+// 	// 				relation: relationshipInfo.relation,
+// 	// 				subject: {
+// 	// 					object: {
+// 	// 						objectType: relationshipInfo.relatedItem.objectType,
+// 	// 						objectId: relationshipInfo.relatedItem.objectId,
+// 	// 					},
+// 	// 				},
+// 	// 			},
+// 	// 		},
+// 	// 	],
+// 	// };
+// 	const operation = {
+// 		updates: [
+// 			{
+// 				operation: 'OPERATION_TOUCH',
+// 				relationship: {
+// 					resource: {
+// 						objectType: 'orbisops_tutorial/data_service',
+// 						objectId: 'data2',
+// 					},
+// 					relation: 'parent',
+// 					subject: {
+// 						object: {
+// 							objectType: 'orbisops_tutorial/organization',
+// 							objectId: 'orbis',
+// 						},
+// 					},
+// 				},
+// 			},
+// 		],
+// 	};
+// 	console.log(operation);
+// 	console.log(context.env.AUTHZED_TOKEN);
+// 	var myHeaders = new Headers();
+// 	myHeaders.append('Content-Type', 'application/json');
+// 	myHeaders.append('Authorization', context.env.AUTHZED_TOKEN);
+// 	console.log(JSON.stringify(operation));
+// 	return fetch(gateway_url + 'relationships/write', {
+// 		method: 'POST',
+// 		headers: myHeaders,
+// 		body: JSON.stringify(operation),
+// 		redirect: 'follow',
+// 	})
+// 		.then((response) => response.text())
+// 		.catch((error) => console.log('error', error));
+// }
+
+function createRelationship(context: Context, relationshipInfo: RelationShip) {
+	var myHeaders = new Headers();
+	myHeaders.append('Content-Type', 'application/json');
+	myHeaders.append('Authorization', `Bearer ${context.env.AUTHZED_TOKEN}`);
+
+	var raw = JSON.stringify({
+		updates: [
+			{
+				operation: 'OPERATION_TOUCH',
+				relationship: {
+					resource: {
+						objectType: relationshipInfo.relationOwner.objectType,
+						objectId: relationshipInfo.relationOwner.objectId,
+					},
+					relation: relationshipInfo.relation,
+					subject: {
+						object: {
+							objectType: relationshipInfo.relatedItem.objectType,
+							objectId: relationshipInfo.relatedItem.objectId,
+						},
+					},
+				},
+			},
+		],
+	});
+
+	return fetch(gateway_url + 'relationships/write', {
+		method: 'POST',
+		headers: myHeaders,
+		body: raw,
+		redirect: 'follow',
+	})
+		.then((response) => response.text())
+		.then((result) => result)
+		.catch((error) => console.log('error', error));
+}
+
 export default createSchema({
 	typeDefs: `
     type Health {
@@ -30,6 +185,9 @@ export default createSchema({
     type Query {
         users(orgId: String!, relation: String): [OrgUser]
         user(userId: String!, relation: String): User
+    }
+    type Mutation {
+        addRelation(relation: String!, owner: String!, ownerType : String! related: String!, relatedType: String!): String
     }
     `,
 	resolvers: {
@@ -138,46 +296,26 @@ export default createSchema({
 				};
 			},
 		},
+		Mutation: {
+			addRelation: async (_, { relation, owner, ownerType, related, relatedType }, context: Context) => {
+				const relationship = {
+					relationOwner: {
+						objectType: ownerType,
+						objectId: owner,
+					},
+					relation,
+					relatedItem: {
+						objectType: relatedType,
+						objectId: related,
+					},
+				} as RelationShip;
+				const result = await createRelationship(context, relationship);
+				console.log(result);
+				return result;
+			},
+		},
 		Health: {
 			health: () => 'ok',
 		},
 	},
 });
-const gateway_url = 'https://gateway-alpha.authzed.com/v1/';
-
-function readRelationships(
-	context: Context,
-	searchInfo: {
-		resourceType: string;
-		resourceId?: string;
-		relation?: string;
-		optionalSubjectFilter?: {
-			subjectType: string;
-			optionalSubjectId: string;
-		};
-	}
-) {
-	const { resourceType, resourceId, relation, optionalSubjectFilter } = searchInfo;
-	var myHeaders = new Headers();
-	myHeaders.append('Content-Type', 'application/json');
-	myHeaders.append('Authorization', `Bearer ${context.env.AUTHZED_TOKEN}`);
-	var raw = JSON.stringify({
-		consistency: {
-			minimizeLatency: true,
-		},
-		relationshipFilter: {
-			resourceType: resourceType,
-			optionalResourceId: resourceId,
-			optionalRelation: relation,
-			optionalSubjectFilter,
-		},
-	});
-	return fetch(gateway_url + 'relationships/read', {
-		method: 'POST',
-		headers: myHeaders,
-		body: raw,
-		redirect: 'follow',
-	})
-		.then((response) => response.text())
-		.catch((error) => console.log('error', error));
-}
