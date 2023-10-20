@@ -1,6 +1,5 @@
 import axios from "axios"
 import {Buffer} from "buffer"
-import { v1 } from '@authzed/authzed-node';
 
 export interface BasicAuthToken {
     access_token: string
@@ -93,6 +92,50 @@ export class ZitadelClient {
 	}
 }
 
-function AuthzedClient(endpoint: string, token: string) {
-    return v1.NewClient(endpoint, token);
+
+export class AuthzedClient {
+    endpoint: string
+    token: string
+    schemaPrefix: string
+
+
+    constructor(endpoint: string, token: string, schemaPrefix?: string) {
+        this.endpoint = endpoint
+        this.token = token
+        this.schemaPrefix = schemaPrefix?? "orbis_tutorial"
+    }
+
+    private headers(): object {
+        return {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.token}`
+        }
+    }
+
+
+    async AddUserToOrganization(org: string, user: string): Promise<boolean> {
+        const {data} = await axios.post(`${this.endpoint}/v1/relationships/write`, 
+        {
+            updates: [
+                {
+                    operation: 'OPERATION_TOUCH',
+                    relationship: {
+                        resource: {
+                            objectType: `${this.schemaPrefix}/organization`,
+                            objectId: org
+                        },
+                        relation: "member",
+                        subject: {
+                            objectType: `${this.schemaPrefix}/organization`,
+                            objectId: user
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            headers: this.headers(),
+        })
+        return true
+    }
 }
