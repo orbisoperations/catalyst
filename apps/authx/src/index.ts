@@ -2,6 +2,8 @@ import { logger } from 'hono/logger'
 import { BasicAuth, BasicAuthToken, ZitadelClient } from "../../../packages/authx";
 import { createYoga, createSchema } from 'graphql-yoga'
 import {Hono, Context,} from "hono";
+import status from "./status"
+import schema from "./schema"
 
 /**
  * Welcome to Cloudflare Workers! This is your first worker.
@@ -32,25 +34,19 @@ type  EnvBindings = {
 	// Zitadel items
 	ZITADEL_CLIENT_ID: string;
 	ZITADEL_CLIENT_SECRET: string;
-	ZITADEL_ENDPOINT: string
+	ZITADEL_ENDPOINT: string;
+	AUTHZED_TOKEN: string
+	AUTHZED_ENDPOINT: string
 }
 
-class Status {
-	constructor(){}
 
-	status() {
-		return {
-			health: "ok"
-		}
-	}
-}
 
 let zitadelClient: ZitadelClient | undefined = undefined;
 
 const app = new Hono<{Bindings: EnvBindings}>()
 app.use('*', logger())
 
-const status = new Status()
+
 
 app.get("/health", (c: Context) => {
 	c.status(200);
@@ -64,43 +60,7 @@ app.get("/status", (c: Context) => {
 
 
 const yoga = createYoga({
-	schema: createSchema({
-		typeDefs: `
-		type Query {
-			health: String!
-			status: Status!
-			validateUser(token: String!): UserValidation
-			enrollUser(orgId: String!, userId: String!): Boolean!
-		}
-
-		type Status {
-			health: String!
-		}
-
-		type UserValidation {
-			valid: Boolean!
-			userId: String
-			orgId: String
-		}
-		`,
-		resolvers: {
-			Query: {
-				health: () => "ok",
-				status: () => status.status(),
-				validateUser: (_, {token}, context) => {
-					console.log(_, token, context,);
-					return {
-						valid: true,
-						userId: "test",
-						orgId: "org"
-					}
-				},
-				enrollUser: (_, {orgId, userId}, context) => {
-					console.log(_, orgId, userId, context);
-				}
-			}
-		}
-	})
+	schema: schema
 })
 
 app.use("/graphql", async (c: Context) => {
