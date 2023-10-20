@@ -90,6 +90,10 @@ export default createSchema({
     type Health {
         health: String!
     }
+	type Status {
+		health: String!
+		status: Int!
+	}
     type AuthzedObject {
         objectType: String
         objectId: String
@@ -112,8 +116,11 @@ export default createSchema({
         user_data_services: [String]
     }
     type Query {
+		health: String!
+		status: Status!
         users(orgId: String!, relation: String): [OrgUser]
         user(userId: String!, relation: String): User
+
     }
     type Mutation {
         addRelation(relation: String!, owner: String!, ownerType : String! related: String!, relatedType: String!): String
@@ -121,6 +128,12 @@ export default createSchema({
     `,
 	resolvers: {
 		Query: {
+			health: () => {
+				return 'ok';
+			},
+			status: () => {
+				return { health: 'ok', status: 200 };
+			},
 			users: async (_, { orgId, relation }, context: Context) => {
 				const relationships = await readRelationships(context, {
 					resourceType: 'orbisops_tutorial/organization',

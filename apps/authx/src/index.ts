@@ -14,7 +14,7 @@ import schema from './schema';
  * Learn more at https://developers.cloudflare.com/workers/
  */
 
-type EnvBindings = {
+export type EnvBindings = {
 	// Example binding to KV. Learn more at https://developers.cloudflare.com/workers/runtime-apis/kv/
 	// MY_KV_NAMESPACE: KVNamespace;
 	//
