@@ -68,26 +68,14 @@ async function ValidateTokenByIntrospection(endpoint: string, clientToken: strin
 }
 
 export class ZitadelClient {
-	clientId: string
-	clientSecret: string
 	endpoint: string
-	token?: BasicAuthToken
-	constructor(endpoint: string, clientId: string, clientSecret: string) {
-		this.clientId = clientId
-		this.clientSecret = clientSecret
+	token: string
+	constructor(endpoint: string, token: string) {
 		this.endpoint = endpoint
+        this.token = token
 	}
 
-	async get(): Promise<BasicAuthToken> {
-		if (this.token) {
-			return this.token!
-		} else {
-			const newToken = await BasicAuth(this.endpoint, this.clientId, this.clientSecret);
-			if (newToken) {
-				this.token = newToken!;
-				return this.token!;
-			}
-		}
-		throw new Error("Unable to access Zitadel")
-	}
+    async validateTokenByIntrospection(token: string) {
+        return ValidateTokenByIntrospection(this.endpoint, this.token, token)
+    }
 }

@@ -4,15 +4,37 @@ import app from "../src/index"
 import { GenericContainer, StartedTestContainer, Wait } from "testcontainers";
 import {AuthzedClient} from "../../../packages/authx"
 import fs from "fs";
+import { testClient } from "hono/testing"
+import {Env} from "hono"
 describe("health and status checks", () => {
+		let testEnv: object;
+		beforeAll(async () => {
+			testEnv = {
+				
+			}
+		})
+
     test("health check", async () => {
-        const res = await app.request('/health')
+			const res = await app.request("/health",
+				{
+					method: "get",
+				},
+				{
+					...testEnv
+				}
+			);
         expect(res.status).toBe(200)
         expect(await res.text()).toBe('ok')
     })
 
     test("status check", async () => {
-        const res = await app.request('/status')
+			const res = await app.request('/status',
+				{
+					method: "get"
+				},
+				{
+					...testEnv
+				});
         expect(res.status).toBe(200)
         expect(await res.json()).toStrictEqual({
             health: "ok",
@@ -21,7 +43,15 @@ describe("health and status checks", () => {
 
     test("graphql health check", async() => {
 
-        const res = await app.request('/graphql?query={health}');
+        const res = await app.request('/graphql?query={health}',
+					{
+						method: "post",
+						headers: {
+						}
+					},
+					{
+						...testEnv
+					});
 
         expect(res.status).toBe(200);
 
@@ -34,7 +64,7 @@ describe("health and status checks", () => {
     })
 
     test("graphql status check", async() => {
-        const res = await app.request('/graphql?query={status{health}}');
+        const res = await tc['/graphql?query={status{health}}'].$get();
 
         expect(res.status).toBe(200);
 
@@ -75,18 +105,18 @@ describe("authzed/spicedb testing", () => {
         .start();
 
       }, 100000);
-    
+
     afterAll(async () => {
     await authzed.stop();
     });
 
-    test("read/write uer/org relationship", async () => {
+    test("read/write user/org relationship", async () => {
         client = new AuthzedClient("http://localhost:8081", "readwriteuserorg")
         test("authzed api", async () => {
             const writeData = await client.AddUserToOrganization("orbisops", "marito")
-    
+
             expect(writeData.writtenAt.token).toBeTruthy()
-    
+
             const readData = await client.ReadUsersInOrganization("orbisops")
             expect(readData).not.toBeNull()
             expect(readData.result).not.toBeNull()
@@ -94,7 +124,7 @@ describe("authzed/spicedb testing", () => {
             expect(readData.result.relationship.subject).not.toBeNull()
             expect(readData.result.relationship.subject.object).not.toBeNull()
             expect(readData.result.relationship.subject.object.objectId).not.toBeNull()
-    
+
             expect(readData.result.relationship.subject.object.objectId).toStrictEqual("marito")
         })
 
@@ -102,7 +132,7 @@ describe("authzed/spicedb testing", () => {
 
         })
     })
-    
 
-    
+
+
 })
