@@ -1,6 +1,7 @@
 import { createSchema } from 'graphql-yoga';
 import { Context } from 'hono';
 import status from "./status"
+import {AuthzedClient} from  "../../../packages/authx"
 
 class Status {
 	constructor(){}
@@ -18,7 +19,11 @@ export default createSchema({
         health: String!
         status: Status!
         validateUser(token: String!): UserValidation
-        enrollUser(orgId: String!, userId: String!): Boolean!
+        listUsersInOrganization(orgId: String!): [String!]!
+    }
+
+    type Mutation {
+        addUserToOrganization(orgId: String!, userId: String!): Boolean!
     }
 
     type Status {
@@ -52,9 +57,14 @@ export default createSchema({
                     orgId: "org"
                 }
             },
-            enrollUser: (_, {orgId, userId}, context) => {
-                console.log(_, orgId, userId, context);
+            listUsersInOrganization: async (_, {orgId}, context: Context) => {
+                console.log(_, orgId, context);
+                const authzedClient: AuthzedClient = context.get("authzed")
+                return authzedClient.ReadUsersInOrganization(orgId)
             }
+        },
+        Mutation: {
+           // addUserToOrganization(orgId: String!, userId: String!): Boolean!
         }
     }
 })
