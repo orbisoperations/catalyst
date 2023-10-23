@@ -19,7 +19,7 @@ export class AuthzedClient {
     constructor(endpoint: string, token: string, schemaPrefix?: string) {
         this.endpoint = endpoint
         this.token = token
-        this.schemaPrefix = schemaPrefix?? "orbisop_tutorial/"
+        this.schemaPrefix = schemaPrefix?? "orbisops_tutorial/"
     }
 
     private headers(): object {
@@ -29,7 +29,7 @@ export class AuthzedClient {
         }
     }
     
-    async writeRelationship(relationshipInfo: RelationShip) {
+    writeRelationship(relationshipInfo: RelationShip) {
         return {
             updates: [
                 {
@@ -52,7 +52,7 @@ export class AuthzedClient {
         }
     }
 
-    async readRelationship(searchInfo: {
+    readRelationship(searchInfo: {
 		resourceType: string;
 		resourceId?: string;
 		relation?: string;
@@ -64,14 +64,14 @@ export class AuthzedClient {
         const { resourceType, resourceId, relation, optionalSubjectFilter } = searchInfo;
         return {
             consistency: {
-                minimizeLatency: true,
+                minimizeLatency: true
             },
             relationshipFilter: {
-                resourceType: resourceType,
+                resourceType: this.schemaPrefix + resourceType,
                 optionalResourceId: resourceId,
                 optionalRelation: relation,
                 optionalSubjectFilter,
-            },
+            }
         }
     }
 
@@ -98,9 +98,7 @@ export class AuthzedClient {
     async ReadUsersInOrganization(org: string): Promise<any> {
         const {data} = await axios.post(`${this.endpoint}/v1/relationships/read`, 
         this.readRelationship({
-            resourceType: `${this.schemaPrefix}organization`,
-            resourceId: org,
-            relation: "member"
+            resourceType: "organization"
         }),
         {
             headers: this.headers(),

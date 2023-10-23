@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
 import { parse } from "graphql";
 import app from "../src/index"
 import { GenericContainer, StartedTestContainer, Wait } from "testcontainers";
-import {AuthzedClient} from "../../../packages/authx/src/authzed"
+import {AuthzedClient} from "../../../packages/authx"
 import fs from "fs";
 describe("health and status checks", () => {
     test("health check", async () => {
@@ -74,19 +74,35 @@ describe("authzed/spicedb testing", () => {
         .withWaitStrategy(Wait.forHttp("/healthz", 8081))
         .start();
 
-        client = new AuthzedClient("http://localhost:8081", "testingtoken")
       }, 100000);
     
     afterAll(async () => {
     await authzed.stop();
     });
 
-    test("write user/org relationship", async () => {
-        const writeData = await client.AddUserToOrganization("orbisops", "marito")
+    test("read/write uer/org relationship", async () => {
+        client = new AuthzedClient("http://localhost:8081", "readwriteuserorg")
+        test("authzed api", async () => {
+            const writeData = await client.AddUserToOrganization("orbisops", "marito")
+    
+            expect(writeData.writtenAt.token).toBeTruthy()
+    
+            const readData = await client.ReadUsersInOrganization("orbisops")
+            expect(readData).not.toBeNull()
+            expect(readData.result).not.toBeNull()
+            expect(readData.result.relationship).not.toBeNull()
+            expect(readData.result.relationship.subject).not.toBeNull()
+            expect(readData.result.relationship.subject.object).not.toBeNull()
+            expect(readData.result.relationship.subject.object.objectId).not.toBeNull()
+    
+            expect(readData.result.relationship.subject.object.objectId).toStrictEqual("marito")
+        })
 
-        expect(writeData.writtenAt.token).toBeTruthy()
+        test("cfworker graphql", async () => {
 
-        const readData = await client.ReadUsersInOrganization("orbisops")
-        expect(readData).toStrictEqual({})
+        })
     })
+    
+
+    
 })
