@@ -1,5 +1,5 @@
 import { logger } from 'hono/logger'
-import { BasicAuth, BasicAuthToken, ZitadelClient } from "../../../packages/authx";
+import { BasicAuth, BasicAuthToken, ZitadelClient, AuthzedClient } from "../../../packages/authx";
 import { createYoga, createSchema } from 'graphql-yoga'
 import {Hono, Context,} from "hono";
 import status from "./status"
@@ -39,12 +39,23 @@ type  EnvBindings = {
 	AUTHZED_ENDPOINT: string
 }
 
+let authzedClient: AuthzedClient | undefined =  undefined;
+let zitadelClient: ZitadelClient | undefined = undefined
 
+type APIClients = {
+	zitadel: ZitadelClient 
+	authzed: AuthzedClient
+}
 
-let zitadelClient: ZitadelClient | undefined = undefined;
-
-const app = new Hono<{Bindings: EnvBindings}>()
+const app = new Hono<{Bindings: EnvBindings, Variables: APIClients}>()
 app.use('*', logger())
+app.use('*', async (c: Context) => {
+	if (authzedClient === undefined) {
+		authzedClient = new AuthzedClient(c.env.AUTHZED_ENDPOINT, c.env.AuthConfig);
+	}
+
+	c.set("authzed", authzedClient)
+})
 
 
 
