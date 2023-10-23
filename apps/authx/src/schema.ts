@@ -1,7 +1,7 @@
 import { createSchema } from 'graphql-yoga';
 import { Context } from 'hono';
 import status from "./status"
-import {AuthzedClient} from  "../../../packages/authx"
+import {AuthzedClient, ZitadelClient} from "../../../packages/authx"
 
 class Status {
 	constructor(){}
@@ -49,7 +49,7 @@ export default createSchema({
         Query: {
             health: () => "ok",
             status: () => status.status(),
-            validateUser: (_, {token}, context) => {
+            validateUser: (_, {token}, context: Context) => {
                 console.log(_, token, context,);
                 return {
                     valid: true,
