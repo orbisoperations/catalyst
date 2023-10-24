@@ -58,13 +58,22 @@ export default createSchema({
                 }
             },
             listUsersInOrganization: async (_, {orgId}, context: Context) => {
-                console.log(_, orgId, context);
                 const authzedClient: AuthzedClient = context.get("authzed")
-                return authzedClient.ReadUsersInOrganization(orgId)
+                return authzedClient.listUsersInOrganization(orgId)
             }
         },
         Mutation: {
-           // addUserToOrganization(orgId: String!, userId: String!): Boolean!
+            addUserToOrganization: async (_, {orgId, userId}, context: Context): Promise<boolean> => {
+                const authzedClient: AuthzedClient = context.get("authzed")
+                const result  = await authzedClient.addUserToOrganization(orgId, userId);
+
+                if (result.writtenAt) {
+                    return true;
+                }
+
+                console.error(`error writing to authzed - code: ${result.code}, msg: ${result.message}`)
+                return false
+            }
         }
     }
 })
