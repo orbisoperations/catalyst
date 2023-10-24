@@ -83,6 +83,8 @@ app.use('*', async (c:Context, next) => {
 		c.status(401)
 		return c.body(JSON.stringify({error: "Unauthorized - Missing Authn Credentials"}))
 	}
+	
+	// break out token
 	const token = authnHeader.split("")[1];
 
 	// do check for token validity here
