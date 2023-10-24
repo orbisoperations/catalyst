@@ -1,23 +1,46 @@
-import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, test, vi } from 'vitest';
 import { parse } from "graphql";
 import app from "../src/index"
+import {setDefaultZitadelClient} from "../src/index"
 import { GenericContainer, StartedTestContainer, Wait } from "testcontainers";
-import {AuthzedClient} from "../../../packages/authx"
+import {AuthzedClient, IZitadelClient, TokenValidation} from "../../../packages/authx"
 import fs from "fs";
 import { testClient } from "hono/testing"
 import {Env} from "hono"
+
+class MockZitadelClient implements IZitadelClient {
+    constructor(){}
+
+    async validateTokenByIntrospection(token: string): Promise<TokenValidation | undefined> {
+        return {
+            active: true,
+        } as TokenValidation
+    }
+}
+
 describe("health and status checks", () => {
 		let testEnv: object;
+        let testHeaders: object;
 		beforeAll(async () => {
 			testEnv = {
-				
+				AUTHZED_TOKEN: "healthandstatus",
+				AUTHZED_ENDPOINT: "http://localhost:8081",
 			}
+
+            testHeaders = {
+                Authorization: "Bearer sometoken"
+            }
+
+            setDefaultZitadelClient(new MockZitadelClient())
 		})
 
     test("health check", async () => {
 			const res = await app.request("/health",
 				{
 					method: "get",
+                    headers: {
+                        ...testHeaders
+                    }
 				},
 				{
 					...testEnv
@@ -30,7 +53,10 @@ describe("health and status checks", () => {
     test("status check", async () => {
 			const res = await app.request('/status',
 				{
-					method: "get"
+					method: "get",
+                    headers: {
+                        ...testHeaders
+                    }
 				},
 				{
 					...testEnv
@@ -45,9 +71,10 @@ describe("health and status checks", () => {
 
         const res = await app.request('/graphql?query={health}',
 					{
-						method: "post",
+						method: "get",
 						headers: {
-						}
+                            ...testHeaders
+                        }
 					},
 					{
 						...testEnv
@@ -64,7 +91,16 @@ describe("health and status checks", () => {
     })
 
     test("graphql status check", async() => {
-        const res = await tc['/graphql?query={status{health}}'].$get();
+        const res = await app.request('/graphql?query={status{health}}',
+        {
+            method: "get",
+            headers: {
+                ...testHeaders
+            }
+        },
+        {
+            ...testEnv
+        });
 
         expect(res.status).toBe(200);
 
@@ -109,30 +145,83 @@ describe("authzed/spicedb testing", () => {
     afterAll(async () => {
     await authzed.stop();
     });
-
-    test("read/write user/org relationship", async () => {
+ 
+    test("authzed - read/write - REST", async () => {
         client = new AuthzedClient("http://localhost:8081", "readwriteuserorg")
-        test("authzed api", async () => {
-            const writeData = await client.AddUserToOrganization("orbisops", "marito")
+        const writeData = await client.addUserToOrganization("orbisops", "marito")
+        expect(writeData.writtenAt!.token).toBeTruthy()
+        await client.addUserToOrganization("orbisops", "maritwo")
 
-            expect(writeData.writtenAt.token).toBeTruthy()
-
-            const readData = await client.ReadUsersInOrganization("orbisops")
-            expect(readData).not.toBeNull()
-            expect(readData.result).not.toBeNull()
-            expect(readData.result.relationship).not.toBeNull()
-            expect(readData.result.relationship.subject).not.toBeNull()
-            expect(readData.result.relationship.subject.object).not.toBeNull()
-            expect(readData.result.relationship.subject.object.objectId).not.toBeNull()
-
-            expect(readData.result.relationship.subject.object.objectId).toStrictEqual("marito")
-        })
-
-        test("cfworker graphql", async () => {
-
-        })
+        const readData = await client.listUsersInOrganization("orbisops")
+        expect(readData).toStrictEqual(["marito", "maritwo"])
     })
 
+    test("authzed - read/write - graphql", async () => {
+        // headers and env vars for test app usage
+        const testEnv = {
+            AUTHZED_TOKEN: "readwriteuserorggraphql",
+            AUTHZED_ENDPOINT: "http://localhost:8081",
+        }
 
+        const testHeaders = {
+            Authorization: "Bearer sometoken",
+            "Content-Type": "application/json"
+        }
+
+        setDefaultZitadelClient(new MockZitadelClient())
+
+        const writRes = await app.request('/graphql',
+        {
+            method: "POST",
+            headers: {
+                ...testHeaders
+            },
+            body: JSON.stringify({
+                query: "mutation AddUserToOrg($arg1: String!, $arg2: String!) {addUserToOrganization(orgId: $arg1, userId: $arg2)}",
+                variables: {
+                    arg1: "orbisops",
+                    arg2: "marito"
+                }
+            })
+        },
+        {
+            ...testEnv
+        });
+
+        expect(writRes.status).toBe(200);
+
+        expect(await writRes.json()).toStrictEqual({
+            data: {
+                addUserToOrganization: true
+            }
+        });
+
+
+        const readRes = await app.request('/graphql',
+        {
+            method: "POST",
+            headers: {
+                ...testHeaders
+            },
+            body: JSON.stringify({
+                query: "query ListUsersInOrg($arg1: String!) {listUsersInOrganization(orgId: $arg1)}",
+                variables: {
+                    arg1: "orbisops",
+                }
+            })
+        },
+        {
+            ...testEnv
+        });
+
+        expect(readRes.status).toBe(200);
+        expect(await readRes.json()).toStrictEqual({
+            data: {
+                listUsersInOrganization: [
+                    "marito"
+                ]
+            }
+        })
+    })
 
 })

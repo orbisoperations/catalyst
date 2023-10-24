@@ -1,5 +1,4 @@
 import axios from "axios"
-import {Buffer} from "buffer"
 
 type AuthzedObject = {
 	objectType: String;
@@ -10,6 +9,45 @@ type RelationShip = {
 	relation: String;
 	relatedItem: AuthzedObject;
 };
+
+export interface ReadRelationshipResult {
+    result: {
+        readAt: {
+            token: string
+          }
+        relationship: {
+            resource: {
+                objectType: string
+                objectId: string
+              }
+            relation: string
+            subject: {
+                object: {
+                    objectType: string
+                    objectId: string
+                  }
+                optionalRelation: string
+              }
+            optionalCaveat: {
+                caveatName: string
+                context: string
+              }
+          }
+      }
+    error: {
+        code: string
+        message: string
+    }
+}
+
+export interface WriteRelationshipResult {
+    writtenAt?: {
+        token: string
+    },
+    code?: number
+    message?: string
+}
+
 export class AuthzedClient {
     endpoint: string
     token: string
@@ -76,7 +114,7 @@ export class AuthzedClient {
     }
 
 
-    async AddUserToOrganization(org: string, user: string): Promise<any> {
+    async addUserToOrganization(org: string, user: string): Promise<WriteRelationshipResult> {
         const {data} = await axios.post(`${this.endpoint}/v1/relationships/write`, 
         this.writeRelationship({
             relationOwner: {
@@ -92,17 +130,43 @@ export class AuthzedClient {
         {
             headers: this.headers(),
         })
-        return data
+        return data as WriteRelationshipResult
     }
 
-    async ReadUsersInOrganization(org: string): Promise<any> {
+    async listUsersInOrganization(org: string): Promise<string[]> {
         const {data} = await axios.post(`${this.endpoint}/v1/relationships/read`, 
         this.readRelationship({
-            resourceType: "organization"
+            resourceType: "organization",
+            resourceId: org,
+            relation: "member"
         }),
         {
             headers: this.headers(),
         })
-        return data
+
+        console.log("raw data", data)
+
+        // test for Newline Delimited JSON (NDJSON)
+        if (typeof data === 'string') {
+            const userIds = this.parseNDJONFromAuthzed(data as string).map((result) => {
+                return (result as ReadRelationshipResult).result.relationship.subject.object.objectId
+            })
+            return userIds
+        }
+
+        // If no NDJSON result is an object
+        return [(data as ReadRelationshipResult).result.relationship.subject.object.objectId]
+    }
+
+    parseNDJONFromAuthzed(rawData: string): any[] {
+        console.log(rawData)
+        let parsedData: any[] = [];
+        rawData.split("\n").forEach((row) => {
+            if (row.length > 0) {
+                parsedData.push(JSON.parse(row) as ReadRelationshipResult);
+            }
+        })
+
+        return parsedData
     }
 }

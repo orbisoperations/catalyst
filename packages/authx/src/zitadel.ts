@@ -1,5 +1,6 @@
 import axios from "axios"
 import {Buffer} from "buffer"
+import { isConstructorDeclaration } from "typescript"
 
 export interface BasicAuthToken {
     access_token: string
@@ -32,7 +33,7 @@ export async function BasicAuth(endpoint: string, clientId: string, clientSecret
     return data
 }
 
-interface TokenValidation {
+export interface TokenValidation {
     active: boolean
     aud?: string
     client_id?: string
@@ -67,7 +68,7 @@ async function ValidateTokenByIntrospection(endpoint: string, clientToken: strin
     return data
 }
 
-export class ZitadelClient {
+export class ZitadelClient implements IZitadelClient {
 	endpoint: string
 	token: string
 	constructor(endpoint: string, token: string) {
@@ -78,4 +79,8 @@ export class ZitadelClient {
     async validateTokenByIntrospection(token: string) {
         return ValidateTokenByIntrospection(this.endpoint, this.token, token)
     }
+}
+
+export interface IZitadelClient {
+    validateTokenByIntrospection(token: string): Promise<TokenValidation | undefined> 
 }
