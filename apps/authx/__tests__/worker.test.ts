@@ -19,20 +19,20 @@ class MockZitadelClient implements IZitadelClient {
 }
 
 describe("health and status checks", () => {
-		let testEnv: object;
-        let testHeaders: object;
-		beforeAll(async () => {
-			testEnv = {
-				AUTHZED_TOKEN: "healthandstatus",
-				AUTHZED_ENDPOINT: "http://localhost:8081",
-			}
+	let testEnv: object;
+	let testHeaders: object;
+	beforeAll(async () => {
+		testEnv = {
+			AUTHZED_TOKEN: "healthandstatus",
+			AUTHZED_ENDPOINT: "http://localhost:8081",
+		}
 
-            testHeaders = {
-                Authorization: "Bearer sometoken"
-            }
+		testHeaders = {
+			Authorization: "Bearer sometoken"
+		}
 
-            setDefaultZitadelClient(new MockZitadelClient())
-		})
+		setDefaultZitadelClient(new MockZitadelClient())
+	})
 
     test("health check", async () => {
 			const res = await app.request("/health",
