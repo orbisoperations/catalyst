@@ -85,7 +85,7 @@ app.use('*', async (c:Context, next) => {
 	}
 	
 	// break out token
-	const token = authnHeader.split("")[1];
+	const token = authnHeader.split(" ")[1];
 
 	// do check for token validity here
 	const validCheck = await zitadelClient?.validateTokenByIntrospection(token);

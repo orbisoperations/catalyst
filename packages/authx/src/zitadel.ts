@@ -10,7 +10,8 @@ export interface BasicAuthToken {
 
 // Zitadel docs describing login - https://zitadel.com/docs/guides/integrate/client-credentials
 export async function BasicAuth(endpoint: string, clientId: string, clientSecret: string): Promise<BasicAuthToken | undefined> {
-    const basicAuthValue = Buffer.from(encodeURIComponent(clientId) + ":" + encodeURIComponent(clientSecret)).toString("base64")
+    //const basicAuthValue = Buffer.from(encodeURIComponent(clientId) + ":" + encodeURIComponent(clientSecret)).toString("base64")
+    const basicAuthValue = btoa(encodeURIComponent(clientId) + ":" + encodeURIComponent(clientSecret))
     
     const { data, status } = await axios.post<BasicAuthToken>(
         endpoint,
