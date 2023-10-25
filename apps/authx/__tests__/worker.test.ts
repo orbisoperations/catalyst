@@ -1,227 +1,558 @@
-import { afterAll, beforeAll, describe, expect, it, test, vi } from 'vitest';
-import { parse } from "graphql";
-import app from "../src/index"
-import {setDefaultZitadelClient} from "../src/index"
-import { GenericContainer, StartedTestContainer, Wait } from "testcontainers";
-import {AuthzedClient, IZitadelClient, TokenValidation} from "../../../packages/authx"
-import fs from "fs";
-import { testClient } from "hono/testing"
-import {Env} from "hono"
+import fs from 'fs';
+import { GenericContainer, StartedTestContainer, Wait } from 'testcontainers';
+import { afterAll, beforeAll, describe, expect, test } from 'vitest';
+import { AuthzedClient, IZitadelClient, TokenValidation } from '../../../packages/authx';
+import app, { setDefaultZitadelClient } from '../src/index';
 
 class MockZitadelClient implements IZitadelClient {
-    constructor(){}
+	constructor() {}
 
-    async validateTokenByIntrospection(token: string): Promise<TokenValidation | undefined> {
-        return {
-            active: true,
-        } as TokenValidation
-    }
+	async validateTokenByIntrospection(token: string): Promise<TokenValidation | undefined> {
+		return {
+			active: true,
+		} as TokenValidation;
+	}
 }
 
-describe("health and status checks", () => {
+describe('health and status checks', () => {
 	let testEnv: object;
 	let testHeaders: object;
 	beforeAll(async () => {
 		testEnv = {
-			AUTHZED_TOKEN: "healthandstatus",
-			AUTHZED_ENDPOINT: "http://localhost:8081",
-		}
+			AUTHZED_TOKEN: 'healthandstatus',
+			AUTHZED_ENDPOINT: 'http://localhost:8081',
+		};
 
 		testHeaders = {
-			Authorization: "Bearer sometoken"
-		}
+			Authorization: 'Bearer sometoken',
+		};
 
-		setDefaultZitadelClient(new MockZitadelClient())
-	})
+		setDefaultZitadelClient(new MockZitadelClient());
+	});
 
-    test("health check", async () => {
-			const res = await app.request("/health",
+	test('health check', async () => {
+		const res = await app.request(
+			'/health',
+			{
+				method: 'get',
+				headers: {
+					...testHeaders,
+				},
+			},
+			{
+				...testEnv,
+			}
+		);
+		expect(res.status).toBe(200);
+		expect(await res.text()).toBe('ok');
+	});
+
+	test('status check', async () => {
+		const res = await app.request(
+			'/status',
+			{
+				method: 'get',
+				headers: {
+					...testHeaders,
+				},
+			},
+			{
+				...testEnv,
+			}
+		);
+		expect(res.status).toBe(200);
+		expect(await res.json()).toStrictEqual({
+			health: 'ok',
+		});
+	});
+
+	test('graphql health check', async () => {
+		const res = await app.request(
+			'/graphql?query={health}',
+			{
+				method: 'get',
+				headers: {
+					...testHeaders,
+				},
+			},
+			{
+				...testEnv,
+			}
+		);
+
+		expect(res.status).toBe(200);
+
+		expect(await res.json()).toStrictEqual({
+			data: {
+				health: 'ok',
+			},
+		});
+	});
+
+	test('graphql status check', async () => {
+		const res = await app.request(
+			'/graphql?query={status{health}}',
+			{
+				method: 'get',
+				headers: {
+					...testHeaders,
+				},
+			},
+			{
+				...testEnv,
+			}
+		);
+
+		expect(res.status).toBe(200);
+
+		expect(await res.json()).toStrictEqual({
+			data: {
+				status: {
+					health: 'ok',
+				},
+			},
+		});
+	});
+});
+
+describe('authzed/spicedb testing', () => {
+	let authzed: StartedTestContainer;
+	let client: AuthzedClient;
+	beforeAll(async () => {
+		const schema = fs.readFileSync('./schema.zaml');
+
+		authzed = await new GenericContainer('authzed/spicedb')
+			.withCommand([
+				'serve-testing',
+				'--http-enabled',
+				'--skip-release-check=true',
+				'--log-level',
+				'debug',
+				'--load-configs',
+				'/schema.zaml',
+			])
+			.withResourcesQuota({ memory: 1, cpu: 1 })
+			.withCopyContentToContainer([
 				{
-					method: "get",
-                    headers: {
-                        ...testHeaders
-                    }
+					content: schema,
+					target: '/schema.zaml',
+				},
+			])
+			.withExposedPorts(
+				{
+					container: 50051,
+					host: 50051,
 				},
 				{
-					...testEnv
+					container: 8081,
+					host: 8081,
 				}
-			);
-        expect(res.status).toBe(200)
-        expect(await res.text()).toBe('ok')
-    })
+			)
+			.withWaitStrategy(Wait.forHttp('/healthz', 8081))
+			.start();
+	}, 100000);
 
-    test("status check", async () => {
-			const res = await app.request('/status',
+	test('Can Read User Info', async () => {
+		client = new AuthzedClient('http://localhost:8081', 'readwriteuserorg');
+		await client.addUserToOrganization('orbisops', 'marito');
+		await client.addUserToOrganization('orbisops', 'marito', true);
+
+		await client.addUserToGroup('marito', 'group1');
+		await client.addUserToGroup('marito', 'group2');
+		await client.addUserToGroup('marito', 'group2', true);
+		await client.addDataServiceToOrganization('orbisops', 'dataservice1');
+		await client.addDataServiceToOrganization('orbisops', 'dataservice2');
+		await client.addOwnerToDataService('marito', 'dataservice1');
+		await client.addOwnerToDataService('marito', 'dataservice2');
+		await sleep(1000);
+		const readUserInfo = await client.getUserInfo('marito');
+		console.log(readUserInfo);
+		expect(readUserInfo).toStrictEqual({
+			// userId: 'marito',
+			groups: ['group1', 'group2'],
+			organizations: ['orbisops'],
+			ownedGroups: ['group2'],
+			ownedOrganizations: ['orbisops'],
+			dataServices: ['dataservice1', 'dataservice2'],
+			ownedDataServices: ['dataservice1', 'dataservice2'],
+		});
+	});
+	test('Can Read Group Info', async () => {
+		client = new AuthzedClient('http://localhost:8081', 'readwriteuserorg');
+		await client.addServiceAccountToGroup('service_account1', 'group1');
+		await client.addServiceAccountToGroup('service_account2', 'group1');
+		await client.addOrganizationToGroup('orbisops', 'group1');
+		await client.addDataServiceToOrganization('dataservice1', 'orbisops');
+		await client.addDataServiceToOrganization('dataservice2', 'orbisops');
+		await sleep(1000);
+		const groupInfo = await client.getGroupInfo('group1');
+		expect(groupInfo).toStrictEqual({
+			users: ['marito'],
+			serviceAccounts: ['service_account1', 'service_account2'],
+			dataServices: ['dataservice1', 'dataservice2'],
+			organizations: ['orbisops'],
+		});
+	});
+
+	afterAll(async () => {
+		await authzed.stop();
+	});
+});
+describe('Group GraphQL Testing', async () => {
+	const testEnv = {
+		AUTHZED_TOKEN: 'readwriteuserorggraphql',
+		AUTHZED_ENDPOINT: 'http://localhost:8081',
+	};
+
+	const testHeaders = {
+		Authorization: 'Bearer sometoken',
+		'Content-Type': 'application/json',
+	};
+	let authzed: StartedTestContainer;
+	beforeAll(async () => {
+		const schema = fs.readFileSync('./schema.zaml');
+
+		authzed = await new GenericContainer('authzed/spicedb')
+			.withCommand([
+				'serve-testing',
+				'--http-enabled',
+				'--skip-release-check=true',
+				'--log-level',
+				'debug',
+				'--load-configs',
+				'/schema.zaml',
+			])
+			.withResourcesQuota({ memory: 1, cpu: 1 })
+			.withCopyContentToContainer([
 				{
-					method: "get",
-                    headers: {
-                        ...testHeaders
-                    }
+					content: schema,
+					target: '/schema.zaml',
+				},
+			])
+			.withExposedPorts(
+				{
+					container: 50051,
+					host: 50051,
 				},
 				{
-					...testEnv
-				});
-        expect(res.status).toBe(200)
-        expect(await res.json()).toStrictEqual({
-            health: "ok",
-        })
-    })
+					container: 8081,
+					host: 8081,
+				}
+			)
+			.withWaitStrategy(Wait.forHttp('/healthz', 8081))
+			.start();
+	}, 100000);
 
-    test("graphql health check", async() => {
+	afterAll(async () => {
+		await authzed.stop();
+	});
+	test('Can add User to group', async () => {
+		setDefaultZitadelClient(new MockZitadelClient());
+		const userGroupRes = await runQuery(
+			testHeaders,
+			testEnv,
+			'mutation addUserToGroup($arg1: String!, $arg2: String!) {addUserToGroup(userId: $arg1, groupId: $arg2)}',
+			{
+				arg1: 'marito',
+				arg2: 'group1',
+			}
+		);
+		await testWriteResult(userGroupRes, 'addUserToGroup');
+	});
+	test('Can add service account to group', async () => {
+		setDefaultZitadelClient(new MockZitadelClient());
+		const serviceAccountGroupRes = await runQuery(
+			testHeaders,
+			testEnv,
+			'mutation addServiceAccountToGroup($arg1: String!, $arg2: String!) {addServiceAccountToGroup(serviceAccountId: $arg1, groupId: $arg2)}',
+			{
+				arg1: 'service_account1',
+				arg2: 'group1',
+			}
+		);
+		await testWriteResult(serviceAccountGroupRes, 'addServiceAccountToGroup');
+	});
+	test('Can add organization to group', async () => {
+		setDefaultZitadelClient(new MockZitadelClient());
+		const groupOrganizationRes = await runQuery(
+			testHeaders,
+			testEnv,
+			'mutation addOrganizationToGroup($arg1: String!, $arg2: String!) {addOrganizationToGroup(organizationId: $arg1, groupId: $arg2)}',
+			{
+				arg1: 'orbisops',
+				arg2: 'group1',
+			}
+		);
+		await testWriteResult(groupOrganizationRes, 'addOrganizationToGroup');
+	});
+	test('Can add data service to organization', async () => {
+		setDefaultZitadelClient(new MockZitadelClient());
+		const writRes = await runQuery(
+			testHeaders,
+			testEnv,
+			'mutation addDataServiceToOrganization($arg1: String!, $arg2: String!) {addDataServiceToOrganization(orgId: $arg1, dataServiceId: $arg2)}',
+			{
+				arg1: 'orbisops',
+				arg2: 'dataservice1',
+			}
+		);
+		await testWriteResult(writRes, 'addDataServiceToOrganization');
+		const writRes2 = await runQuery(
+			testHeaders,
+			testEnv,
+			'mutation addDataServiceToOrganization($arg1: String!, $arg2: String!) {addDataServiceToOrganization(orgId: $arg1, dataServiceId: $arg2)}',
+			{
+				arg1: 'orbisops',
+				arg2: 'dataservice2',
+			}
+		);
+		await testWriteResult(writRes2, 'addDataServiceToOrganization');
+	});
+	test('Can Read Group Info', async () => {
+		await sleep(1000);
+		const readGroup = await runQuery(
+			testHeaders,
+			testEnv,
+			'query GroupInfo($arg1: String!) {group(groupId: $arg1) {users, serviceAccounts, dataServices, organizations}}',
+			{
+				arg1: 'group1',
+			}
+		);
 
-        const res = await app.request('/graphql?query={health}',
-					{
-						method: "get",
-						headers: {
-                            ...testHeaders
-                        }
-					},
-					{
-						...testEnv
-					});
+		expect(readGroup.status).toBe(200);
+		const readGroupJson: any = await readGroup.json();
+		expect(readGroupJson.data).toStrictEqual({
+			group: {
+				users: ['marito'],
+				serviceAccounts: ['service_account1'],
+				dataServices: ['dataservice1', 'dataservice2'],
+				organizations: ['orbisops'],
+			},
+		});
+	});
+});
 
-        expect(res.status).toBe(200);
+describe('User GraphQL Testing', () => {
+	let authzed: StartedTestContainer;
+	const testEnv = {
+		AUTHZED_TOKEN: 'readwriteuserorggraphql',
+		AUTHZED_ENDPOINT: 'http://localhost:8081',
+	};
 
-        expect(await res.json()).toStrictEqual({
-            data: {
-                health: "ok",
-            }
-        })
+	const testHeaders = {
+		Authorization: 'Bearer sometoken',
+		'Content-Type': 'application/json',
+	};
+	beforeAll(async () => {
+		const schema = fs.readFileSync('./schema.zaml');
 
-    })
+		authzed = await new GenericContainer('authzed/spicedb')
+			.withCommand([
+				'serve-testing',
+				'--http-enabled',
+				'--skip-release-check=true',
+				'--log-level',
+				'debug',
+				'--load-configs',
+				'/schema.zaml',
+			])
+			.withResourcesQuota({ memory: 1, cpu: 1 })
+			.withCopyContentToContainer([
+				{
+					content: schema,
+					target: '/schema.zaml',
+				},
+			])
+			.withExposedPorts(
+				{
+					container: 50051,
+					host: 50051,
+				},
+				{
+					container: 8081,
+					host: 8081,
+				}
+			)
+			.withWaitStrategy(Wait.forHttp('/healthz', 8081))
+			.start();
+	}, 100000);
 
-    test("graphql status check", async() => {
-        const res = await app.request('/graphql?query={status{health}}',
-        {
-            method: "get",
-            headers: {
-                ...testHeaders
-            }
-        },
-        {
-            ...testEnv
-        });
+	afterAll(async () => {
+		await authzed.stop();
+	});
+	test('Can add Users to Organization', async () => {
+		// headers and env vars for test app usage
+		const testEnv = {
+			AUTHZED_TOKEN: 'readwriteuserorggraphql',
+			AUTHZED_ENDPOINT: 'http://localhost:8081',
+		};
 
-        expect(res.status).toBe(200);
+		const testHeaders = {
+			Authorization: 'Bearer sometoken',
+			'Content-Type': 'application/json',
+		};
 
-        expect(await res.json()).toStrictEqual({
-            data: {
-                status: {
-                    health: "ok"
-                }
-            }
-        })
-    })
+		setDefaultZitadelClient(new MockZitadelClient());
+		const writRes = await runQuery(
+			testHeaders,
+			testEnv,
+			'mutation AddUserToOrg($arg1: String!, $arg2: String!) {addUserToOrganization(orgId: $arg1, userId: $arg2)}',
+			{
+				arg1: 'orbisops',
+				arg2: 'marito',
+			}
+		);
+		await testWriteResult(writRes, 'addUserToOrganization');
+		// await sleep(1000);
+		const readRes = await runQuery(testHeaders, testEnv, 'query ListUsersInOrg($arg1: String!) {listUsersInOrganization(orgId: $arg1)}', {
+			arg1: 'orbisops',
+		});
 
+		expect(readRes.status).toBe(200);
+		expect(await readRes.json()).toStrictEqual({
+			data: {
+				listUsersInOrganization: ['marito'],
+			},
+		});
+	});
 
-})
+	test('Can add user To Group', async () => {
+		setDefaultZitadelClient(new MockZitadelClient());
+		const writRes = await runQuery(
+			testHeaders,
+			testEnv,
+			'mutation addUserToGroup($arg1: String!, $arg2: String!) {addUserToGroup(userId: $arg1, groupId: $arg2)}',
+			{
+				arg1: 'marito',
+				arg2: 'group1',
+			}
+		);
+		await testWriteResult(writRes, 'addUserToGroup');
+	});
+	test('Can add Owner to Group', async () => {
+		setDefaultZitadelClient(new MockZitadelClient());
+		const writRes = await runQuery(
+			testHeaders,
+			testEnv,
+			'mutation addOwnerToGroup($arg1: String!, $arg2: String!) {addOwnerToGroup(userId: $arg1, groupId: $arg2)}',
+			{
+				arg1: 'marito',
+				arg2: 'group1',
+			}
+		);
+		await testWriteResult(writRes, 'addOwnerToGroup');
+	});
+	test('Can Add Owner to Organization', async () => {
+		setDefaultZitadelClient(new MockZitadelClient());
+		const writRes = await runQuery(
+			testHeaders,
+			testEnv,
+			'mutation addOwnerToOrganization($arg1: String!, $arg2: String!) {addOwnerToOrganization(orgId: $arg1, userId: $arg2)}',
+			{
+				arg1: 'orbisops',
+				arg2: 'marito',
+			}
+		);
+		await testWriteResult(writRes, 'addOwnerToOrganization');
+	});
+	test('Can Add Owner to DataService', async () => {
+		setDefaultZitadelClient(new MockZitadelClient());
+		const writRes = await runQuery(
+			testHeaders,
+			testEnv,
+			'mutation adOwnerToDataService($arg1: String!, $arg2: String!) {adOwnerToDataService(dataServiceId: $arg1, userId: $arg2)}',
+			{
+				arg1: 'dataservice1',
+				arg2: 'marito',
+			}
+		);
+		await testWriteResult(writRes, 'adOwnerToDataService');
+	});
+	test('Can add data service to organization', async () => {
+		setDefaultZitadelClient(new MockZitadelClient());
+		const writRes = await runQuery(
+			testHeaders,
+			testEnv,
+			'mutation addDataServiceToOrganization($arg1: String!, $arg2: String!) {addDataServiceToOrganization(orgId: $arg1, dataServiceId: $arg2)}',
+			{
+				arg1: 'orbisops',
+				arg2: 'dataservice1',
+			}
+		);
+		await testWriteResult(writRes, 'addDataServiceToOrganization');
+		const writRes2 = await runQuery(
+			testHeaders,
+			testEnv,
+			'mutation addDataServiceToOrganization($arg1: String!, $arg2: String!) {addDataServiceToOrganization(orgId: $arg1, dataServiceId: $arg2)}',
+			{
+				arg1: 'orbisops',
+				arg2: 'dataservice2',
+			}
+		);
+		await testWriteResult(writRes2, 'addDataServiceToOrganization');
+	});
 
-describe("authzed/spicedb testing", () => {
-    let authzed: StartedTestContainer;
-    let client: AuthzedClient
-    beforeAll(async () => {
-        const schema = fs.readFileSync("./schema.zaml")
+	test('Can Read User Info', async () => {
+		await sleep(1000);
+		setDefaultZitadelClient(new MockZitadelClient());
+		const readUser = await runQuery(
+			testHeaders,
+			testEnv,
+			'query UserInfo($arg1: String!) {user(userId: $arg1) {groups, organizations, ownedGroups, ownedOrganizations, dataServices, ownedDataServices}}',
+			{
+				arg1: 'marito',
+			}
+		);
 
-        authzed = await new GenericContainer("authzed/spicedb")
-        .withCommand(["serve-testing", "--http-enabled", "--skip-release-check=true", "--log-level", "debug","--load-configs", "/schema.zaml"])
-        .withResourcesQuota({ memory: 1, cpu: 1 })
-        .withCopyContentToContainer([{
-            content: schema,
-            target: "/schema.zaml"
-        }])
-        .withExposedPorts({
-            container: 50051,
-            host: 50051
-        },
-        {
-            container: 8081,
-            host: 8081
-        })
-        .withWaitStrategy(Wait.forHttp("/healthz", 8081))
-        .start();
+		expect(readUser.status).toBe(200);
+		const readUserJson: any = await readUser.json();
+		// expect(readUserJson.data.user.dataServices).toBeInstanceOf(Array);
+		expect(readUserJson.data).toStrictEqual({
+			user: {
+				groups: ['group1'],
+				organizations: ['orbisops'],
+				ownedGroups: ['group1'],
+				ownedOrganizations: ['orbisops'],
+				dataServices: ['dataservice1', 'dataservice2'],
+				ownedDataServices: ['dataservice1'],
+			},
+		});
+	});
+});
 
-      }, 100000);
+function sleep(ms: number) {
+	return new Promise((resolve) => {
+		setTimeout(resolve, ms);
+	});
+}
 
-    afterAll(async () => {
-    await authzed.stop();
-    });
- 
-    test("authzed - read/write - REST", async () => {
-        client = new AuthzedClient("http://localhost:8081", "readwriteuserorg")
-        const writeData = await client.addUserToOrganization("orbisops", "marito")
-        expect(writeData.writtenAt!.token).toBeTruthy()
-        await client.addUserToOrganization("orbisops", "maritwo")
+function runQuery(headers: Record<string, string>, env: Record<string, string>, query: string, args: Record<string, string>) {
+	return app.request(
+		'/graphql',
+		{
+			method: 'POST',
+			headers: {
+				...headers,
+			},
+			body: JSON.stringify({
+				query: query,
+				variables: args,
+			}),
+		},
+		{
+			...env,
+		}
+	);
+}
 
-        const readData = await client.listUsersInOrganization("orbisops")
-        expect(readData).toStrictEqual(["marito", "maritwo"])
-    })
+async function testWriteResult(result: Response, mutation: string) {
+	return [
+		expect(result.status).toBe(200),
 
-    test("authzed - read/write - graphql", async () => {
-        // headers and env vars for test app usage
-        const testEnv = {
-            AUTHZED_TOKEN: "readwriteuserorggraphql",
-            AUTHZED_ENDPOINT: "http://localhost:8081",
-        }
-
-        const testHeaders = {
-            Authorization: "Bearer sometoken",
-            "Content-Type": "application/json"
-        }
-
-        setDefaultZitadelClient(new MockZitadelClient())
-
-        const writRes = await app.request('/graphql',
-        {
-            method: "POST",
-            headers: {
-                ...testHeaders
-            },
-            body: JSON.stringify({
-                query: "mutation AddUserToOrg($arg1: String!, $arg2: String!) {addUserToOrganization(orgId: $arg1, userId: $arg2)}",
-                variables: {
-                    arg1: "orbisops",
-                    arg2: "marito"
-                }
-            })
-        },
-        {
-            ...testEnv
-        });
-
-        expect(writRes.status).toBe(200);
-
-        expect(await writRes.json()).toStrictEqual({
-            data: {
-                addUserToOrganization: true
-            }
-        });
-
-
-        const readRes = await app.request('/graphql',
-        {
-            method: "POST",
-            headers: {
-                ...testHeaders
-            },
-            body: JSON.stringify({
-                query: "query ListUsersInOrg($arg1: String!) {listUsersInOrganization(orgId: $arg1)}",
-                variables: {
-                    arg1: "orbisops",
-                }
-            })
-        },
-        {
-            ...testEnv
-        });
-
-        expect(readRes.status).toBe(200);
-        expect(await readRes.json()).toStrictEqual({
-            data: {
-                listUsersInOrganization: [
-                    "marito"
-                ]
-            }
-        })
-    })
-
-})
+		expect(await result.json()).toStrictEqual({
+			data: {
+				[mutation]: true,
+			},
+		}),
+	];
+}

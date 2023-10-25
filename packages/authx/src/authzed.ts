@@ -1,172 +1,507 @@
-import axios from "axios"
+import axios, { Axios } from "axios";
+import * as types from "../types";
 
-type AuthzedObject = {
-	objectType: String;
-	objectId: String;
-};
-type RelationShip = {
-	relationOwner: AuthzedObject;
-	relation: String;
-	relatedItem: AuthzedObject;
-};
+class AuthzedUtils {
+  endpoint: string;
+  token: string;
+  schemaPrefix: string;
+  axiosClient: Axios;
 
-export interface ReadRelationshipResult {
-    result: {
-        readAt: {
-            token: string
-          }
-        relationship: {
-            resource: {
-                objectType: string
-                objectId: string
-              }
-            relation: string
-            subject: {
-                object: {
-                    objectType: string
-                    objectId: string
-                  }
-                optionalRelation: string
-              }
-            optionalCaveat: {
-                caveatName: string
-                context: string
-              }
-          }
-      }
-    error: {
-        code: string
-        message: string
+  constructor(endpoint: string, token: string, schemaPrefix?: string) {
+    this.endpoint = endpoint;
+    this.token = token;
+    this.axiosClient = axios.create({
+      baseURL: endpoint,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    this.schemaPrefix = schemaPrefix ?? "orbisops_tutorial/";
+  }
+
+  headers(): object {
+    return {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${this.token}`,
+    };
+  }
+  axiosFetcher(
+    action: "read" | "write",
+    data: types.SearchInfoBody | types.WriteRelationshipBody
+  ) {
+    return this.axiosClient.post(`/v1/relationships/${action}`, data);
+  }
+  async fetcher(
+    action: "read" | "write",
+    data: types.SearchInfoBody | types.WriteRelationshipBody
+  ) {
+    return await fetch(`${this.endpoint}/v1/relationships/${action}`, {
+      method: "POST",
+      headers: {
+        ...this.headers(),
+      },
+      body: JSON.stringify(data),
+    })
+      .then(async (res) => {
+        try {
+          return {
+            data: action == "read" ? await res.text() : await res.json(),
+          };
+        } catch (e) {
+          console.error(e);
+        }
+      })
+      .then((res) => res);
+  }
+  parseResourceIdsFromResults(data: any): string[] | PromiseLike<string[]> {
+    if (typeof data === "string") {
+      const objectIds = this.parseNDJONFromAuthzed(data).map((result) => {
+        return (result as types.ReadRelationshipResult).result.relationship
+          .resource.objectId;
+      });
+      return objectIds;
     }
-}
 
-export interface WriteRelationshipResult {
-    writtenAt?: {
-        token: string
-    },
-    code?: number
-    message?: string
+    return [
+      (data as types.ReadRelationshipResult).result.relationship.resource
+        .objectId,
+    ];
+  }
+
+  parseObjectandSubjectFromResults(
+    data: any
+  ):
+    | { subject: string; resource: string }[]
+    | PromiseLike<{ subject: string; resource: string }[]> {
+    if (typeof data === "string") {
+      const objectIds = this.parseNDJONFromAuthzed(data).map((result) => {
+        return {
+          subject: (result as types.ReadRelationshipResult).result.relationship
+            .subject.object.objectId,
+          resource: (result as types.ReadRelationshipResult).result.relationship
+            .resource.objectId,
+        };
+      });
+      return objectIds;
+    }
+
+    return [
+      {
+        subject: (data as types.ReadRelationshipResult).result.relationship
+          .subject.object.objectId,
+        resource: (data as types.ReadRelationshipResult).result.relationship
+          .resource.objectId,
+      },
+    ];
+  }
+  parseSubjectIdsFromResults(data: any): string[] | PromiseLike<string[]> {
+    if (typeof data === "string") {
+      const objectIds = this.parseNDJONFromAuthzed(data).map((result) => {
+        return (result as types.ReadRelationshipResult).result.relationship
+          .subject.object.objectId;
+      });
+
+      return objectIds;
+    }
+
+    return [
+      (data as types.ReadRelationshipResult).result.relationship.subject.object
+        .objectId,
+    ];
+  }
+
+  parseNDJONFromAuthzed(rawData: string): any[] {
+    let parsedData: any[] = [];
+    rawData.split("\n").forEach((row) => {
+      if (row.length > 0) {
+        parsedData.push(JSON.parse(row) as types.ReadRelationshipResult);
+      }
+    });
+
+    return parsedData;
+  }
+
+  writeRelationship(
+    relationshipInfo: types.RelationShip
+  ): types.WriteRelationshipBody {
+    return {
+      updates: [
+        {
+          operation: "OPERATION_TOUCH",
+          relationship: {
+            resource: {
+              objectType:
+                this.schemaPrefix + relationshipInfo.relationOwner.objectType,
+              objectId: relationshipInfo.relationOwner.objectId,
+            },
+            relation: relationshipInfo.relation,
+            subject: {
+              object: {
+                objectType:
+                  this.schemaPrefix + relationshipInfo.relatedItem.objectType,
+                objectId: relationshipInfo.relatedItem.objectId,
+              },
+            },
+          },
+        },
+      ],
+    };
+  }
+
+  readRelationship(searchInfo: types.SearchInfo): types.SearchInfoBody {
+    const { resourceType, resourceId, relation, optionalSubjectFilter } =
+      searchInfo;
+    const filter = optionalSubjectFilter
+      ? {
+          subjectType: this.schemaPrefix + optionalSubjectFilter.subjectType,
+          optionalSubjectId: optionalSubjectFilter.optionalSubjectId,
+        }
+      : optionalSubjectFilter;
+    return {
+      consistency: {
+        minimizeLatency: true,
+      },
+      relationshipFilter: {
+        resourceType: this.schemaPrefix + resourceType,
+        optionalResourceId: resourceId,
+        optionalRelation: relation,
+        optionalSubjectFilter: filter,
+      },
+    };
+  }
 }
 
 export class AuthzedClient {
-    endpoint: string
-    token: string
-    schemaPrefix: string
+  utils: AuthzedUtils;
 
+  constructor(endpoint: string, token: string, schemaPrefix?: string) {
+    this.utils = new AuthzedUtils(endpoint, token, schemaPrefix);
+  }
 
-    constructor(endpoint: string, token: string, schemaPrefix?: string) {
-        this.endpoint = endpoint
-        this.token = token
-        this.schemaPrefix = schemaPrefix?? "orbisops_tutorial/"
+  async addUserToOrganization(
+    org: string,
+    user: string,
+    isOwner?: boolean
+  ): Promise<types.WriteRelationshipResult> {
+    const body = this.utils.writeRelationship({
+      relationOwner: {
+        objectType: `organization`,
+        objectId: org,
+      },
+      relation: isOwner ? "owner" : "member",
+      relatedItem: {
+        objectType: `user`,
+        objectId: user,
+      },
+    });
+    const { data } = await this.utils.fetcher("write", body);
+
+    return data as types.WriteRelationshipResult;
+  }
+  async addDataServiceToOrganization(
+    dataService: string,
+    org: string
+  ): Promise<types.WriteRelationshipResult> {
+    const { data } = await this.utils.fetcher(
+      "write",
+      this.utils.writeRelationship({
+        relationOwner: {
+          objectType: "data_service",
+          objectId: dataService,
+        },
+        relation: "parent",
+        relatedItem: {
+          objectType: "organization",
+          objectId: org,
+        },
+      })
+    );
+    return data as types.WriteRelationshipResult;
+  }
+
+  async addOwnerToDataService(user: string, dataService: string) {
+    const { data } = await this.utils.fetcher(
+      "write",
+      this.utils.writeRelationship({
+        relationOwner: {
+          objectType: `data_service`,
+          objectId: dataService,
+        },
+        relation: "owner",
+        relatedItem: {
+          objectType: `user`,
+          objectId: user,
+        },
+      })
+    );
+    return data as types.WriteRelationshipResult;
+  }
+
+  async addServiceAccountToGroup(serviceAccount: string, group: string) {
+    const { data } = await this.utils.fetcher(
+      "write",
+      this.utils.writeRelationship({
+        relationOwner: {
+          objectType: `group`,
+          objectId: group,
+        },
+        relation: "service_account",
+        relatedItem: {
+          objectType: `service_account`,
+          objectId: serviceAccount,
+        },
+      })
+    );
+    return data as types.WriteRelationshipResult;
+  }
+  async addOrganizationToGroup(organization: string, group: string) {
+    const body = this.utils.writeRelationship({
+      relationOwner: {
+        objectType: `group`,
+        objectId: group,
+      },
+      relation: "organization",
+      relatedItem: {
+        objectType: `organization`,
+        objectId: organization,
+      },
+    });
+    const { data } = await this.utils.fetcher("write", body);
+    return data as types.WriteRelationshipResult;
+  }
+  async addUserToGroup(user: string, group: string, isOwner?: boolean) {
+    const body = this.utils.writeRelationship({
+      relationOwner: {
+        objectType: `group`,
+        objectId: group,
+      },
+      relation: isOwner ? "owner" : "member",
+      relatedItem: {
+        objectType: `user`,
+        objectId: user,
+      },
+    });
+    const { data } = await this.utils.fetcher("write", body);
+    return data as types.WriteRelationshipResult;
+  }
+
+  async listUsersInOrganization(org: string): Promise<string[]> {
+    const { data } = await this.utils.fetcher(
+      "read",
+      this.utils.readRelationship({
+        resourceType: "organization",
+        resourceId: org,
+        relation: "member",
+      })
+    );
+
+    return this.utils.parseSubjectIdsFromResults(data);
+  }
+
+  async getUserInfo(user: string): Promise<{
+    organizations?: string[];
+    groups?: string[];
+    ownedGroups?: string[];
+    ownedOrganizations?: string[];
+    ownedDataServices?: string[];
+    dataServices?: string[];
+  }> {
+    const promises = await Promise.allSettled([
+      this.getDataServiceParentOrg(),
+      this.getUserOrganizations(user),
+      this.getUserOwnedOrganizations(user),
+      this.getUserGroups(user),
+      this.getUserOwnedGroups(user),
+      this.getUserOwnedDataServices(user),
+    ]);
+    const dataServices =
+      promises[0].status === "fulfilled" ? promises[0].value : [];
+    const organizations =
+      promises[1].status === "fulfilled" ? promises[1].value : [];
+    const ownedOrganizations =
+      promises[2].status === "fulfilled" ? promises[2].value : [];
+    const groups = promises[3].status === "fulfilled" ? promises[3].value : [];
+    const ownedGroups =
+      promises[4].status === "fulfilled" ? promises[4].value : [];
+    const ownedDataServices =
+      promises[5].status === "fulfilled" ? promises[5].value : [];
+    const orgServices = dataServices.filter((service) => {
+      return (
+        organizations.includes(service.resource) ||
+        ownedOrganizations.includes(service.resource)
+      );
+    });
+    const response = {
+      organizations,
+      ownedOrganizations,
+      groups,
+      ownedGroups,
+      ownedDataServices,
+      dataServices: orgServices.map((service) => service.subject),
+    };
+
+    return response;
+  }
+  // read group data (users, service accounts, and data repos it has access to).
+  async getGroupInfo(group: string): Promise<{
+    users?: string[];
+    serviceAccounts?: string[];
+    dataServices?: string[];
+    organizations?: string[];
+  }> {
+    let dataServices: string[] = [];
+    const res = await Promise.allSettled([
+      this.getGroupUsers(group),
+      this.getGroupServiceAccounts(group),
+      this.getGroupDataServices(group),
+      this.getGroupOrganization(group),
+      this.getDataServiceParentOrg(),
+    ]);
+    const groupOrg = res[3].status === "fulfilled" ? res[3].value : undefined;
+    const orgServices =
+      res[4].status === "fulfilled" ? res[4].value : undefined;
+
+    if (groupOrg && orgServices) {
+      const services = orgServices.filter((service) => {
+        return groupOrg.includes(service.resource);
+      });
+      dataServices = services.map((service) => service.subject);
     }
 
-    private headers(): object {
-        return {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.token}`
-        }
-    }
-    
-    writeRelationship(relationshipInfo: RelationShip) {
-        return {
-            updates: [
-                {
-                    operation: 'OPERATION_TOUCH',
-                    relationship: {
-                        resource: {
-                            objectType: relationshipInfo.relationOwner.objectType,
-                            objectId: relationshipInfo.relationOwner.objectId,
-                        },
-                        relation: relationshipInfo.relation,
-                        subject: {
-                            object: {
-                                objectType: relationshipInfo.relatedItem.objectType,
-                                objectId: relationshipInfo.relatedItem.objectId,
-                            },
-                        },
-                    },
-                },
-            ],
-        }
-    }
+    const response = {
+      users: res[0].status === "fulfilled" ? res[0].value : undefined,
+      serviceAccounts: res[1].status === "fulfilled" ? res[1].value : undefined,
+      dataServices,
+      organizations: res[3].status === "fulfilled" ? res[3].value : undefined,
+    };
+    return response;
+  }
+  async getUserGroups(user: string): Promise<string[]> {
+    const { data } = await this.utils.fetcher(
+      "read",
+      this.utils.readRelationship({
+        resourceType: "group",
+        relation: "member",
+        optionalSubjectFilter: {
+          subjectType: "user",
+          optionalSubjectId: user,
+        },
+      })
+    );
 
-    readRelationship(searchInfo: {
-		resourceType: string;
-		resourceId?: string;
-		relation?: string;
-		optionalSubjectFilter?: {
-			subjectType: string;
-			optionalSubjectId: string;
-		};
-	}) {
-        const { resourceType, resourceId, relation, optionalSubjectFilter } = searchInfo;
-        return {
-            consistency: {
-                minimizeLatency: true
-            },
-            relationshipFilter: {
-                resourceType: this.schemaPrefix + resourceType,
-                optionalResourceId: resourceId,
-                optionalRelation: relation,
-                optionalSubjectFilter,
-            }
-        }
-    }
+    return this.utils.parseResourceIdsFromResults(data);
+  }
 
+  async getUserOrganizations(user: string): Promise<string[]> {
+    const body = this.utils.readRelationship({
+      resourceType: "organization",
+      relation: "member",
+      optionalSubjectFilter: {
+        subjectType: "user",
+        optionalSubjectId: user,
+      },
+    });
+    const { data } = await this.utils.fetcher("read", body);
+    return this.utils.parseResourceIdsFromResults(data);
+  }
 
-    async addUserToOrganization(org: string, user: string): Promise<WriteRelationshipResult> {
-        const {data} = await axios.post(`${this.endpoint}/v1/relationships/write`, 
-        this.writeRelationship({
-            relationOwner: {
-                objectType: `${this.schemaPrefix}organization`,
-                objectId: org
-            },
-            relation: "member",
-            relatedItem: {
-                objectType: `${this.schemaPrefix}user`,
-                objectId: user
-            }
-        }),
-        {
-            headers: this.headers(),
-        })
-        return data as WriteRelationshipResult
-    }
+  async getUserOwnedGroups(user: string): Promise<string[]> {
+    const body = this.utils.readRelationship({
+      resourceType: "group",
+      relation: "owner",
+      optionalSubjectFilter: {
+        subjectType: "user",
+        optionalSubjectId: user,
+      },
+    });
+    const { data } = await this.utils.fetcher("read", body);
+    const response = this.utils.parseResourceIdsFromResults(data);
+    return response;
+  }
 
-    async listUsersInOrganization(org: string): Promise<string[]> {
-        const {data} = await axios.post(`${this.endpoint}/v1/relationships/read`, 
-        this.readRelationship({
-            resourceType: "organization",
-            resourceId: org,
-            relation: "member"
-        }),
-        {
-            headers: this.headers(),
-        })
+  async getUserOwnedOrganizations(user: string): Promise<string[]> {
+    const { data } = await this.utils.fetcher(
+      "read",
+      this.utils.readRelationship({
+        resourceType: "organization",
+        relation: "owner",
+        optionalSubjectFilter: {
+          subjectType: "user",
+          optionalSubjectId: user,
+        },
+      })
+    );
 
-        console.log("raw data", data)
+    return this.utils.parseResourceIdsFromResults(data);
+  }
+  async getUserOwnedDataServices(user: string): Promise<string[]> {
+    const { data } = await this.utils.fetcher(
+      "read",
+      this.utils.readRelationship({
+        resourceType: "data_service",
+        relation: "owner",
+        optionalSubjectFilter: {
+          subjectType: "user",
+          optionalSubjectId: user,
+        },
+      })
+    );
 
-        // test for Newline Delimited JSON (NDJSON)
-        if (typeof data === 'string') {
-            const userIds = this.parseNDJONFromAuthzed(data as string).map((result) => {
-                return (result as ReadRelationshipResult).result.relationship.subject.object.objectId
-            })
-            return userIds
-        }
+    return this.utils.parseResourceIdsFromResults(data);
+  }
+  async getDataServiceParentOrg(): Promise<
+    { resource: string; subject: string }[]
+  > {
+    const body = this.utils.readRelationship({
+      resourceType: "data_service",
+      relation: "parent",
+    });
+    const { data } = await this.utils.fetcher("read", body);
+    const orgs = this.utils.parseObjectandSubjectFromResults(data);
+    return orgs;
+  }
 
-        // If no NDJSON result is an object
-        return [(data as ReadRelationshipResult).result.relationship.subject.object.objectId]
-    }
+  async getGroupOrganization(group: string): Promise<string[]> {
+    const body = this.utils.readRelationship({
+      resourceType: "group",
+      relation: "organization",
+      resourceId: group,
+    });
 
-    parseNDJONFromAuthzed(rawData: string): any[] {
-        console.log(rawData)
-        let parsedData: any[] = [];
-        rawData.split("\n").forEach((row) => {
-            if (row.length > 0) {
-                parsedData.push(JSON.parse(row) as ReadRelationshipResult);
-            }
-        })
+    const { data } = await this.utils.fetcher("read", body);
+    return this.utils.parseSubjectIdsFromResults(data);
+  }
+  async getGroupDataServices(group: string): Promise<string[]> {
+    const body = this.utils.readRelationship({
+      resourceType: "group",
+      relation: "data_service",
+      resourceId: group,
+    });
 
-        return parsedData
-    }
+    const { data } = await this.utils.fetcher("read", body);
+    return this.utils.parseResourceIdsFromResults(data);
+  }
+  async getGroupServiceAccounts(group: string): Promise<string[]> {
+    const body = this.utils.readRelationship({
+      resourceType: "group",
+      relation: "service_account",
+      resourceId: group,
+    });
+
+    const { data } = await this.utils.fetcher("read", body);
+
+    return this.utils.parseSubjectIdsFromResults(data);
+  }
+  async getGroupUsers(group: string): Promise<string[]> {
+    const body = this.utils.readRelationship({
+      resourceType: "group",
+      relation: "member",
+      resourceId: group,
+    });
+
+    const { data } = await this.utils.fetcher("read", body);
+
+    return this.utils.parseSubjectIdsFromResults(data);
+  }
 }
