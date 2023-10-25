@@ -1,7 +1,9 @@
 import { logger } from 'hono/logger'
-import { BasicAuth, BasicAuthToken, ZitadelClient } from "../../../packages/authx";
+import { BasicAuth, BasicAuthToken, ZitadelClient, AuthzedClient, IZitadelClient } from "../../../packages/authx";
 import { createYoga, createSchema } from 'graphql-yoga'
 import {Hono, Context,} from "hono";
+import status from "./status"
+import schema from "./schema"
 
 /**
  * Welcome to Cloudflare Workers! This is your first worker.
@@ -32,25 +34,26 @@ type  EnvBindings = {
 	// Zitadel items
 	ZITADEL_CLIENT_ID: string;
 	ZITADEL_CLIENT_SECRET: string;
-	ZITADEL_ENDPOINT: string
+	ZITADEL_ENDPOINT: string;
+	AUTHZED_TOKEN: string
+	AUTHZED_ENDPOINT: string
 }
 
-class Status {
-	constructor(){}
+let authzedClient: AuthzedClient | undefined =  undefined;
+let zitadelClient: IZitadelClient | undefined = undefined
 
-	status() {
-		return {
-			health: "ok"
-		}
-	}
+export function setDefaultZitadelClient(client: IZitadelClient) {
+	zitadelClient = client
 }
 
-let zitadelClient: ZitadelClient | undefined = undefined;
+type ContextVarialbles = {
+	zitadel: IZitadelClient 
+	authzed: AuthzedClient
+}
 
-const app = new Hono<{Bindings: EnvBindings}>()
+const app = new Hono<{Bindings: EnvBindings, Variables: ContextVarialbles}>()
 app.use('*', logger())
 
-const status = new Status()
 
 app.get("/health", (c: Context) => {
 	c.status(200);
@@ -62,26 +65,53 @@ app.get("/status", (c: Context) => {
 	return c.json(status.status())
 })
 
+// authentication guard
+app.use('*', async (c:Context, next) => {
+	// set zitadel client
+	if (zitadelClient === undefined) {
+		const zCreds = await BasicAuth(c.env.ZITADEL_ENDPOINT, c.env.ZITADEL_CLIENT_ID, c.env.ZITADEL_CLIENT_SECRET)
+		if (zCreds === undefined) {
+			c.status(500)
+			return c.body(JSON.stringify({error:"Server Error - IDP"}))
+		}
+		setDefaultZitadelClient(new ZitadelClient(c.env.ZITADEL_ENDPOINT, zCreds.access_token));
+	}
+
+	// get authorization header
+	const authnHeader = c.req.header("Authorization");
+	if (authnHeader === undefined) {
+		c.status(401)
+		return c.body(JSON.stringify({error: "Unauthorized - Missing Authn Credentials"}))
+	}
+	
+	// break out token
+	const token = authnHeader.split(" ")[1];
+
+	// do check for token validity here
+	const validCheck = await zitadelClient?.validateTokenByIntrospection(token);
+	if (validCheck === undefined || validCheck.active === false) {
+		c.status(401)
+		return c.body(JSON.stringify({
+			error: "Unauthorized - Credentials Invalid"
+		}));
+	}
+
+	c.set("zitadel", zitadelClient)
+	await next();
+})
+
+// create and set authzed client in context
+app.use('*', async (c: Context, next) => {
+	if (authzedClient === undefined) {
+		authzedClient = new AuthzedClient(c.env.AUTHZED_ENDPOINT, c.env.AuthConfig);
+	}
+
+	c.set("authzed", authzedClient)
+	await next()
+})
 
 const yoga = createYoga({
-	schema: createSchema({
-		typeDefs: `
-		type Query {
-			health: String!
-			status: Status!
-		}
-
-		type Status {
-			health: String!
-		}
-		`,
-		resolvers: {
-			Query: {
-				health: () => "ok",
-				status: () => status.status()
-			}
-		}
-	})
+	schema: schema
 })
 
 app.use("/graphql", async (c: Context) => {
