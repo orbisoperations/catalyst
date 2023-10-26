@@ -137,7 +137,7 @@ export class AuthzedClient {
         }
 
         const data = await resp.json();
-        console.log(`authzed write response: ${data}`)
+        console.log('authzed write response: ', data)
         return data as WriteRelationshipResult
     }
 
