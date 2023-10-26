@@ -1,7 +1,3 @@
-import axios from "axios"
-import {Buffer} from "buffer"
-import { isConstructorDeclaration } from "typescript"
-
 export interface BasicAuthToken {
     access_token: string
     token_type: string
@@ -10,28 +6,35 @@ export interface BasicAuthToken {
 
 // Zitadel docs describing login - https://zitadel.com/docs/guides/integrate/client-credentials
 export async function BasicAuth(endpoint: string, clientId: string, clientSecret: string): Promise<BasicAuthToken | undefined> {
-    //const basicAuthValue = Buffer.from(encodeURIComponent(clientId) + ":" + encodeURIComponent(clientSecret)).toString("base64")
-    const basicAuthValue = btoa(encodeURIComponent(clientId) + ":" + encodeURIComponent(clientSecret))
-    
-    const { data, status } = await axios.post<BasicAuthToken>(
-        endpoint,
+    console.info("requesting zitadel token")
+
+    const resp = await fetch(
+        `${endpoint}/oauth/v2/token`,
         {
-            "grant_type": "authorization_code",
-            scope: 'openid profile email urn:zitadel:iam:org:project:id:zitadel:aud'
-        },
-        {
+            method: "post",
+            body: new URLSearchParams({
+                grant_type: "client_credentials",
+                scope: 'openid profile urn:zitadel:iam:org:project:id:zitadel:aud',
+                client_id: clientId,
+                client_secret: clientSecret
+            }),
             headers: {
-                Authorization: `Basic ${basicAuthValue}`,
-                "Content-Type": "application/x-www-form-urlencoded"
+                "Content-Type": "application/x-www-form-urlencoded",
             }
         }
     )
 
-    if (status == 401) {
+    const respBody: BasicAuthToken = await resp.json()
+
+    console.info("response received", respBody)
+
+    if (resp.ok != true) {
+        console.error(`ziadel error w/ basic auth`)
+        console.error(respBody)
         return undefined
     }
 
-    return data
+    return respBody
 }
 
 export interface TokenValidation {
@@ -49,24 +52,24 @@ export interface TokenValidation {
 }
 
 async function ValidateTokenByIntrospection(endpoint: string, clientToken: string, tokenToValidate: string): Promise<TokenValidation | undefined>  {
-    const {data, status} = await axios.post<TokenValidation>(
-        endpoint,
-        {
-            token: tokenToValidate
-        },
+    const resp = await fetch(
+        `${endpoint}/oauth/v2/introspect`,
         {
             headers: {
                 Authorization: `Bearer ${clientToken}`,
                 "Content-Type": "application/x-www-form-urlencoded"
-            }
+            },
+            body: JSON.stringify({
+                token: tokenToValidate
+            })
         }
     )
 
-    if (status == 401) {
+    if (!resp.ok) {
         return undefined
     }
 
-    return data
+    return await resp.json() as TokenValidation
 }
 
 export class ZitadelClient implements IZitadelClient {
