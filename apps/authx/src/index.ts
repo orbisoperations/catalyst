@@ -39,6 +39,15 @@ type  EnvBindings = {
 	AUTHZED_ENDPOINT: string
 }
 
+interface ZitadelUserCheck {
+	details: {
+		totalResult: number
+	}
+	result: {
+		userId: string
+	} []
+}
+
 let authzedClient: AuthzedClient | undefined =  undefined;
 let zitadelClient: IZitadelClient | undefined = undefined
 
@@ -64,6 +73,92 @@ app.get("/status", (c: Context) => {
 	c.status(200);
 	return c.json(status.status())
 })
+
+
+/*
+TODO:
+
+Discuss w/ team if we are comforatble creating authzed/zitadel clients
+at the begining of the app routes instead of as a post auth generation/addition
+
+One benefit of keeping these separate is we could use separate creds for each purpose
+*/
+app.get("/register/:orgId/:userId", async (c: Context) => {
+	const { orgId, userId } = c.req.param();
+	console.info(`registering user (${userId} in organization (${orgId}))`)
+	// get zitadel client
+	console.info("creating zitadel client")
+	const zitadelCreds = await BasicAuth(c.env.ZITADEL_ENDPOINT, c.env.ZITADEL_CLIENT_ID, c.env.ZITADEL_CLIENT_SECRET)
+	console.info("received zitadel response")
+	if (zitadelCreds === undefined) {
+		c.status(500)
+		return c.json({
+			error: "Server Error - IDP"
+		})
+	}
+	console.info("logged into zitadel")
+	// check that user is in org
+	const orgList = await fetch(`${c.env.ZITADEL_ENDPOINT}/management/v1/orgs/me/members/_search`,
+	{
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+			"Authorization": `Bearer ${zitadelCreds.access_token}`,
+			"x-zitadel-orgid": orgId
+		},
+		body: JSON.stringify({
+			"query": {
+			  "offset": "0",
+			  "limit": 100,
+			  "asc": true
+			},
+			"queries": [
+			  {
+				"userIdQuery": {
+				  "userId": userId
+				}
+			  }
+			]
+		  })
+	});
+
+	const orgCheckResp = await orgList.json();
+	console.info("received org check response")
+
+	if (!orgList.ok) {
+		c.status(500);
+		return c.json({
+			error: "Server Error - Unable to Lookup User"
+		})
+	}
+
+	const zitadelUserCheck: ZitadelUserCheck = orgCheckResp as ZitadelUserCheck
+	if (zitadelUserCheck.details.totalResult != 1) {
+		c.status(500)
+		return c.json({
+			error: "Server Error - IDP Error - user not found"
+		})
+	}
+
+
+	// write user to org
+	console.log(`writing user(${userId}) to organization(${orgId})`)
+	const writeResult = await (new AuthzedClient(c.env.AUTHZED_ENDPOINT, c.env.AuthConfig)
+	.addUserToOrganization(orgId, userId))
+
+	if (writeResult.writtenAt === undefined) {
+		c.status(500)
+		return c.json({
+			error: "Server Error - Unable to Register User"
+		})
+	}
+
+	c.status(200);
+	return c.json({
+		registered: true
+	})
+})
+
 
 // authentication guard
 app.use('*', async (c:Context, next) => {
