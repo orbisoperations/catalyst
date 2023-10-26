@@ -56,7 +56,7 @@ export function setDefaultZitadelClient(client: IZitadelClient) {
 }
 
 type ContextVarialbles = {
-	zitadel: IZitadelClient 
+	zitadel: IZitadelClient
 	authzed: AuthzedClient
 }
 
@@ -83,6 +83,19 @@ at the begining of the app routes instead of as a post auth generation/addition
 
 One benefit of keeping these separate is we could use separate creds for each purpose
 */
+
+/*
+This endpoint is specifically for registering new users via webhook from zitadel
+
+The code flow is:
+  1. generate zitadel client
+  2. check against zitadel that org/user combo exist
+  3. generate authzed client
+  4. if exists, add to Authzed
+  5. return to user
+
+There is no further execution of the API from here and 
+ */
 app.get("/register/:orgId/:userId", async (c: Context) => {
 	const { orgId, userId } = c.req.param();
 	console.info(`registering user (${userId} in organization (${orgId}))`)
@@ -143,7 +156,7 @@ app.get("/register/:orgId/:userId", async (c: Context) => {
 
 	// write user to org
 	console.log(`writing user(${userId}) to organization(${orgId})`)
-	const writeResult = await (new AuthzedClient(c.env.AUTHZED_ENDPOINT, c.env.AuthConfig)
+	const writeResult = await (new AuthzedClient(c.env.AUTHZED_ENDPOINT, c.env.AUTHZED_TOKEN)
 	.addUserToOrganization(orgId, userId))
 
 	if (writeResult.writtenAt === undefined) {
@@ -178,7 +191,7 @@ app.use('*', async (c:Context, next) => {
 		c.status(401)
 		return c.body(JSON.stringify({error: "Unauthorized - Missing Authn Credentials"}))
 	}
-	
+
 	// break out token
 	const token = authnHeader.split(" ")[1];
 
