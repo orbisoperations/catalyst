@@ -55,6 +55,7 @@ async function ValidateTokenByIntrospection(endpoint: string, clientToken: strin
     const resp = await fetch(
         `${endpoint}/oauth/v2/introspect`,
         {
+            method: "post",
             headers: {
                 Authorization: `Bearer ${clientToken}`,
                 "Content-Type": "application/x-www-form-urlencoded"
