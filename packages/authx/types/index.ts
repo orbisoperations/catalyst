@@ -54,6 +54,15 @@ export interface WriteRelationshipResult {
   message?: string;
 }
 
+export interface DeleteRelationshipResult {
+  deletedAt?: {
+    token: string;
+  };
+  code?: number;
+  message?: string;
+  deletionProgress?: string;
+}
+
 export type WriteRelationshipBody = {
   updates: {
     operation: "OPERATION_TOUCH";
@@ -71,6 +80,18 @@ export type WriteRelationshipBody = {
       };
     };
   }[];
+};
+
+export type DeleteRelationshipBody = {
+  relationshipFilter: {
+    resourceType: String;
+    optionalResourceId: String;
+    optionalRelation: String;
+    optionalSubjectFilter: {
+      subjectType: String;
+      optionalSubjectId: String;
+    };
+  };
 };
 
 export type SearchInfoBody = {

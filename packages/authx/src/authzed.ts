@@ -1,22 +1,14 @@
-import axios, { Axios } from "axios";
 import * as types from "../types";
 
 class AuthzedUtils {
   endpoint: string;
   token: string;
   schemaPrefix: string;
-  axiosClient: Axios;
 
   constructor(endpoint: string, token: string, schemaPrefix?: string) {
     this.endpoint = endpoint;
     this.token = token;
-    this.axiosClient = axios.create({
-      baseURL: endpoint,
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-    });
+
     this.schemaPrefix = schemaPrefix ?? "orbisops_tutorial/";
   }
 
@@ -26,15 +18,13 @@ class AuthzedUtils {
       Authorization: `Bearer ${this.token}`,
     };
   }
-  axiosFetcher(
-    action: "read" | "write",
-    data: types.SearchInfoBody | types.WriteRelationshipBody
-  ) {
-    return this.axiosClient.post(`/v1/relationships/${action}`, data);
-  }
+
   async fetcher(
-    action: "read" | "write",
-    data: types.SearchInfoBody | types.WriteRelationshipBody
+    action: "read" | "write" | "delete",
+    data:
+      | types.SearchInfoBody
+      | types.WriteRelationshipBody
+      | types.DeleteRelationshipBody
   ) {
     return await fetch(`${this.endpoint}/v1/relationships/${action}`, {
       method: "POST",
@@ -47,9 +37,10 @@ class AuthzedUtils {
         try {
           return {
             data: action == "read" ? await res.text() : await res.json(),
+            success: true,
           };
         } catch (e) {
-          console.error(e);
+          return { data: {}, success: false };
         }
       })
       .then((res) => res);
@@ -121,7 +112,23 @@ class AuthzedUtils {
 
     return parsedData;
   }
-
+  deleteRelationship(
+    relationshipInfo: types.RelationShip
+  ): types.DeleteRelationshipBody {
+    return {
+      relationshipFilter: {
+        resourceType:
+          this.schemaPrefix + relationshipInfo.relationOwner.objectType,
+        optionalResourceId: relationshipInfo.relationOwner.objectId,
+        optionalRelation: relationshipInfo.relation,
+        optionalSubjectFilter: {
+          subjectType:
+            this.schemaPrefix + relationshipInfo.relatedItem.objectType,
+          optionalSubjectId: relationshipInfo.relatedItem.objectId,
+        },
+      },
+    };
+  }
   writeRelationship(
     relationshipInfo: types.RelationShip
   ): types.WriteRelationshipBody {
@@ -219,6 +226,24 @@ export class AuthzedClient {
     );
     return data as types.WriteRelationshipResult;
   }
+  async removeDataServiceFromOrganization(
+    dataService: string,
+    org: string
+  ): Promise<types.DeleteRelationshipResult> {
+    const body = this.utils.deleteRelationship({
+      relationOwner: {
+        objectType: "data_service",
+        objectId: dataService,
+      },
+      relation: "parent",
+      relatedItem: {
+        objectType: "organization",
+        objectId: org,
+      },
+    });
+    const { data } = await this.utils.fetcher("delete", body);
+    return data as types.DeleteRelationshipResult;
+  }
 
   async addOwnerToDataService(user: string, dataService: string) {
     const { data } = await this.utils.fetcher(
@@ -269,6 +294,21 @@ export class AuthzedClient {
     });
     const { data } = await this.utils.fetcher("write", body);
     return data as types.WriteRelationshipResult;
+  }
+  async removeUserFromGroup(user: string, group: string) {
+    const body = this.utils.deleteRelationship({
+      relationOwner: {
+        objectType: `group`,
+        objectId: group,
+      },
+      relation: "member",
+      relatedItem: {
+        objectType: `user`,
+        objectId: user,
+      },
+    });
+    const { data } = await this.utils.fetcher("delete", body);
+    return data as types.DeleteRelationshipResult;
   }
   async addUserToGroup(user: string, group: string, isOwner?: boolean) {
     const body = this.utils.writeRelationship({
@@ -328,8 +368,8 @@ export class AuthzedClient {
       promises[5].status === "fulfilled" ? promises[5].value : [];
     const orgServices = dataServices.filter((service) => {
       return (
-        organizations.includes(service.resource) ||
-        ownedOrganizations.includes(service.resource)
+        organizations.includes(service.subject) ||
+        ownedOrganizations.includes(service.subject)
       );
     });
     const response = {
@@ -338,7 +378,7 @@ export class AuthzedClient {
       groups,
       ownedGroups,
       ownedDataServices,
-      dataServices: orgServices.map((service) => service.subject),
+      dataServices: orgServices.map((service) => service.resource),
     };
 
     return response;
@@ -364,9 +404,9 @@ export class AuthzedClient {
 
     if (groupOrg && orgServices) {
       const services = orgServices.filter((service) => {
-        return groupOrg.includes(service.resource);
+        return groupOrg.includes(service.subject);
       });
-      dataServices = services.map((service) => service.subject);
+      dataServices = services.map((service) => service.resource);
     }
 
     const response = {

@@ -160,13 +160,12 @@ describe('authzed/spicedb testing', () => {
 		await client.addUserToGroup('marito', 'group1');
 		await client.addUserToGroup('marito', 'group2');
 		await client.addUserToGroup('marito', 'group2', true);
-		await client.addDataServiceToOrganization('orbisops', 'dataservice1');
-		await client.addDataServiceToOrganization('orbisops', 'dataservice2');
+		await client.addDataServiceToOrganization('dataservice1', 'orbisops');
+		await client.addDataServiceToOrganization('dataservice2', 'orbisops');
 		await client.addOwnerToDataService('marito', 'dataservice1');
 		await client.addOwnerToDataService('marito', 'dataservice2');
 		await sleep(1000);
 		const readUserInfo = await client.getUserInfo('marito');
-		console.log(readUserInfo);
 		expect(readUserInfo).toStrictEqual({
 			// userId: 'marito',
 			groups: ['group1', 'group2'],
@@ -182,14 +181,33 @@ describe('authzed/spicedb testing', () => {
 		await client.addServiceAccountToGroup('service_account1', 'group1');
 		await client.addServiceAccountToGroup('service_account2', 'group1');
 		await client.addOrganizationToGroup('orbisops', 'group1');
-		await client.addDataServiceToOrganization('dataservice1', 'orbisops');
-		await client.addDataServiceToOrganization('dataservice2', 'orbisops');
 		await sleep(1000);
 		const groupInfo = await client.getGroupInfo('group1');
 		expect(groupInfo).toStrictEqual({
 			users: ['marito'],
 			serviceAccounts: ['service_account1', 'service_account2'],
 			dataServices: ['dataservice1', 'dataservice2'],
+			organizations: ['orbisops'],
+		});
+	});
+	test('Can Remove Group Members', async () => {
+		await client.removeUserFromGroup('marito', 'group1');
+		const groupInfo = await client.getGroupInfo('group1');
+		await sleep(1000);
+		expect(groupInfo).toStrictEqual({
+			users: [],
+			serviceAccounts: ['service_account1', 'service_account2'],
+			dataServices: ['dataservice1', 'dataservice2'],
+			organizations: ['orbisops'],
+		});
+	});
+	test('Can Remove Data Service from Organization', async () => {
+		const deleteRes = await client.removeDataServiceFromOrganization('dataservice1', 'orbisops');
+		const groupInfo = await client.getGroupInfo('group1');
+		expect(groupInfo).toStrictEqual({
+			users: [],
+			serviceAccounts: ['service_account1', 'service_account2'],
+			dataServices: ['dataservice2'],
 			organizations: ['orbisops'],
 		});
 	});
@@ -514,6 +532,60 @@ describe('User GraphQL Testing', () => {
 				ownedGroups: ['group1'],
 				ownedOrganizations: ['orbisops'],
 				dataServices: ['dataservice1', 'dataservice2'],
+				ownedDataServices: ['dataservice1'],
+			},
+		});
+	});
+	test('Can Remove User from Group', async () => {
+		setDefaultZitadelClient(new MockZitadelClient());
+		const writRes = await runQuery(
+			testHeaders,
+			testEnv,
+			'mutation removeUserFromGroup($arg1: String!, $arg2: String!) {removeUserFromGroup(userId: $arg1, groupId: $arg2)}',
+			{
+				arg1: 'marito',
+				arg2: 'group1',
+			}
+		);
+		await testWriteResult(writRes, 'removeUserFromGroup');
+	});
+
+	test('Can Remove Data Service from Organization', async () => {
+		setDefaultZitadelClient(new MockZitadelClient());
+		const writRes = await runQuery(
+			testHeaders,
+			testEnv,
+			'mutation removeDataServiceFromOrganization($arg1: String!, $arg2: String!) {removeDataServiceFromOrganization(dataServiceId: $arg1, orgId: $arg2)}',
+			{
+				arg1: 'dataservice2',
+				arg2: 'orbisops',
+			}
+		);
+		await testWriteResult(writRes, 'removeDataServiceFromOrganization');
+	});
+
+	test('Data Service got removed', async () => {
+		await sleep(1000);
+		setDefaultZitadelClient(new MockZitadelClient());
+		const readUser = await runQuery(
+			testHeaders,
+			testEnv,
+			'query UserInfo($arg1: String!) {user(userId: $arg1) {groups, organizations, ownedGroups, ownedOrganizations, dataServices, ownedDataServices}}',
+			{
+				arg1: 'marito',
+			}
+		);
+
+		expect(readUser.status).toBe(200);
+		const readUserJson: any = await readUser.json();
+
+		expect(readUserJson.data).toStrictEqual({
+			user: {
+				groups: [],
+				organizations: ['orbisops'],
+				ownedGroups: ['group1'],
+				ownedOrganizations: ['orbisops'],
+				dataServices: ['dataservice1'],
 				ownedDataServices: ['dataservice1'],
 			},
 		});
