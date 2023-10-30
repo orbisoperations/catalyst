@@ -3,7 +3,7 @@ import { GenericContainer, StartedTestContainer, Wait } from 'testcontainers';
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 import { AuthzedClient } from '../../../packages/authx';
 import app, { setDefaultZitadelClient } from '../src/index';
-import { MockZitadelClient, runQuery, sleep, testWriteResult } from './test-utils';
+import { MockZitadelClient, createContainer, runQuery, sleep, testWriteResult } from './test-utils';
 
 describe('health and status checks', () => {
 	let testEnv: object;
@@ -112,35 +112,7 @@ describe('authzed/spicedb testing', () => {
 	beforeAll(async () => {
 		const schema = fs.readFileSync('./schema.zaml');
 
-		authzed = await new GenericContainer('authzed/spicedb')
-			.withCommand([
-				'serve-testing',
-				'--http-enabled',
-				'--skip-release-check=true',
-				'--log-level',
-				'debug',
-				'--load-configs',
-				'/schema.zaml',
-			])
-			.withResourcesQuota({ memory: 1, cpu: 1 })
-			.withCopyContentToContainer([
-				{
-					content: schema,
-					target: '/schema.zaml',
-				},
-			])
-			.withExposedPorts(
-				{
-					container: 50051,
-					host: 50051,
-				},
-				{
-					container: 8081,
-					host: 8081,
-				}
-			)
-			.withWaitStrategy(Wait.forHttp('/healthz', 8081))
-			.start();
+		authzed = authzed = await createContainer(fs.readFileSync('./schema.zaml'), 5052);
 	}, 100000);
 
 	test('Can Read User Info', async () => {

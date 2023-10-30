@@ -2,7 +2,7 @@ import fs from 'fs';
 import { GenericContainer, StartedTestContainer, Wait } from 'testcontainers';
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 import { setDefaultZitadelClient } from '../src/index';
-import { MockZitadelClient, runQuery, sleep, testWriteResult } from './test-utils';
+import { MockZitadelClient, createContainer, runQuery, sleep, testWriteResult } from './test-utils';
 import { AuthzedClient } from '../../../packages/authx';
 
 describe('Group GraphQL Testing', async () => {
@@ -18,37 +18,7 @@ describe('Group GraphQL Testing', async () => {
 	let authzed: StartedTestContainer;
 	let client: AuthzedClient;
 	beforeAll(async () => {
-		const schema = fs.readFileSync('./schema.zaml');
-
-		authzed = await new GenericContainer('authzed/spicedb')
-			.withCommand([
-				'serve-testing',
-				'--http-enabled',
-				'--skip-release-check=true',
-				'--log-level',
-				'debug',
-				'--load-configs',
-				'/schema.zaml',
-			])
-			.withResourcesQuota({ memory: 1, cpu: 1 })
-			.withCopyContentToContainer([
-				{
-					content: schema,
-					target: '/schema.zaml',
-				},
-			])
-			.withExposedPorts(
-				{
-					container: 50052,
-					host: 50052,
-				},
-				{
-					container: 8081,
-					host: 8081,
-				}
-			)
-			.withWaitStrategy(Wait.forHttp('/healthz', 8081))
-			.start();
+		authzed = await createContainer(fs.readFileSync('./schema.zaml'), 5052);
 	}, 100000);
 
 	afterAll(async () => {
@@ -152,37 +122,7 @@ describe('User GraphQL Testing', () => {
 		'Content-Type': 'application/json',
 	};
 	beforeAll(async () => {
-		const schema = fs.readFileSync('./schema.zaml');
-
-		authzed = await new GenericContainer('authzed/spicedb')
-			.withCommand([
-				'serve-testing',
-				'--http-enabled',
-				'--skip-release-check=true',
-				'--log-level',
-				'debug',
-				'--load-configs',
-				'/schema.zaml',
-			])
-			.withResourcesQuota({ memory: 1, cpu: 1 })
-			.withCopyContentToContainer([
-				{
-					content: schema,
-					target: '/schema.zaml',
-				},
-			])
-			.withExposedPorts(
-				{
-					container: 50052,
-					host: 50052,
-				},
-				{
-					container: 8081,
-					host: 8081,
-				}
-			)
-			.withWaitStrategy(Wait.forHttp('/healthz', 8081))
-			.start();
+		const schema = (authzed = await createContainer(fs.readFileSync('./schema.zaml'), 5052));
 	}, 100000);
 
 	afterAll(async () => {

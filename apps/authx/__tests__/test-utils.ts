@@ -1,3 +1,4 @@
+import { GenericContainer, Wait } from 'testcontainers';
 import { IZitadelClient, TokenValidation } from '../../../packages/authx';
 import app, { setDefaultZitadelClient } from '../src/index';
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
@@ -46,4 +47,28 @@ export async function testWriteResult(result: Response, mutation: string) {
 			},
 		}),
 	];
+}
+
+export async function createContainer(schema: Buffer, port: number) {
+	return await new GenericContainer('authzed/spicedb')
+		.withCommand(['serve-testing', '--http-enabled', '--skip-release-check=true', '--log-level', 'debug', '--load-configs', '/schema.zaml'])
+		.withResourcesQuota({ memory: 1, cpu: 1 })
+		.withCopyContentToContainer([
+			{
+				content: schema,
+				target: '/schema.zaml',
+			},
+		])
+		.withExposedPorts(
+			{
+				container: port,
+				host: port,
+			},
+			{
+				container: 8081,
+				host: 8081,
+			}
+		)
+		.withWaitStrategy(Wait.forHttp('/healthz', 8081))
+		.start();
 }
