@@ -12,6 +12,22 @@ and accompanying data which would be considered a data leak.
 Since the overall Catalyst project will use graphql, this service will be the same with the exception of
 the `/health` and `/status` pages which are unauthenticated and exist both in and out of the graphql endpoint.
 
+## Environment Variables and Secrets
+
+| env var | secret | type | description |
+| ------- | ------ | ---- | ----------- |
+| ZITADEL_ORG_AUTOMATION_CLIENT_ID | false | string | client ID (username) of the instance level service user (IAM Owner View) that can lookup users/orgs for adding to Authzed. |
+| ZITADEL_ORG_AUTOMATION_CLIENT_SECRET | true | string | client secret of the instance level service user that can lookup users/orgs for Authzed. |
+| ZITADEL_TOKEN_VALIDATION_CLIENT_ID | false | string | client ID for basic auth of a project level API integration. This credential is used to to token introspection for a given project. |
+| ZITADEL_TOKEN_VALIDATION_CLIENT_SECRET | true | string | client secret for basic auth of a project level API integration. This credential is used to to token introspection for a given project. |
+| ZITADEL_ENDPOINT | false | string | Zitadel instance endpoint/base url. |
+| AUTHZED_TOKEN | true | string | Authzed write-enabled token.|
+| AUTHZED_ENDPOINT | false | string | Authzed HTTP endpoint to write to. |
+
+## Authzed Integration Notes
+
+Authzed is a hosted SpiceDB (implementation of Zanzibar). As described in the Zanzibar paper, and folowed by most implementations, the default method of access is GRPC. This is great for systems that can utilized GRPC, but Cloudflare Workers still do not support all NodeJS APIs. For this reason, Catalyst utilizes the SpiceDB HTTP endpoint which utilizes the open source HTTP to GRPC gateway.
+
 ## Zitadel Actions Integration
 
 Zitadel does not have a traditional webhook style event integrations. Zitadel is currently in the middle of reworking it all to be more n-complete but it currently has all of the things we need for it to work in our behalf.
