@@ -88,26 +88,26 @@ export default createSchema({
 			},
 			listUsersInOrganization: async (_, { orgId }, context: Context) => {
 				const authzedClient: AuthzedClient = context.get('authzed');
-				return authzedClient.listUsersInOrganization(orgId);
+				return authzedClient.orgManager.listUsersInOrganization(orgId);
 			},
 			listAdminsInOrganization: async (_, { orgId }, context: Context) => {
 				const authzedClient: AuthzedClient = context.get('authzed');
-				return authzedClient.listAdminsInOrganization(orgId);
+				return authzedClient.orgManager.listAdminsInOrganization(orgId);
 			},
 			user(_, { userId }, context: Context) {
 				const authzedClient: AuthzedClient = context.get('authzed');
 				console.log('user called with ', userId);
-				return authzedClient.getUserInfo(userId);
+				return authzedClient.userManager.getUserInfo(userId);
 			},
 			group(_, { groupId }, context: Context) {
 				const authzedClient: AuthzedClient = context.get('authzed');
-				return authzedClient.getGroupInfo(groupId);
+				return authzedClient.groupManager.getGroupInfo(groupId);
 			},
 		},
 		Mutation: {
 			addAdminToOrganization: async (_, { orgId, userId }, context: Context): Promise<boolean> => {
 				const authzedClient: AuthzedClient = context.get('authzed');
-				const result = await authzedClient.addAdminToOrganization(orgId, userId);
+				const result = await authzedClient.orgManager.addAdminToOrganization(orgId, userId);
 
 				if (result.writtenAt) {
 					return true;
@@ -118,7 +118,7 @@ export default createSchema({
 			},
 			addUserToOrganization: async (_, { orgId, userId }, context: Context): Promise<boolean> => {
 				const authzedClient: AuthzedClient = context.get('authzed');
-				const result = await authzedClient.addUserToOrganization(orgId, userId);
+				const result = await authzedClient.orgManager.addUserToOrganization(orgId, userId);
 
 				if (result.writtenAt) {
 					return true;
@@ -129,7 +129,7 @@ export default createSchema({
 			},
 			addOwnerToOrganization: async (_, { orgId, userId }, context: Context): Promise<boolean> => {
 				const authzedClient: AuthzedClient = context.get('authzed');
-				const result = await authzedClient.addUserToOrganization(orgId, userId, true);
+				const result = await authzedClient.orgManager.addUserToOrganization(orgId, userId, true);
 
 				if (result.writtenAt) {
 					return true;
@@ -140,7 +140,7 @@ export default createSchema({
 			},
 			addDataServiceToOrganization: async (_, { orgId, dataServiceId }, context: Context): Promise<boolean> => {
 				const authzedClient: AuthzedClient = context.get('authzed');
-				const result = await authzedClient.addDataServiceToOrganization(dataServiceId, orgId);
+				const result = await authzedClient.orgManager.addDataServiceToOrganization(dataServiceId, orgId);
 
 				if (result.writtenAt) {
 					return true;
@@ -151,7 +151,7 @@ export default createSchema({
 			},
 			removeDataServiceFromOrganization: async (_, { orgId, dataServiceId }, context: Context): Promise<boolean> => {
 				const authzedClient: AuthzedClient = context.get('authzed');
-				const result = await authzedClient.removeDataServiceFromOrganization(dataServiceId, orgId);
+				const result = await authzedClient.orgManager.removeDataServiceFromOrganization(dataServiceId, orgId);
 
 				if (result.deletedAt) {
 					return true;
@@ -173,12 +173,12 @@ export default createSchema({
 			},
 			addOrganizationToGroup: async (_, { organizationId, groupId }, context: Context): Promise<boolean> => {
 				const authzedClient: AuthzedClient = context.get('authzed');
-				const result = await authzedClient.addOrganizationToGroup(organizationId, groupId);
+				const result = await authzedClient.orgManager.addOrganizationToGroup(organizationId, groupId);
 				return result.writtenAt ? true : false;
 			},
 			addUserToGroup: async (_, { groupId, userId }, context: Context): Promise<boolean> => {
 				const authzedClient: AuthzedClient = context.get('authzed');
-				const result = await authzedClient.addUserToGroup(userId, groupId);
+				const result = await authzedClient.userManager.addUserToGroup(userId, groupId);
 				if (result.writtenAt) {
 					return true;
 				}
@@ -188,7 +188,7 @@ export default createSchema({
 			},
 			removeUserFromGroup: async (_, { groupId, userId }, context: Context): Promise<boolean> => {
 				const authzedClient: AuthzedClient = context.get('authzed');
-				const result = await authzedClient.removeUserFromGroup(userId, groupId);
+				const result = await authzedClient.userManager.removeUserFromGroup(userId, groupId);
 				if (result.deletedAt) {
 					return true;
 				}
@@ -198,7 +198,7 @@ export default createSchema({
 			},
 			removeAdminFromOrganization: async (_, { orgId, userId }, context: Context): Promise<boolean> => {
 				const authzedClient: AuthzedClient = context.get('authzed');
-				const result = await authzedClient.removeAdminFromOrganization(orgId, userId);
+				const result = await authzedClient.orgManager.removeAdminFromOrganization(orgId, userId);
 				if (result.deletedAt) {
 					return true;
 				}
@@ -208,7 +208,7 @@ export default createSchema({
 			},
 			addOwnerToGroup: async (_, { groupId, userId }, context: Context): Promise<boolean> => {
 				const authzedClient: AuthzedClient = context.get('authzed');
-				const result = await authzedClient.addUserToGroup(userId, groupId, true);
+				const result = await authzedClient.userManager.addUserToGroup(userId, groupId, true);
 				if (result.writtenAt) {
 					return true;
 				}
@@ -218,7 +218,7 @@ export default createSchema({
 			},
 			addServiceAccountToGroup: async (_, { groupId, serviceAccountId }, context: Context): Promise<boolean> => {
 				const authzedClient: AuthzedClient = context.get('authzed');
-				const result = await authzedClient.addServiceAccountToGroup(serviceAccountId, groupId);
+				const result = await authzedClient.orgManager.addServiceAccountToGroup(serviceAccountId, groupId);
 				if (result.writtenAt) {
 					return true;
 				}
