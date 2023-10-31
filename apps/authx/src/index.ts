@@ -1,5 +1,5 @@
 import { logger } from 'hono/logger'
-import { BasicAuth, BasicAuthToken, ZitadelClient, AuthzedClient, IZitadelClient } from "../../../packages/authx";
+import { BasicAuth, BasicAuthAPI, BasicAuthToken, ZitadelClient, AuthzedClient, IZitadelClient } from "../../../packages/authx";
 import { createYoga, createSchema } from 'graphql-yoga'
 import {Hono, Context,} from "hono";
 import status from "./status"
@@ -32,8 +32,10 @@ type  EnvBindings = {
 	// MY_QUEUE: Queue;
 
 	// Zitadel items
-	ZITADEL_CLIENT_ID: string;
-	ZITADEL_CLIENT_SECRET: string;
+	ZITADEL_ORG_AUTOMATION_CLIENT_ID: string;
+	ZITADEL_ORG_AUTOMATION_CLIENT_SECRET: string;
+	ZITADEL_TOKEN_VALIDATION_CLIENT_ID: string;
+	ZITADEL_TOKEN_VALIDATION_CLIENT_SECRET: string;
 	ZITADEL_ENDPOINT: string;
 	AUTHZED_TOKEN: string
 	AUTHZED_ENDPOINT: string
@@ -101,7 +103,7 @@ app.get("/register/:orgId/:userId", async (c: Context) => {
 	console.info(`registering user (${userId} in organization (${orgId}))`)
 	// get zitadel client
 	console.info("creating zitadel client")
-	const zitadelCreds = await BasicAuth(c.env.ZITADEL_ENDPOINT, c.env.ZITADEL_CLIENT_ID, c.env.ZITADEL_CLIENT_SECRET)
+	const zitadelCreds = await BasicAuth(c.env.ZITADEL_ENDPOINT, c.env.ZITADEL_ORG_AUTOMATION_CLIENT_ID, c.env.ZITADEL_ORG_AUTOMATION_CLIENT_SECRET)
 	console.info("received zitadel response")
 	if (zitadelCreds === undefined) {
 		c.status(500)
@@ -177,7 +179,7 @@ app.get("/register/:orgId/:userId", async (c: Context) => {
 app.use('*', async (c:Context, next) => {
 	// set zitadel client
 	if (zitadelClient === undefined) {
-		const zCreds = await BasicAuth(c.env.ZITADEL_ENDPOINT, c.env.ZITADEL_CLIENT_ID, c.env.ZITADEL_CLIENT_SECRET)
+		const zCreds = await BasicAuthAPI(c.env.ZITADEL_ENDPOINT, c.env.ZITADEL_TOKEN_VALIDATION_CLIENT_ID, c.env.ZITADEL_TOKEN_VALIDATION_CLIENT_SECRET)
 		if (zCreds === undefined) {
 			c.status(500)
 			return c.body(JSON.stringify({error:"Server Error - IDP"}))
@@ -194,9 +196,9 @@ app.use('*', async (c:Context, next) => {
 
 	// break out token
 	const token = authnHeader.split(" ")[1];
-
+	
 	// do check for token validity here
-	const validCheck = await zitadelClient?.validateTokenByIntrospection(token);
+	const validCheck = await zitadelClient?.validateTokenByIntrospection(token, true);
 	if (validCheck === undefined || validCheck.active === false) {
 		c.status(401)
 		return c.body(JSON.stringify({
