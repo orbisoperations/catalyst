@@ -7,6 +7,7 @@ node_compat = true
 name = "authx-worker-jtaylor-dev"
 
 [env.jtaylor-dev.vars]
-ZITADEL_CLIENT_ID ="authx-svc"
+ZITADEL_ORG_AUTOMATION_CLIENT_ID ="authx-svc"
+ZITADEL_TOKEN_VALIDATION_CLIENT_ID = "237555637289044059@remix-app"
 ZITADEL_ENDPOINT = "https://devinstance-dxq2do.zitadel.cloud"
 AUTHZED_ENDPOINT = "https://gateway-alpha.authzed.com/"

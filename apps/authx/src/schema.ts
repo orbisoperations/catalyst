@@ -49,12 +49,20 @@ export default createSchema({
         Query: {
             health: () => "ok",
             status: () => status.status(),
-            validateUser: (_, {token}, context: Context) => {
+            validateUser: async (_, {token}, context: Context) => {
                 console.log(_, token, context,);
+                const zitadelClient: ZitadelClient = context.get("zitadel");
+                const validCheck = await zitadelClient?.validateTokenByIntrospection(token, true);
+                if (validCheck === undefined || validCheck.active === false) {
+                    return {
+                        valid: false
+                    }
+                }
+
                 return {
-                    valid: true,
-                    userId: "test",
-                    orgId: "org"
+                    valid: validCheck.active,
+                    userId: validCheck.sub,
+                    orgId: validCheck["urn:zitadel:iam:user:resourceowner:id"]
                 }
             },
             listUsersInOrganization: async (_, {orgId}, context: Context) => {
