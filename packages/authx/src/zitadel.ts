@@ -6,7 +6,7 @@ export interface BasicAuthToken {
 
 // Zitadel docs describing login - https://zitadel.com/docs/guides/integrate/client-credentials
 export async function BasicAuth(endpoint: string, clientId: string, clientSecret: string): Promise<BasicAuthToken | undefined> {
-    console.info("requesting zitadel token")
+    console.info("requesting zitadel token:", clientId, clientSecret)
 
     const resp = await fetch(
         `${endpoint}/oauth/v2/token`,
@@ -37,9 +37,21 @@ export async function BasicAuth(endpoint: string, clientId: string, clientSecret
     return respBody
 }
 
-export interface TokenValidation {
+export async function BasicAuthAPI(endpoint: string, clientId: string, clientSecret: string): Promise<BasicAuthToken | undefined> {
+    console.info("creating zitadel api token:", clientId, clientSecret)
+
+    return {
+        // do encoding for basic auith hereer
+        access_token: btoa(encodeURIComponent(clientId) + ":" + encodeURIComponent(clientSecret)),
+        token_type: "",
+        expires_in: 0
+    }
+}
+
+export interface TokenValidation extends Object {
     active: boolean
     aud?: string
+    sub?: string
     client_id?: string
     exp?: number
     iat?: number
@@ -49,28 +61,34 @@ export interface TokenValidation {
     scope?: string
     token_type?: string
     username?: string
+    "urn:zitadel:iam:user:resourceowner:id": string
 }
 
-async function ValidateTokenByIntrospection(endpoint: string, clientToken: string, tokenToValidate: string): Promise<TokenValidation | undefined>  {
+async function ValidateTokenByIntrospection(endpoint: string, clientToken: string, tokenToValidate: string, basicAuth?: boolean): Promise<TokenValidation | undefined>  {
+    console.log(`validating token ${tokenToValidate} using token ${clientToken}`)
     const resp = await fetch(
         `${endpoint}/oauth/v2/introspect`,
         {
             method: "post",
             headers: {
-                Authorization: `Bearer ${clientToken}`,
+                Authorization: basicAuth? `Basic ${clientToken}` : `Bearer ${clientToken}`,
                 "Content-Type": "application/x-www-form-urlencoded"
             },
-            body: JSON.stringify({
+            body: new URLSearchParams({
                 token: tokenToValidate
             })
+            
         }
     )
+
+    const validationResp = await resp.json()
+    console.log('validation response: ', validationResp);
 
     if (!resp.ok) {
         return undefined
     }
 
-    return await resp.json() as TokenValidation
+    return validationResp as TokenValidation
 }
 
 export class ZitadelClient implements IZitadelClient {
@@ -81,11 +99,11 @@ export class ZitadelClient implements IZitadelClient {
         this.token = token
 	}
 
-    async validateTokenByIntrospection(token: string) {
-        return ValidateTokenByIntrospection(this.endpoint, this.token, token)
+    async validateTokenByIntrospection(token: string, basicAuth?: boolean) {
+        return ValidateTokenByIntrospection(this.endpoint, this.token, token, basicAuth)
     }
 }
 
 export interface IZitadelClient {
-    validateTokenByIntrospection(token: string): Promise<TokenValidation | undefined> 
+    validateTokenByIntrospection(token: string, basicAuth?: boolean): Promise<TokenValidation | undefined> 
 }
