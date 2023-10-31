@@ -185,7 +185,23 @@ export class AuthzedClient {
   constructor(endpoint: string, token: string, schemaPrefix?: string) {
     this.utils = new AuthzedUtils(endpoint, token, schemaPrefix);
   }
-
+  async addAdminToOrganization(org: string, user: string) {
+    const { data } = await this.utils.fetcher(
+      "write",
+      this.utils.writeRelationship({
+        relationOwner: {
+          objectType: `organization`,
+          objectId: org,
+        },
+        relation: "admin",
+        relatedItem: {
+          objectType: `user`,
+          objectId: user,
+        },
+      })
+    );
+    return data as types.WriteRelationshipResult;
+  }
   async addUserToOrganization(
     org: string,
     user: string,
@@ -239,6 +255,21 @@ export class AuthzedClient {
       relatedItem: {
         objectType: "organization",
         objectId: org,
+      },
+    });
+    const { data } = await this.utils.fetcher("delete", body);
+    return data as types.DeleteRelationshipResult;
+  }
+  async removeAdminFromOrganization(org: string, user: string) {
+    const body = this.utils.deleteRelationship({
+      relationOwner: {
+        objectType: `organization`,
+        objectId: org,
+      },
+      relation: "admin",
+      relatedItem: {
+        objectType: `user`,
+        objectId: user,
       },
     });
     const { data } = await this.utils.fetcher("delete", body);
@@ -333,6 +364,18 @@ export class AuthzedClient {
         resourceType: "organization",
         resourceId: org,
         relation: "member",
+      })
+    );
+
+    return this.utils.parseSubjectIdsFromResults(data);
+  }
+  async listAdminsInOrganization(org: string): Promise<string[]> {
+    const { data } = await this.utils.fetcher(
+      "read",
+      this.utils.readRelationship({
+        resourceType: "organization",
+        relation: "admin",
+        resourceId: org,
       })
     );
 
@@ -542,6 +585,16 @@ export class AuthzedClient {
 
     const { data } = await this.utils.fetcher("read", body);
 
+    return this.utils.parseSubjectIdsFromResults(data);
+  }
+
+  async getOrganizationAdmins(org: string): Promise<string[]> {
+    const body = this.utils.readRelationship({
+      resourceType: "organization",
+      relation: "admin",
+      resourceId: org,
+    });
+    const data = await this.utils.fetcher("read", body);
     return this.utils.parseSubjectIdsFromResults(data);
   }
 }

@@ -321,3 +321,83 @@ describe('User GraphQL Testing', () => {
 		});
 	});
 });
+
+describe('Organization GraphQL Testing', () => {
+	let authzed: StartedTestContainer;
+	const testEnv = {
+		AUTHZED_TOKEN: 'readwriteuserorggraphql',
+		AUTHZED_ENDPOINT: 'http://localhost:8081',
+	};
+
+	const testHeaders = {
+		Authorization: 'Bearer sometoken',
+		'Content-Type': 'application/json',
+	};
+	beforeAll(async () => {
+		const schema = (authzed = await createContainer(fs.readFileSync('./schema.zaml'), 5052));
+	}, 100000);
+
+	afterAll(async () => {
+		await authzed.stop();
+	});
+	test('Can add Admin to Organization', async () => {
+		setDefaultZitadelClient(new MockZitadelClient());
+		const writRes = await runQuery(
+			testHeaders,
+			testEnv,
+			'mutation addAdminToOrganization($arg1: String!, $arg2: String!) {addAdminToOrganization(orgId: $arg1, userId: $arg2)}',
+			{
+				arg1: 'orbisops',
+				arg2: 'marito',
+			}
+		);
+		console.log(await writRes.json());
+		await testWriteResult(writRes, 'addAdminToOrganization');
+		sleep(1000);
+		const orgAdmins = await runQuery(
+			testHeaders,
+			testEnv,
+			'query listAdminsInOrganization($arg1: String!) {listAdminsInOrganization(orgId: $arg1)}',
+			{
+				arg1: 'orbisops',
+			}
+		);
+		expect(orgAdmins.status).toBe(200);
+		const orgAdminsJson: any = await orgAdmins.json();
+		console.log(orgAdminsJson);
+
+		expect(orgAdminsJson.data).toStrictEqual({
+			listAdminsInOrganization: ['marito'],
+		});
+	});
+
+	test('Can remove admin from organization', async () => {
+		setDefaultZitadelClient(new MockZitadelClient());
+		const writRes = await runQuery(
+			testHeaders,
+			testEnv,
+			'mutation removeAdminFromOrganization($arg1: String!, $arg2: String!) {removeAdminFromOrganization(orgId: $arg1, userId: $arg2)}',
+			{
+				arg1: 'orbisops',
+				arg2: 'marito',
+			}
+		);
+		await testWriteResult(writRes, 'removeAdminFromOrganization');
+		sleep(1000);
+		const orgAdmins = await runQuery(
+			testHeaders,
+			testEnv,
+			'query listAdminsInOrganization($arg1: String!) {listAdminsInOrganization(orgId: $arg1)}',
+			{
+				arg1: 'orbisops',
+			}
+		);
+		expect(orgAdmins.status).toBe(200);
+		const orgAdminsJson: any = await orgAdmins.json();
+		console.log(orgAdminsJson);
+
+		expect(orgAdminsJson.data).toStrictEqual({
+			listAdminsInOrganization: [],
+		});
+	});
+});

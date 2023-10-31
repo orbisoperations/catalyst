@@ -22,19 +22,23 @@ export default createSchema({
 		group(groupId: String!): GroupInfo!
         validateUser(token: String!): UserValidation
         listUsersInOrganization(orgId: String!): [String!]!
+        listAdminsInOrganization(orgId: String!): [String!]!
     }
 
     type Mutation {
-        addUserToOrganization(orgId: String!, userId: String!): Boolean!
-        addOwnerToOrganization(orgId: String!, userId: String!): Boolean!
-        addDataServiceToOrganization(orgId: String!, dataServiceId: String!): Boolean!
-		adOwnerToDataService(dataServiceId: String!, userId: String!): Boolean!
-		addOrganizationToGroup(organizationId: String!, groupId: String!): Boolean!
-		addUserToGroup(userId: String!, groupId: String!): Boolean!
+		addAdminToOrganization(orgId: String!, userId: String!): Boolean!
 		addOwnerToGroup(userId: String!, groupId: String!): Boolean!
+        addOwnerToOrganization(orgId: String!, userId: String!): Boolean!
+		addUserToGroup(userId: String!, groupId: String!): Boolean!
+        addUserToOrganization(orgId: String!, userId: String!): Boolean!
+		addOrganizationToGroup(organizationId: String!, groupId: String!): Boolean!
+		adOwnerToDataService(dataServiceId: String!, userId: String!): Boolean!
 		addServiceAccountToGroup(serviceAccountId: String!, groupId: String!): Boolean!
-		removeUserFromGroup(userId: String!, groupId: String!): Boolean!
+		removeAdminFromOrganization(orgId: String!, userId: String!): Boolean!
 		removeDataServiceFromOrganization(dataServiceId: String!, orgId: String!): Boolean!
+		removeUserFromGroup(userId: String!, groupId: String!): Boolean!
+        addDataServiceToOrganization(orgId: String!, dataServiceId: String!): Boolean!
+
     }
 
     type Status {
@@ -86,6 +90,10 @@ export default createSchema({
 				const authzedClient: AuthzedClient = context.get('authzed');
 				return authzedClient.listUsersInOrganization(orgId);
 			},
+			listAdminsInOrganization: async (_, { orgId }, context: Context) => {
+				const authzedClient: AuthzedClient = context.get('authzed');
+				return authzedClient.listAdminsInOrganization(orgId);
+			},
 			user(_, { userId }, context: Context) {
 				const authzedClient: AuthzedClient = context.get('authzed');
 				console.log('user called with ', userId);
@@ -97,6 +105,17 @@ export default createSchema({
 			},
 		},
 		Mutation: {
+			addAdminToOrganization: async (_, { orgId, userId }, context: Context): Promise<boolean> => {
+				const authzedClient: AuthzedClient = context.get('authzed');
+				const result = await authzedClient.addAdminToOrganization(orgId, userId);
+
+				if (result.writtenAt) {
+					return true;
+				}
+
+				console.error(`error writing to authzed - code: ${result.code}, msg: ${result.message}`);
+				return false;
+			},
 			addUserToOrganization: async (_, { orgId, userId }, context: Context): Promise<boolean> => {
 				const authzedClient: AuthzedClient = context.get('authzed');
 				const result = await authzedClient.addUserToOrganization(orgId, userId);
@@ -170,6 +189,16 @@ export default createSchema({
 			removeUserFromGroup: async (_, { groupId, userId }, context: Context): Promise<boolean> => {
 				const authzedClient: AuthzedClient = context.get('authzed');
 				const result = await authzedClient.removeUserFromGroup(userId, groupId);
+				if (result.deletedAt) {
+					return true;
+				}
+
+				console.error(`error writing to authzed - code: ${result.code}, msg: ${result.message}`);
+				return false;
+			},
+			removeAdminFromOrganization: async (_, { orgId, userId }, context: Context): Promise<boolean> => {
+				const authzedClient: AuthzedClient = context.get('authzed');
+				const result = await authzedClient.removeAdminFromOrganization(orgId, userId);
 				if (result.deletedAt) {
 					return true;
 				}
