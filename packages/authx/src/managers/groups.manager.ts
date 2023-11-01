@@ -38,6 +38,53 @@ export class GroupManager {
     return response;
   }
 
+  async addAdminToGroup(admin: string, group: string) {
+    const { data } = await this.utils.fetcher(
+      "write",
+      this.utils.writeRelationship({
+        relationOwner: {
+          objectType: `group`,
+          objectId: group,
+        },
+        relation: "admin",
+        relatedItem: {
+          objectType: `user`,
+          objectId: admin,
+        },
+      })
+    );
+    return data as types.WriteRelationshipResult;
+  }
+
+  async listGroupAdmins(group: string) {
+    const body = this.utils.readRelationship({
+      resourceType: "group",
+      relation: "admin",
+      resourceId: group,
+    });
+
+    const { data } = await this.utils.fetcher("read", body);
+    return this.utils.parseSubjectIdsFromResults(data);
+  }
+
+  async removeAdminFromGroup(admin: string, group: string) {
+    const { data } = await this.utils.fetcher(
+      "delete",
+      this.utils.deleteRelationship({
+        relationOwner: {
+          objectType: `group`,
+          objectId: group,
+        },
+        relation: "admin",
+        relatedItem: {
+          objectType: `user`,
+          objectId: admin,
+        },
+      })
+    );
+    return data as types.DeleteRelationshipResult;
+  }
+
   async getGroupOrganization(group: string): Promise<string[]> {
     const body = this.utils.readRelationship({
       resourceType: "group",

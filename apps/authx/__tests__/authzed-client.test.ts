@@ -174,7 +174,24 @@ describe('authzed/spicedb testing', () => {
 			organizations: ['orbisops'],
 		});
 	});
-
+	test('Can add admin to group', async () => {
+		const addAdminRes = await client.groupManager.addAdminToGroup('marito', 'group1');
+		expect(addAdminRes).toHaveProperty('writtenAt');
+	});
+	test('can list group admins', async () => {
+		await sleep(1000);
+		const listAdminsRes = await client.groupManager.listGroupAdmins('group1');
+		expect(listAdminsRes).toStrictEqual(['marito']);
+	});
+	test('can remove admin from group', async () => {
+		const removeAdminRes = await client.groupManager.removeAdminFromGroup('marito', 'group1');
+		expect(removeAdminRes).toHaveProperty('deletedAt');
+	});
+	test('admin gets removed from group', async () => {
+		await sleep(1000);
+		const listAdminsRes = await client.groupManager.listGroupAdmins('group1');
+		expect(listAdminsRes).toStrictEqual([]);
+	});
 	afterAll(async () => {
 		await authzed.stop();
 	});
