@@ -143,7 +143,7 @@ describe('authzed/spicedb testing', () => {
 		client = new AuthzedClient('http://localhost:8081', 'readwriteuserorg');
 		await client.groupManager.addServiceAccountToGroup('service_account1', 'group1');
 		await client.groupManager.addServiceAccountToGroup('service_account2', 'group1');
-		await client.orgManager.addOrganizationToGroup('orbisops', 'group1');
+		await client.groupManager.addOrganizationToGroup('orbisops', 'group1');
 		await sleep(1000);
 		const groupInfo = await client.groupManager.getGroupInfo('group1');
 		expect(groupInfo).toStrictEqual({
@@ -191,6 +191,24 @@ describe('authzed/spicedb testing', () => {
 		await sleep(1000);
 		const listAdminsRes = await client.groupManager.listGroupAdmins('group1');
 		expect(listAdminsRes).toStrictEqual([]);
+	});
+	test('can add service account to organzation', async () => {
+		const addServiceAccountRes = await client.orgManager.addServiceAccountToOrganization('service_account1', 'orbisops');
+		expect(addServiceAccountRes).toHaveProperty('writtenAt');
+	});
+	test('can read services accounts in organization', async () => {
+		await sleep(1000);
+		const listServiceAccountsRes = await client.orgManager.listServiceAccountsInOrganization('orbisops');
+		expect(listServiceAccountsRes).toStrictEqual(['service_account1']);
+	});
+	test('can remove service account from organization', async () => {
+		const removeServiceAccountRes = await client.orgManager.removeServiceAccountFromOrganization('service_account1', 'orbisops');
+		expect(removeServiceAccountRes).toHaveProperty('deletedAt');
+	});
+	test('service account gets removed from organization', async () => {
+		await sleep(1000);
+		const listServiceAccountsRes = await client.orgManager.listServiceAccountsInOrganization('orbisops');
+		expect(listServiceAccountsRes).toStrictEqual([]);
 	});
 	afterAll(async () => {
 		await authzed.stop();

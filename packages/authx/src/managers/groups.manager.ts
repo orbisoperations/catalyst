@@ -84,6 +84,21 @@ export class GroupManager {
     );
     return data as types.DeleteRelationshipResult;
   }
+  async addOrganizationToGroup(organization: string, group: string) {
+    const body = this.utils.writeRelationship({
+      relationOwner: {
+        objectType: `group`,
+        objectId: group,
+      },
+      relation: "organization",
+      relatedItem: {
+        objectType: `organization`,
+        objectId: organization,
+      },
+    });
+    const { data } = await this.utils.fetcher("write", body);
+    return data as types.WriteRelationshipResult;
+  }
 
   async getGroupOrganization(group: string): Promise<string[]> {
     const body = this.utils.readRelationship({

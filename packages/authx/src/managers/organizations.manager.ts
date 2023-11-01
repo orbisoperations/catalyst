@@ -60,6 +60,46 @@ export class OrganizationManager {
     );
     return data as types.WriteRelationshipResult;
   }
+
+  async addServiceAccountToOrganization(
+    serviceAccount: string,
+    org: string
+  ): Promise<types.WriteRelationshipResult> {
+    const { data } = await this.utils.fetcher(
+      "write",
+      this.utils.writeRelationship({
+        relationOwner: {
+          objectType: "organization",
+          objectId: org,
+        },
+        relation: "service_account",
+        relatedItem: {
+          objectType: "service_account",
+          objectId: serviceAccount,
+        },
+      })
+    );
+    return data as types.WriteRelationshipResult;
+  }
+
+  async removeServiceAccountFromOrganization(
+    serviceAccount: string,
+    org: string
+  ): Promise<types.DeleteRelationshipResult> {
+    const body = this.utils.deleteRelationship({
+      relationOwner: {
+        objectType: "organization",
+        objectId: org,
+      },
+      relation: "service_account",
+      relatedItem: {
+        objectType: "service_account",
+        objectId: serviceAccount,
+      },
+    });
+    const { data } = await this.utils.fetcher("delete", body);
+    return data as types.DeleteRelationshipResult;
+  }
   async removeDataServiceFromOrganization(
     dataService: string,
     org: string
@@ -117,36 +157,16 @@ export class OrganizationManager {
 
     return this.utils.parseSubjectIdsFromResults(data);
   }
-  async addServiceAccountToGroup(serviceAccount: string, group: string) {
+  async listServiceAccountsInOrganization(org: string): Promise<string[]> {
     const { data } = await this.utils.fetcher(
-      "write",
-      this.utils.writeRelationship({
-        relationOwner: {
-          objectType: `group`,
-          objectId: group,
-        },
+      "read",
+      this.utils.readRelationship({
+        resourceType: "organization",
         relation: "service_account",
-        relatedItem: {
-          objectType: `service_account`,
-          objectId: serviceAccount,
-        },
+        resourceId: org,
       })
     );
-    return data as types.WriteRelationshipResult;
-  }
-  async addOrganizationToGroup(organization: string, group: string) {
-    const body = this.utils.writeRelationship({
-      relationOwner: {
-        objectType: `group`,
-        objectId: group,
-      },
-      relation: "organization",
-      relatedItem: {
-        objectType: `organization`,
-        objectId: organization,
-      },
-    });
-    const { data } = await this.utils.fetcher("write", body);
-    return data as types.WriteRelationshipResult;
+
+    return this.utils.parseSubjectIdsFromResults(data);
   }
 }

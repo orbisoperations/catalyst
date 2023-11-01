@@ -108,6 +108,55 @@ describe('Group GraphQL Testing', async () => {
 			},
 		});
 	});
+	test('Can add Admin to Group', async () => {
+		setDefaultZitadelClient(new MockZitadelClient());
+		const writRes = await runQuery(
+			testHeaders,
+			testEnv,
+			'mutation addAdminToGroup($arg1: String!, $arg2: String!) {addAdminToGroup(userId: $arg1, groupId: $arg2)}',
+			{
+				arg1: 'marito',
+				arg2: 'group1',
+			}
+		);
+		await testWriteResult(writRes, 'addAdminToGroup');
+	});
+	test('Can list admins in group', async () => {
+		await sleep(1000);
+		const readGroup = await runQuery(testHeaders, testEnv, 'query listGroupAdmins($arg1: String!) {listGroupAdmins(groupId: $arg1)}', {
+			arg1: 'group1',
+		});
+
+		expect(readGroup.status).toBe(200);
+		const readGroupJson: any = await readGroup.json();
+		expect(readGroupJson.data).toStrictEqual({
+			listGroupAdmins: ['marito'],
+		});
+	});
+	test('Can remove admins from group', async () => {
+		const writRes = await runQuery(
+			testHeaders,
+			testEnv,
+			'mutation removeAdminFromGroup($arg1: String!, $arg2: String!) {removeAdminFromGroup(userId: $arg1, groupId: $arg2)}',
+			{
+				arg1: 'marito',
+				arg2: 'group1',
+			}
+		);
+		await testWriteResult(writRes, 'removeAdminFromGroup');
+	});
+	test('Group admin got removed', async () => {
+		await sleep(1000);
+		const readGroup = await runQuery(testHeaders, testEnv, 'query listGroupAdmins($arg1: String!) {listGroupAdmins(groupId: $arg1)}', {
+			arg1: 'group1',
+		});
+
+		expect(readGroup.status).toBe(200);
+		const readGroupJson: any = await readGroup.json();
+		expect(readGroupJson.data).toStrictEqual({
+			listGroupAdmins: [],
+		});
+	});
 });
 
 describe('User GraphQL Testing', () => {
@@ -351,7 +400,6 @@ describe('Organization GraphQL Testing', () => {
 				arg2: 'marito',
 			}
 		);
-		console.log(await writRes.json());
 		await testWriteResult(writRes, 'addAdminToOrganization');
 		sleep(1000);
 		const orgAdmins = await runQuery(
@@ -364,7 +412,6 @@ describe('Organization GraphQL Testing', () => {
 		);
 		expect(orgAdmins.status).toBe(200);
 		const orgAdminsJson: any = await orgAdmins.json();
-		console.log(orgAdminsJson);
 
 		expect(orgAdminsJson.data).toStrictEqual({
 			listAdminsInOrganization: ['marito'],
@@ -398,6 +445,72 @@ describe('Organization GraphQL Testing', () => {
 
 		expect(orgAdminsJson.data).toStrictEqual({
 			listAdminsInOrganization: [],
+		});
+	});
+	test('Can add service account to organization', async () => {
+		setDefaultZitadelClient(new MockZitadelClient());
+		await runQuery(
+			testHeaders,
+			testEnv,
+			'mutation addUserToOrganization($arg1: String!, $arg2: String!) {addUserToOrganization(orgId: $arg1, userId: $arg2)}',
+			{
+				arg1: 'orbisops',
+				arg2: 'marito',
+			}
+		);
+		await sleep(1000);
+		const writRes = await runQuery(
+			testHeaders,
+			testEnv,
+			'mutation addServiceAccountToOrganization($arg1: String!, $arg2: String!) {addServiceAccountToOrganization(userId: $arg1, serviceAccountId: $arg2)}',
+			{
+				arg1: 'marito',
+				arg2: 'service_account1',
+			}
+		);
+		await testWriteResult(writRes, 'addServiceAccountToOrganization');
+		sleep(1000);
+		const orgServiceAccounts = await runQuery(
+			testHeaders,
+			testEnv,
+			'query listServiceAccountsInOrganization($arg1: String!) {listServiceAccountsInOrganization(orgId: $arg1)}',
+			{
+				arg1: 'orbisops',
+			}
+		);
+		expect(orgServiceAccounts.status).toBe(200);
+		const orgServiceAccountsJson: any = await orgServiceAccounts.json();
+
+		expect(orgServiceAccountsJson.data).toStrictEqual({
+			listServiceAccountsInOrganization: ['service_account1'],
+		});
+	});
+	test('Can remove service account from organization', async () => {
+		setDefaultZitadelClient(new MockZitadelClient());
+		const writRes = await runQuery(
+			testHeaders,
+			testEnv,
+			'mutation removeServiceAccountFromOrganization($arg1: String!, $arg2: String!) {removeServiceAccountFromOrganization(serviceAccountId: $arg1, orgId: $arg2)}',
+			{
+				arg1: 'service_account1',
+				arg2: 'orbisops',
+			}
+		);
+		await testWriteResult(writRes, 'removeServiceAccountFromOrganization');
+		sleep(1000);
+		const orgServiceAccounts = await runQuery(
+			testHeaders,
+			testEnv,
+			'query listServiceAccountsInOrganization($arg1: String!) {listServiceAccountsInOrganization(orgId: $arg1)}',
+			{
+				arg1: 'orbisops',
+			}
+		);
+		expect(orgServiceAccounts.status).toBe(200);
+		const orgServiceAccountsJson: any = await orgServiceAccounts.json();
+
+		expect(orgServiceAccountsJson.data).toStrictEqual({
+			listServiceAccountsInOrganization: [],
 		});
 	});
 });
