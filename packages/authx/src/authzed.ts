@@ -1,5 +1,3 @@
-import axios from "axios"
-
 type AuthzedObject = {
 	objectType: String;
 	objectId: String;
@@ -115,34 +113,50 @@ export class AuthzedClient {
 
 
     async addUserToOrganization(org: string, user: string): Promise<WriteRelationshipResult> {
-        const {data} = await axios.post(`${this.endpoint}/v1/relationships/write`, 
-        this.writeRelationship({
-            relationOwner: {
-                objectType: `${this.schemaPrefix}organization`,
-                objectId: org
-            },
-            relation: "member",
-            relatedItem: {
-                objectType: `${this.schemaPrefix}user`,
-                objectId: user
-            }
-        }),
+        const resp = await fetch(`${this.endpoint}/v1/relationships/write`, 
         {
-            headers: this.headers(),
+            method: "post",
+            body: JSON.stringify(this.writeRelationship({
+                relationOwner: {
+                    objectType: `${this.schemaPrefix}organization`,
+                    objectId: org
+                },
+                relation: "member",
+                relatedItem: {
+                    objectType: `${this.schemaPrefix}user`,
+                    objectId: user
+                }
+            })),
+            headers: {
+                ...this.headers()
+            }
         })
+
+        if (!resp.ok) {
+            console.log("error writing to authzed")
+        }
+
+        const data = await resp.json();
+        console.log('authzed write response: ', data)
         return data as WriteRelationshipResult
     }
 
     async listUsersInOrganization(org: string): Promise<string[]> {
-        const {data} = await axios.post(`${this.endpoint}/v1/relationships/read`, 
-        this.readRelationship({
-            resourceType: "organization",
-            resourceId: org,
-            relation: "member"
-        }),
+        const resp = await fetch(
+            `${this.endpoint}/v1/relationships/read`, 
         {
-            headers: this.headers(),
+            method: "post",
+            body: JSON.stringify(this.readRelationship({
+                resourceType: "organization",
+                resourceId: org,
+                relation: "member"
+            })),
+            headers: {
+                ...this.headers()
+            }
         })
+
+        const data = await resp.text()
 
         console.log("raw data", data)
 
