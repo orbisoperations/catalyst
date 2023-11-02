@@ -145,7 +145,7 @@ describe("authzed/spicedb testing", () => {
     afterAll(async () => {
     await authzed.stop();
     });
- 
+
     test("authzed - read/write - REST", async () => {
         client = new AuthzedClient("http://localhost:8081", "readwriteuserorg")
         const writeData = await client.addUserToOrganization("orbisops", "marito")

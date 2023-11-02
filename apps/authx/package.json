@@ -18,7 +18,7 @@
     "ts-jest": "^29.1.1",
     "typescript": "^5.2.2",
     "vitest": "^0.34.6",
-    "wrangler": "^3.0.0"
+    "wrangler": "^3.13.2"
   },
   "dependencies": {
     "@authzed/authzed-node": "^0.13.0",
