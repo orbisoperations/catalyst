@@ -1,9 +1,9 @@
-import { logger } from 'hono/logger'
-import { BasicAuth, BasicAuthAPI, BasicAuthToken, ZitadelClient, AuthzedClient, IZitadelClient } from "../../../packages/authx";
-import { createYoga, createSchema } from 'graphql-yoga'
-import {Hono, Context,} from "hono";
-import status from "./status"
-import schema from "./schema"
+import { logger } from 'hono/logger';
+import { BasicAuth, BasicAuthAPI, BasicAuthToken, ZitadelClient, AuthzedClient, IZitadelClient } from '../../../packages/authx';
+import { createYoga, createSchema } from 'graphql-yoga';
+import { Hono, Context } from 'hono';
+import status from './status';
+import schema from './schema';
 
 /**
  * Welcome to Cloudflare Workers! This is your first worker.
@@ -15,52 +15,50 @@ import schema from "./schema"
  * Learn more at https://developers.cloudflare.com/workers/
  */
 
-type  EnvBindings = {
+type EnvBindings = {
 	// Zitadel items
 	ZITADEL_ORG_AUTOMATION_CLIENT_ID: string;
 	ZITADEL_ORG_AUTOMATION_CLIENT_SECRET: string;
 	ZITADEL_TOKEN_VALIDATION_CLIENT_ID: string;
 	ZITADEL_TOKEN_VALIDATION_CLIENT_SECRET: string;
 	ZITADEL_ENDPOINT: string;
-	AUTHZED_TOKEN: string
-	AUTHZED_ENDPOINT: string
-}
+	AUTHZED_TOKEN: string;
+	AUTHZED_ENDPOINT: string;
+};
 
 interface ZitadelUserCheck {
 	details: {
-		totalResult: number
-	}
+		totalResult: number;
+	};
 	result: {
-		userId: string
-	} []
+		userId: string;
+	}[];
 }
 
-let authzedClient: AuthzedClient | undefined =  undefined;
-let zitadelClient: IZitadelClient | undefined = undefined
+let authzedClient: AuthzedClient | undefined = undefined;
+let zitadelClient: IZitadelClient | undefined = undefined;
 
 export function setDefaultZitadelClient(client: IZitadelClient) {
-	zitadelClient = client
+	zitadelClient = client;
 }
 
 type ContextVarialbles = {
-	zitadel: IZitadelClient
-	authzed: AuthzedClient
-}
+	zitadel: IZitadelClient;
+	authzed: AuthzedClient;
+};
 
-const app = new Hono<{Bindings: EnvBindings, Variables: ContextVarialbles}>()
-app.use('*', logger())
+const app = new Hono<{ Bindings: EnvBindings; Variables: ContextVarialbles }>();
+app.use('*', logger());
 
-
-app.get("/health", (c: Context) => {
+app.get('/health', (c: Context) => {
 	c.status(200);
-	return c.body("ok")
-})
+	return c.body('ok');
+});
 
-app.get("/status", (c: Context) => {
+app.get('/status', (c: Context) => {
 	c.status(200);
-	return c.json(status.status())
-})
-
+	return c.json(status.status());
+});
 
 /*
 TODO:
@@ -83,117 +81,123 @@ The code flow is:
 
 There is no further execution of the API from here and 
  */
-app.get("/register/:orgId/:userId", async (c: Context) => {
+app.get('/register/:orgId/:userId', async (c: Context) => {
 	const { orgId, userId } = c.req.param();
-	console.info(`registering user (${userId} in organization (${orgId}))`)
+	console.info(`registering user (${userId} in organization (${orgId}))`);
 	// get zitadel client
-	console.info("creating zitadel client")
-	const zitadelCreds = await BasicAuth(c.env.ZITADEL_ENDPOINT, c.env.ZITADEL_ORG_AUTOMATION_CLIENT_ID, c.env.ZITADEL_ORG_AUTOMATION_CLIENT_SECRET)
-	console.info("received zitadel response")
+	console.info('creating zitadel client');
+	const zitadelCreds = await BasicAuth(
+		c.env.ZITADEL_ENDPOINT,
+		c.env.ZITADEL_ORG_AUTOMATION_CLIENT_ID,
+		c.env.ZITADEL_ORG_AUTOMATION_CLIENT_SECRET
+	);
+	console.info('received zitadel response');
 	if (zitadelCreds === undefined) {
-		c.status(500)
+		c.status(500);
 		return c.json({
-			error: "Server Error - IDP"
-		})
+			error: 'Server Error - IDP',
+		});
 	}
-	console.info("logged into zitadel")
+	console.info('logged into zitadel');
 	// check that user is in org
-	const orgList = await fetch(`${c.env.ZITADEL_ENDPOINT}/management/v1/orgs/me/members/_search`,
-	{
-		method: "POST",
+	const orgList = await fetch(`${c.env.ZITADEL_ENDPOINT}/management/v1/orgs/me/members/_search`, {
+		method: 'POST',
 		headers: {
-			"Content-Type": "application/json",
-			"Authorization": `Bearer ${zitadelCreds.access_token}`,
-			"x-zitadel-orgid": orgId
+			'Content-Type': 'application/json',
+			Authorization: `Bearer ${zitadelCreds.access_token}`,
+			'x-zitadel-orgid': orgId,
 		},
 		body: JSON.stringify({
-			"query": {
-			  "offset": "0",
-			  "limit": 100,
-			  "asc": true
+			query: {
+				offset: '0',
+				limit: 100,
+				asc: true,
 			},
-			"queries": [
-			  {
-				"userIdQuery": {
-				  "userId": userId
-				}
-			  }
-			]
-		  })
+			queries: [
+				{
+					userIdQuery: {
+						userId: userId,
+					},
+				},
+			],
+		}),
 	});
 
 	const orgCheckResp = await orgList.json();
-	console.info("received org check response")
+	console.info('received org check response');
 
 	if (!orgList.ok) {
 		c.status(500);
 		return c.json({
-			error: "Server Error - Unable to Lookup User"
-		})
+			error: 'Server Error - Unable to Lookup User',
+		});
 	}
 
-	const zitadelUserCheck: ZitadelUserCheck = orgCheckResp as ZitadelUserCheck
+	const zitadelUserCheck: ZitadelUserCheck = orgCheckResp as ZitadelUserCheck;
 	if (zitadelUserCheck.details.totalResult != 1) {
-		c.status(500)
+		c.status(500);
 		return c.json({
-			error: "Server Error - IDP Error - user not found"
-		})
+			error: 'Server Error - IDP Error - user not found',
+		});
 	}
-
 
 	// write user to org
-	console.log(`writing user(${userId}) to organization(${orgId})`)
-	const writeResult = await (new AuthzedClient(c.env.AUTHZED_ENDPOINT, c.env.AUTHZED_TOKEN)
-	.addUserToOrganization(orgId, userId))
+	console.log(`writing user(${userId}) to organization(${orgId})`);
+	const writeResult = await new AuthzedClient(c.env.AUTHZED_ENDPOINT, c.env.AUTHZED_TOKEN).orgManager.addUserToOrganization(orgId, userId);
 
 	if (writeResult.writtenAt === undefined) {
-		c.status(500)
+		c.status(500);
 		return c.json({
-			error: "Server Error - Unable to Register User"
-		})
+			error: 'Server Error - Unable to Register User',
+		});
 	}
 
 	c.status(200);
 	return c.json({
-		registered: true
-	})
-})
-
+		registered: true,
+	});
+});
 
 // authentication guard
-app.use('*', async (c:Context, next) => {
+app.use('*', async (c: Context, next) => {
 	// set zitadel client
 	if (zitadelClient === undefined) {
-		const zCreds = await BasicAuthAPI(c.env.ZITADEL_ENDPOINT, c.env.ZITADEL_TOKEN_VALIDATION_CLIENT_ID, c.env.ZITADEL_TOKEN_VALIDATION_CLIENT_SECRET)
+		const zCreds = await BasicAuthAPI(
+			c.env.ZITADEL_ENDPOINT,
+			c.env.ZITADEL_TOKEN_VALIDATION_CLIENT_ID,
+			c.env.ZITADEL_TOKEN_VALIDATION_CLIENT_SECRET
+		);
 		if (zCreds === undefined) {
-			c.status(500)
-			return c.body(JSON.stringify({error:"Server Error - IDP"}))
+			c.status(500);
+			return c.body(JSON.stringify({ error: 'Server Error - IDP' }));
 		}
 		setDefaultZitadelClient(new ZitadelClient(c.env.ZITADEL_ENDPOINT, zCreds.access_token));
 	}
 
 	// get authorization header
-	const authnHeader = c.req.header("Authorization");
+	const authnHeader = c.req.header('Authorization');
 	if (authnHeader === undefined) {
-		c.status(401)
-		return c.body(JSON.stringify({error: "Unauthorized - Missing Authn Credentials"}))
+		c.status(401);
+		return c.body(JSON.stringify({ error: 'Unauthorized - Missing Authn Credentials' }));
 	}
 
 	// break out token
-	const token = authnHeader.split(" ")[1];
-	
+	const token = authnHeader.split(' ')[1];
+
 	// do check for token validity here
 	const validCheck = await zitadelClient?.validateTokenByIntrospection(token, true);
 	if (validCheck === undefined || validCheck.active === false) {
-		c.status(401)
-		return c.body(JSON.stringify({
-			error: "Unauthorized - Credentials Invalid"
-		}));
+		c.status(401);
+		return c.body(
+			JSON.stringify({
+				error: 'Unauthorized - Credentials Invalid',
+			})
+		);
 	}
 
-	c.set("zitadel", zitadelClient)
+	c.set('zitadel', zitadelClient);
 	await next();
-})
+});
 
 // create and set authzed client in context
 app.use('*', async (c: Context, next) => {
@@ -201,16 +205,16 @@ app.use('*', async (c: Context, next) => {
 		authzedClient = new AuthzedClient(c.env.AUTHZED_ENDPOINT, c.env.AuthConfig);
 	}
 
-	c.set("authzed", authzedClient)
-	await next()
-})
+	c.set('authzed', authzedClient);
+	await next();
+});
 
 const yoga = createYoga({
-	schema: schema
-})
+	schema: schema,
+});
 
-app.use("/graphql", async (c: Context) => {
-	return yoga.handle(c.req.raw as Request, c)
-})
+app.use('/graphql', async (c: Context) => {
+	return yoga.handle(c.req.raw as Request, c);
+});
 
 export default app;
