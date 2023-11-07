@@ -1,12 +1,11 @@
-import { AuthzedUtils } from "../authzed.utils";
-import * as types from "../../types";
+import { AuthzedUtils, WriteRelationshipResult, DeleteRelationshipResult } from "ozguard";
 
 export class OrganizationManager {
-  constructor(private utils: AuthzedUtils) {}
-  async addAdminToOrganization(org: string, user: string) {
-    const { data } = await this.utils.fetcher(
+  //constructor(private utils: AuthzedUtils) {}
+  async addAdminToOrganization(utils: AuthzedUtils, org: string, user: string) {
+    const { data } = await utils.fetcher(
       "write",
-      this.utils.writeRelationship({
+      utils.writeRelationship({
         relationOwner: {
           objectType: `organization`,
           objectId: org,
@@ -18,14 +17,15 @@ export class OrganizationManager {
         },
       })
     );
-    return data as types.WriteRelationshipResult;
+    return data as WriteRelationshipResult;
   }
   async addUserToOrganization(
+    utils: AuthzedUtils, 
     org: string,
     user: string,
     isOwner?: boolean
-  ): Promise<types.WriteRelationshipResult> {
-    const body = this.utils.writeRelationship({
+  ): Promise<WriteRelationshipResult> {
+    const body = utils.writeRelationship({
       relationOwner: {
         objectType: `organization`,
         objectId: org,
@@ -36,17 +36,18 @@ export class OrganizationManager {
         objectId: user,
       },
     });
-    const { data } = await this.utils.fetcher("write", body);
+    const { data } = await utils.fetcher("write", body);
 
-    return data as types.WriteRelationshipResult;
+    return data as WriteRelationshipResult;
   }
   async addDataServiceToOrganization(
+    utils: AuthzedUtils, 
     dataService: string,
     org: string
-  ): Promise<types.WriteRelationshipResult> {
-    const { data } = await this.utils.fetcher(
+  ): Promise<WriteRelationshipResult> {
+    const { data } = await utils.fetcher(
       "write",
-      this.utils.writeRelationship({
+      utils.writeRelationship({
         relationOwner: {
           objectType: "data_service",
           objectId: dataService,
@@ -58,16 +59,17 @@ export class OrganizationManager {
         },
       })
     );
-    return data as types.WriteRelationshipResult;
+    return data as WriteRelationshipResult;
   }
 
   async addServiceAccountToOrganization(
+    utils: AuthzedUtils, 
     serviceAccount: string,
     org: string
-  ): Promise<types.WriteRelationshipResult> {
-    const { data } = await this.utils.fetcher(
+  ): Promise<WriteRelationshipResult> {
+    const { data } = await utils.fetcher(
       "write",
-      this.utils.writeRelationship({
+      utils.writeRelationship({
         relationOwner: {
           objectType: "organization",
           objectId: org,
@@ -79,14 +81,15 @@ export class OrganizationManager {
         },
       })
     );
-    return data as types.WriteRelationshipResult;
+    return data as WriteRelationshipResult;
   }
 
   async removeServiceAccountFromOrganization(
+    utils: AuthzedUtils, 
     serviceAccount: string,
     org: string
-  ): Promise<types.DeleteRelationshipResult> {
-    const body = this.utils.deleteRelationship({
+  ): Promise<DeleteRelationshipResult> {
+    const body = utils.deleteRelationship({
       relationOwner: {
         objectType: "organization",
         objectId: org,
@@ -97,14 +100,15 @@ export class OrganizationManager {
         objectId: serviceAccount,
       },
     });
-    const { data } = await this.utils.fetcher("delete", body);
-    return data as types.DeleteRelationshipResult;
+    const { data } = await utils.fetcher("delete", body);
+    return data as DeleteRelationshipResult;
   }
   async removeDataServiceFromOrganization(
+    utils: AuthzedUtils, 
     dataService: string,
     org: string
-  ): Promise<types.DeleteRelationshipResult> {
-    const body = this.utils.deleteRelationship({
+  ): Promise<DeleteRelationshipResult> {
+    const body = utils.deleteRelationship({
       relationOwner: {
         objectType: "data_service",
         objectId: dataService,
@@ -115,11 +119,11 @@ export class OrganizationManager {
         objectId: org,
       },
     });
-    const { data } = await this.utils.fetcher("delete", body);
-    return data as types.DeleteRelationshipResult;
+    const { data } = await utils.fetcher("delete", body);
+    return data as DeleteRelationshipResult;
   }
-  async removeAdminFromOrganization(org: string, user: string) {
-    const body = this.utils.deleteRelationship({
+  async removeAdminFromOrganization(utils: AuthzedUtils, org: string, user: string) {
+    const body = utils.deleteRelationship({
       relationOwner: {
         objectType: `organization`,
         objectId: org,
@@ -130,43 +134,43 @@ export class OrganizationManager {
         objectId: user,
       },
     });
-    const { data } = await this.utils.fetcher("delete", body);
-    return data as types.DeleteRelationshipResult;
+    const { data } = await utils.fetcher("delete", body);
+    return data as DeleteRelationshipResult;
   }
-  async listUsersInOrganization(org: string): Promise<string[]> {
-    const { data } = await this.utils.fetcher(
+  async listUsersInOrganization(utils: AuthzedUtils, org: string): Promise<string[]> {
+    const { data } = await utils.fetcher(
       "read",
-      this.utils.readRelationship({
+      utils.readRelationship({
         resourceType: "organization",
         resourceId: org,
         relation: "member",
       })
     );
 
-    return this.utils.parseSubjectIdsFromResults(data);
+    return utils.parseSubjectIdsFromResults(data);
   }
-  async listAdminsInOrganization(org: string): Promise<string[]> {
-    const { data } = await this.utils.fetcher(
+  async listAdminsInOrganization(utils: AuthzedUtils, org: string): Promise<string[]> {
+    const { data } = await utils.fetcher(
       "read",
-      this.utils.readRelationship({
+      utils.readRelationship({
         resourceType: "organization",
         relation: "admin",
         resourceId: org,
       })
     );
 
-    return this.utils.parseSubjectIdsFromResults(data);
+    return utils.parseSubjectIdsFromResults(data);
   }
-  async listServiceAccountsInOrganization(org: string): Promise<string[]> {
-    const { data } = await this.utils.fetcher(
+  async listServiceAccountsInOrganization(utils: AuthzedUtils, org: string): Promise<string[]> {
+    const { data } = await utils.fetcher(
       "read",
-      this.utils.readRelationship({
+      utils.readRelationship({
         resourceType: "organization",
         relation: "service_account",
         resourceId: org,
       })
     );
 
-    return this.utils.parseSubjectIdsFromResults(data);
+    return utils.parseSubjectIdsFromResults(data);
   }
 }

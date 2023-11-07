@@ -1,10 +1,9 @@
-import * as types from "../../types";
-import { AuthzedUtils } from "../authzed.utils";
+import { AuthzedUtils, WriteRelationshipResult, DeleteRelationshipResult } from "ozguard";
 export class GroupManager {
-  constructor(private utils: AuthzedUtils) {}
+  //constructor(private utils: AuthzedUtils) {}
 
   // groups
-  async getGroupInfo(group: string): Promise<{
+  async getGroupInfo(utils: AuthzedUtils, group: string): Promise<{
     users?: string[];
     serviceAccounts?: string[];
     dataServices?: string[];
@@ -12,11 +11,11 @@ export class GroupManager {
   }> {
     let dataServices: string[] = [];
     const res = await Promise.allSettled([
-      this.getGroupUsers(group),
-      this.getGroupServiceAccounts(group),
-      this.getGroupDataServices(group),
-      this.getGroupOrganization(group),
-      this.utils.getDataServiceParentOrg(),
+      this.getGroupUsers(utils, group),
+      this.getGroupServiceAccounts(utils, group),
+      this.getGroupDataServices(utils, group),
+      this.getGroupOrganization(utils, group),
+      utils.getDataServiceParentOrg(),
     ]);
     const groupOrg = res[3].status === "fulfilled" ? res[3].value : undefined;
     const orgServices =
@@ -38,10 +37,10 @@ export class GroupManager {
     return response;
   }
 
-  async addAdminToGroup(admin: string, group: string) {
-    const { data } = await this.utils.fetcher(
+  async addAdminToGroup(utils: AuthzedUtils, admin: string, group: string) {
+    const { data } = await utils.fetcher(
       "write",
-      this.utils.writeRelationship({
+      utils.writeRelationship({
         relationOwner: {
           objectType: `group`,
           objectId: group,
@@ -53,24 +52,24 @@ export class GroupManager {
         },
       })
     );
-    return data as types.WriteRelationshipResult;
+    return data as WriteRelationshipResult;
   }
 
-  async listGroupAdmins(group: string) {
-    const body = this.utils.readRelationship({
+  async listGroupAdmins(utils: AuthzedUtils, group: string) {
+    const body = utils.readRelationship({
       resourceType: "group",
       relation: "admin",
       resourceId: group,
     });
 
-    const { data } = await this.utils.fetcher("read", body);
-    return this.utils.parseSubjectIdsFromResults(data);
+    const { data } = await utils.fetcher("read", body);
+    return utils.parseSubjectIdsFromResults(data);
   }
 
-  async removeAdminFromGroup(admin: string, group: string) {
-    const { data } = await this.utils.fetcher(
+  async removeAdminFromGroup(utils: AuthzedUtils, admin: string, group: string) {
+    const { data } = await utils.fetcher(
       "delete",
-      this.utils.deleteRelationship({
+      utils.deleteRelationship({
         relationOwner: {
           objectType: `group`,
           objectId: group,
@@ -82,10 +81,10 @@ export class GroupManager {
         },
       })
     );
-    return data as types.DeleteRelationshipResult;
+    return data as DeleteRelationshipResult;
   }
-  async addOrganizationToGroup(organization: string, group: string) {
-    const body = this.utils.writeRelationship({
+  async addOrganizationToGroup(utils: AuthzedUtils, organization: string, group: string) {
+    const body = utils.writeRelationship({
       relationOwner: {
         objectType: `group`,
         objectId: group,
@@ -96,56 +95,56 @@ export class GroupManager {
         objectId: organization,
       },
     });
-    const { data } = await this.utils.fetcher("write", body);
-    return data as types.WriteRelationshipResult;
+    const { data } = await utils.fetcher("write", body);
+    return data as WriteRelationshipResult;
   }
 
-  async getGroupOrganization(group: string): Promise<string[]> {
-    const body = this.utils.readRelationship({
+  async getGroupOrganization(utils: AuthzedUtils, group: string): Promise<string[]> {
+    const body = utils.readRelationship({
       resourceType: "group",
       relation: "organization",
       resourceId: group,
     });
 
-    const { data } = await this.utils.fetcher("read", body);
-    return this.utils.parseSubjectIdsFromResults(data);
+    const { data } = await utils.fetcher("read", body);
+    return utils.parseSubjectIdsFromResults(data);
   }
-  async getGroupDataServices(group: string): Promise<string[]> {
-    const body = this.utils.readRelationship({
+  async getGroupDataServices(utils: AuthzedUtils, group: string): Promise<string[]> {
+    const body = utils.readRelationship({
       resourceType: "group",
       relation: "data_service",
       resourceId: group,
     });
 
-    const { data } = await this.utils.fetcher("read", body);
-    return this.utils.parseResourceIdsFromResults(data);
+    const { data } = await utils.fetcher("read", body);
+    return utils.parseResourceIdsFromResults(data);
   }
-  async getGroupServiceAccounts(group: string): Promise<string[]> {
-    const body = this.utils.readRelationship({
+  async getGroupServiceAccounts(utils: AuthzedUtils, group: string): Promise<string[]> {
+    const body = utils.readRelationship({
       resourceType: "group",
       relation: "service_account",
       resourceId: group,
     });
 
-    const { data } = await this.utils.fetcher("read", body);
+    const { data } = await utils.fetcher("read", body);
 
-    return this.utils.parseSubjectIdsFromResults(data);
+    return utils.parseSubjectIdsFromResults(data);
   }
-  async getGroupUsers(group: string): Promise<string[]> {
-    const body = this.utils.readRelationship({
+  async getGroupUsers(utils: AuthzedUtils, group: string): Promise<string[]> {
+    const body = utils.readRelationship({
       resourceType: "group",
       relation: "member",
       resourceId: group,
     });
 
-    const { data } = await this.utils.fetcher("read", body);
+    const { data } = await utils.fetcher("read", body);
 
-    return this.utils.parseSubjectIdsFromResults(data);
+    return utils.parseSubjectIdsFromResults(data);
   }
-  async addServiceAccountToGroup(serviceAccount: string, group: string) {
-    const { data } = await this.utils.fetcher(
+  async addServiceAccountToGroup(utils: AuthzedUtils, serviceAccount: string, group: string) {
+    const { data } = await utils.fetcher(
       "write",
-      this.utils.writeRelationship({
+      utils.writeRelationship({
         relationOwner: {
           objectType: `group`,
           objectId: group,
@@ -157,6 +156,6 @@ export class GroupManager {
         },
       })
     );
-    return data as types.WriteRelationshipResult;
+    return data as WriteRelationshipResult;
   }
 }

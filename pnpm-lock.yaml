@@ -36,8 +36,11 @@ importers:
         specifier: ^5.0.0
         version: 5.0.0(graphql@16.8.1)
       hono:
-        specifier: ^3.7.6
+        specifier: ^3.8.1
         version: 3.8.1
+      ozguard:
+        specifier: github:orbisoperations/ozguard#v0.0.5
+        version: git@github.com+orbisoperations/ozguard/3225a8b9d2ee8193cc10a1fe9382d9e2dc5d3466
     devDependencies:
       '@cloudflare/workers-types':
         specifier: ^4.20230419.0
@@ -2751,6 +2754,11 @@ packages:
     engines: {node: '>=16.0.0'}
     dev: false
 
+  /hono@3.9.2:
+    resolution: {integrity: sha512-180NOiMadqU3lGmN6ajPDZvZPWus3a9mtVaAUR9uG0SImngBwRLA8vbnV0oUfUAgFT4nX55sGV9dVA06OuikHA==}
+    engines: {node: '>=16.0.0'}
+    dev: false
+
   /html-escaper@2.0.2:
     resolution: {integrity: sha512-H2iMtd0I4Mt5eYiapRdIDjp+XzelXQ0tFE4JS7YFwFevXXMmOp9myNrUvCg0D6ws8iqkRPBfKHgbwig1SmlLfg==}
     dev: true
@@ -4825,3 +4833,11 @@ packages:
   /zod@3.22.4:
     resolution: {integrity: sha512-iC+8Io04lddc+mVqQ9AZ7OQ2MrUKGN+oIQyq1vemgt46jwCwLfhq7/pwnBnNXXXZb8VTVLKwp9EDkx+ryxIWmg==}
     dev: true
+
+  git@github.com+orbisoperations/ozguard/3225a8b9d2ee8193cc10a1fe9382d9e2dc5d3466:
+    resolution: {commit: 3225a8b9d2ee8193cc10a1fe9382d9e2dc5d3466, repo: git@github.com:orbisoperations/ozguard.git, type: git}
+    name: ozguard
+    version: 0.0.5
+    dependencies:
+      hono: 3.9.2
+    dev: false
