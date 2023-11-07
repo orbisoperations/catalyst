@@ -1,10 +1,13 @@
 import fs from 'fs';
-import { GenericContainer, StartedTestContainer, Wait } from 'testcontainers';
-import { afterAll, beforeAll, describe, expect, test } from 'vitest';
-import app, {AuthzedManagers} from '../src/index';
-import { setDefaultZitadelClient, AuthzedClient } from "ozguard"
-import { MockZitadelClient, createContainer, runQuery, sleep, testWriteResult } from './test-utils';
+import { StartedTestContainer } from 'testcontainers';
+import { beforeAll, afterAll, describe, expect, test } from 'vitest';
+import app, { AuthzedManagers } from '../src/index';
+import { setDefaultZitadelClient, AuthzedClient } from 'ozguard';
+import { MockZitadelClient, createContainer, sleep } from './test-utils';
 import { OrganizationManager } from '../src/managers/organizations.manager';
+import { GroupManager } from '../src/managers/groups.manager';
+import { UserManager } from '../src/managers/users.manager';
+import { ServiceManager } from '../src/managers/service.manager';
 
 describe('health and status checks', () => {
 	let testEnv: object;
@@ -33,7 +36,7 @@ describe('health and status checks', () => {
 			},
 			{
 				...testEnv,
-			}
+			},
 		);
 		expect(res.status).toBe(200);
 		expect(await res.text()).toBe('ok');
@@ -50,7 +53,7 @@ describe('health and status checks', () => {
 			},
 			{
 				...testEnv,
-			}
+			},
 		);
 		expect(res.status).toBe(200);
 		expect(await res.json()).toStrictEqual({
@@ -69,7 +72,7 @@ describe('health and status checks', () => {
 			},
 			{
 				...testEnv,
-			}
+			},
 		);
 
 		expect(res.status).toBe(200);
@@ -92,7 +95,7 @@ describe('health and status checks', () => {
 			},
 			{
 				...testEnv,
-			}
+			},
 		);
 
 		expect(res.status).toBe(200);
@@ -111,17 +114,21 @@ describe('authzed/spicedb testing', () => {
 	let authzed: StartedTestContainer;
 	let client: AuthzedClient<AuthzedManagers>;
 	beforeAll(async () => {
-		const schema = fs.readFileSync('./schema.zaml');
+		authzed = await createContainer(fs.readFileSync('./schema.zaml'), 5052);
 
-		authzed = authzed = await createContainer(fs.readFileSync('./schema.zaml'), 5052);
+		client = new AuthzedClient<AuthzedManagers>('http://localhost:8081', 'readwriteuserorg', {
+			org: new OrganizationManager(),
+			group: new GroupManager(),
+			user: new UserManager(),
+			service: new ServiceManager(),
+		});
 	}, 100000);
 
+	afterAll(async () => {
+		await authzed.stop();
+	});
+
 	test('Can Read User Info', async () => {
-		client = new AuthzedClient<AuthzedManagers>('http://localhost:8081', 'readwriteuserorg',
-		{
-			org: new OrganizationManager(),
-			group: undefined
-		});
 		await client.managers.org.addUserToOrganization(client.utils, 'orbisops', 'marito');
 		await client.managers.org.addUserToOrganization(client.utils, 'orbisops', 'marito', true);
 
@@ -219,7 +226,5 @@ describe('authzed/spicedb testing', () => {
 		const listServiceAccountsRes = await client.orgManager.listServiceAccountsInOrganization('orbisops');
 		expect(listServiceAccountsRes).toStrictEqual([]);
 	});
-	afterAll(async () => {
-		await authzed.stop();
-	});*/
+	*/
 });

@@ -1,9 +1,8 @@
 import fs from 'fs';
-import { GenericContainer, StartedTestContainer, Wait } from 'testcontainers';
+import { StartedTestContainer } from 'testcontainers';
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 import { setDefaultZitadelClient } from 'ozguard';
 import { MockZitadelClient, createContainer, runQuery, sleep, testWriteResult } from './test-utils';
-import { AuthzedClient } from '../../../packages/authx';
 
 describe('Group GraphQL Testing', async () => {
 	const testEnv = {
@@ -16,7 +15,6 @@ describe('Group GraphQL Testing', async () => {
 		'Content-Type': 'application/json',
 	};
 	let authzed: StartedTestContainer;
-	let client: AuthzedClient;
 	beforeAll(async () => {
 		authzed = await createContainer(fs.readFileSync('./schema.zaml'), 5052);
 		setDefaultZitadelClient(new MockZitadelClient());
@@ -33,7 +31,7 @@ describe('Group GraphQL Testing', async () => {
 			{
 				arg1: 'marito',
 				arg2: 'group1',
-			}
+			},
 		);
 		await testWriteResult(userGroupRes, 'addUserToGroup');
 	});
@@ -45,7 +43,7 @@ describe('Group GraphQL Testing', async () => {
 			{
 				arg1: 'service_account1',
 				arg2: 'group1',
-			}
+			},
 		);
 		await testWriteResult(serviceAccountGroupRes, 'addServiceAccountToGroup');
 	});
@@ -57,7 +55,7 @@ describe('Group GraphQL Testing', async () => {
 			{
 				arg1: 'orbisops',
 				arg2: 'group1',
-			}
+			},
 		);
 		await testWriteResult(groupOrganizationRes, 'addOrganizationToGroup');
 	});
@@ -69,7 +67,7 @@ describe('Group GraphQL Testing', async () => {
 			{
 				arg1: 'orbisops',
 				arg2: 'dataservice1',
-			}
+			},
 		);
 		await testWriteResult(writRes, 'addDataServiceToOrganization');
 		const writRes2 = await runQuery(
@@ -79,7 +77,7 @@ describe('Group GraphQL Testing', async () => {
 			{
 				arg1: 'orbisops',
 				arg2: 'dataservice2',
-			}
+			},
 		);
 		await testWriteResult(writRes2, 'addDataServiceToOrganization');
 	});
@@ -91,7 +89,7 @@ describe('Group GraphQL Testing', async () => {
 			'query GroupInfo($arg1: String!) {group(groupId: $arg1) {users, serviceAccounts, dataServices, organizations}}',
 			{
 				arg1: 'group1',
-			}
+			},
 		);
 
 		expect(readGroup.status).toBe(200);
@@ -113,7 +111,7 @@ describe('Group GraphQL Testing', async () => {
 			{
 				arg1: 'marito',
 				arg2: 'group1',
-			}
+			},
 		);
 		await testWriteResult(writRes, 'addAdminToGroup');
 	});
@@ -137,7 +135,7 @@ describe('Group GraphQL Testing', async () => {
 			{
 				arg1: 'marito',
 				arg2: 'group1',
-			}
+			},
 		);
 		await testWriteResult(writRes, 'removeAdminFromGroup');
 	});
@@ -193,7 +191,7 @@ describe('User GraphQL Testing', () => {
 			{
 				arg1: 'orbisops',
 				arg2: 'marito',
-			}
+			},
 		);
 		await testWriteResult(writRes, 'addUserToOrganization');
 		// await sleep(1000);
@@ -217,7 +215,7 @@ describe('User GraphQL Testing', () => {
 			{
 				arg1: 'marito',
 				arg2: 'group1',
-			}
+			},
 		);
 		await testWriteResult(writRes, 'addUserToGroup');
 	});
@@ -229,7 +227,7 @@ describe('User GraphQL Testing', () => {
 			{
 				arg1: 'marito',
 				arg2: 'group1',
-			}
+			},
 		);
 		await testWriteResult(writRes, 'addOwnerToGroup');
 	});
@@ -241,7 +239,7 @@ describe('User GraphQL Testing', () => {
 			{
 				arg1: 'orbisops',
 				arg2: 'marito',
-			}
+			},
 		);
 		await testWriteResult(writRes, 'addOwnerToOrganization');
 	});
@@ -253,7 +251,7 @@ describe('User GraphQL Testing', () => {
 			{
 				arg1: 'dataservice1',
 				arg2: 'marito',
-			}
+			},
 		);
 		await testWriteResult(writRes, 'adOwnerToDataService');
 	});
@@ -265,7 +263,7 @@ describe('User GraphQL Testing', () => {
 			{
 				arg1: 'orbisops',
 				arg2: 'dataservice1',
-			}
+			},
 		);
 		await testWriteResult(writRes, 'addDataServiceToOrganization');
 		const writRes2 = await runQuery(
@@ -275,7 +273,7 @@ describe('User GraphQL Testing', () => {
 			{
 				arg1: 'orbisops',
 				arg2: 'dataservice2',
-			}
+			},
 		);
 		await testWriteResult(writRes2, 'addDataServiceToOrganization');
 	});
@@ -288,7 +286,7 @@ describe('User GraphQL Testing', () => {
 			'query UserInfo($arg1: String!) {user(userId: $arg1) {groups, organizations, ownedGroups, ownedOrganizations, dataServices, ownedDataServices}}',
 			{
 				arg1: 'marito',
-			}
+			},
 		);
 
 		expect(readUser.status).toBe(200);
@@ -313,7 +311,7 @@ describe('User GraphQL Testing', () => {
 			{
 				arg1: 'marito',
 				arg2: 'group1',
-			}
+			},
 		);
 		await testWriteResult(writRes, 'removeUserFromGroup');
 	});
@@ -326,7 +324,7 @@ describe('User GraphQL Testing', () => {
 			{
 				arg1: 'dataservice2',
 				arg2: 'orbisops',
-			}
+			},
 		);
 		await testWriteResult(writRes, 'removeDataServiceFromOrganization');
 	});
@@ -339,7 +337,7 @@ describe('User GraphQL Testing', () => {
 			'query UserInfo($arg1: String!) {user(userId: $arg1) {groups, organizations, ownedGroups, ownedOrganizations, dataServices, ownedDataServices}}',
 			{
 				arg1: 'marito',
-			}
+			},
 		);
 
 		expect(readUser.status).toBe(200);
@@ -385,7 +383,7 @@ describe('Organization GraphQL Testing', () => {
 			{
 				arg1: 'orbisops',
 				arg2: 'marito',
-			}
+			},
 		);
 		await testWriteResult(writRes, 'addAdminToOrganization');
 		sleep(1000);
@@ -395,7 +393,7 @@ describe('Organization GraphQL Testing', () => {
 			'query listAdminsInOrganization($arg1: String!) {listAdminsInOrganization(orgId: $arg1)}',
 			{
 				arg1: 'orbisops',
-			}
+			},
 		);
 		expect(orgAdmins.status).toBe(200);
 		const orgAdminsJson: any = await orgAdmins.json();
@@ -413,7 +411,7 @@ describe('Organization GraphQL Testing', () => {
 			{
 				arg1: 'orbisops',
 				arg2: 'marito',
-			}
+			},
 		);
 		await testWriteResult(writRes, 'removeAdminFromOrganization');
 		sleep(1000);
@@ -423,7 +421,7 @@ describe('Organization GraphQL Testing', () => {
 			'query listAdminsInOrganization($arg1: String!) {listAdminsInOrganization(orgId: $arg1)}',
 			{
 				arg1: 'orbisops',
-			}
+			},
 		);
 		expect(orgAdmins.status).toBe(200);
 		const orgAdminsJson: any = await orgAdmins.json();
@@ -441,7 +439,7 @@ describe('Organization GraphQL Testing', () => {
 			{
 				arg1: 'orbisops',
 				arg2: 'marito',
-			}
+			},
 		);
 		await sleep(1000);
 		const writRes = await runQuery(
@@ -451,7 +449,7 @@ describe('Organization GraphQL Testing', () => {
 			{
 				arg1: 'marito',
 				arg2: 'service_account1',
-			}
+			},
 		);
 		await testWriteResult(writRes, 'addServiceAccountToOrganization');
 		sleep(1000);
@@ -461,7 +459,7 @@ describe('Organization GraphQL Testing', () => {
 			'query listServiceAccountsInOrganization($arg1: String!) {listServiceAccountsInOrganization(orgId: $arg1)}',
 			{
 				arg1: 'orbisops',
-			}
+			},
 		);
 		expect(orgServiceAccounts.status).toBe(200);
 		const orgServiceAccountsJson: any = await orgServiceAccounts.json();
@@ -478,7 +476,7 @@ describe('Organization GraphQL Testing', () => {
 			{
 				arg1: 'service_account1',
 				arg2: 'orbisops',
-			}
+			},
 		);
 		await testWriteResult(writRes, 'removeServiceAccountFromOrganization');
 		sleep(1000);
@@ -488,7 +486,7 @@ describe('Organization GraphQL Testing', () => {
 			'query listServiceAccountsInOrganization($arg1: String!) {listServiceAccountsInOrganization(orgId: $arg1)}',
 			{
 				arg1: 'orbisops',
-			}
+			},
 		);
 		expect(orgServiceAccounts.status).toBe(200);
 		const orgServiceAccountsJson: any = await orgServiceAccounts.json();

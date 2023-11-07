@@ -2,7 +2,7 @@ import { createSchema } from 'graphql-yoga';
 import { Context } from 'hono';
 import status from './status';
 import { AuthzedClient, ZitadelClient } from 'ozguard';
-import {AuthzedManagers} from "./index"
+import { AuthzedManagers } from './index';
 
 class Status {
 	constructor() {}
@@ -85,22 +85,22 @@ export default createSchema({
 		Query: {
 			health: () => 'ok',
 			status: () => status.status(),
-			validateUser: async (_, {token}, context: Context) => {
-                console.log(_, token, context,);
-                const zitadelClient: ZitadelClient = context.get("zitadel");
-                const validCheck = await zitadelClient?.validateTokenByIntrospection(token, true);
-                if (validCheck === undefined || validCheck.active === false) {
-                    return {
-                        valid: false
-                    }
-                }
+			validateUser: async (_, { token }, context: Context) => {
+				console.log(_, token, context);
+				const zitadelClient: ZitadelClient = context.get('zitadel');
+				const validCheck = await zitadelClient?.validateTokenByIntrospection(token, true);
+				if (validCheck === undefined || validCheck.active === false) {
+					return {
+						valid: false,
+					};
+				}
 
-                return {
-                    valid: validCheck.active,
-                    userId: validCheck.sub,
-                    orgId: validCheck["urn:zitadel:iam:user:resourceowner:id"]
-                }
-            },
+				return {
+					valid: validCheck.active,
+					userId: validCheck.sub,
+					orgId: validCheck['urn:zitadel:iam:user:resourceowner:id'],
+				};
+			},
 			listUsersInOrganization: async (_, { orgId }, context: Context) => {
 				const authzedClient: AuthzedClient<AuthzedManagers> = context.get('authzed');
 				return authzedClient.managers.org.listUsersInOrganization(authzedClient.utils, orgId);

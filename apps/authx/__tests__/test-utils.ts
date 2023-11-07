@@ -1,7 +1,7 @@
 import { GenericContainer, Wait } from 'testcontainers';
-import { IZitadelClient, TokenValidation } from '../../../packages/authx';
-import app, { setDefaultZitadelClient } from '../src/index';
-import { afterAll, beforeAll, describe, expect, test } from 'vitest';
+import { IZitadelClient, TokenValidation } from 'ozguard';
+import app from '../src/index';
+import { expect } from 'vitest';
 
 export class MockZitadelClient implements IZitadelClient {
 	constructor() {}
@@ -33,7 +33,7 @@ export function runQuery(headers: Record<string, string>, env: Record<string, st
 		},
 		{
 			...env,
-		}
+		},
 	);
 }
 
@@ -67,7 +67,7 @@ export async function createContainer(schema: Buffer, port: number) {
 			{
 				container: 8081,
 				host: 8081,
-			}
+			},
 		)
 		.withWaitStrategy(Wait.forHttp('/healthz', 8081))
 		.start();

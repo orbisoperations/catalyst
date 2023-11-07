@@ -1,38 +1,38 @@
 {
-  "name": "management-api",
-  "version": "0.0.0",
-  "private": true,
-  "scripts": {
-    "deploy": "wrangler deploy",
-    "dev": "wrangler dev",
-    "start": "wrangler dev",
-    "test": "vitest",
-    "coverage": "vitest run --coverage"
-  },
-  "devDependencies": {
-    "@cloudflare/workers-types": "^4.20230419.0",
-    "@edge-runtime/vm": "^3.1.6",
-    "@types/jest": "^29.5.5",
-    "bun-types": "latest",
-    "jest": "^29.7.0",
-    "testcontainers": "^10.2.1",
-    "ts-jest": "^29.1.1",
-    "typescript": "^5.2.2",
-    "vitest": "^0.34.6",
-    "vitest-environment-miniflare": "^2.14.1",
-    "wrangler": "^3.13.2"
-  },
-  "dependencies": {
-    "@authzed/authzed-node": "^0.13.0",
-    "@hono/graphql-server": "^0.4.0",
-    "@zitadel/node": "^1.1.99",
-    "add": "^2.0.6",
-    "axios": "^1.5.1",
-    "graphql": "^16.8.1",
-    "graphql-yoga": "^5.0.0",
-    "hono": "^3.8.1",
-    "ozguard": "github:orbisoperations/ozguard#v0.0.5"
-  },
-  "module": "index.ts",
-  "type": "module"
+	"name": "management-api",
+	"version": "0.0.0",
+	"private": true,
+	"scripts": {
+		"deploy": "wrangler deploy",
+		"dev": "wrangler dev",
+		"start": "wrangler dev",
+		"test": "vitest",
+		"coverage": "vitest run --coverage"
+	},
+	"devDependencies": {
+		"@cloudflare/workers-types": "^4.20230419.0",
+		"@edge-runtime/vm": "^3.1.6",
+		"@types/jest": "^29.5.5",
+		"bun-types": "latest",
+		"jest": "^29.7.0",
+		"testcontainers": "^10.2.1",
+		"ts-jest": "^29.1.1",
+		"typescript": "^5.2.2",
+		"vitest": "^0.34.6",
+		"vitest-environment-miniflare": "^2.14.1",
+		"wrangler": "^3.13.2"
+	},
+	"dependencies": {
+		"@authzed/authzed-node": "^0.13.0",
+		"@hono/graphql-server": "^0.4.0",
+		"@zitadel/node": "^1.1.99",
+		"add": "^2.0.6",
+		"axios": "^1.5.1",
+		"graphql": "^16.8.1",
+		"graphql-yoga": "^5.0.0",
+		"hono": "^3.8.1",
+		"ozguard": "github:orbisoperations/ozguard#v0.0.5"
+	},
+	"module": "index.ts",
+	"type": "module"
 }

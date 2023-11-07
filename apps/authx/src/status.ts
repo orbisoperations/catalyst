@@ -1,11 +1,11 @@
 class Status {
-	constructor(){}
+	constructor() {}
 
 	status() {
 		return {
-			health: "ok"
-		}
+			health: 'ok',
+		};
 	}
 }
 
-export default new Status()
+export default new Status();
