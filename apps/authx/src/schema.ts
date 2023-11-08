@@ -4,16 +4,6 @@ import status from './status';
 import { AuthzedClient, ZitadelClient } from 'ozguard';
 import { AuthzedManagers } from './index';
 
-class Status {
-	constructor() {}
-
-	status() {
-		return {
-			health: 'ok',
-		};
-	}
-}
-
 export default createSchema({
 	typeDefs: `
     type Query {

@@ -93,7 +93,7 @@ describe('Group GraphQL Testing', async () => {
 		);
 
 		expect(readGroup.status).toBe(200);
-		const readGroupJson: any = await readGroup.json();
+		const readGroupJson: { data?: object } = await readGroup.json();
 		expect(readGroupJson.data).toStrictEqual({
 			group: {
 				users: ['marito'],
@@ -122,7 +122,7 @@ describe('Group GraphQL Testing', async () => {
 		});
 
 		expect(readGroup.status).toBe(200);
-		const readGroupJson: any = await readGroup.json();
+		const readGroupJson: { data?: object } = await readGroup.json();
 		expect(readGroupJson.data).toStrictEqual({
 			listGroupAdmins: ['marito'],
 		});
@@ -146,7 +146,7 @@ describe('Group GraphQL Testing', async () => {
 		});
 
 		expect(readGroup.status).toBe(200);
-		const readGroupJson: any = await readGroup.json();
+		const readGroupJson: { data?: object } = await readGroup.json();
 		expect(readGroupJson.data).toStrictEqual({
 			listGroupAdmins: [],
 		});
@@ -165,7 +165,7 @@ describe('User GraphQL Testing', () => {
 		'Content-Type': 'application/json',
 	};
 	beforeAll(async () => {
-		const schema = (authzed = await createContainer(fs.readFileSync('./schema.zaml'), 5052));
+		authzed = await createContainer(fs.readFileSync('./schema.zaml'), 5052);
 		setDefaultZitadelClient(new MockZitadelClient());
 	}, 100000);
 
@@ -290,7 +290,7 @@ describe('User GraphQL Testing', () => {
 		);
 
 		expect(readUser.status).toBe(200);
-		const readUserJson: any = await readUser.json();
+		const readUserJson: { data?: object } = await readUser.json();
 		// expect(readUserJson.data.user.dataServices).toBeInstanceOf(Array);
 		expect(readUserJson.data).toStrictEqual({
 			user: {
@@ -341,7 +341,7 @@ describe('User GraphQL Testing', () => {
 		);
 
 		expect(readUser.status).toBe(200);
-		const readUserJson: any = await readUser.json();
+		const readUserJson: { data?: object } = await readUser.json();
 
 		expect(readUserJson.data).toStrictEqual({
 			user: {
@@ -368,7 +368,7 @@ describe('Organization GraphQL Testing', () => {
 		'Content-Type': 'application/json',
 	};
 	beforeAll(async () => {
-		const schema = (authzed = await createContainer(fs.readFileSync('./schema.zaml'), 5052));
+		authzed = await createContainer(fs.readFileSync('./schema.zaml'), 5052);
 		setDefaultZitadelClient(new MockZitadelClient());
 	}, 100000);
 
@@ -396,7 +396,7 @@ describe('Organization GraphQL Testing', () => {
 			},
 		);
 		expect(orgAdmins.status).toBe(200);
-		const orgAdminsJson: any = await orgAdmins.json();
+		const orgAdminsJson: { data?: object } = await orgAdmins.json();
 
 		expect(orgAdminsJson.data).toStrictEqual({
 			listAdminsInOrganization: ['marito'],
@@ -424,7 +424,7 @@ describe('Organization GraphQL Testing', () => {
 			},
 		);
 		expect(orgAdmins.status).toBe(200);
-		const orgAdminsJson: any = await orgAdmins.json();
+		const orgAdminsJson: { data?: object } = await orgAdmins.json();
 		console.log(orgAdminsJson);
 
 		expect(orgAdminsJson.data).toStrictEqual({
@@ -462,7 +462,7 @@ describe('Organization GraphQL Testing', () => {
 			},
 		);
 		expect(orgServiceAccounts.status).toBe(200);
-		const orgServiceAccountsJson: any = await orgServiceAccounts.json();
+		const orgServiceAccountsJson: { data?: object } = await orgServiceAccounts.json();
 
 		expect(orgServiceAccountsJson.data).toStrictEqual({
 			listServiceAccountsInOrganization: ['service_account1'],
@@ -489,7 +489,7 @@ describe('Organization GraphQL Testing', () => {
 			},
 		);
 		expect(orgServiceAccounts.status).toBe(200);
-		const orgServiceAccountsJson: any = await orgServiceAccounts.json();
+		const orgServiceAccountsJson: { data?: object } = await orgServiceAccounts.json();
 
 		expect(orgServiceAccountsJson.data).toStrictEqual({
 			listServiceAccountsInOrganization: [],

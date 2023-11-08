@@ -9,6 +9,7 @@ export class MockZitadelClient implements IZitadelClient {
 	async validateTokenByIntrospection(token: string): Promise<TokenValidation | undefined> {
 		return {
 			active: true,
+			username: token,
 		} as TokenValidation;
 	}
 }

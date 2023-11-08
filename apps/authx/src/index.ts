@@ -1,7 +1,6 @@
-import { createYoga, createSchema } from 'graphql-yoga';
-import { Hono, Context } from 'hono';
+import { createYoga } from 'graphql-yoga';
 import schema from './schema';
-import { NewHonoApp, AuthzedUtils } from 'ozguard';
+import { NewHonoApp } from 'ozguard';
 import { OrganizationManager } from './managers/organizations.manager';
 import { GroupManager } from './managers/groups.manager';
 import { UserManager } from './managers/users.manager';

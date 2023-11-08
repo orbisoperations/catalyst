@@ -132,15 +132,15 @@ describe('authzed/spicedb testing', () => {
 		await client.managers.org.addUserToOrganization(client.utils, 'orbisops', 'marito');
 		await client.managers.org.addUserToOrganization(client.utils, 'orbisops', 'marito', true);
 
-		/*await client.userManager.addUserToGroup('marito', 'group1');
-		await client.userManager.addUserToGroup('marito', 'group2');
-		await client.userManager.addUserToGroup('marito', 'group2', true);
-		await client.orgManager.addDataServiceToOrganization('dataservice1', 'orbisops');
-		await client.orgManager.addDataServiceToOrganization('dataservice2', 'orbisops');
-		await client.addOwnerToDataService('marito', 'dataservice1');
-		await client.addOwnerToDataService('marito', 'dataservice2');*/
+		await client.managers.user.addUserToGroup(client.utils, 'marito', 'group1');
+		await client.managers.user.addUserToGroup(client.utils, 'marito', 'group2');
+		await client.managers.user.addUserToGroup(client.utils, 'marito', 'group2', true);
+		await client.managers.org.addDataServiceToOrganization(client.utils, 'dataservice1', 'orbisops');
+		await client.managers.org.addDataServiceToOrganization(client.utils, 'dataservice2', 'orbisops');
+		await client.managers.service.addOwnerToDataService(client.utils, 'marito', 'dataservice1');
+		await client.managers.service.addOwnerToDataService(client.utils, 'marito', 'dataservice2');
 		await sleep(1000);
-		/*const readUserInfo = await client.userManager.getUserInfo('marito');
+		const readUserInfo = await client.managers.user.getUserInfo(client.utils, 'marito');
 		expect(readUserInfo).toStrictEqual({
 			// userId: 'marito',
 			groups: ['group1', 'group2'],
@@ -149,19 +149,20 @@ describe('authzed/spicedb testing', () => {
 			ownedOrganizations: ['orbisops'],
 			dataServices: ['dataservice1', 'dataservice2'],
 			ownedDataServices: ['dataservice1', 'dataservice2'],
-		});*/
-	});
-	/*test('Can Read Group Info', async () => {
-		client = new AuthzedClient<AuthzedManagers>('http://localhost:8081', 'readwriteuserorg',
-		{
-			org: new OrganizationManager(),
-			group: undefined
 		});
-		await client.groupManager.addServiceAccountToGroup('service_account1', 'group1');
-		await client.groupManager.addServiceAccountToGroup('service_account2', 'group1');
-		await client.groupManager.addOrganizationToGroup('orbisops', 'group1');
+	});
+	test('Can Read Group Info', async () => {
+		client = new AuthzedClient<AuthzedManagers>('http://localhost:8081', 'readwriteuserorg', {
+			org: new OrganizationManager(),
+			group: new GroupManager(),
+			user: new UserManager(),
+			service: new ServiceManager(),
+		});
+		await client.managers.group.addServiceAccountToGroup(client.utils, 'service_account1', 'group1');
+		await client.managers.group.addServiceAccountToGroup(client.utils, 'service_account2', 'group1');
+		await client.managers.group.addOrganizationToGroup(client.utils, 'orbisops', 'group1');
 		await sleep(1000);
-		const groupInfo = await client.groupManager.getGroupInfo('group1');
+		const groupInfo = await client.managers.group.getGroupInfo(client.utils, 'group1');
 		expect(groupInfo).toStrictEqual({
 			users: ['marito'],
 			serviceAccounts: ['service_account1', 'service_account2'],
@@ -170,8 +171,8 @@ describe('authzed/spicedb testing', () => {
 		});
 	});
 	test('Can Remove Group Members', async () => {
-		await client.userManager.removeUserFromGroup('marito', 'group1');
-		const groupInfo = await client.groupManager.getGroupInfo('group1');
+		await client.managers.user.removeUserFromGroup(client.utils, 'marito', 'group1');
+		const groupInfo = await client.managers.group.getGroupInfo(client.utils, 'group1');
 		await sleep(1000);
 		expect(groupInfo).toStrictEqual({
 			users: [],
@@ -181,8 +182,8 @@ describe('authzed/spicedb testing', () => {
 		});
 	});
 	test('Can Remove Data Service from Organization', async () => {
-		const deleteRes = await client.orgManager.removeDataServiceFromOrganization('dataservice1', 'orbisops');
-		const groupInfo = await client.groupManager.getGroupInfo('group1');
+		await client.managers.org.removeDataServiceFromOrganization(client.utils, 'dataservice1', 'orbisops');
+		const groupInfo = await client.managers.group.getGroupInfo(client.utils, 'group1');
 		expect(groupInfo).toStrictEqual({
 			users: [],
 			serviceAccounts: ['service_account1', 'service_account2'],
@@ -191,40 +192,43 @@ describe('authzed/spicedb testing', () => {
 		});
 	});
 	test('Can add admin to group', async () => {
-		const addAdminRes = await client.groupManager.addAdminToGroup('marito', 'group1');
+		const addAdminRes = await client.managers.group.addAdminToGroup(client.utils, 'marito', 'group1');
 		expect(addAdminRes).toHaveProperty('writtenAt');
 	});
 	test('can list group admins', async () => {
 		await sleep(1000);
-		const listAdminsRes = await client.groupManager.listGroupAdmins('group1');
+		const listAdminsRes = await client.managers.group.listGroupAdmins(client.utils, 'group1');
 		expect(listAdminsRes).toStrictEqual(['marito']);
 	});
 	test('can remove admin from group', async () => {
-		const removeAdminRes = await client.groupManager.removeAdminFromGroup('marito', 'group1');
+		const removeAdminRes = await client.managers.group.removeAdminFromGroup(client.utils, 'marito', 'group1');
 		expect(removeAdminRes).toHaveProperty('deletedAt');
 	});
 	test('admin gets removed from group', async () => {
 		await sleep(1000);
-		const listAdminsRes = await client.groupManager.listGroupAdmins('group1');
+		const listAdminsRes = await client.managers.group.listGroupAdmins(client.utils, 'group1');
 		expect(listAdminsRes).toStrictEqual([]);
 	});
 	test('can add service account to organzation', async () => {
-		const addServiceAccountRes = await client.orgManager.addServiceAccountToOrganization('service_account1', 'orbisops');
+		const addServiceAccountRes = await client.managers.org.addServiceAccountToOrganization(client.utils, 'service_account1', 'orbisops');
 		expect(addServiceAccountRes).toHaveProperty('writtenAt');
 	});
 	test('can read services accounts in organization', async () => {
 		await sleep(1000);
-		const listServiceAccountsRes = await client.orgManager.listServiceAccountsInOrganization('orbisops');
+		const listServiceAccountsRes = await client.managers.org.listServiceAccountsInOrganization(client.utils, 'orbisops');
 		expect(listServiceAccountsRes).toStrictEqual(['service_account1']);
 	});
 	test('can remove service account from organization', async () => {
-		const removeServiceAccountRes = await client.orgManager.removeServiceAccountFromOrganization('service_account1', 'orbisops');
+		const removeServiceAccountRes = await client.managers.org.removeServiceAccountFromOrganization(
+			client.utils,
+			'service_account1',
+			'orbisops',
+		);
 		expect(removeServiceAccountRes).toHaveProperty('deletedAt');
 	});
 	test('service account gets removed from organization', async () => {
 		await sleep(1000);
-		const listServiceAccountsRes = await client.orgManager.listServiceAccountsInOrganization('orbisops');
+		const listServiceAccountsRes = await client.managers.org.listServiceAccountsInOrganization(client.utils, 'orbisops');
 		expect(listServiceAccountsRes).toStrictEqual([]);
 	});
-	*/
 });

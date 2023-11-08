@@ -1,4 +1,4 @@
-import { AuthzedUtils, WriteRelationshipResult, DeleteRelationshipResult } from 'ozguard';
+import { AuthzedUtils, WriteRelationshipResult } from 'ozguard';
 
 export class ServiceManager {
 	async addOwnerToDataService(utils: AuthzedUtils, user: string, dataService: string) {
