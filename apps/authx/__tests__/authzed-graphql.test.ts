@@ -1,7 +1,7 @@
 import fs from 'fs';
 import { GenericContainer, StartedTestContainer, Wait } from 'testcontainers';
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
-import { setDefaultZitadelClient } from '../src/index';
+import { setDefaultZitadelClient } from 'ozguard';
 import { MockZitadelClient, createContainer, runQuery, sleep, testWriteResult } from './test-utils';
 import { AuthzedClient } from '../../../packages/authx';
 
@@ -19,13 +19,13 @@ describe('Group GraphQL Testing', async () => {
 	let client: AuthzedClient;
 	beforeAll(async () => {
 		authzed = await createContainer(fs.readFileSync('./schema.zaml'), 5052);
+		setDefaultZitadelClient(new MockZitadelClient());
 	}, 100000);
 
 	afterAll(async () => {
 		await authzed.stop();
 	});
 	test('Can add User to group', async () => {
-		setDefaultZitadelClient(new MockZitadelClient());
 		const userGroupRes = await runQuery(
 			testHeaders,
 			testEnv,
@@ -38,7 +38,6 @@ describe('Group GraphQL Testing', async () => {
 		await testWriteResult(userGroupRes, 'addUserToGroup');
 	});
 	test('Can add service account to group', async () => {
-		setDefaultZitadelClient(new MockZitadelClient());
 		const serviceAccountGroupRes = await runQuery(
 			testHeaders,
 			testEnv,
@@ -51,7 +50,6 @@ describe('Group GraphQL Testing', async () => {
 		await testWriteResult(serviceAccountGroupRes, 'addServiceAccountToGroup');
 	});
 	test('Can add organization to group', async () => {
-		setDefaultZitadelClient(new MockZitadelClient());
 		const groupOrganizationRes = await runQuery(
 			testHeaders,
 			testEnv,
@@ -64,7 +62,6 @@ describe('Group GraphQL Testing', async () => {
 		await testWriteResult(groupOrganizationRes, 'addOrganizationToGroup');
 	});
 	test('Can add data service to organization', async () => {
-		setDefaultZitadelClient(new MockZitadelClient());
 		const writRes = await runQuery(
 			testHeaders,
 			testEnv,
@@ -109,7 +106,6 @@ describe('Group GraphQL Testing', async () => {
 		});
 	});
 	test('Can add Admin to Group', async () => {
-		setDefaultZitadelClient(new MockZitadelClient());
 		const writRes = await runQuery(
 			testHeaders,
 			testEnv,
@@ -172,6 +168,7 @@ describe('User GraphQL Testing', () => {
 	};
 	beforeAll(async () => {
 		const schema = (authzed = await createContainer(fs.readFileSync('./schema.zaml'), 5052));
+		setDefaultZitadelClient(new MockZitadelClient());
 	}, 100000);
 
 	afterAll(async () => {
@@ -189,7 +186,6 @@ describe('User GraphQL Testing', () => {
 			'Content-Type': 'application/json',
 		};
 
-		setDefaultZitadelClient(new MockZitadelClient());
 		const writRes = await runQuery(
 			testHeaders,
 			testEnv,
@@ -214,7 +210,6 @@ describe('User GraphQL Testing', () => {
 	});
 
 	test('Can add user To Group', async () => {
-		setDefaultZitadelClient(new MockZitadelClient());
 		const writRes = await runQuery(
 			testHeaders,
 			testEnv,
@@ -227,7 +222,6 @@ describe('User GraphQL Testing', () => {
 		await testWriteResult(writRes, 'addUserToGroup');
 	});
 	test('Can add Owner to Group', async () => {
-		setDefaultZitadelClient(new MockZitadelClient());
 		const writRes = await runQuery(
 			testHeaders,
 			testEnv,
@@ -240,7 +234,6 @@ describe('User GraphQL Testing', () => {
 		await testWriteResult(writRes, 'addOwnerToGroup');
 	});
 	test('Can Add Owner to Organization', async () => {
-		setDefaultZitadelClient(new MockZitadelClient());
 		const writRes = await runQuery(
 			testHeaders,
 			testEnv,
@@ -253,7 +246,6 @@ describe('User GraphQL Testing', () => {
 		await testWriteResult(writRes, 'addOwnerToOrganization');
 	});
 	test('Can Add Owner to DataService', async () => {
-		setDefaultZitadelClient(new MockZitadelClient());
 		const writRes = await runQuery(
 			testHeaders,
 			testEnv,
@@ -266,7 +258,6 @@ describe('User GraphQL Testing', () => {
 		await testWriteResult(writRes, 'adOwnerToDataService');
 	});
 	test('Can add data service to organization', async () => {
-		setDefaultZitadelClient(new MockZitadelClient());
 		const writRes = await runQuery(
 			testHeaders,
 			testEnv,
@@ -291,7 +282,6 @@ describe('User GraphQL Testing', () => {
 
 	test('Can Read User Info', async () => {
 		await sleep(1000);
-		setDefaultZitadelClient(new MockZitadelClient());
 		const readUser = await runQuery(
 			testHeaders,
 			testEnv,
@@ -316,7 +306,6 @@ describe('User GraphQL Testing', () => {
 		});
 	});
 	test('Can Remove User from Group', async () => {
-		setDefaultZitadelClient(new MockZitadelClient());
 		const writRes = await runQuery(
 			testHeaders,
 			testEnv,
@@ -330,7 +319,6 @@ describe('User GraphQL Testing', () => {
 	});
 
 	test('Can Remove Data Service from Organization', async () => {
-		setDefaultZitadelClient(new MockZitadelClient());
 		const writRes = await runQuery(
 			testHeaders,
 			testEnv,
@@ -345,7 +333,6 @@ describe('User GraphQL Testing', () => {
 
 	test('Data Service got removed', async () => {
 		await sleep(1000);
-		setDefaultZitadelClient(new MockZitadelClient());
 		const readUser = await runQuery(
 			testHeaders,
 			testEnv,
@@ -384,13 +371,13 @@ describe('Organization GraphQL Testing', () => {
 	};
 	beforeAll(async () => {
 		const schema = (authzed = await createContainer(fs.readFileSync('./schema.zaml'), 5052));
+		setDefaultZitadelClient(new MockZitadelClient());
 	}, 100000);
 
 	afterAll(async () => {
 		await authzed.stop();
 	});
 	test('Can add Admin to Organization', async () => {
-		setDefaultZitadelClient(new MockZitadelClient());
 		const writRes = await runQuery(
 			testHeaders,
 			testEnv,
@@ -419,7 +406,6 @@ describe('Organization GraphQL Testing', () => {
 	});
 
 	test('Can remove admin from organization', async () => {
-		setDefaultZitadelClient(new MockZitadelClient());
 		const writRes = await runQuery(
 			testHeaders,
 			testEnv,
@@ -448,7 +434,6 @@ describe('Organization GraphQL Testing', () => {
 		});
 	});
 	test('Can add service account to organization', async () => {
-		setDefaultZitadelClient(new MockZitadelClient());
 		await runQuery(
 			testHeaders,
 			testEnv,
@@ -486,7 +471,6 @@ describe('Organization GraphQL Testing', () => {
 		});
 	});
 	test('Can remove service account from organization', async () => {
-		setDefaultZitadelClient(new MockZitadelClient());
 		const writRes = await runQuery(
 			testHeaders,
 			testEnv,
