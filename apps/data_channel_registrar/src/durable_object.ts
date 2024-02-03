@@ -15,9 +15,14 @@ export class RegistrarState {
             return
         })
     
-        this.app.get("/", async (c)  => { 
-            return c.json({id: ""}, 200)
+        this.app.use("/health", async (c)  => { 
+            console.log("D0 get /")
+            return c.json({
+                id: this.state.id,
+            }, 200)
         })
+
+
     }
 
     async fetch(request: Request) {
