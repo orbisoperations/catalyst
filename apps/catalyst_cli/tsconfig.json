@@ -2,8 +2,19 @@
 	"extends": "@sindresorhus/tsconfig",
 	"compilerOptions": {
 		"moduleResolution": "node16",
-		"module": "Node16",
-		"outDir": "dist"
+		"module": "node16",
+		"outDir": "dist",
+		"sourceMap": true,
+		"jsx": "react",
+		"esModuleInterop": true,
+		"allowJs": true
 	},
-	"include": ["source"]
+	"include": ["source"],
+	"exclude": ["node_modules"],
+	"ts-node": {
+		"transpileOnly": true,
+		"files": true,
+		"experimentalResolver": true,
+		"experimentalSpecifierResolution": "node"
+	}
 }
