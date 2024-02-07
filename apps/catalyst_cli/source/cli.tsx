@@ -2,9 +2,9 @@
 import Pastel from 'pastel';
 
 const app = new Pastel({
-	name: "catalystctl",
+	name: "catalyst",
 	importMeta: import.meta,
-	description: "catalystctl is a cli for managing the control plane of Catalyst"
+	description: "catalyst is a cli for managing the control plane of Catalyst"
 });
 
 await app.run();
