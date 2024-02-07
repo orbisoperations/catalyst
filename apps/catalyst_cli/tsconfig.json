@@ -1,20 +1,14 @@
 {
-	"extends": "@sindresorhus/tsconfig",
+	"extends": "@tsconfig/recommended/tsconfig.json",
 	"compilerOptions": {
-		"moduleResolution": "node16",
-		"module": "node16",
+		"module": "NodeNext",
+		"target": "ES2022",
 		"outDir": "dist",
 		"sourceMap": true,
 		"jsx": "react",
-		"esModuleInterop": true,
-		"allowJs": true
+		"allowJs": true,
+		"moduleResolution": "NodeNext",
 	},
 	"include": ["source"],
 	"exclude": ["node_modules"],
-	"ts-node": {
-		"transpileOnly": true,
-		"files": true,
-		"experimentalResolver": true,
-		"experimentalSpecifierResolution": "node"
-	}
 }
