@@ -1,4 +1,4 @@
-import { Hono } from "hono";
+import { Context, Hono } from "hono";
 
 import { createYoga } from "graphql-yoga";
 import {schema} from "./pothos"
@@ -20,6 +20,10 @@ const app = new Hono<{ Bindings: Bindings }>();
 const yoga = createYoga({
   schema: schema,
   graphqlEndpoint: "/graphql",
+  context: async ({ req }) => ({
+    // This part is up to you!
+    D0_NAMESPACE: "dev"
+  }),
 });
 
 app.use("/health", async (c) => {
