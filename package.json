@@ -8,5 +8,9 @@
   },
   "keywords": [],
   "author": "",
-  "license": "Elastic-2.0"
+  "license": "Elastic-2.0",
+  "devDependencies": {
+    "@types/node": "^20.11.16",
+    "typescript": "^5.3.3"
+  }
 }
