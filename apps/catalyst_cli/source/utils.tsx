@@ -1,5 +1,5 @@
 import { GraphQLClient } from 'graphql-request'
-import { getConfig } from './config.js'
+import { getConfig } from './config'
 import React from "react";
 import { Text } from 'ink'
 
