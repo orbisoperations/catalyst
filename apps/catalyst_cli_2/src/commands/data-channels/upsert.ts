@@ -6,7 +6,7 @@ import { gql } from 'graphql-request'
 // eslint-disable-next-line import/namespace
 import { getGraphqlClient } from '../../utils/graphql.js'
 
-export default class DataChannelCreate extends Command {
+export default class DataChannelUpsert extends Command {
   static args = {
     organization: Args.string({description: 'data channel organization', required: true}),
     name: Args.string({description: 'data channel name', required: true}),
@@ -21,7 +21,7 @@ export default class DataChannelCreate extends Command {
   ]
 
   async run(): Promise<void> {
-    const {args} = await this.parse(DataChannelCreate)
+    const {args} = await this.parse(DataChannelUpsert)
 
     const client = getGraphqlClient()
 

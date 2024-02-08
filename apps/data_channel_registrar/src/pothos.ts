@@ -1,5 +1,6 @@
 import SchemaBuilder from '@pothos/core';
 import { Context } from 'hono';
+import {filter} from "graphql-yoga";
 
 const builder = new SchemaBuilder<{
     Context: {
@@ -36,8 +37,8 @@ builder.queryType({
     listDataChannels: t.field({
         type: [DataChannel],
         args: {
-            organization: t.arg.string({require: false}),
-            name: t.arg.string({require: false})
+            organization: t.arg.string({required: false}),
+            name: t.arg.string({required: false})
         },
         resolve: (root, {organization, name}) => {
             if (!organization) {
@@ -64,12 +65,26 @@ builder.queryType({
     }),
     getDataChannel: t.field({
         type: DataChannel,
+        nullable: true,
         args: {
             organization: t.arg.string({require: true}),
             name: t.arg.string({require: true})
         },
         resolve: (root, {organization, name}, context) => {
-            return new DataChannel("testorg", "testname", "testend")
+            const filtered = d0Stub.filter(item => {
+                if (item.organization == organization && item.name == name) {
+                    return true
+                }
+
+                return false
+            })
+
+            if (filtered.length == 1) {
+                return filtered[0]
+            }
+
+            return  undefined
+
         }
     })
   }),
@@ -96,8 +111,8 @@ builder.mutationType({
         deleteDataChannel: t.field({
             type: DataChannel,
             args: {
-                organization: t.arg.string({require: true}),
-                name: t.arg.string({require: true}),
+                organization: t.arg.string({required: true}),
+                name: t.arg.string({required: true}),
             },
             resolve: (root, {organization, name}, context) => {
                 return new DataChannel(organization as string, name as string, "endpoint")
