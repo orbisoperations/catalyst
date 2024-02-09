@@ -1,6 +1,4 @@
 import SchemaBuilder from '@pothos/core';
-import { Context } from 'hono';
-import {filter} from "graphql-yoga";
 
 const builder = new SchemaBuilder<{
     Context: {
@@ -9,7 +7,7 @@ const builder = new SchemaBuilder<{
 }>({ });
 
 
-const d0Stub: DataChannel[] = [] as Array<DataChannel>
+let d0Stub: DataChannel[] = [] as Array<DataChannel>
 export class DataChannel {
     organization: string
     name: string
@@ -110,12 +108,26 @@ builder.mutationType({
         }),
         deleteDataChannel: t.field({
             type: DataChannel,
+            nullable: true,
             args: {
                 organization: t.arg.string({required: true}),
                 name: t.arg.string({required: true}),
             },
             resolve: (root, {organization, name}, context) => {
-                return new DataChannel(organization as string, name as string, "endpoint")
+                let deleted: DataChannel | undefined = undefined;
+                const filtered: DataChannel[] = []
+                for (const e of d0Stub) {
+                    if (e.organization == organization && e.name) {
+                        deleted = e;
+                    } else {
+                        filtered.push(e);
+                    }
+                }
+
+                console.log("new set of dcs: ", d0Stub, filtered)
+                d0Stub = filtered
+
+                return deleted
             }
         })
     })
