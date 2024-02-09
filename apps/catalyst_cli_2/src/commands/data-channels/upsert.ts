@@ -5,6 +5,7 @@ import { gql } from 'graphql-request'
 
 // eslint-disable-next-line import/namespace
 import { getGraphqlClient } from '../../utils/graphql.js'
+import {displayTable} from "../../utils/tables.js";
 
 export default class DataChannelUpsert extends Command {
   static args = {
@@ -48,6 +49,6 @@ export default class DataChannelUpsert extends Command {
 
     this.debug(`upsert response: `, repsonse)
 
-    this.log(`successfully upserted ${repsonse.upsertDataChannel.organization}/${repsonse.upsertDataChannel.name}@${repsonse.upsertDataChannel.endpoint}`)
+    displayTable([repsonse.upsertDataChannel])
   }
 }
