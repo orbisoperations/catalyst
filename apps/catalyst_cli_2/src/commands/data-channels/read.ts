@@ -4,6 +4,7 @@ import { gql } from 'graphql-request'
 
 // eslint-disable-next-line import/namespace
 import { getGraphqlClient } from '../../utils/graphql.js'
+import {displayTable} from "../../utils/tables.js";
 
 export default class DataChannelRead extends Command {
     static args = {
@@ -49,10 +50,7 @@ export default class DataChannelRead extends Command {
         if (response.getDataChannel === null) {
             this.log("no data channels found")
         } else {
-            this.log(`${response.getDataChannel.organization}/${response.getDataChannel.name}
-      Org: ${response.getDataChannel.organization}
-      Name: ${response.getDataChannel.name}
-      Endpoint: ${response.getDataChannel.endpoint}`)
-            }
+            displayTable([response.getDataChannel])
         }
+    }
 }
