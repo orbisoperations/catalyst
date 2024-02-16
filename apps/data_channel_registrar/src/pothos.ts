@@ -1,4 +1,5 @@
 import SchemaBuilder from '@pothos/core';
+import {getFilePath} from "hono/dist/types/utils/filepath";
 
 const builder = new SchemaBuilder<{
     Context: {
@@ -34,34 +35,40 @@ builder.queryType({
   fields: (t) => ({
     listDataChannels: t.field({
         type: [DataChannel],
+        nullable: {
+            list: false,
+            items: true
+        },
         args: {
             organization: t.arg.string({required: false}),
             name: t.arg.string({required: false})
         },
         resolve: (root, {organization, name}) => {
-            if (!organization) {
+            if (!organization && !name) {
+                // return all
                 return d0Stub
-            }
-            const channels = d0Stub.filter((datachan) => {
-                if (datachan.organization.startsWith(organization)) {
-                    if (name) {
-                        if (datachan.name.startsWith(name)) {
-                            return true
-                        } else {
-                            return false
-                        }
-                    } else {
-                        // matches org and name not set
-                        return true
-                    }
-                } else {
+            } else if (!organization && name) {
+                // filter on name only
+                return d0Stub.filter(item => {
+                    if (item.name.startsWith(name)) return true;
+                    return false;
+                })
+            } else if (organization && !name) {
+                // filter on org only
+                return d0Stub.filter(item => {
+                    if (item.organization.startsWith(organization)) return true;
+                    return false;
+                })
+            } else if (organization && name) {
+                // filter on all
+                return d0Stub.filter(item => {
+                    if (item.organization.startsWith(organization) && item.name.startsWith(name)) return true
                     return false
-                }
-            })
-            return channels
+                })
+            }
         }
     }),
-    getDataChannel: t.field({
+    readDataChannel: t.field({
         type: DataChannel,
         nullable: true,
         args: {
@@ -70,7 +77,7 @@ builder.queryType({
         },
         resolve: (root, {organization, name}, context) => {
             const filtered = d0Stub.filter(item => {
-                if (item.organization == organization && item.name == name) {
+                if (item.organization === organization && item.name === name) {
                     return true
                 }
 
@@ -90,7 +97,7 @@ builder.queryType({
 
 builder.mutationType({
     fields: (t) => ({
-        upsertDataChannel: t.field({
+        createDataChannel: t.field({
             type: DataChannel,
             args: {
                 organization: t.arg.string({require: true}),
@@ -98,10 +105,46 @@ builder.mutationType({
                 endpoint: t.arg.string({require: true})
             },
             resolve: (root, {organization, name, endpoint}, context) => {
-                console.log(`upserting ${organization}/${name}@${endpoint}`)
+                console.log(`creating ${organization}/${name}@${endpoint}`)
                 const dc = new DataChannel(organization as string, name as string, endpoint as string)
 
                 d0Stub.push(dc)
+
+                return dc
+            }
+        }),
+        updateDataChannel: t.field({
+            type: DataChannel,
+            nullable: true,
+            args: {
+                organization: t.arg.string({require: true}),
+                name: t.arg.string({require: true}),
+                endpoint: t.arg.string({require: true})
+            },
+            resolve: (root, {organization, name, endpoint}, context) => {
+                console.log(`updating ${organization}/${name}@${endpoint}`)
+
+                let itemIndex: number | undefined = undefined;
+                const filter = d0Stub.filter((item, index) => {
+                    if (item.organization === organization && item.name === name) {
+                        itemIndex = index;
+                        return false
+                    }
+                    return true
+                })
+
+                if (itemIndex === undefined) {
+                    console.log("no index gound")
+                    return undefined
+                }
+
+                if (filter.length === d0Stub.length) {
+                    return  undefined
+                }
+
+                const dc = new DataChannel(d0Stub[itemIndex].organization, d0Stub[itemIndex].name, endpoint as string)
+                filter.push(dc)
+                d0Stub = filter
 
                 return dc
             }
