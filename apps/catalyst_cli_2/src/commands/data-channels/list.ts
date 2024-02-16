@@ -4,6 +4,7 @@ import { gql } from 'graphql-request'
 
 // eslint-disable-next-line import/namespace
 import { getGraphqlClient } from '../../utils/graphql.js'
+import {displayTable} from "../../utils/tables.js";
 
 export default class DataChannelList extends Command {
   static args = {
@@ -14,16 +15,26 @@ export default class DataChannelList extends Command {
   static description = 'list data channels using prefix matching'
 
   static examples = [
-    `$ oex data channel list org chan
-        org1 channel
-        org2 channel
-        org-test chan`,
+    `$ oex data-channels list
+     Organization Name    Endpoint
+     ──────────── ─────── ────────────────
+     test         test    http://test.com/
+     org1         channel http://test.com/
+     org2         channel http://test.com/
+     org-test     chan    http://test.com/`,
     
-    `$ oex data channel list org1 chan
-        org1 channel`,
+    `$ oex data-channels list org1 chan
+     Organization Name    Endpoint
+     ──────────── ─────── ────────────────
+     org1         channel http://test.com/`,
+    `$ oex data-channels list o channel
+     Organization Name    Endpoint
+     ──────────── ─────── ────────────────
+     org1         channel http://test.com/
+     org2         channel http://test.com/`,
 
-    `$ oex data channel list org-test channel
-        [no results]`,
+    `$ oex data-channels list o channels
+     no data-channels found`,
   ]
 
   async run(): Promise<void> {
@@ -55,11 +66,6 @@ export default class DataChannelList extends Command {
 
     this.debug(`create response: `, response)
 
-    this.log(response.listDataChannels.map((item) => {
-      return `${item.organization}/${item.name}
-      Org: ${item.organization}
-      Name: ${item.name}
-      Endpoint: ${item.endpoint}`
-    }).join("\n"))
+    await displayTable(response.listDataChannels)
   }
 }
