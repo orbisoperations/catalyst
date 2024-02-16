@@ -7,7 +7,9 @@
     "@oclif/core": "^3",
     "@oclif/plugin-help": "^6",
     "@oclif/plugin-plugins": "^4",
+    "@oclif/plugin-update": "^4.1.11",
     "axios": "^1.6.7",
+    "graphql": "^16.8.1",
     "graphql-request": "^6.1.0"
   },
   "description": "Catalyst CLI",
@@ -17,13 +19,14 @@
     "@types/chai": "^4",
     "@types/mocha": "^10",
     "@types/node": "^18",
+    "aws-sdk": "^2.1560.0",
     "chai": "^4",
     "eslint": "^8",
     "eslint-config-oclif": "^5",
     "eslint-config-oclif-typescript": "^3",
     "eslint-config-prettier": "^9.1.0",
     "mocha": "^10",
-    "oclif": "^4.4.2",
+    "oclif": "^4.4.12",
     "shx": "^0.3.4",
     "ts-node": "^10.9.2",
     "typescript": "^5"
@@ -46,8 +49,17 @@
     "commands": "./dist/commands",
     "plugins": [
       "@oclif/plugin-help",
-      "@oclif/plugin-plugins"
+      "@oclif/plugin-plugins",
+      "@oclif/plugin-update"
     ],
+    "update": {
+      "host": "https://s3.console.aws.amazon.com/",
+      "bucket": "catalyst-cli",
+      "acl": "bucket-owner-full-control"
+    },
+    "macos": {
+      "identifier": "com.orbisops.catalystcli"
+    },
     "topicSeparator": " ",
     "topics": {
       "hello": {

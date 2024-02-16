@@ -18,7 +18,7 @@ $ npm install -g catalyst_cli_2
 $ cctl COMMAND
 running command...
 $ cctl (--version)
-catalyst_cli_2/0.0.0 linux-x64 node-v18.14.1
+catalyst_cli_2/0.0.0 linux-x64 node-v20.11.1
 $ cctl --help [COMMAND]
 USAGE
   $ cctl COMMAND
@@ -27,8 +27,12 @@ USAGE
 <!-- usagestop -->
 # Commands
 <!-- commands -->
-* [`cctl hello PERSON`](#cctl-hello-person)
-* [`cctl hello world`](#cctl-hello-world)
+* [`cctl data-channels`](#cctl-data-channels)
+* [`cctl data-channels create ORGANIZATION NAME ENDPOINT`](#cctl-data-channels-create-organization-name-endpoint)
+* [`cctl data-channels delete ORGANIZATION NAME`](#cctl-data-channels-delete-organization-name)
+* [`cctl data-channels list [ORGANIZATION] [NAME]`](#cctl-data-channels-list-organization-name)
+* [`cctl data-channels read ORGANIZATION NAME`](#cctl-data-channels-read-organization-name)
+* [`cctl data-channels update ORGANIZATION NAME ENDPOINT`](#cctl-data-channels-update-organization-name-endpoint)
 * [`cctl help [COMMANDS]`](#cctl-help-commands)
 * [`cctl plugins`](#cctl-plugins)
 * [`cctl plugins:install PLUGIN...`](#cctl-pluginsinstall-plugin)
@@ -40,48 +44,153 @@ USAGE
 * [`cctl plugins:uninstall PLUGIN...`](#cctl-pluginsuninstall-plugin-1)
 * [`cctl plugins:uninstall PLUGIN...`](#cctl-pluginsuninstall-plugin-2)
 * [`cctl plugins update`](#cctl-plugins-update)
+* [`cctl update [CHANNEL]`](#cctl-update-channel)
 
-## `cctl hello PERSON`
+## `cctl data-channels`
 
 Say hello
 
 ```
 USAGE
-  $ cctl hello PERSON -f <value>
-
-ARGUMENTS
-  PERSON  Person to say hello to
-
-FLAGS
-  -f, --from=<value>  (required) Who is saying hello
+  $ cctl data-channels
 
 DESCRIPTION
   Say hello
 
 EXAMPLES
-  $ oex hello friend --from oclif
-  hello friend from oclif! (./src/commands/hello/index.ts)
+  $ oex data-channels
 ```
 
-_See code: [src/commands/hello/index.ts](https://github.com/OrbisOps/catalyst/blob/v0.0.0/src/commands/hello/index.ts)_
+_See code: [src/commands/data-channels/index.ts](https://github.com/OrbisOps/catalyst/blob/v0.0.0/src/commands/data-channels/index.ts)_
 
-## `cctl hello world`
+## `cctl data-channels create ORGANIZATION NAME ENDPOINT`
 
-Say hello world
+create a data channel
 
 ```
 USAGE
-  $ cctl hello world
+  $ cctl data-channels create ORGANIZATION NAME ENDPOINT
+
+ARGUMENTS
+  ORGANIZATION  data channel organization
+  NAME          data channel name
+  ENDPOINT      data channel endpoint
 
 DESCRIPTION
-  Say hello world
+  create a data channel
 
 EXAMPLES
-  $ cctl hello world
-  hello world! (./src/commands/hello/world.ts)
+  $ oex data channel upsert [organization] [name] [endpoint]
 ```
 
-_See code: [src/commands/hello/world.ts](https://github.com/OrbisOps/catalyst/blob/v0.0.0/src/commands/hello/world.ts)_
+_See code: [src/commands/data-channels/create.ts](https://github.com/OrbisOps/catalyst/blob/v0.0.0/src/commands/data-channels/create.ts)_
+
+## `cctl data-channels delete ORGANIZATION NAME`
+
+delete a data channel
+
+```
+USAGE
+  $ cctl data-channels delete ORGANIZATION NAME
+
+ARGUMENTS
+  ORGANIZATION  data channel organization
+  NAME          data channel name
+
+DESCRIPTION
+  delete a data channel
+
+EXAMPLES
+  $ oex data channel delete org1 channel
+          org1 channel
+```
+
+_See code: [src/commands/data-channels/delete.ts](https://github.com/OrbisOps/catalyst/blob/v0.0.0/src/commands/data-channels/delete.ts)_
+
+## `cctl data-channels list [ORGANIZATION] [NAME]`
+
+list data channels using prefix matching
+
+```
+USAGE
+  $ cctl data-channels list [ORGANIZATION] [NAME]
+
+ARGUMENTS
+  ORGANIZATION  data channel organization prefix string
+  NAME          data channel name prefix string
+
+DESCRIPTION
+  list data channels using prefix matching
+
+EXAMPLES
+  $ oex data-channels list
+       Organization Name    Endpoint
+       ──────────── ─────── ────────────────
+       test         test    http://test.com/
+       org1         channel http://test.com/
+       org2         channel http://test.com/
+       org-test     chan    http://test.com/
+
+  $ oex data-channels list org1 chan
+       Organization Name    Endpoint
+       ──────────── ─────── ────────────────
+       org1         channel http://test.com/
+
+  $ oex data-channels list o channel
+       Organization Name    Endpoint
+       ──────────── ─────── ────────────────
+       org1         channel http://test.com/
+       org2         channel http://test.com/
+
+  $ oex data-channels list o channels
+       no data-channels found
+```
+
+_See code: [src/commands/data-channels/list.ts](https://github.com/OrbisOps/catalyst/blob/v0.0.0/src/commands/data-channels/list.ts)_
+
+## `cctl data-channels read ORGANIZATION NAME`
+
+get a data channel
+
+```
+USAGE
+  $ cctl data-channels read ORGANIZATION NAME
+
+ARGUMENTS
+  ORGANIZATION  data channel organization prefix string
+  NAME          data channel name prefix string
+
+DESCRIPTION
+  get a data channel
+
+EXAMPLES
+  $ oex data channel get org1 channel
+          org1 channel
+```
+
+_See code: [src/commands/data-channels/read.ts](https://github.com/OrbisOps/catalyst/blob/v0.0.0/src/commands/data-channels/read.ts)_
+
+## `cctl data-channels update ORGANIZATION NAME ENDPOINT`
+
+update a data channel
+
+```
+USAGE
+  $ cctl data-channels update ORGANIZATION NAME ENDPOINT
+
+ARGUMENTS
+  ORGANIZATION  data channel organization
+  NAME          data channel name
+  ENDPOINT      data channel endpoint
+
+DESCRIPTION
+  update a data channel
+
+EXAMPLES
+  $ oex data channel update [organization] [name] [endpoint]
+```
+
+_See code: [src/commands/data-channels/update.ts](https://github.com/OrbisOps/catalyst/blob/v0.0.0/src/commands/data-channels/update.ts)_
 
 ## `cctl help [COMMANDS]`
 
@@ -124,7 +233,7 @@ EXAMPLES
   $ cctl plugins
 ```
 
-_See code: [@oclif/plugin-plugins](https://github.com/oclif/plugin-plugins/blob/v4.2.1/src/commands/plugins/index.ts)_
+_See code: [@oclif/plugin-plugins](https://github.com/oclif/plugin-plugins/blob/v4.2.2/src/commands/plugins/index.ts)_
 
 ## `cctl plugins:install PLUGIN...`
 
@@ -193,7 +302,7 @@ EXAMPLES
   $ cctl plugins inspect myplugin
 ```
 
-_See code: [@oclif/plugin-plugins](https://github.com/oclif/plugin-plugins/blob/v4.2.1/src/commands/plugins/inspect.ts)_
+_See code: [@oclif/plugin-plugins](https://github.com/oclif/plugin-plugins/blob/v4.2.2/src/commands/plugins/inspect.ts)_
 
 ## `cctl plugins:install PLUGIN...`
 
@@ -237,7 +346,7 @@ EXAMPLES
   $ cctl plugins install someuser/someplugin
 ```
 
-_See code: [@oclif/plugin-plugins](https://github.com/oclif/plugin-plugins/blob/v4.2.1/src/commands/plugins/install.ts)_
+_See code: [@oclif/plugin-plugins](https://github.com/oclif/plugin-plugins/blob/v4.2.2/src/commands/plugins/install.ts)_
 
 ## `cctl plugins:link PLUGIN`
 
@@ -267,7 +376,7 @@ EXAMPLES
   $ cctl plugins link myplugin
 ```
 
-_See code: [@oclif/plugin-plugins](https://github.com/oclif/plugin-plugins/blob/v4.2.1/src/commands/plugins/link.ts)_
+_See code: [@oclif/plugin-plugins](https://github.com/oclif/plugin-plugins/blob/v4.2.2/src/commands/plugins/link.ts)_
 
 ## `cctl plugins:uninstall PLUGIN...`
 
@@ -308,7 +417,7 @@ FLAGS
   --reinstall  Reinstall all plugins after uninstalling.
 ```
 
-_See code: [@oclif/plugin-plugins](https://github.com/oclif/plugin-plugins/blob/v4.2.1/src/commands/plugins/reset.ts)_
+_See code: [@oclif/plugin-plugins](https://github.com/oclif/plugin-plugins/blob/v4.2.2/src/commands/plugins/reset.ts)_
 
 ## `cctl plugins:uninstall PLUGIN...`
 
@@ -336,7 +445,7 @@ EXAMPLES
   $ cctl plugins uninstall myplugin
 ```
 
-_See code: [@oclif/plugin-plugins](https://github.com/oclif/plugin-plugins/blob/v4.2.1/src/commands/plugins/uninstall.ts)_
+_See code: [@oclif/plugin-plugins](https://github.com/oclif/plugin-plugins/blob/v4.2.2/src/commands/plugins/uninstall.ts)_
 
 ## `cctl plugins:uninstall PLUGIN...`
 
@@ -380,5 +489,42 @@ DESCRIPTION
   Update installed plugins.
 ```
 
-_See code: [@oclif/plugin-plugins](https://github.com/oclif/plugin-plugins/blob/v4.2.1/src/commands/plugins/update.ts)_
+_See code: [@oclif/plugin-plugins](https://github.com/oclif/plugin-plugins/blob/v4.2.2/src/commands/plugins/update.ts)_
+
+## `cctl update [CHANNEL]`
+
+update the cctl CLI
+
+```
+USAGE
+  $ cctl update [CHANNEL] [-a] [--force] [-i | -v <value>]
+
+FLAGS
+  -a, --available        See available versions.
+  -i, --interactive      Interactively select version to install. This is ignored if a channel is provided.
+  -v, --version=<value>  Install a specific version.
+      --force            Force a re-download of the requested version.
+
+DESCRIPTION
+  update the cctl CLI
+
+EXAMPLES
+  Update to the stable channel:
+
+    $ cctl update stable
+
+  Update to a specific version:
+
+    $ cctl update --version 1.0.0
+
+  Interactively select version:
+
+    $ cctl update --interactive
+
+  See available versions:
+
+    $ cctl update --available
+```
+
+_See code: [@oclif/plugin-update](https://github.com/oclif/plugin-update/blob/v4.1.11/src/commands/update.ts)_
 <!-- commandsstop -->
