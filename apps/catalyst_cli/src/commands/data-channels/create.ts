@@ -7,14 +7,14 @@ import { gql } from 'graphql-request'
 import { getGraphqlClient } from '../../utils/graphql.js'
 import {displayTable} from "../../utils/tables.js";
 
-export default class DataChannelUpsert extends Command {
+export default class DataChannelCreate extends Command {
   static args = {
     organization: Args.string({description: 'data channel organization', required: true}),
     name: Args.string({description: 'data channel name', required: true}),
     endpoint: Args.url({description: 'data channel endpoint', required: true}),
   }
 
-  static description = 'upsert a data channel'
+  static description = 'create a data channel'
 
   static examples = [
     `$ oex data channel upsert [organization] [name] [endpoint]
@@ -22,13 +22,13 @@ export default class DataChannelUpsert extends Command {
   ]
 
   async run(): Promise<void> {
-    const {args} = await this.parse(DataChannelUpsert)
+    const {args} = await this.parse(DataChannelCreate)
 
     const client = getGraphqlClient()
 
     const request = gql`
-    mutation upsertChannel($organization: String!, $name: String!, $endpoint: String!){
-        upsertDataChannel(organization: $organization, name: $name, endpoint: $endpoint) {
+    mutation create($organization: String!, $name: String!, $endpoint: String!){
+        createDataChannel(organization: $organization, name: $name, endpoint: $endpoint) {
             organization
             name
             endpoint
@@ -41,14 +41,14 @@ export default class DataChannelUpsert extends Command {
       endpoint: args.endpoint
     }
 
-    const repsonse = await client.request<{upsertDataChannel: {
+    const repsonse = await client.request<{createDataChannel: {
       organization: string
       name: string
       endpoint: string
     }}>(request, vars);
 
-    this.debug(`upsert response: `, repsonse)
+    this.debug(`create response: `, repsonse)
 
-    displayTable([repsonse.upsertDataChannel])
+    displayTable([repsonse.createDataChannel])
   }
 }

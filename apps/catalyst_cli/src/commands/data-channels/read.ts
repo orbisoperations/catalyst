@@ -25,8 +25,8 @@ export default class DataChannelRead extends Command {
         const client = getGraphqlClient()
 
         const request = gql`
-    query getDataChannel ($organization: String, $name: String){
-        getDataChannel(organization: $organization, name:$name) {
+    query readDataChannel ($organization: String, $name: String){
+        readDataChannel(organization: $organization, name:$name) {
             organization
             name
             endpoint
@@ -39,18 +39,18 @@ export default class DataChannelRead extends Command {
         }
 
         const response = await client.request<{
-            getDataChannel: {
+            readDataChannel: {
                 organization: string
                 name: string
                 endpoint: string
             } | null
         }>(request, vars);
 
-        this.debug(`create response: `, response)
-        if (response.getDataChannel === null) {
+        this.log(`create response: `, response)
+        if (response.readDataChannel === null) {
             this.log("no data channels found")
         } else {
-            displayTable([response.getDataChannel])
+            displayTable([response.readDataChannel])
         }
     }
 }
