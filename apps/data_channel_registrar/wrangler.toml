@@ -1,0 +1,15 @@
+name = "data_channel_registrar"
+compatibility_date = "2023-12-01"
+main = "./src/index.ts"
+node_compat = true
+
+[vars]
+D0_NAMESPACE = "development"
+
+[[durable_objects.bindings]]
+name = "REGISTRAR"
+class_name = "RegistrarState"
+
+[[migrations]]
+tag = "v1" # Should be unique for each entry
+new_classes = ["RegistrarState"]
