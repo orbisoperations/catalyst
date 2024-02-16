@@ -26,8 +26,8 @@ export default class DataChannelDelete extends Command {
 
         // search for data channel first
         const readRequest = gql`
-    query getDataChannel ($organization: String, $name: String){
-        getDataChannel(organization: $organization, name:$name) {
+    query readDataChannel ($organization: String, $name: String){
+        readDataChannel(organization: $organization, name:$name) {
             organization
             name
             endpoint
@@ -40,19 +40,19 @@ export default class DataChannelDelete extends Command {
         }
 
         const readResp = await client.request<{
-            getDataChannel: {
+            readDataChannel: {
                 organization: string
                 name: string
                 endpoint: string
             } | null
         }>(readRequest, readVars);
 
-        if (readResp.getDataChannel === null) {
+        if (readResp.readDataChannel === null) {
             this.log("no data channels found ")
             this.exit(0)
         }
 
-        displayTable([readResp.getDataChannel!])
+        displayTable([readResp.readDataChannel!])
 
         const approvalToDelete = await ux.prompt('delete this data-channel? (y/n)')
 
