@@ -1,4 +1,4 @@
-/* eslint-disable perfectionist/sort-objects */
+/* eslint-disable perfectionist/sort-objects,perfectionist/sort-object-types,arrow-body-style */
 import {Args, Command} from '@oclif/core'
 import { gql } from 'graphql-request'
 
@@ -14,15 +14,15 @@ export default class DataChannelList extends Command {
   static description = 'list data channels using prefix matching'
 
   static examples = [
-    `$ oex data channel create org chan
+    `$ oex data channel list org chan
         org1 channel
         org2 channel
         org-test chan`,
     
-    `$ oex data channel create org1 chan
+    `$ oex data channel list org1 chan
         org1 channel`,
 
-    `$ oex data channel create org-test channel
+    `$ oex data channel list org-test channel
         [no results]`,
   ]
 
@@ -45,10 +45,21 @@ export default class DataChannelList extends Command {
         name: args.name,
     }
 
-    const repsonse = await client.request(request, vars);
+    const response = await client.request<{
+      listDataChannels: {
+        organization: string
+        name: string
+        endpoint: string
+      }[]
+    }>(request, vars);
 
-    console.debug(`create response: `, repsonse)
+    this.debug(`create response: `, response)
 
-    
+    this.log(response.listDataChannels.map((item) => {
+      return `${item.organization}/${item.name}
+      Org: ${item.organization}
+      Name: ${item.name}
+      Endpoint: ${item.endpoint}`
+    }).join("\n"))
   }
 }
