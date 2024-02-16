@@ -1,62 +1,78 @@
 {
-	"name": "ts-app",
-	"version": "0.0.0",
-	"license": "MIT",
-	"bin": "dist/cli.js",
-	"type": "module",
-	"engines": {
-		"node": ">=16"
-	},
-	"scripts": {
-		"build": "tsc",
-		"dev": "tsc --watch",
-		"test": "prettier --check . && xo && ava"
-	},
-	"files": [
-		"dist"
-	],
-	"dependencies": {
-		"@apollo/client": "^3.9.3",
-		"graphql": "^16.8.1",
-		"graphql-request": "^6.1.0",
-		"ink": "^4.4.1",
-		"pastel": "^2.0.2",
-		"react": "^18.2.0",
-		"zod": "^3.22.4"
-	},
-	"devDependencies": {
-		"@tsconfig/recommended": "^1.0.3",
-		"@types/ink": "^2.0.3",
-		"@types/react": "^18.2.55",
-		"@vdemedes/prettier-config": "^2.0.1",
-		"ava": "^5.3.1",
-		"chalk": "^5.3.0",
-		"esbuild": "^0.20.0",
-		"eslint-config-xo-react": "^0.27.0",
-		"eslint-plugin-react": "^7.33.2",
-		"eslint-plugin-react-hooks": "^4.6.0",
-		"ink-testing-library": "^3.0.0",
-		"prettier": "^2.8.8",
-		"react-devtools-core": "^5.0.0",
-		"ts-node": "^10.9.2",
-		"typescript": "^5.3.3",
-		"xo": "^0.54.2"
-	},
-	"ava": {
-		"extensions": {
-			"ts": "module",
-			"tsx": "module"
-		},
-		"nodeArguments": [
-			"--loader=ts-node/esm"
-		]
-	},
-	"xo": {
-		"extends": "xo-react",
-		"prettier": true,
-		"rules": {
-			"react/prop-types": "off"
-		}
-	},
-	"prettier": "@vdemedes/prettier-config"
+  "author": "j.taylor @jtaylor-orbis",
+  "bin": {
+    "cctl": "./bin/run.js"
+  },
+  "dependencies": {
+    "@oclif/core": "^3",
+    "@oclif/plugin-help": "^6",
+    "@oclif/plugin-plugins": "^4",
+    "axios": "^1.6.7",
+    "graphql-request": "^6.1.0"
+  },
+  "description": "Catalyst CLI",
+  "devDependencies": {
+    "@oclif/prettier-config": "^0.2.1",
+    "@oclif/test": "^3",
+    "@types/chai": "^4",
+    "@types/mocha": "^10",
+    "@types/node": "^18",
+    "chai": "^4",
+    "eslint": "^8",
+    "eslint-config-oclif": "^5",
+    "eslint-config-oclif-typescript": "^3",
+    "eslint-config-prettier": "^9.1.0",
+    "mocha": "^10",
+    "oclif": "^4.4.2",
+    "shx": "^0.3.4",
+    "ts-node": "^10.9.2",
+    "typescript": "^5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "/bin",
+    "/dist",
+    "/oclif.manifest.json"
+  ],
+  "homepage": "https://github.com/OrbisOps/catalyst",
+  "license": "Elastic-2.0",
+  "main": "",
+  "name": "catalyst_cli_2",
+  "oclif": {
+    "bin": "cctl",
+    "dirname": "cctl",
+    "commands": "./dist/commands",
+    "plugins": [
+      "@oclif/plugin-help",
+      "@oclif/plugin-plugins"
+    ],
+    "topicSeparator": " ",
+    "topics": {
+      "hello": {
+        "description": "Say hello to the world and others"
+      }
+    }
+  },
+  "repository": "OrbisOps/catalyst",
+  "scripts": {
+    "build": "shx rm -rf dist && tsc -b",
+    "dev": "tsc --watch",
+    "lint": "eslint . --ext .ts",
+    "postpack": "shx rm -f oclif.manifest.json",
+    "posttest": "npm run lint",
+    "prepack": "npm run build && oclif manifest && oclif readme",
+    "prepare": "npm run build",
+    "test": "mocha --forbid-only \"test/**/*.test.ts\"",
+    "version": "oclif readme && git add README.md"
+  },
+  "version": "0.0.0",
+  "bugs": "https://github.com/OrbisOps/catalyst/issues",
+  "keywords": [
+    "oclif"
+  ],
+  "types": "dist/index.d.ts",
+  "exports": "./lib/index.js",
+  "type": "module"
 }
