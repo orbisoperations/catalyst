@@ -11,6 +11,7 @@ export function getConfig(): [Config,React.JSX.Element] {
     return [{}, (<></>)]
 }
 
-export function setConfig(c: Config) {
+export function setConfig(c: Config): React.JSX.Element {
 
+    return <></>
 }
