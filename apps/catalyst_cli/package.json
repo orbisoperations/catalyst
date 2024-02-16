@@ -25,17 +25,19 @@
 		"zod": "^3.22.4"
 	},
 	"devDependencies": {
-		"@sindresorhus/tsconfig": "^3.0.1",
+		"@tsconfig/recommended": "^1.0.3",
 		"@types/ink": "^2.0.3",
 		"@types/react": "^18.2.55",
 		"@vdemedes/prettier-config": "^2.0.1",
 		"ava": "^5.3.1",
 		"chalk": "^5.3.0",
+		"esbuild": "^0.20.0",
 		"eslint-config-xo-react": "^0.27.0",
 		"eslint-plugin-react": "^7.33.2",
 		"eslint-plugin-react-hooks": "^4.6.0",
 		"ink-testing-library": "^3.0.0",
 		"prettier": "^2.8.8",
+		"react-devtools-core": "^5.0.0",
 		"ts-node": "^10.9.2",
 		"typescript": "^5.3.3",
 		"xo": "^0.54.2"
