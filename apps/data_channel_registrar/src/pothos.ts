@@ -1,5 +1,6 @@
 import { createYoga } from 'graphql-yoga';
 import SchemaBuilder from '@pothos/core';
+import { Context } from 'hono';
 
 const builder = new SchemaBuilder({});
 
