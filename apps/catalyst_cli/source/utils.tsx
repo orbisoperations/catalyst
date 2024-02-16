@@ -3,6 +3,12 @@ import { getConfig } from './config.js'
 import React from "react";
 import { Text } from 'ink'
 
+export interface DataChannel {
+    organization: string
+    name: string
+    endpoint: string
+}
+
 export function getGraphqlClient(): [GraphQLClient, React.JSX.Element] {
     // @ts-ignore
     const [config, configLogs] = getConfig();
