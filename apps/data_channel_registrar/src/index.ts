@@ -21,7 +21,4 @@ app.use("/graphql", async (c) => {
   return obj.fetch(c.req.raw as Request)
 });
 
-
-
-
 export default app;
