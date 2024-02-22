@@ -14,7 +14,7 @@ type Bindings = {
 const app = new Hono<{ Bindings: Bindings }>();
 
 app.use("/graphql", async (c) => {
-  console.log(c);
+  //console.log(c);
   const id = c.env.REGISTRAR.idFromName('A')
   const obj = c.env.REGISTRAR.get(id)
 

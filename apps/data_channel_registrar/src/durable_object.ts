@@ -15,17 +15,17 @@ class DataChannel {
     }
 }
 
-class State {
-    organizations: Map<string, Map<string, DataChannel>>
-    constructor(orgs?: Map<string, Map<string, DataChannel>>) {
-        this.organizations = orgs ?? new Map<string, Map<string, DataChannel>>()
+class Organization {
+    DataChannels: Map<string, DataChannel>
+
+    constructor(dcs?: Map<string, DataChannel>) {
+        this.DataChannels = dcs?? new Map<string, DataChannel>()
     }
 }
 
 let builder = new SchemaBuilder<{
     Context: {
-        state: State,
-        doState: DurableObjectState
+        d0State: DurableObjectState
     }
 }>({});
 
@@ -51,53 +51,37 @@ builder.queryType({
                 organization: t.arg.string({required: false}),
                 name: t.arg.string({required: false})
             },
-            resolve: (root, {organization, name}, {state}) => {
+            resolve: async (root, {organization, name}, {d0State}): Promise<DataChannel[]> => {
                 if (!organization && !name) {
                     // return all
-                    let allDCs: DataChannel[] = []
-                    state.organizations.forEach((org) =>
-                    {
-                        org.forEach((dc) => {
-                            allDCs.push(dc)
-                        })
+                    const allDcs = Array.from((await d0State.storage.list<Organization>()).entries()).flatMap(([orgName, org]) => {
+                        return Array.from(org.DataChannels.values())
                     })
-
-                    return allDCs
+                    return allDcs
                 } else if (!organization && name) {
                     // filter on name only
-                    const dcs: DataChannel[] = [];
-                    state.organizations.forEach((org) => {
-                        org.forEach((dc, key) => {
-                            if (key.startsWith(name)) {}
-                            dcs.push(dc)
-                        })
+                    return Array.from(((await d0State.storage.list<Organization>()).entries())).flatMap(([_, org]) => {
+                        return Array.from(org.DataChannels.entries()).filter(([dcName, _]) => {
+                            if (dcName.startsWith(name)) return true;
+                            return false
+                        }).map(([_, dc]) => dc)
                     })
 
-                    return dcs
                 } else if (organization && !name) {
                     // filter on org only
-                    const dcs: DataChannel[] = [];
-                    state.organizations.forEach((val, key) => {
-                        if (key.startsWith(organization)) {
-                            dcs.push(val.values())
-                        }
-
+                    return Array.from(await d0State.storage.list<Organization>({prefix: organization})).flatMap(([_, org]) => {
+                        return Array.from(org.DataChannels.values())
                     })
-                    return dcs
                 } else if (organization && name) {
                     // filter on all
-                    const dcs: DataChannel[] = [];
-                    state.organizations.forEach((channels, org) => {
-                        if (org.startsWith(organization)) {
-                            channels.forEach((chan, chanName) => {
-                                if (chanName.startsWith(name)) {
-                                    dcs.push(chan)
-                                }
-                            })
-                        }
+                    return Array.from(await d0State.storage.list<Organization>({prefix: organization})).flatMap(([_, org]) => {
+                        return Array.from(org.DataChannels.entries()).filter(([dcName, _]) => {
+                            if (dcName.startsWith(name)) return true;
+                            return false;
+                        }).map(([_, dc]) => dc)
                     })
-
-                    return dcs
+                } else {
+                    return []
                 }
             }
         }),
@@ -105,15 +89,12 @@ builder.queryType({
             type: DataChannel,
             nullable: true,
             args: {
-                organization: t.arg.string({require: true}),
-                name: t.arg.string({require: true})
+                organization: t.arg.string({required: true}),
+                name: t.arg.string({required: true})
             },
-            resolve: (root, {organization, name}, {state}) => {
-                if (state.organizations.has(organization) &&
-                    state.organizations.get(organization).has(name)) {
-                    return state.organizations.get(organization).get(name)
-                }
-                return  undefined
+            resolve: async (root, {organization, name}, {d0State}) => {
+                
+                return  (await d0State.storage.get<Organization>(organization))?.DataChannels.get(name)
 
             }
         })
@@ -129,11 +110,21 @@ builder.mutationType({
                 name: t.arg.string({require: true}),
                 endpoint: t.arg.string({require: true})
             },
-            resolve: (root, {organization, name, endpoint}, context) => {
+            resolve: (root, {organization, name, endpoint}, {state, d0State}) => {
                 console.log(`creating ${organization}/${name}@${endpoint}`)
                 const dc = new DataChannel(organization as string, name as string, endpoint as string)
 
-                d0Stub.push(dc)
+                if (!state.organizations.has(organization)) {
+                    state.organizations.set(organization, new Map<string, DataChannel>());
+                }
+
+                if (!state.organizations.get(organization).has(name)) {
+                    state.organizations.get(organization).set(name, dc)
+                }
+
+                d0State.blockConcurrencyWhile(async () => {
+                    await d0State.storage.put(state)
+                })
 
                 return dc
             }
@@ -206,27 +197,19 @@ const schema = builder.toSchema()
 export class RegistrarState {
     d0State: DurableObjectState
     app: Hono = new Hono()
-    state: State = State
 
     constructor(state: DurableObjectState) {
         this.d0State = state
-
-        this.d0State.blockConcurrencyWhile(async () => {
-            this.state = (await this.d0State.storage.get<State>("state"))?? new State();
-        })
 
         const yoga = createYoga({
             schema: schema,
             graphqlEndpoint: "/graphql",
             context: async () => ({
-                // This part is up to you!
-                state: this.state,
                 d0State: this.d0State
             }),
         });
 
         this.app.use("/graphql", async (c) => {
-            console.log(c);
             return yoga.handle(c.req.raw as Request, c);
         });
     }
