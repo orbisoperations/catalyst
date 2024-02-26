@@ -8,11 +8,11 @@ D0_NAMESPACE = "development"
 
 [[durable_objects.bindings]]
 name = "REGISTRAR"
-class_name = "RegistrarState"
+class_name = "Registrar"
 
 [[migrations]]
 tag = "v1" # Should be unique for each entry
-new_classes = ["RegistrarState"]
+new_classes = ["Registrar"]
 
 [dev]
 ip = "localhost"

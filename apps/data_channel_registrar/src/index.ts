@@ -3,9 +3,10 @@ import { createYoga } from "graphql-yoga";
 import { schema } from "./schema";
 import {DurableObjectNamespace} from "@cloudflare/workers-types"
 import { env } from "hono/adapter";
+import { DataChannel } from './DataChannel'
 
 // this is needed for wrangler to see and create the D0
-export  {RegistrarState} from "./durable_object"
+export  { Registrar } from "./Registrar"
 
 type Bindings = {
     REGISTRAR: DurableObjectNamespace
@@ -18,13 +19,13 @@ const yoga = createYoga({
   schema: schema,
   graphqlEndpoint: "/graphql"
 });
-
-app.use("/health", async (c) => {
-  const id = c.env.REGISTRAR.newUniqueId()
+app.use("/data_channel/create", async (c) => {
+  const url = new URL (c.req.url)
+  const id = c.env.REGISTRAR.idFromName(url.pathname)
   const obj = c.env.REGISTRAR.get(id)
 
-  console.log("fetching D0")
-  const resp = await obj.fetch("http://whatever.com/health", {
+  console.log("passing request to D0")
+  const resp = await obj.fetch("http://whatever.com/data_channel/create", {
     method: "GET"
   })
 
@@ -33,6 +34,7 @@ app.use("/health", async (c) => {
 
   return c.json(jsonResp, 200)
 })
+
 
 app.use("/health/worker", async (c) => {
 

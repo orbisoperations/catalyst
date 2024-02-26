@@ -3,23 +3,23 @@ import { DurableObjectState } from "@cloudflare/workers-types"
 
 type State = string
 
-export class RegistrarState {
+export class Registrar {
     state: DurableObjectState
     app: Hono = new Hono()
     storedConfig: State = ""
 
-    constructor(state: DurableObjectState) {
+    constructor(state: DurableObjectState ) {
         this.state = state
 
         this.state.blockConcurrencyWhile(async () => {
-            let stored = await this.state.storage.put("test", this.state.id);
+            let stored = await this.state.storage.put("test", this.state.id );
             return stored
         })
 
-        this.app.use("/health", async (c)  => {
+        this.app.use("/data_channel/create", async (c)  => {
             console.log("D0 get /")
             return c.json({
-                id: this.state.id,
+                req: this,
             }, 200)
         })
 
