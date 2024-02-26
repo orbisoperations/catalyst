@@ -3,6 +3,7 @@
 
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
 }
 
 generator pothos {
@@ -15,9 +16,10 @@ datasource db {
   provider = "sqlite"
   url      = env("DATABASE_URL")
 }
+
 // will need to provide models once we are using a D1 instance
-// model DataChannel {
-//   organization  String   @unique
-//   name          String
-//   endpoint      String
-// }
+model DataChannel {
+  organization  String @unique
+  name          String
+  endpoint      String
+}

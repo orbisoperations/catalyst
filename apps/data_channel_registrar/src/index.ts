@@ -1,65 +1,23 @@
 import { Context, Hono } from "hono";
 import { createYoga } from "graphql-yoga";
-import { schema } from "./schema";
-import {DurableObjectNamespace} from "@cloudflare/workers-types"
+import { D1Database} from "@cloudflare/workers-types"
+import schema from "./DataChannel"
 import { env } from "hono/adapter";
 import { DataChannel } from './DataChannel'
 
-// this is needed for wrangler to see and create the D0
-export  { Registrar } from "./Registrar"
-
 type Bindings = {
-    REGISTRAR: DurableObjectNamespace
-    D0_NAMESPACE: string
+  DB: D1Database
   }
 
 const app = new Hono<{ Bindings: Bindings }>();
-
 const yoga = createYoga({
   schema: schema,
+  context: async () => ({ DB: process.env.DB }),
   graphqlEndpoint: "/graphql"
 });
-app.use("/data_channel/create", async (c) => {
-  const url = new URL (c.req.url)
-  const id = c.env.REGISTRAR.idFromName(url.pathname)
-  const obj = c.env.REGISTRAR.get(id)
-
-  console.log("passing request to D0")
-  const resp = await obj.fetch("http://whatever.com/data_channel/create", {
-    method: "GET"
-  })
-
-  const jsonResp = await resp.json()
-  console.log(jsonResp)
-
-  return c.json(jsonResp, 200)
-})
-
-
-app.use("/health/worker", async (c) => {
-
-})
-
-app.use("/health/d0", async (c) => {
-  console.log(c);
-  const id = c.env.REGISTRAR.idFromName('A')
-  const obj = c.env.REGISTRAR.get(id)
-
-  console.log("fetching D0")
-  const resp = await obj.fetch("http://d0.com/health", {
-    method: "GET"
-  })
-
-  const jsonResp = await resp.json()
-  console.log(jsonResp)
-
-  return c.json(jsonResp, 200)
-})
 
 app.use("/graphql", async (c) => {
   console.log(c);
-  const id = c.env.REGISTRAR.idFromName('A')
-  const obj = c.env.REGISTRAR.get(id)
   return yoga.handle(c.req.raw as Request, c);
 });
 
