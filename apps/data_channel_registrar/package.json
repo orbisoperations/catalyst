@@ -2,7 +2,8 @@
   "scripts": {
     "dev": "npx kill-port 3000 && wrangler dev src/index.ts --port 3000",
     "deploy": "wrangler deploy --minify src/index.ts",
-    "build": "npx prisma generate --no-engine"
+    "build": "pnpm prisma generate --no-engine",
+    "migrate": "pnpm prisma migrate dev"
   },
   "dependencies": {
     "@pothos/core": "^3.41.0",

@@ -19,6 +19,7 @@ datasource db {
 
 // will need to provide models once we are using a D1 instance
 model DataChannel {
+  id            Int    @id @default(autoincrement())
   organization  String @unique
   name          String
   endpoint      String
