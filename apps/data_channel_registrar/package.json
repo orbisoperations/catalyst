@@ -1,20 +1,26 @@
 {
   "scripts": {
     "dev": "npx kill-port 3000 && wrangler dev src/index.ts --port 3000",
-    "deploy": "wrangler deploy --minify src/index.ts"
+    "deploy": "wrangler deploy --minify src/index.ts",
+    "build": "npx prisma generate --no-engine"
   },
   "dependencies": {
     "@pothos/core": "^3.41.0",
+    "@prisma/adapter-d1": "^5.10.2",
+    "@pothos/plugin-prisma": "^3.63.1",
+    "@prisma/client": "^5.9.1",
     "gqtx": "^0.9.3",
     "graphql": "^16.8.1",
     "graphql-yoga": "^5.1.1",
+    "graphql-scalars": "^1.22.4",
     "hono": "^3.12.8"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20240129.0",
     "@types/node": "^20.11.16",
+    "prisma": "^5.9.1",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.3.3",
-    "wrangler": "^3.22.0"
+    "wrangler": "^3.28.0"
   }
 }
