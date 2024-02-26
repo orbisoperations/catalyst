@@ -12,10 +12,11 @@ export class RegistrarState {
         this.state = state
 
         this.state.blockConcurrencyWhile(async () => {
-            return
+            let stored = await this.state.storage.put("test", this.state.id);
+            return stored
         })
-    
-        this.app.use("/health", async (c)  => { 
+
+        this.app.use("/health", async (c)  => {
             console.log("D0 get /")
             return c.json({
                 id: this.state.id,
