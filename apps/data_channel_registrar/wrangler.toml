@@ -13,3 +13,8 @@ class_name = "RegistrarState"
 [[migrations]]
 tag = "v1" # Should be unique for each entry
 new_classes = ["RegistrarState"]
+
+[dev]
+ip = "localhost"
+port = 5000
+local_protocol = "http"
