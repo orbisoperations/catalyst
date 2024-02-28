@@ -1,5 +1,7 @@
 import { Hono } from 'hono'
 import { createYoga } from 'graphql-yoga';
+import DirectivePlugin from '@pothos/plugin-directives';
+
 
 import SchemaBuilder from '@pothos/core';
 
@@ -26,6 +28,10 @@ const manufactures = [
 builder.objectType(Manufacture, {
   name: "Manufacture",
   description: "Manufacture object",
+  directives: {
+    canonical: {},
+    merge: {keyField: "id"}
+  },
   fields: (t) => ({
     name: t.exposeString("name", {}),
     id: t.exposeInt("id", {})

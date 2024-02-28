@@ -7,7 +7,7 @@ import { YogaServer, createYoga } from 'graphql-yoga';
 
 const endpoints: {endpoint: string}[] = [
   {
-    endpoint: "http://localhost:4001/graphql"
+    endpoint: "http://localhost:4003/graphql"
   },
   {
     endpoint: "http://localhost:4002/graphql"

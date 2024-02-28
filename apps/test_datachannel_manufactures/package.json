@@ -5,6 +5,7 @@
   },
   "dependencies": {
     "@pothos/core": "^3.41.0",
+    "@pothos/plugin-directives": "^3.10.2",
     "graphql-yoga": "^5.1.1",
     "hono": "^4.0.5"
   },
