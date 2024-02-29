@@ -43,4 +43,12 @@ export class UrlqGraphqlClient {
 
     return response.data.allDataChannels
   }
+
+  async validateToken(token: string) {
+    const query = gql`
+      query {
+        validate(token:"")
+      }
+    `
+  }
 }

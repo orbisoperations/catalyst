@@ -1,12 +1,15 @@
 import {Hono} from 'hono'
-import {buildHTTPExecutor} from '@graphql-tools/executor-http';
 import {stitchSchemas} from '@graphql-tools/stitch';
 import {schemaFromExecutor} from '@graphql-tools/wrap';
+import { buildHTTPExecutor } from '@graphql-tools/executor-http';
 import {createYoga} from 'graphql-yoga';
 import {UrlqGraphqlClient} from "./client/client";
+import { buildSchema, parse } from 'graphql';
+import { isAsyncIterable, type Executor } from '@graphql-tools/utils';
+import { stitchingDirectives } from '@graphql-tools/stitching-directives';
 
 // https://github.com/ardatan/schema-stitching/blob/master/examples/stitching-directives-sdl/src/gateway.ts
-async function fetchRemoteSchema(executor: Executor) {
+export async function fetchRemoteSchema(executor: Executor) {
   const result = await executor({
     document: parse(/* GraphQL */ `
       {
@@ -29,6 +32,9 @@ async function makeGatewaySchema(endpoints: { endpoint: string }[]) {
   const remoteExecutors = endpoints.map(({endpoint}) => {
     return buildHTTPExecutor({
       endpoint: endpoint
+      //headers: executorRequest => ({
+      //  Authorization: executorRequest?.context?.authHeader,
+      //}),
     })
   })
 
