@@ -1,5 +1,6 @@
 name = "test_datachannel_manufacture"
 compatibility_date = "2023-12-01"
+main = "./src/index.ts"
 
 [dev]
 port = 4003

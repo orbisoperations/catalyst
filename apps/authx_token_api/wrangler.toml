@@ -2,6 +2,10 @@ name = "authx_token_api"
 compatibility_date = "2023-12-01"
 compatibility_flags = [ "nodejs_compat" ]
 
+[dev]
+ip = "localhost"
+port = 5052
+
 [durable_objects]
 bindings = [{name = "HSM", class_name = "HSM"}]
 
