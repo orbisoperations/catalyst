@@ -58,8 +58,7 @@ app.get('/', (c) => {
 
 app.use("/graphql", async (c) => {
   console.log(c.req.raw)
-  //console.log(await c.req.json())
-  return yoga.handle(c.req.raw as Request, c);
+  return yoga.handle(c.req.raw, c);
 });
 
 export default app

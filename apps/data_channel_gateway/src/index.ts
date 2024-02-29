@@ -22,7 +22,7 @@ const endpoints: {endpoint: string}[] = [
 ]
 
 // https://github.com/ardatan/schema-stitching/blob/master/examples/stitching-directives-sdl/src/gateway.ts
-async function fetchRemoteSchema(executor: Executor) {
+export async function fetchRemoteSchema(executor: Executor) {
   const result = await executor({
     document: parse(/* GraphQL */ `
       {
@@ -36,13 +36,8 @@ async function fetchRemoteSchema(executor: Executor) {
   return buildSchema(result.data._sdl);
 }
 
-// https://github.com/ardatan/schema-stitching/blob/master/examples/combining-local-and-remote-schemas/src/gateway.ts
-async function makeGatewaySchema(endpoints: {endpoint: string}[]) {
-  const { stitchingDirectivesTransformer } = stitchingDirectives();
-  // Make remote executors:
-  // these are simple functions that query a remote GraphQL API for JSON.
-
-  const remoteExecutors = endpoints.map (({endpoint}) => {
+export function makeRemoteExecutors(endpoints: {endpoint: string}[]) {
+  return endpoints.map (({endpoint}) => {
     return buildHTTPExecutor({
       endpoint: endpoint
       //headers: executorRequest => ({
@@ -50,6 +45,15 @@ async function makeGatewaySchema(endpoints: {endpoint: string}[]) {
       //}),
     })
   })
+}
+
+// https://github.com/ardatan/schema-stitching/blob/master/examples/combining-local-and-remote-schemas/src/gateway.ts
+async function makeGatewaySchema(endpoints: {endpoint: string}[]) {
+  const { stitchingDirectivesTransformer } = stitchingDirectives();
+  // Make remote executors:
+  // these are simple functions that query a remote GraphQL API for JSON.
+
+  const remoteExecutors = makeRemoteExecutors(endpoints)
   
   const subschemas = Promise.all(remoteExecutors.map(async (exec) => {
     return {

@@ -1,0 +1,11 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": ["**/.env.*local"],
+  "pipeline": {
+    "lint": {},
+    "dev": {
+      "dependsOn": ["kill"],
+      "cache": false
+    }
+  }
+}
