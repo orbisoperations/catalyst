@@ -1,0 +1,5 @@
+name = "test_datachannel_airplanes"
+compatibility_date = "2023-12-01"
+
+[dev]
+port = 4001
