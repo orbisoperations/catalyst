@@ -3,6 +3,10 @@ import { buildHTTPExecutor } from '@graphql-tools/executor-http';
 import { stitchSchemas } from '@graphql-tools/stitch';
 import { RenameRootFields, RenameTypes, schemaFromExecutor } from '@graphql-tools/wrap';
 import { YogaServer, createYoga } from 'graphql-yoga';
+import { stitchingDirectives } from '@graphql-tools/stitching-directives';
+import { isAsyncIterable, type Executor } from '@graphql-tools/utils';
+import { buildSchema, parse } from 'graphql';
+import {stitchingDirectivesTransformer} from "@graphql-tools/stitching-directives/stitchingDirectivesTransformer";
 
 
 const endpoints: {endpoint: string}[] = [
@@ -17,8 +21,24 @@ const endpoints: {endpoint: string}[] = [
   }
 ]
 
+// https://github.com/ardatan/schema-stitching/blob/master/examples/stitching-directives-sdl/src/gateway.ts
+async function fetchRemoteSchema(executor: Executor) {
+  const result = await executor({
+    document: parse(/* GraphQL */ `
+      {
+        _sdl
+      }
+    `),
+  });
+  if (isAsyncIterable(result)) {
+    throw new Error('Expected executor to return a single result');
+  }
+  return buildSchema(result.data._sdl);
+}
+
 // https://github.com/ardatan/schema-stitching/blob/master/examples/combining-local-and-remote-schemas/src/gateway.ts
 async function makeGatewaySchema(endpoints: {endpoint: string}[]) {
+  const { stitchingDirectivesTransformer } = stitchingDirectives();
   // Make remote executors:
   // these are simple functions that query a remote GraphQL API for JSON.
 
@@ -33,13 +53,14 @@ async function makeGatewaySchema(endpoints: {endpoint: string}[]) {
   
   const subschemas = Promise.all(remoteExecutors.map(async (exec) => {
     return {
-      schema: await schemaFromExecutor(exec),
+      schema: await fetchRemoteSchema(exec),
       executor: exec
     }
   }))
 
   return stitchSchemas({
     subschemas:  await subschemas,
+    subschemaConfigTransforms: [stitchingDirectivesTransformer],
     typeDefs: 'type Query { health: String! }',
     resolvers: {
       Query: {

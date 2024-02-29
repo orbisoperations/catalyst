@@ -1,5 +1,7 @@
 import { Hono } from 'hono'
 import { createYoga } from 'graphql-yoga';
+import { printSchema, lexicographicSortSchema } from 'graphql';
+
 
 import SchemaBuilder from '@pothos/core';
 
@@ -27,7 +29,13 @@ builder.queryType({
       resolve: () => {
         return [new Airplane("Airbus"), new Airplane("Boeing")]
       }
-    })
+    }),
+    _sdl: t.field(({
+      type: "String",
+      resolve: () => {
+        return printSchema(lexicographicSortSchema(schema));
+      }
+    }))
   }),
 });
 

@@ -4,6 +4,7 @@
     "deploy": "wrangler deploy --minify src/index.ts"
   },
   "dependencies": {
+    "@graphql-tools/stitching-directives": "^3.0.1",
     "@pothos/core": "^3.41.0",
     "graphql-yoga": "^5.1.1",
     "hono": "^4.0.5"
