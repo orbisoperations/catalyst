@@ -1,0 +1,5 @@
+name = "test_datachannel_cars"
+compatibility_date = "2023-12-01"
+
+[dev]
+port = 4002

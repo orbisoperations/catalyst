@@ -1,0 +1,15 @@
+{
+  "scripts": {
+    "dev": "npx kill-port 4002 && wrangler dev src/index.ts",
+    "deploy": "wrangler deploy --minify src/index.ts"
+  },
+  "dependencies": {
+    "@pothos/core": "^3.41.0",
+    "graphql-yoga": "^5.1.1",
+    "hono": "^4.0.5"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240208.0",
+    "wrangler": "^3.25.0"
+  }
+}
