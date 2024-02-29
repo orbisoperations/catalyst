@@ -6,7 +6,10 @@
   "dependencies": {
     "@graphql-tools/executor-http": "^1.0.9",
     "@graphql-tools/stitch": "^9.0.5",
+    "@graphql-tools/stitching-directives": "^3.0.1",
+    "@graphql-tools/utils": "^10.1.0",
     "@graphql-tools/wrap": "^10.0.2",
+    "graphql": "^16.8.1",
     "graphql-yoga": "^5.1.1",
     "hono": "^4.0.5"
   },
