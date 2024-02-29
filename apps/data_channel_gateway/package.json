@@ -4,6 +4,10 @@
     "deploy": "wrangler deploy --minify src/index.ts"
   },
   "dependencies": {
+    "@graphql-tools/executor-http": "^1.0.9",
+    "@graphql-tools/stitch": "^9.0.5",
+    "@graphql-tools/wrap": "^10.0.2",
+    "graphql-yoga": "^5.1.1",
     "hono": "^4.0.5"
   },
   "devDependencies": {
