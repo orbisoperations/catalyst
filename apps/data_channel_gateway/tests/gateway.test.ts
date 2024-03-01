@@ -46,8 +46,9 @@ beforeAll(async () => {
         modulesRules: [
             { type: "ESModule", include: ["**/*.js"], fallthrough: true },
         ],
-        port: 4001
+        port: 4001,
     })
+
 })
 
 afterAll(async () => {
@@ -65,18 +66,11 @@ describe("test gateway functions", async () => {
     })
 
     test("external graphql schema introspection", async () => {
-        console.log([{endpoint: (await manufactureService.ready).origin}])
-        const executors = makeRemoteExecutors([{endpoint: (await manufactureService.ready).origin}])
-        expect(executors.length).toBe(1)
-        const result = await executors[0]({
-            document: parse(/* GraphQL */ `
-                  {
-                    _sdl
-                  }
-                `),
-            });
-        expect(result).toBe(undefined)
+        console.log([{endpoint: (await manufactureService.ready).origin + "/graphql"}])
+        const executors = makeRemoteExecutors([{endpoint: (await manufactureService.ready).origin + "/graphql" }])
+
+        expect(executors[0]).not.toBe(undefined)
         const schema = await fetchRemoteSchema(executors[0]);
-        expect(printSchema(lexicographicSortSchema(schema))).toBe("")
+        expect(printSchema(lexicographicSortSchema(schema))).toBe("directive @canonical on ENUM | FIELD_DEFINITION | INPUT_FIELD_DEFINITION | INPUT_OBJECT | INTERFACE | OBJECT | SCALAR | UNION\n\ndirective @computed(selectionSet: String!) on FIELD_DEFINITION\n\ndirective @key(selectionSet: String!) on OBJECT\n\ndirective @merge(additionalArgs: String, argsExpr: String, key: [String!], keyArg: String, keyField: String) on FIELD_DEFINITION\n\ntype Manufacture {\n  id: ID!\n  name: String\n}\n\ntype Query {\n  _sdl: String!\n  manufacture(id: ID!): Manufacture\n  manufactures: [Manufacture]!\n}")
     })
 })
