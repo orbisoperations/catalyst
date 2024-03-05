@@ -48,7 +48,7 @@ export function makeRemoteExecutors(endpoints: {endpoint: string}[]) {
 }
 
 // https://github.com/ardatan/schema-stitching/blob/master/examples/combining-local-and-remote-schemas/src/gateway.ts
-async function makeGatewaySchema(endpoints: {endpoint: string}[]) {
+export async function makeGatewaySchema(endpoints: {endpoint: string}[]) {
   const { stitchingDirectivesTransformer } = stitchingDirectives();
   // Make remote executors:
   // these are simple functions that query a remote GraphQL API for JSON.
