@@ -1,0 +1,14 @@
+name = "catalyst-gql-api"
+compatibility_date = "2023-12-01"
+main = "./src/index.ts"
+node_compat = true
+
+[dev]
+ip = "localhost"
+port = 5000
+local_protocol = "http"
+
+[[d1_databases]]
+binding = "DB" # available in your Worker on env.DB
+database_name = "catalyst"
+database_id = "87d35dfe-69b2-42cb-9aeb-45efacde0d14"
