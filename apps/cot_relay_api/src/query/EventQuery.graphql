@@ -1,0 +1,15 @@
+query EventQuery {
+  event(type: "ExampleType") {
+    type
+    point {
+      lat
+      lon
+      hae
+    }
+    unit {
+      uid
+      name
+      type
+    }
+  }
+}
