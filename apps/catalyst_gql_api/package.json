@@ -1,0 +1,32 @@
+{
+  "name": "@catalyst/gql",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "bun test",
+    "dev": "wrangler dev src/worker.ts",
+    "deploy": "wrangler deploy --minify src/worker.ts",
+    "migrate": "wrangler d1 migrations apply gql-catalyst-db --local"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@catalyst/schema": "workspace:*",
+    "@cloudflare/workers-types": "^4.20240222.0",
+    "@types/bun": "^1.0.8",
+    "bun": "^1.0.30",
+    "kysely": "^0.27.2",
+    "kysely-d1": "^0.3.0",
+    "tsx": "latest",
+    "typescript": "^5.4.2",
+    "wrangler": "^3.31.0"
+  },
+  "dependencies": {
+    "@pothos/core": "^3.41.0",
+    "graphql-yoga": "^5.1.1",
+    "hono": "^4.0.10"
+  }
+}

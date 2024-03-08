@@ -1,0 +1,31 @@
+{
+  "name": "@catalyst/schema",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "gen": "pnpm prisma generate",
+    "migrate": "pnpm prisma migrate dev",
+    "migrate:reset": "pnpm prisma migrate reset",
+    "build": "pnpm gen && pnpm migrate",
+    "postinstall": "pnpm build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@pothos/plugin-prisma": "^3.65.0",
+    "@types/bun": "^1.0.8",
+    "@types/node": "^20.11.25",
+    "bun": "^1.0.30",
+    "kysely": "^0.27.2",
+    "prisma": "^5.10.2",
+    "prisma-kysely": "^1.8.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.2"
+  },
+  "dependencies": {
+    "@prisma/client": "5.10.2"
+  }
+}

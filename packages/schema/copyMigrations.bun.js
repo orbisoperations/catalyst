@@ -1,52 +1,62 @@
-import { readdir, copyFile, mkdir, stat } from 'fs';
-import { join } from 'path';
+/**
+ * The `fs` variable is used to access the file system module in Node.js.
+ * It is obtained by requiring the 'fs' module and accessing the `promises` property.
+ *
+ * @type {Object}
+ * @readonly
+ * @namespace fs
+ * @see {@link https://nodejs.org/api/fs.html|Node.js File System}
+ */
+const fs = require('fs').promises;
+const path = require('path');
 
-const SQL_EXT = '.sql';
-const PROJECT_ROOT = process.cwd();
-const MIGRATIONS_DIR = join(PROJECT_ROOT, 'prisma', 'migrations');
-const DIST_DIR = join(PROJECT_ROOT, 'dist', 'migrations');
-
-console.log('Migration directory:', MIGRATIONS_DIR);
-
-async function makeDirectoryIfNotExists(path: string): Promise<void> {
+// Source directory where Prisma migration files are located
+/**
+ * The directory path for Prisma migrations.
+ *
+ * @type {string}
+ */
+const migrationsDir = path.join(__dirname, 'prisma', 'migrations');
+/**
+ * Represents the target directory for storing migration files.
+ *
+ * @type {string}
+ */
+const targetDir = path.join(__dirname, 'dist', 'migrations');
+/**
+ * Copies SQL migration files from a source directory to a target directory,
+ * optionally adding a prefix to the target filenames.
+ *
+ * @param {string} sourceDir - The path to the source directory containing the migration files.
+ * @param {string} target - The path to the target directory where the migration files will be copied to.
+ * @param {string} [prefix=''] - Optional prefix to be added to the target filenames.
+ *
+ * @return {Promise<void>} - A Promise that resolves when the migration files have been copied successfully,
+ *                          or rejects with an error if an error occurred during the process.
+ */
+async function copyMigrations(sourceDir, target, prefix = '') {
     try {
-        await mkdir(path, { recursive: true });
-    } catch (error) {
-        if (error.code !== 'EEXIST') {
-            console.error(`Error creating directory ${path}:`, error);
-            process.exit(1);
-        }
-    }
-}
+        await fs.mkdir(target, { recursive: true });
+        const entries = await fs.readdir(sourceDir, { withFileTypes: true });
 
-async function copyDirectory(sourceDir: string, targetDir: string): Promise<void> {
-    await makeDirectoryIfNotExists(targetDir);
-
-    const entryNames = await readdir(sourceDir);
-    for (const entryName of entryNames) {
-        const sourcePath = join(sourceDir, entryName);
-        const targetPath = join(targetDir, entryName);
-        const entryStat = await stat(sourcePath);
-
-        if (entryStat.isDirectory()) {
-            await copyDirectory(sourcePath, targetPath);
-        } else if (entryStat.isFile() && sourcePath.endsWith(SQL_EXT)) {
-            try {
-                await copyFile(sourcePath, targetPath);
-            } catch (error) {
-                console.error(`Error copying file from ${sourcePath} to ${targetPath}:`, error);
+        for (const entry of entries) {
+            const sourcePath = path.join(sourceDir, entry.name);
+            if (entry.isDirectory()) {
+                // If the entry is a directory, recurse into it and pass the directory name as a prefix
+                await copyMigrations(sourcePath, target, entry.name + '_');
+            } else if (entry.isFile() && sourcePath.endsWith('.sql')) {
+                // Modify the target filename to include the prefix, ensuring uniqueness
+                const targetFilename = prefix + entry.name;
+                const targetPath = path.join(target, targetFilename);
+                await fs.copyFile(sourcePath, targetPath);
             }
         }
-    }
-}
-
-async function startCopying() {
-    try {
-        await copyDirectory(MIGRATIONS_DIR, DIST_DIR);
-        console.log('Migrations have been successfully copied.');
     } catch (error) {
-        console.error("An error occurred during the copy process:", error);
+        console.error("An error occurred:", error);
     }
 }
 
-startCopying();
+// Execute the function
+copyMigrations(migrationsDir, targetDir)
+    .then(() => console.log('Migrations copied.'))
+    .catch(error => console.error("An error occurred:", error));
