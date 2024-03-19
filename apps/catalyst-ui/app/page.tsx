@@ -1,14 +1,14 @@
 "use client";
 import {
   CreateButton,
+  OpenButton,
   OrbisBadge,
   OrbisTable,
-  TrashButton,
 } from "@/components/elements";
 import { ListView } from "@/components/layouts";
 import { OrbisProvider } from "@/components/utils";
 import { Flex } from "@chakra-ui/layout";
-import { Card, Text } from "@chakra-ui/react";
+import { Card } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
 export default function Home() {
   const router = useRouter();
@@ -37,14 +37,18 @@ export default function Home() {
               rows={[
                 [
                   <Flex key={"1"} justifyContent={"space-between"}>
-                    <Text>Hello</Text>
+                    <OpenButton
+                      onClick={() => {
+                        router.push("/channels/1");
+                      }}
+                    >
+                      Hello
+                    </OpenButton>
                     <OrbisBadge>Shared</OrbisBadge>
                   </Flex>,
                   "world",
                   "https://example.com",
                 ],
-                ["hello", "world", "https://example.com"],
-                ["hello", "world", "https://example.com"],
               ]}
               tableProps={{}}
             />

@@ -21,15 +21,11 @@ export default function CreateChannelPage() {
         subtitle=""
         topbaractions={[
           {
-            display: "Create",
-            path: "/create",
-          },
-          {
-            display: "Delete",
-            path: "/delete",
+            display: "Data Channels",
+            path: "/",
           },
         ]}
-        topbartitle="Detailed View"
+        topbartitle="Catalyst"
       >
         <form>
           <Grid gap={5}>
