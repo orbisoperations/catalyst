@@ -6,9 +6,10 @@
   "type": "module",
   "scripts": {
     "test": "bun test",
-    "dev": "wrangler dev src/worker.ts",
+    "dev": "pnpm wrangler dev --name catalyst_gql_api",
     "deploy": "wrangler deploy --minify src/worker.ts",
-    "migrate": "wrangler d1 migrations apply gql-catalyst-db --local"
+    "migrate": "wrangler d1 migrations apply catalyst --local",
+    "postinstall": "pnpm migrate"
   },
   "keywords": [],
   "author": "",

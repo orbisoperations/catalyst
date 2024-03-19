@@ -8,7 +8,7 @@
     "gen": "pnpm prisma generate",
     "migrate": "pnpm prisma migrate dev",
     "migrate:reset": "pnpm prisma migrate reset",
-    "build": "pnpm gen && pnpm migrate",
+    "build": "pnpm gen && pnpm migrate && node ./flattenMigrations.js",
     "postinstall": "pnpm build"
   },
   "keywords": [],

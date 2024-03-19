@@ -8,6 +8,7 @@ export type DataChannel = {
     id: string;
     name: string;
     endpoint: string;
+    organization: string;
 };
 export type DB = {
     DataChannel: DataChannel;

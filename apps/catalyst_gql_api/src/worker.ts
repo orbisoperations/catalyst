@@ -11,8 +11,6 @@ export type Env = & Record<string, string> & {
 };
 
 
-const compiledSchema = schemaBuilder.toSchema();
-
 app.use("/graphql", async (c) => {
 
 
@@ -22,7 +20,7 @@ app.use("/graphql", async (c) => {
 
 
   const yoga = createYoga({
-    schema: compiledSchema,
+    schema: schemaBuilder,
     context: {
       ...c,
       db: db,

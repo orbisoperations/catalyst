@@ -2,5 +2,6 @@
 CREATE TABLE "DataChannel" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "name" TEXT NOT NULL,
-    "endpoint" TEXT NOT NULL
+    "endpoint" TEXT NOT NULL,
+    "organization" TEXT NOT NULL
 );

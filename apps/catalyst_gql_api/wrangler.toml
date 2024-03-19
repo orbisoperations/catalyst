@@ -10,6 +10,6 @@ local_protocol = "http"
 
 [[d1_databases]]
 binding = "APP_DB" # available in your Worker on env.DB
-database_name = "gql-catalyst-db"
-database_id = "1be4d6a2-7e61-4346-a50e-f43fe8b8f938"
-migrations_dir = "node_modules/@catalyst/schema/dist/migrations" # Customize this value to rename the `migrations` folder
+database_name = "catalyst"
+database_id = "87d35dfe-69b2-42cb-9aeb-45efacde0d14"
+migrations_dir = "node_modules/@catalyst/schema/dist/flat_migrations" # Customize this value to rename the `migrations` folder
