@@ -4,6 +4,7 @@ import {
   OrbisBadge,
   OrbisTable,
   TrashButton,
+  OpenButton
 } from "@/components/elements";
 import { ListView } from "@/components/layouts";
 import { OrbisProvider } from "@/components/utils";
@@ -37,13 +38,12 @@ export default function Home() {
               rows={[
                 [
                   <Flex key={"1"} justifyContent={"space-between"}>
-                    <Text>Hello</Text>
+                    <OpenButton onClick={() => router.push('/channels/testDetail')}>Hello</OpenButton>
                     <OrbisBadge>Shared</OrbisBadge>
                   </Flex>,
                   "world",
                   "https://example.com",
                 ],
-                ["hello", "world", "https://example.com"],
                 ["hello", "world", "https://example.com"],
               ]}
               tableProps={{}}
