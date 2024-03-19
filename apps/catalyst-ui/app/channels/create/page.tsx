@@ -1,16 +1,13 @@
 "use client";
-import {
-  CreateButton,
-  OrbisBadge,
-  OrbisButton,
-  TrashButton,
-} from "@/components/elements";
+import { OrbisButton } from "@/components/elements";
 import { DetailedView } from "@/components/layouts";
 import { OrbisProvider } from "@/components/utils";
-import { Container, Flex, Grid } from "@chakra-ui/layout";
+import { Flex, Grid } from "@chakra-ui/layout";
 import { FormControl, Input } from "@chakra-ui/react";
+import { useRouter } from "next/navigation";
 
 export default function CreateChannelPage() {
+  const router = useRouter();
   return (
     <OrbisProvider>
       <DetailedView
@@ -21,15 +18,11 @@ export default function CreateChannelPage() {
         subtitle=""
         topbaractions={[
           {
-            display: "Create",
-            path: "/create",
-          },
-          {
-            display: "Delete",
-            path: "/delete",
+            display: "Data Channels",
+            path: "/",
           },
         ]}
-        topbartitle="Detailed View"
+        topbartitle="Catalyst"
       >
         <form>
           <Grid gap={5}>
@@ -61,8 +54,14 @@ export default function CreateChannelPage() {
               />
             </FormControl>
             <Flex justifyContent={"space-between"}>
-              <OrbisButton colorScheme="gray" type="submit">
-                Create
+              <OrbisButton
+                onClick={() => {
+                  router.back();
+                }}
+                colorScheme="gray"
+                type="submit"
+              >
+                Cancel
               </OrbisButton>
               <OrbisButton type="submit">Create</OrbisButton>
             </Flex>
