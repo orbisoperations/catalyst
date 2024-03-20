@@ -1,71 +1,49 @@
 import {describe, it, expect} from 'bun:test';
+import {gql, GraphQLClient} from 'graphql-request';
 
 
 describe('test', () => {
-  // it('Creates data channels with the api', async () => {
-  //   const result = await fetch(
-  //       "http://localhost:5050/dataChannel/create",
-  //       {
-  //         method: "POST",
-  //         headers: {
-  //           "Content-Type": "application/json",
-  //         },
-  //         body: JSON.stringify({
-  //           query: `
-  //           query {
-  //             dataChannels {
-  //               id
-  //               name
-  //               endpoint
-  //             }
-  //           }
-  //         `,
-  //         }),
-  //       });
-  //
-  //   expect(result.status).toBe(200);
-  //   expect(await result.json()).toEqual({
-  //     data: {
-  //       dataChannels: [{id: "*"}]
-  //     }
-  //   });
-  // });
+    const client = new GraphQLClient("http://localhost:5050/graphql", { errorPolicy: 'all' });
+  it('Creates a data channel with the api', async () => {
+
+      const mutation = gql`
+          mutation CreateDataChannel($input: DataChannelInput!) {
+              createDataChannel(
+              input:  $input
+          )  {id}
+          }
+      `;
+
+      const variables = {
+          input: {
+              name: "Example Data Channel",
+              endpoint: "https://example.com/data",
+              organization: "Example Organization"
+          }
+      };
+
+
+
+
+      const data = await client.request(mutation, variables)
+      expect(data).toEqual({createDataChannel: {id: expect.any(String)}});
+  });
 
     it('requests data channels from the api', async () => {
-        const result = await fetch(
-            "http://localhost:5050/graphql",
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    query: `
+        const query = gql`
             query {
-              dataChannels {
-                id
-                name
-                endpoint
-              }
+                allDataChannels {
+                    id
+                    name
+                    endpoint
+                    organization
+                }
             }
-          `,
-                }),
-            });
+        `;
 
-        expect(result.status).toBe(200);
-        expect(await result.json()).toEqual({
-            data: {
-                dataChannels: [{endpoint: "grouch", id: "foo", name: "garbage"}]
-            }
-        });
-    });
-  // it('/db', async () => {
-  //   const result = await fetch("http://localhost:5050/db");
-  //
-  //   expect(result.status).toBe(200);
-  //   expect(await result.json()).toEqual({
-  //     id: "foo"
-  //   });
-  // });
+        const data: any = await client.request(query);
+        expect(data.allDataChannels.length).toBeGreaterThan(0);
+    })
+
 
 });

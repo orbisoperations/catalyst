@@ -1,0 +1,22 @@
+type DataChannel {
+  endpoint: String!
+  id: ID!
+  name: String!
+  organization: String!
+}
+
+input DataChannelInput {
+  endpoint: String!
+  name: String!
+  organization: String!
+}
+
+type Mutation {
+  createDataChannel(input: DataChannelInput!): DataChannel!
+}
+
+type Query {
+  allDataChannels: [DataChannel!]
+  dataChannelByName(name: String): DataChannel
+  dataChannelsByOrg(organization: String): [DataChannel!]
+}

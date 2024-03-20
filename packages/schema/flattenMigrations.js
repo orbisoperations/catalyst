@@ -9,7 +9,24 @@ const destDir = path.join(__dirname, 'dist/flat_migrations');
 if (!fs.existsSync(destDir)) {
     fs.mkdirSync(destDir, { recursive: true });
 }
+// Function to clear out the destination directory
+const clearDestinationDir = () => {
+    if (fs.existsSync(destDir)) {
+        const files = fs.readdirSync(destDir);
+        for (const file of files) {
+            fs.unlinkSync(path.join(destDir, file));
+        }
+        console.log('Cleared out the flat_migrations directory.');
+    }
+};
 
+// Create the destination directory if it doesn't exist
+if (!fs.existsSync(destDir)) {
+    fs.mkdirSync(destDir, { recursive: true });
+} else {
+    // If it exists, clear it out
+    clearDestinationDir();
+}
 // Function to copy files
 const copyFiles = async () => {
     try {

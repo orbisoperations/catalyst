@@ -23,6 +23,14 @@ DataChannelObject.implement({
   }),
 });
 
+const DataChannelInput = builder.inputType('DataChannelInput', {
+  fields: (t) => ({
+    name: t.string({ required: true }),
+    endpoint: t.string({ required: true }),
+    organization: t.string({ required: true }),
+  }),
+});
+
 builder.queryType({
   fields: (t) => ({
     allDataChannels: t.field({
@@ -60,29 +68,21 @@ builder.queryType({
   }),
 });
 
-// builder.mutationType({
-//   fields: (t) => ({
-//     // Add mutation that returns a simple boolean
-//     t.field({
-//       type: DataChannelObject,
-//       args: {
-//         name: t.arg.string(),
-//         endpoint: t.arg.string(),
-//         organization: t.arg.string(),
-//       },
-//       resolve: async (root, args) => {
-//         const dataChannel = {
-//           name: args.name,
-//             endpoint: args.endpoint,
-//               organization: args.organization
-//         };
-//
-//         await create(dataChannel);
-//
-//         return dataChannel;
-//       },
-//     }),
-//   }),
-// });
+builder.mutationType({
+  fields: (t) => ({
+    createDataChannel: t.field({
+      type: DataChannelObject,
+      args: {
+        input: t.arg({ type: DataChannelInput, required: true }),
+      },
+      resolve: (root, args, ctx) => {
+        const dataChannelRec= { id: crypto.randomUUID(), name: args.input.name, endpoint: args.input.endpoint, organization: args.input.organization }
+        return  ctx.db.insertInto('DataChannel').values(dataChannelRec as any)
+            .returningAll()
+            .executeTakeFirst() as Promise<DataChannel>;
+      }
+    }),
+  }),
+});
 
 export default builder.toSchema()
