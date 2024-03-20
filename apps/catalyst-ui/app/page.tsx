@@ -7,6 +7,7 @@ import {
 } from "@/components/elements";
 import { ListView } from "@/components/layouts";
 import { OrbisProvider } from "@/components/utils";
+import { navigationItems } from "@/utils/nav.utils";
 import { Flex } from "@chakra-ui/layout";
 import { Card } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
@@ -24,6 +25,7 @@ export default function Home() {
             />
           </Flex>
         }
+        topbaractions={navigationItems}
         headerTitle={{
           adjacent: <OrbisBadge>Hello</OrbisBadge>,
           text: "Data Channels",
