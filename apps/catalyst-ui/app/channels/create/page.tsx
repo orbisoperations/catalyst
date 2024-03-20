@@ -2,6 +2,7 @@
 import { OrbisButton } from "@/components/elements";
 import { DetailedView } from "@/components/layouts";
 import { OrbisProvider } from "@/components/utils";
+import { navigationItems } from "@/utils/nav.utils";
 import { Flex, Grid } from "@chakra-ui/layout";
 import { FormControl, Input } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
@@ -16,12 +17,7 @@ export default function CreateChannelPage() {
           text: "Create Data Channel",
         }}
         subtitle=""
-        topbaractions={[
-          {
-            display: "Data Channels",
-            path: "/",
-          },
-        ]}
+        topbaractions={navigationItems}
         topbartitle="Catalyst"
       >
         <form>
