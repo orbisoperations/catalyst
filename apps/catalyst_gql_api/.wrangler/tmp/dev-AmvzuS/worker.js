@@ -52,7 +52,7 @@ var __privateSet = (obj, member, value, setter) => {
   return value;
 };
 
-// .wrangler/tmp/bundle-0LMVfr/checked-fetch.js
+// .wrangler/tmp/bundle-hrcFlw/checked-fetch.js
 function checkURL(request, init2) {
   const url = request instanceof URL ? request : new URL(
     (typeof request === "string" ? new Request(request, init2) : request).url
@@ -70,7 +70,7 @@ function checkURL(request, init2) {
 }
 var urls;
 var init_checked_fetch = __esm({
-  ".wrangler/tmp/bundle-0LMVfr/checked-fetch.js"() {
+  ".wrangler/tmp/bundle-hrcFlw/checked-fetch.js"() {
     "use strict";
     urls = /* @__PURE__ */ new Set();
     globalThis.fetch = new Proxy(globalThis.fetch, {
@@ -18682,13 +18682,13 @@ var require_dist = __commonJS({
   }
 });
 
-// .wrangler/tmp/bundle-0LMVfr/middleware-loader.entry.ts
+// .wrangler/tmp/bundle-hrcFlw/middleware-loader.entry.ts
 init_checked_fetch();
 init_modules_watch_stub();
 init_process();
 init_buffer();
 
-// .wrangler/tmp/bundle-0LMVfr/middleware-insertion-facade.js
+// .wrangler/tmp/bundle-hrcFlw/middleware-insertion-facade.js
 init_checked_fetch();
 init_modules_watch_stub();
 init_process();
@@ -38856,14 +38856,14 @@ DataChannelObject.implement({
     id: t.exposeID("id"),
     name: t.exposeString("name"),
     endpoint: t.exposeString("endpoint"),
-    organization: t.exposeString("organization")
+    creatorOrganization: t.exposeString("creatorOrganization")
   })
 });
 var DataChannelInput = builder.inputType("DataChannelInput", {
   fields: (t) => ({
     name: t.string({ required: true }),
     endpoint: t.string({ required: true }),
-    organization: t.string({ required: true })
+    creatorOrganization: t.string({ required: true })
   })
 });
 builder.queryType({
@@ -38875,20 +38875,20 @@ builder.queryType({
         return ctx.db.selectFrom("DataChannel").selectAll().execute();
       }
     }),
-    dataChannelByName: t.field({
+    dataChannelById: t.field({
       type: DataChannelObject,
       nullable: true,
-      args: { name: t.arg.string() },
+      args: { id: t.arg.string() },
       resolve: async (root, args, ctx, som) => {
-        return ctx.db.selectFrom("DataChannel").selectAll().where("name", "=", args.name).executeTakeFirst();
+        return ctx.db.selectFrom("DataChannel").selectAll().where("id", "=", args.id).executeTakeFirst();
       }
     }),
-    dataChannelsByOrg: t.field({
+    dataChannelsByCreatorOrg: t.field({
       type: [DataChannelObject],
       nullable: true,
-      args: { organization: t.arg.string() },
+      args: { creatorOrganization: t.arg.string() },
       resolve: async (root, args, ctx, som) => {
-        return ctx.db.selectFrom("DataChannel").selectAll().where("organization", "=", args.organization).execute();
+        return ctx.db.selectFrom("DataChannel").selectAll().where("creatorOrganization", "=", args.creatorOrganization).execute();
       }
     })
   })
@@ -38901,7 +38901,7 @@ builder.mutationType({
         input: t.arg({ type: DataChannelInput, required: true })
       },
       resolve: (root, args, ctx) => {
-        const dataChannelRec = { id: crypto.randomUUID(), name: args.input.name, endpoint: args.input.endpoint, organization: args.input.organization };
+        const dataChannelRec = { id: crypto.randomUUID(), name: args.input.name, endpoint: args.input.endpoint, creatorOrganization: args.input.creatorOrganization };
         return ctx.db.insertInto("DataChannel").values(dataChannelRec).returningAll().executeTakeFirst();
       }
     })
@@ -49304,7 +49304,7 @@ var jsonError = async (request, env2, _ctx, middlewareCtx) => {
 var middleware_miniflare3_json_error_default = jsonError;
 var wrap3 = void 0;
 
-// .wrangler/tmp/bundle-0LMVfr/middleware-insertion-facade.js
+// .wrangler/tmp/bundle-hrcFlw/middleware-insertion-facade.js
 var envWrappers = [wrap2, wrap3].filter(Boolean);
 var facade = {
   ...worker_default,
@@ -49343,7 +49343,7 @@ function __facade_invoke__(request, env2, ctx, dispatch, finalMiddleware) {
   ]);
 }
 
-// .wrangler/tmp/bundle-0LMVfr/middleware-loader.entry.ts
+// .wrangler/tmp/bundle-hrcFlw/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;

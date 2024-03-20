@@ -9,7 +9,7 @@
     "dev": "pnpm wrangler dev --name catalyst_gql_api",
     "deploy": "wrangler deploy --minify src/worker.ts",
     "migrate": "wrangler d1 migrations apply catalyst --local",
-    "postinstall": "pnpm migrate"
+    "postinstall": "pnpm migrate && pnpm graphql-codegen"
   },
   "keywords": [],
   "author": "",

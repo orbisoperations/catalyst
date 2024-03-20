@@ -17,16 +17,16 @@ export type Scalars = {
 
 export type DataChannel = {
   __typename?: 'DataChannel';
+  creatorOrganziation: Scalars['String']['output'];
   endpoint: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
-  organization: Scalars['String']['output'];
 };
 
 export type DataChannelInput = {
+  creatorOrganziation: Scalars['String']['input'];
   endpoint: Scalars['String']['input'];
   name: Scalars['String']['input'];
-  organization: Scalars['String']['input'];
 };
 
 export type Mutation = {
@@ -42,16 +42,16 @@ export type MutationCreateDataChannelArgs = {
 export type Query = {
   __typename?: 'Query';
   allDataChannels?: Maybe<Array<DataChannel>>;
-  dataChannelByName?: Maybe<DataChannel>;
-  dataChannelsByOrg?: Maybe<Array<DataChannel>>;
+  dataChannelById?: Maybe<DataChannel>;
+  dataChannelsByCreatorOrg?: Maybe<Array<DataChannel>>;
 };
 
 
-export type QueryDataChannelByNameArgs = {
-  name?: InputMaybe<Scalars['String']['input']>;
+export type QueryDataChannelByIdArgs = {
+  id?: InputMaybe<Scalars['String']['input']>;
 };
 
 
-export type QueryDataChannelsByOrgArgs = {
-  organization?: InputMaybe<Scalars['String']['input']>;
+export type QueryDataChannelsByCreatorOrgArgs = {
+  creatorOrganziation?: InputMaybe<Scalars['String']['input']>;
 };

@@ -19,7 +19,7 @@ DataChannelObject.implement({
     id: t.exposeID('id'),
     name: t.exposeString('name'),
     endpoint: t.exposeString('endpoint'),
-    organization: t.exposeString('organization'),
+    creatorOrganization: t.exposeString('creatorOrganization'),
   }),
 });
 
@@ -27,7 +27,7 @@ const DataChannelInput = builder.inputType('DataChannelInput', {
   fields: (t) => ({
     name: t.string({ required: true }),
     endpoint: t.string({ required: true }),
-    organization: t.string({ required: true }),
+    creatorOrganization: t.string({ required: true }),
   }),
 });
 
@@ -43,25 +43,25 @@ builder.queryType({
             .execute() as Promise<[DataChannel]>;
       },
     }),
-    dataChannelByName: t.field({
+    dataChannelById: t.field({
       type: DataChannelObject,
       nullable: true,
-      args:{ name: t.arg.string()},
+      args:{ id: t.arg.string()},
       resolve: async (root, args, ctx, som) => {
 
         return ctx.db.selectFrom('DataChannel').selectAll()
-            .where('name', '=', args.name as string )
+            .where('id', '=', args.id as string )
             .executeTakeFirst() as Promise<DataChannel>;
       },
     }),
-    dataChannelsByOrg: t.field({
+    dataChannelsByCreatorOrg: t.field({
       type: [DataChannelObject],
       nullable: true,
-      args:{ organization: t.arg.string()},
+      args:{ creatorOrganization: t.arg.string()},
       resolve: async (root, args, ctx, som) => {
 
         return ctx.db.selectFrom('DataChannel').selectAll()
-            .where('organization', '=', args.organization as string )
+            .where('creatorOrganization', '=', args.creatorOrganization as string )
             .execute() as Promise<[DataChannel]>;
       },
     })
@@ -76,7 +76,7 @@ builder.mutationType({
         input: t.arg({ type: DataChannelInput, required: true }),
       },
       resolve: (root, args, ctx) => {
-        const dataChannelRec= { id: crypto.randomUUID(), name: args.input.name, endpoint: args.input.endpoint, organization: args.input.organization }
+        const dataChannelRec= { id: crypto.randomUUID(), name: args.input.name, endpoint: args.input.endpoint, creatorOrganization: args.input.creatorOrganization }
         return  ctx.db.insertInto('DataChannel').values(dataChannelRec as any)
             .returningAll()
             .executeTakeFirst() as Promise<DataChannel>;

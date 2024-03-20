@@ -1,14 +1,14 @@
 type DataChannel {
+  creatorOrganziation: String!
   endpoint: String!
   id: ID!
   name: String!
-  organization: String!
 }
 
 input DataChannelInput {
+  creatorOrganziation: String!
   endpoint: String!
   name: String!
-  organization: String!
 }
 
 type Mutation {
@@ -17,6 +17,6 @@ type Mutation {
 
 type Query {
   allDataChannels: [DataChannel!]
-  dataChannelByName(name: String): DataChannel
-  dataChannelsByOrg(organization: String): [DataChannel!]
+  dataChannelById(id: String): DataChannel
+  dataChannelsByCreatorOrg(creatorOrganziation: String): [DataChannel!]
 }
