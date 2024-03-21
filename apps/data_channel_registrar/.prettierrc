@@ -7,6 +7,5 @@
   "endOfLine": "lf",
   "arrowParens": "avoid",
   "bracketSpacing": true,
-  "jsxBracketSameLine": false,
-  "parser": "typescript"
+  "jsxBracketSameLine": false
 }
