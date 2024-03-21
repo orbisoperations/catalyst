@@ -86,12 +86,7 @@ export default function PartnersPage() {
                 tableProps={{}}
               />
             </OrbisCard>
-            <OrbisCard
-              pb={0}
-              header="Partnership"
-              flex={1}
-              height={"min-content"}
-            >
+            <OrbisCard header="Partnership" flex={1} height={"min-content"}>
               <Stack divider={<StackDivider />}>
                 <Box>Partners since 2021</Box>
                 <Box>Outgoing Channel 1</Box>
@@ -110,11 +105,15 @@ export default function PartnersPage() {
               Are you sure you want to revoke this partnership? This action
               cannot be undone.
             </ModalBody>
-            <ModalFooter display={"flex"} gap={5}>
-              <OrbisButton colorScheme="red" onClick={onClose}>
-                Delete
-              </OrbisButton>
-              <OrbisButton onClick={onClose}>Cancel</OrbisButton>
+            <ModalFooter>
+              <Flex justify={"flex-end"} gap={5}>
+                <OrbisButton colorScheme="red" onClick={onClose}>
+                  Delete
+                </OrbisButton>
+                <OrbisButton colorScheme="gray" onClick={onClose}>
+                  Cancel
+                </OrbisButton>
+              </Flex>
             </ModalFooter>
           </ModalContent>
         </Modal>

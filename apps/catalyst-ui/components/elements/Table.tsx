@@ -41,8 +41,8 @@ export const OrbisTable = (props: OrbisTableProps) => {
               _hover={
                 enableHover
                   ? {
-                    bg: "gray.100",
-                  }
+                      bg: "gray.100",
+                    }
                   : {}
               }
             >
@@ -64,16 +64,16 @@ export const OrbisTable = (props: OrbisTableProps) => {
   );
 };
 
-
-export const SelectableTable = (props: OrbisTableProps & {
-  handleChange: (rows: number[]) => void;
-}) => {
+export const SelectableTable = (
+  props: OrbisTableProps & {
+    handleChange: (rows: number[]) => void;
+  }
+) => {
   const { headers, rows, caption, tableProps, enableHover, containerProps } =
     props;
-  const [selectableRows, setSelectableRows] = useState<number[]>([])
+  const [selectableRows, setSelectableRows] = useState<number[]>([]);
   return (
     <TableContainer {...containerProps}>
-      {selectableRows.length}
       <Table variant={"simple"} {...tableProps}>
         <TableCaption>{caption}</TableCaption>
         <Thead>
@@ -90,30 +90,29 @@ export const SelectableTable = (props: OrbisTableProps & {
               _hover={
                 enableHover
                   ? {
-                    bg: "gray.100",
-                  }
+                      bg: "gray.100",
+                    }
                   : {}
               }
             >
               <Td>
                 <Checkbox
+                  isChecked={selectableRows.includes(i)}
                   onChange={(e) => {
-                    console.log(i, 'selected')
                     let tmpSelections = [...selectableRows];
-                    let target = tmpSelections.findIndex(index => index === i);
-                    console.log(target, 'selected')
+                    let target = tmpSelections.findIndex(
+                      (index) => index === i
+                    );
                     if (target !== -1) {
-                      console.log('removing')
-                      tmpSelections = tmpSelections.filter(index => index !== i);
+                      tmpSelections = tmpSelections.filter(
+                        (index) => index !== i
+                      );
                       setSelectableRows(tmpSelections);
-                    }
-                    else {
-                      console.log('adding')
-                      tmpSelections.push(i)
+                    } else {
+                      tmpSelections.push(i);
                       setSelectableRows(tmpSelections);
                     }
                     props.handleChange(tmpSelections);
-
                   }}
                 />
               </Td>
@@ -133,5 +132,4 @@ export const SelectableTable = (props: OrbisTableProps & {
       </Table>
     </TableContainer>
   );
-
-}
+};
