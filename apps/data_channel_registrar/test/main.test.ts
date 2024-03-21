@@ -5,7 +5,7 @@ describe('test', () => {
   const client = new GraphQLClient('http://localhost:5050/data-channels/graphql', {
     errorPolicy: 'all',
   });
-  let giveMeADataChannel = async () => {
+  const giveMeADataChannel = async () => {
     const mutation = gql`
       mutation CreateDataChannel($input: DataChannelInput!) {
         createDataChannel(input: $input) {
@@ -21,7 +21,9 @@ describe('test', () => {
         creatorOrganization: 'Fake Organization',
       },
     };
-    const data: any = await client.request(mutation, variables);
+    const data: {createDataChannel: {
+        id: string;
+      }} = await client.request(mutation, variables);
 
     return data;
   };
@@ -45,7 +47,14 @@ describe('test', () => {
       }
     `;
 
-    const myDataChannel: any = await client.request(query, { id: sampleId });
+    const myDataChannel: {
+        dataChannelById: {
+          id: string;
+          name: string;
+          endpoint: string;
+          creatorOrganization: string;
+        };
+    } = await client.request(query, { id: sampleId });
     expect(myDataChannel.dataChannelById.id).toEqual(sampleId);
   });
 
@@ -54,7 +63,7 @@ describe('test', () => {
     const sampleId = data.createDataChannel.id;
     const changedName = 'Help him, Help him, Help him';
     const inputDataChannel = { id: sampleId, name: changedName };
-    console.log('inputDataChannel: ', inputDataChannel);
+
     const mutation = gql`
       mutation UpdateDataChannel($input: DataChannelInput!) {
         updateDataChannel(input: $input) {
@@ -65,7 +74,13 @@ describe('test', () => {
       }
     `;
 
-    const myDataChannel: any = await client.request(mutation, { input: inputDataChannel });
+    const myDataChannel: {
+        updateDataChannel: {
+          name: string;
+          endpoint: string;
+          creatorOrganization: string;
+        };
+    } = await client.request(mutation, { input: inputDataChannel });
     expect(myDataChannel.updateDataChannel.name).toEqual(changedName);
     expect(myDataChannel.updateDataChannel.endpoint).toEqual('https://example.com/data');
     expect(myDataChannel.updateDataChannel.creatorOrganization).toEqual('Fake Organization');
@@ -83,7 +98,14 @@ describe('test', () => {
       }
     `;
 
-    const data: any = await client.request(query);
+    const data: {
+        allDataChannels: {
+          id: string;
+          name: string;
+          endpoint: string;
+          creatorOrganization: string;
+        }[];
+    } = await client.request(query);
     expect(data.allDataChannels.length).toBeGreaterThan(0);
   });
 
@@ -96,7 +118,9 @@ describe('test', () => {
       }
     `;
 
-    const result: any = await client.request(mutation, { id: sampleId });
+    const result: {
+        deleteDataChannel: boolean;
+    } = await client.request(mutation, { id: sampleId });
     expect(result.deleteDataChannel).toEqual(true);
   });
 });

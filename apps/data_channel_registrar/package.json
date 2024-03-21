@@ -10,7 +10,8 @@
     "deploy": "wrangler deploy --minify src/worker.ts",
     "migrate": "wrangler d1 migrations apply catalyst --local",
     "postinstall": "pnpm migrate && pnpm graphql-codegen",
-    "fmt": "prettier --write ."
+    "fmt": "prettier --write .",
+    "lint": "eslint . --ext .ts"
   },
   "keywords": [],
   "author": "",
@@ -22,8 +23,11 @@
     "@graphql-codegen/client-preset": "^4.2.4",
     "@graphql-codegen/schema-ast": "^4.0.2",
     "@types/bun": "^1.0.8",
+    "@typescript-eslint/eslint-plugin": "^7.3.1",
+    "@typescript-eslint/parser": "^7.3.1",
     "bun": "^1.0.30",
     "client-preset": "link:@graphql-codegen/cli/client-preset",
+    "eslint": "^8.57.0",
     "graphql": "^16.8.1",
     "graphql-request": "^6.1.0",
     "kysely": "^0.27.2",

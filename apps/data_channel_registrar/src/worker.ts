@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { createYoga } from 'graphql-yoga';
 import schemaBuilder from './pothos/schemaBuilder';
-import { CatalystKyselySchema, CatalystKyselyTypes } from '@catalyst/schema';
+import { CatalystKyselySchema } from '@catalyst/schema';
 import { Kysely } from 'kysely';
 import { D1Dialect } from 'kysely-d1';
 const app = new Hono<{ Bindings: Env }>();

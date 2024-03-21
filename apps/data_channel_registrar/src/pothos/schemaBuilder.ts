@@ -34,6 +34,7 @@ builder.queryType({
     allDataChannels: t.field({
       type: [DataChannelObject],
       nullable: true,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       resolve: async (root, args, ctx, som) => {
         return ctx.db.selectFrom('DataChannel').selectAll().execute() as Promise<[DataChannel]>;
       },
@@ -42,6 +43,7 @@ builder.queryType({
       type: DataChannelObject,
       nullable: true,
       args: { id: t.arg.string() },
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       resolve: async (root, args, ctx, som) => {
         return ctx.db
           .selectFrom('DataChannel')
@@ -54,6 +56,7 @@ builder.queryType({
       type: [DataChannelObject],
       nullable: true,
       args: { creatorOrganization: t.arg.string() },
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       resolve: async (root, args, ctx, som) => {
         return ctx.db
           .selectFrom('DataChannel')
@@ -75,13 +78,13 @@ builder.mutationType({
       resolve: (root, args, ctx) => {
         const dataChannelRec = {
           id: crypto.randomUUID(),
-          name: args.input.name,
-          endpoint: args.input.endpoint,
-          creatorOrganization: args.input.creatorOrganization,
+          name: args.input.name!,
+          endpoint: args.input.endpoint!,
+          creatorOrganization: args.input.creatorOrganization!,
         };
         return ctx.db
           .insertInto('DataChannel')
-          .values(dataChannelRec as any)
+          .values(dataChannelRec)
           .returningAll()
           .executeTakeFirst() as Promise<DataChannel>;
       },
@@ -107,7 +110,7 @@ builder.mutationType({
         input: t.arg({ type: DataChannelInput, required: true }),
       },
       resolve: async (root, args, ctx) => {
-        const dataChannelNewValuesRec: Record<string, any> = {};
+        const dataChannelNewValuesRec: Record<string, unknown> = {};
 
         if (!args.input.id) throw new Error('id is required to update a data channel');
 
