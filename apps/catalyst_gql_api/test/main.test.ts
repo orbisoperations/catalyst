@@ -3,8 +3,8 @@ import {gql, GraphQLClient} from 'graphql-request';
 
 
 describe('test', () => {
-    const client = new GraphQLClient("http://localhost:5050/graphql", { errorPolicy: 'all' });
-    async function giveMeADataChannel() {
+    const client = new GraphQLClient("http://localhost:5050/data-channels/graphql", { errorPolicy: 'all' });
+    let giveMeADataChannel = async () => {
         const mutation = gql`
             mutation CreateDataChannel($input: DataChannelInput!) {
                 createDataChannel(
@@ -45,7 +45,29 @@ describe('test', () => {
             }`;
 
         const myDataChannel: any = await client.request(query, {id: sampleId})
-        expect(data).toEqual({createDataChannel: {id: expect.any(String)}});
+        expect(myDataChannel.dataChannelById.id).toEqual(sampleId);
+
+    });
+
+    it('updates data channel by id', async () => {
+        const data = await giveMeADataChannel()
+        const sampleId = data.createDataChannel.id;
+        const changedName = "Help him, Help him, Help him";
+        const inputDataChannel = {id: sampleId, name: changedName}
+        console.log("inputDataChannel: ", inputDataChannel);
+        const mutation = gql`
+            mutation UpdateDataChannel($input: DataChannelInput!){
+                updateDataChannel(input: $input) {
+                    name
+                    endpoint
+                    creatorOrganization
+                }
+            }`;
+
+        const myDataChannel: any = await client.request(mutation, {input: inputDataChannel})
+        expect(myDataChannel.updateDataChannel.name).toEqual(changedName);
+        expect(myDataChannel.updateDataChannel.endpoint).toEqual("https://example.com/data");
+        expect(myDataChannel.updateDataChannel.creatorOrganization).toEqual("Fake Organization");
     });
 
     it('requests data channels from the api', async () => {
@@ -63,6 +85,19 @@ describe('test', () => {
         const data: any = await client.request(query);
         expect(data.allDataChannels.length).toBeGreaterThan(0);
     })
+
+    it('deletes a data channel by id', async () => {
+        const data = await giveMeADataChannel()
+        const sampleId = data.createDataChannel.id;
+        const mutation = gql`
+            mutation DeleteDataChannel($id: String!) {
+                deleteDataChannel(id: $id)
+            }
+        `;
+
+        const result: any = await client.request(mutation, {id: sampleId});
+        expect(result.deleteDataChannel).toEqual(true);
+    });
 
 
 });
