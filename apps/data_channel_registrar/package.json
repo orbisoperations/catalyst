@@ -1,5 +1,5 @@
 {
-  "name": "@catalyst/gql",
+  "name": "@catalyst/data_channel_registrar",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
