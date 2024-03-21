@@ -162,7 +162,7 @@ importers:
         specifier: ^3.25.0
         version: 3.31.0(@cloudflare/workers-types@4.20240222.0)
 
-  apps/test_datachannel_airplanes:
+  examples/test_datachannel_airplanes:
     dependencies:
       '@pothos/core':
         specifier: ^3.41.0
@@ -181,7 +181,7 @@ importers:
         specifier: ^3.25.0
         version: 3.31.0(@cloudflare/workers-types@4.20240222.0)
 
-  apps/test_datachannel_cars:
+  examples/test_datachannel_cars:
     dependencies:
       '@pothos/core':
         specifier: ^3.41.0
@@ -200,7 +200,7 @@ importers:
         specifier: ^3.25.0
         version: 3.31.0(@cloudflare/workers-types@4.20240222.0)
 
-  apps/test_datachannel_manufactures:
+  examples/test_datachannel_manufactures:
     dependencies:
       '@pothos/core':
         specifier: ^3.41.0

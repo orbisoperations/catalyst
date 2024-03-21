@@ -1,22 +1,25 @@
 type DataChannel {
-  creatorOrganziation: String!
+  creatorOrganization: String!
   endpoint: String!
   id: ID!
   name: String!
 }
 
 input DataChannelInput {
-  creatorOrganziation: String!
-  endpoint: String!
-  name: String!
+  creatorOrganization: String
+  endpoint: String
+  id: String
+  name: String
 }
 
 type Mutation {
   createDataChannel(input: DataChannelInput!): DataChannel!
+  deleteDataChannel(id: String): Boolean!
+  updateDataChannel(input: DataChannelInput!): DataChannel!
 }
 
 type Query {
   allDataChannels: [DataChannel!]
   dataChannelById(id: String): DataChannel
-  dataChannelsByCreatorOrg(creatorOrganziation: String): [DataChannel!]
+  dataChannelsByCreatorOrg(creatorOrganization: String): [DataChannel!]
 }
