@@ -1,0 +1,33 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+generator pothos {
+  provider     = "prisma-pothos-types"
+  clientOutput = "@prisma/client"
+  output       = "./generated/pothos/index.ts"
+}
+
+generator kysely {
+  provider     = "prisma-kysely"
+  output       = "generated/kysely"
+  fileName     = "index.ts"
+  readOnlyIds  = true
+  enumFileName = "enums.ts"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model DataChannel {
+  id       String @id @default(uuid())
+  name     String
+  endpoint String
+  creatorOrganization String
+  // @relation(fields: [organizationId], references: [id])
+}

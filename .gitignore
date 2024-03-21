@@ -152,6 +152,9 @@ dist
 
 .dynamodb/
 
+# sqlite DB Local files
+packages/schema/prisma/db*
+
 # TernJS port file
 
 .tern-port
@@ -174,3 +177,5 @@ dist
 # Finder (MacOS) folder config
 .DS_Store
 
+# migration file cosolidation directory
+packages/schema/flatten_migrations/
