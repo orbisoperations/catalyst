@@ -25,9 +25,10 @@ DataChannelObject.implement({
 
 const DataChannelInput = builder.inputType('DataChannelInput', {
   fields: (t) => ({
-    name: t.string({ required: true }),
-    endpoint: t.string({ required: true }),
-    creatorOrganization: t.string({ required: true }),
+    id: t.string({ required: false }),
+    name: t.string({ required: false }),
+    endpoint: t.string({ required: false }),
+    creatorOrganization: t.string({ required: false }),
   }),
 });
 
@@ -80,6 +81,27 @@ builder.mutationType({
         return  ctx.db.insertInto('DataChannel').values(dataChannelRec as any)
             .returningAll()
             .executeTakeFirst() as Promise<DataChannel>;
+      }
+    }),
+    updateDataChannel: t.field({
+      type: DataChannelObject,
+      args: {
+        input: t.arg({ type: DataChannelInput, required: true }),
+      },
+      resolve: async (root, args, ctx) => {
+        const  dataChannelNewValuesRec: Record<string, any> = {};
+
+        if (!args.input.id) throw new Error('id is required to update a data channel');
+
+        args.input.name ? dataChannelNewValuesRec.name = args.input.name : delete dataChannelNewValuesRec.name;
+        args.input.endpoint ? dataChannelNewValuesRec.endpoint = args.input.endpoint : delete dataChannelNewValuesRec.endpoint;
+        args.input.creatorOrganization ? dataChannelNewValuesRec.creatorOrganization = args.input.creatorOrganization : delete dataChannelNewValuesRec.creatorOrganization;
+        const result =  await ctx.db.updateTable('DataChannel').set(dataChannelNewValuesRec).where('id', '=', args.input.id as string)
+            .returningAll()
+            .executeTakeFirst() as DataChannel;
+
+        console.log("HERE IS THE RESULTING DATA CHANNEL: ", result);
+        return result;
       }
     }),
   }),
