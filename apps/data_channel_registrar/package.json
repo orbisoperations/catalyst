@@ -9,7 +9,8 @@
     "dev": "pnpm wrangler dev --name catalyst_gql_api",
     "deploy": "wrangler deploy --minify src/worker.ts",
     "migrate": "wrangler d1 migrations apply catalyst --local",
-    "postinstall": "pnpm migrate && pnpm graphql-codegen"
+    "postinstall": "pnpm migrate && pnpm graphql-codegen",
+    "fmt": "prettier --write ."
   },
   "keywords": [],
   "author": "",
@@ -27,6 +28,7 @@
     "graphql-request": "^6.1.0",
     "kysely": "^0.27.2",
     "kysely-d1": "^0.3.0",
+    "prettier": "^3.2.5",
     "tsx": "latest",
     "typescript": "^5.4.2",
     "wrangler": "^3.31.0"
