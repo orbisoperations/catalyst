@@ -3,7 +3,7 @@ import {gql, GraphQLClient} from 'graphql-request';
 
 
 describe('test', () => {
-    const client = new GraphQLClient("http://localhost:5050/graphql", { errorPolicy: 'all' });
+    const client = new GraphQLClient("http://localhost:5050/data-channels/graphql", { errorPolicy: 'all' });
     let giveMeADataChannel = async () => {
         const mutation = gql`
             mutation CreateDataChannel($input: DataChannelInput!) {
@@ -45,8 +45,8 @@ describe('test', () => {
             }`;
 
         const myDataChannel: any = await client.request(query, {id: sampleId})
-        //TODO: fix the assertion to actually check the contents of myDataChannel
-        expect(data).toEqual({createDataChannel: {id: expect.any(String)}});
+        expect(myDataChannel.dataChannelById.id).toEqual(sampleId);
+
     });
 
     it('updates data channel by id', async () => {
@@ -85,6 +85,19 @@ describe('test', () => {
         const data: any = await client.request(query);
         expect(data.allDataChannels.length).toBeGreaterThan(0);
     })
+
+    it('deletes a data channel by id', async () => {
+        const data = await giveMeADataChannel()
+        const sampleId = data.createDataChannel.id;
+        const mutation = gql`
+            mutation DeleteDataChannel($id: String!) {
+                deleteDataChannel(id: $id)
+            }
+        `;
+
+        const result: any = await client.request(mutation, {id: sampleId});
+        expect(result.deleteDataChannel).toEqual(true);
+    });
 
 
 });

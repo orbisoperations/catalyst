@@ -11,7 +11,7 @@ export type Env = & Record<string, string> & {
 };
 
 
-app.use("/graphql", async (c) => {
+app.use("/data-channels/graphql", async (c) => {
 
 
   const db = new Kysely<CatalystKyselySchema>({
