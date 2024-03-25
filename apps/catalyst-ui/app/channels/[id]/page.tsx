@@ -3,6 +3,7 @@ export const runtime = "edge";
 import { OrbisBadge, ShareButton, TrashButton } from "@/components/elements";
 import { DetailedView } from "@/components/layouts";
 import { OrbisProvider } from "@/components/utils";
+import { navigationItems } from "@/utils/nav.utils";
 import { Card, CardBody, CardHeader } from "@chakra-ui/card";
 import {
   Box,
@@ -40,13 +41,17 @@ export default function CreateChannelPage() {
     <OrbisProvider>
       <DetailedView
         actions={
-          <Flex gap={10}>
-            <Flex gap={2} align={"center"}>
-              <Switch colorScheme="green" />
-              <Text>Enable</Text>
+          isOwner ? (
+            <Flex gap={10}>
+              <Flex gap={2} align={"center"}>
+                <Switch colorScheme="green" />
+                <Text>Enable</Text>
+              </Flex>
+              <TrashButton />
             </Flex>
-            <TrashButton />
-          </Flex>
+          ) : (
+            <></>
+          )
         }
         headerTitle={{
           adjacent: !isOwner ? (
@@ -57,7 +62,7 @@ export default function CreateChannelPage() {
           text: "N Metadata",
         }}
         subtitle="Description for the data channel"
-        topbaractions={[]}
+        topbaractions={navigationItems}
         topbartitle="Data Channel Details"
       >
         <div>
