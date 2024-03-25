@@ -179,3 +179,5 @@ packages/schema/prisma/db*
 
 # migration file cosolidation directory
 packages/schema/flatten_migrations/
+**/**/.wrangler
+**/**/generated

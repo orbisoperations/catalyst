@@ -6,7 +6,7 @@ const config: CodegenConfig = {
     schema: printSchema(schema),
     // documents: ['src/**/*.tsx'],
     generates: {
-        './src/gql/': {
+        './generated/gql/': {
             preset: 'client',
             plugins: [],
         },
