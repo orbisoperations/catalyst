@@ -2,11 +2,11 @@ name = "data_channel_registrar"
 compatibility_date = "2023-12-01"
 main = "./src/worker.ts"
 node_compat = true
+workers_dev = false
 
 [dev]
 ip = "localhost"
 port = 5050
-local_protocol = "http"
 
 [[d1_databases]]
 binding = "APP_DB" # available in your Worker on env.DB

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'bun:test';
 import { gql, GraphQLClient } from 'graphql-request';
 
 describe('test', () => {
-  const client = new GraphQLClient('http://localhost:5050/data-channels/graphql', {
+  const client = new GraphQLClient('http://localhost:5050/graphql', {
     errorPolicy: 'all',
   });
   const giveMeADataChannel = async () => {

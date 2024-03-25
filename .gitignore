@@ -181,3 +181,5 @@ packages/schema/prisma/db*
 packages/schema/flatten_migrations/
 **/**/.wrangler
 **/**/generated
+
+.turbo
