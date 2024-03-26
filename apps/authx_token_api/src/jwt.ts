@@ -1,4 +1,3 @@
-import {localServer as localHander} from "./in_memory";
 import { v4 as uuidv4 } from 'uuid';
 import base64url from "base64url";
 import axios from "axios";
@@ -88,30 +87,11 @@ export class JWT implements DSSJWT{
         return jwt
     }
 }
-export interface AssymetricJWTSigner {
-    sign(jwt: JWT, expiresIn?: number): Promise<{token: string}>
-}
-
-export interface AssymetricJWTVerifier {
-    getPublicKey(): Promise<string>
-}
 
 export interface JWTSigningRequest {
     entity: string
     claims: string[]
     expiresIn?: number
-}
-
-export class SigningClient {
-    endpoint: string;
-
-    constructor(signingEndpoint: string) {
-        this.endpoint = signingEndpoint;
-    }
-
-    async sendRequest(request: JWTSigningRequest): Promise<{token:string}> {
-        return (await axios.put(this.endpoint, request)).data
-    }
 }
 
 export class VerifyingClient {
@@ -132,12 +112,4 @@ export class VerifyingClient {
         const { payload, protectedHeader } = await jwtVerify(token, this.publicKey);
         return JWT.fromJOSEJWT(payload);
     }
-}
-
-export const handler = lambdaHandler;
-export const localServer = localHander;
-
-export const servers = {
-    awsLambda: lambdaHandler,
-    localInMemory: localServer
 }
