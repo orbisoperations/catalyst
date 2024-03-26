@@ -1,10 +1,17 @@
 import { Hono } from 'hono'
-import {generateKeyPair, CompactSign, KeyLike, exportSPKI, SignJWT, importX509} from "jose";
+import {generateKeyPair, jwtVerify, KeyLike, exportSPKI, importSPKI, SignJWT, exportJWK, importJWK, JWK} from "jose";
 // @ts-ignore
 import { v4 as uuidv4 } from 'uuid';
 import {JWT, JWTSigningRequest} from "./jwt"
 
-
+interface KeyStateSerialized {
+    private: JWK
+    public: JWK
+    publicPEM: string
+    uuid: string
+    expiry: number
+    expired: boolean
+}
 export class KeyState {
     private expired: boolean = false
     publicKey: KeyLike;
@@ -23,7 +30,9 @@ export class KeyState {
     }
 
     async init() {
-        const { publicKey, privateKey } = await generateKeyPair('ES384');
+        const { publicKey, privateKey } = await generateKeyPair('ES384', {
+            extractable: true
+        });
         this.publicKey = publicKey;
         this.privateKey = privateKey;
         this.publicKeyPEM = await exportSPKI(publicKey)
@@ -51,6 +60,29 @@ export class KeyState {
     pub() {
         return this.publicKeyPEM
     }
+
+    async serialize(): Promise<KeyStateSerialized> {
+        return {
+            private: await exportJWK(this.privateKey),
+            public: await exportJWK(this.publicKey),
+            uuid: this.uuid,
+            expiry: this.expiry,
+            expired: this.expired,
+            publicPEM: this.publicKeyPEM
+        }
+    }
+
+    static async deserialize(keySerialized: KeyStateSerialized) {
+        const key = new KeyState()
+        key.privateKey = (await importJWK<KeyLike>(keySerialized.private, "ES384")) as KeyLike
+        key.publicKey = (await importJWK<KeyLike>(keySerialized.public, "ES384")) as KeyLike
+        key.uuid = keySerialized.uuid
+        key.expiry = keySerialized.expiry
+        key.expired = keySerialized.expired
+        key.publicKeyPEM = keySerialized.publicPEM
+
+        return key
+    }
 }
 
 
@@ -61,53 +93,69 @@ export class HSM {
   constructor(state: DurableObjectState) {
     this.state = state
     this.state.blockConcurrencyWhile(async () => {
-        if ((await this.state.storage?.list()).size === 0) {
+        if (await this.state.storage.get<KeyState>("latest") === undefined) {
             const newKey = new KeyState()
             await newKey.init()
-            this.state.storage.put("latest", newKey);
-            this.state.storage.put(newKey.uuid, newKey)
+            await this.state.storage.put("latest", await newKey.serialize());
         }
       })
 
-    /*this.state.blockConcurrencyWhile(async () => {
-      const stored = await this.state.storage?.get<number>('value')
-      
-    })*/
-
     this.app.get("/pub", async (c) => {
-        const key = await this.state.storage.get<KeyState>("latest");
-        if (key === undefined) {
+        const keySerialized = await this.state.storage.get<KeyStateSerialized>("latest");
+        if (keySerialized === undefined) {
             return c.json({
                 error: "no key found"
             }, 500)
         }
+        const key = await KeyState.deserialize(keySerialized)
         return c.json({
-            pem: key?.pub()
+            pem: key.pub()
         }, 200)
     })
 
     this.app.get("/rotate", async(c) => {
         this.state.blockConcurrencyWhile(async () => {
-                const newKey = new KeyState()
-                await newKey.init()
-                this.state.storage.put("latest", newKey);
-          })
+            const newKey = new KeyState()
+            await newKey.init()
+            this.state.storage.put("latest", newKey);
+        })
     })
 
     this.app.post("/sign", async (c) => {
-        const key = await this.state.storage.get<KeyState>("latest");
-        if (key === undefined) {
+        const keySerialized = await this.state.storage.get<KeyStateSerialized>("latest");
+        if (keySerialized === undefined) {
             return c.json({
                 error: "no key found"
             }, 500)
         }
+        const key = await KeyState.deserialize(keySerialized)
         const jwtreq = await c.req.json<JWTSigningRequest>()
         const jwt = new JWT(jwtreq.entity, jwtreq.claims, "catalyst:root:latest");
-        console.log("signing token:" , jwt,jwtreq.expiresIn) 
         const token = await key.sign(jwt)
         return c.json({
             token: token
         }, 200)
+    })
+
+    this.app.post("/validate", async (c) => {
+        const {token} = await c.req.json<{ token: string }>()
+        const keySerialized = await this.state.storage.get<KeyStateSerialized>("latest");
+        if (keySerialized === undefined) {
+            return c.json({
+                error: "no key found"
+            }, 500)
+        }
+        const key = await KeyState.deserialize(keySerialized)
+        try {
+            const {payload, protectedHeader} = await jwtVerify(token, key.publicKey);
+            return c.json({
+                valid: true,
+            }, 200)
+        } catch (e: any) {
+            return c.json({
+                error: e.message
+            }, 200)
+        }
     })
   }
 
