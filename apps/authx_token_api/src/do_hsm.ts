@@ -47,6 +47,10 @@ class KeyState {
         .sign(this.privateKey);
         
     }
+
+    pub() {
+        return this.publicKeyPEM
+    }
 }
 
 
@@ -69,6 +73,42 @@ export class HSM {
       const stored = await this.state.storage?.get<number>('value')
       
     })*/
+
+    this.app.get("/pub", async (c) => {
+        const key = await this.state.storage.get<KeyState>("latest");
+        if (key === undefined) {
+            return c.json({
+                error: "no key found"
+            }, 500)
+        }
+        return c.json({
+            pem: key?.pub()
+        }, 200)
+    })
+
+    this.app.get("/rotate", async(c) => {
+        this.state.blockConcurrencyWhile(async () => {
+                const newKey = new KeyState()
+                await newKey.init()
+                this.state.storage.put("latest", newKey);
+          })
+    })
+
+    this.app.post("/sign", async (c) => {
+        const key = await this.state.storage.get<KeyState>("latest");
+        if (key === undefined) {
+            return c.json({
+                error: "no key found"
+            }, 500)
+        }
+        const jwtreq = await c.req.json<JWTSigningRequest>()
+        const jwt = new JWT(jwtreq.entity, jwtreq.claims, "catalyst:root:latest");
+        console.log("signing token:" , jwt,jwtreq.expiresIn) 
+        const token = await key.sign(jwt)
+        return c.json({
+            token: token
+        }, 200)
+    })
 
     this.app.get('/pub/:keyid?', async (c) => {
       // get  pem

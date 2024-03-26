@@ -4,6 +4,7 @@
     "deploy": "wrangler deploy --minify src/index.ts"
   },
   "dependencies": {
+    "@pothos/core": "^3.41.0",
     "hono": "^4.0.9",
     "jose": "^5.2.3",
     "pothos": "^0.0.1",
