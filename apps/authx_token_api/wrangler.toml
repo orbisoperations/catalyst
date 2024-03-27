@@ -1,0 +1,10 @@
+name = "authx_token_api"
+compatibility_date = "2023-12-01"
+compatibility_flags = [ "nodejs_compat" ]
+
+[durable_objects]
+bindings = [{name = "HSM", class_name = "HSM"}]
+
+[[migrations]]
+tag = "v1" # Should be unique for each entry
+new_classes = ["HSM"]
