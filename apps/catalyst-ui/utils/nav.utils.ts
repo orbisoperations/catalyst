@@ -7,4 +7,8 @@ export const navigationItems: { display: string; path: string }[] = [
     display: "Partners",
     path: "/partners",
   },
+  {
+    display: "API Keys",
+    path: "/api-keys",
+  },
 ];

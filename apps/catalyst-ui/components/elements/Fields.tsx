@@ -27,17 +27,18 @@ export const APIKeyText = (
       paddingX={".5em"}
       paddingY={".25em"}
       borderRadius={"md"}
+      {...rest}
     >
       <Text>{displayText}</Text>
       {allowCopy && (
-        <CopyButton copyText={children} variant={"ghost"} colorScheme="blue" />
+        <CopyButton copytext={children} variant={"ghost"} colorScheme="blue" />
       )}
       {allowDisplay && (
         <DisplayButton
           variant={"ghost"}
           colorScheme="blue"
           visible={false}
-          toggle={toggleText}
+          toggletext={() => toggleText()}
         />
       )}
       {allowGenerate && <GenerateButton variant={"ghost"} colorScheme="blue" />}

@@ -1,6 +1,6 @@
 "use client";
 import { Button, ButtonProps } from "@chakra-ui/button";
-import { Flex } from "@chakra-ui/layout";
+import { Badge, Flex } from "@chakra-ui/layout";
 import {
   Avatar,
   AvatarProps,
@@ -8,11 +8,13 @@ import {
   MenuButton,
   MenuItem,
   MenuList,
+  Tooltip,
 } from "@chakra-ui/react";
 import {
   ArrowLeftIcon,
   ArrowPathIcon,
   ArrowTopRightOnSquareIcon,
+  CheckCircleIcon,
   DocumentDuplicateIcon,
   EyeIcon,
   EyeSlashIcon,
@@ -148,20 +150,31 @@ export const CreateButton = (props: ButtonProps) => {
   );
 };
 
-export const CopyButton = (props: ButtonProps & { copyText: string }) => {
+export const CopyButton = (props: ButtonProps & { copytext: string }) => {
+  const [copied, setCopied] = useState(false);
   return (
-    <Button
-      onClick={() => {
-        navigator.clipboard.writeText(props.copyText);
-      }}
-      colorScheme="blue"
-      borderRadius={"100%"}
-      size={"sm"}
-      {...props}
-      padding={".5em"}
-    >
-      <DocumentDuplicateIcon />
-    </Button>
+    <Tooltip hasArrow placement="top" label={!copied ? "Copy Key" : "Copied!"}>
+      <Button
+        onClick={() => {
+          setTimeout(() => {
+            setCopied(false);
+          }, 1000);
+          setCopied(true);
+          navigator.clipboard.writeText(props.copytext);
+        }}
+        colorScheme="blue"
+        borderRadius={"100%"}
+        size={"sm"}
+        {...props}
+        padding={".5em"}
+      >
+        {!copied ? (
+          <DocumentDuplicateIcon />
+        ) : (
+          <CheckCircleIcon display={copied ? "block" : "none"} />
+        )}
+      </Button>
+    </Tooltip>
   );
 };
 
@@ -180,30 +193,30 @@ export const GenerateButton = (props: ButtonProps) => {
 };
 
 export const DisplayButton = (
-  props: ButtonProps & { visible: boolean; toggle: () => void }
+  props: ButtonProps & { visible: boolean; toggletext: () => void }
 ) => {
-  const { visible, toggle, ...rest } = props;
+  const { visible, toggletext, ...rest } = props;
   const [visibleStatus, setVisible] = useState(visible);
   return (
     <Button
       colorScheme="blue"
       borderRadius={"100%"}
       size={"sm"}
-      {...props}
+      {...rest}
       padding={".5em"}
     >
       {visibleStatus ? (
         <EyeSlashIcon
           onClick={() => {
             setVisible((prev) => !prev);
-            toggle();
+            toggletext();
           }}
         />
       ) : (
         <EyeIcon
           onClick={() => {
             setVisible((prev) => !prev);
-            toggle();
+            toggletext();
           }}
         />
       )}
