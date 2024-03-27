@@ -46,10 +46,7 @@ export default function AcceptInvitePage() {
                       cannot be undone.
                     </p>
                   </ModalBody>
-                  <ModalFooter display={"flex"} gap={2}>
-                    <OrbisButton colorScheme="gray" onClick={onClose}>
-                      Cancel
-                    </OrbisButton>
+                  <ModalFooter display={"flex-end"} gap={2}>
                     <OrbisButton
                       colorScheme="red"
                       onClick={() => {
@@ -58,6 +55,9 @@ export default function AcceptInvitePage() {
                       }}
                     >
                       Reject
+                    </OrbisButton>
+                    <OrbisButton colorScheme="gray" onClick={onClose}>
+                      Cancel
                     </OrbisButton>
                   </ModalFooter>
                 </ModalContent>

@@ -4,7 +4,7 @@ import { PropsWithChildren } from "react";
 
 export type OrbisCardProps = CardProps & {
   size?: "sm" | "md" | "lg";
-  paddingSize?: "sm" | "md" | "lg";
+  paddingSize?: "sm" | "md" | "lg" | "none";
   title?: string;
   header?: string | JSX.Element;
   headerActions?: string | JSX.Element;
@@ -27,25 +27,30 @@ export const OrbisCard = (props: OrbisCardProps) => {
     <Card
       size={size}
       padding={
-        paddingSize == "sm" ? "1em" : paddingSize == "md" ? "1.2em" : "1.5em"
+        paddingSize == "sm"
+          ? "8px"
+          : paddingSize == "md"
+          ? "16px"
+          : paddingSize == "lg"
+          ? "24px"
+          : "0px"
       }
+      variant={"outline"}
+      shadow={"sm"}
       {...cardProps}
     >
       <Box
         display={"grid"}
         gridTemplateColumns={"1fr 1fr"}
-        pb={"1em"}
+        pb={"8px"}
         alignItems={"center"}
       >
-        <div>
-          <Text fontSize={"2xl"}>{header}</Text>
-        </div>
-        <div>
-          <Flex justify={"end"}>{headerActions}</Flex>
-        </div>
+        {header && <Text fontSize={"2xl"}>{header}</Text>}
+
+        {headerActions && <Flex justify={"end"}>{headerActions}</Flex>}
       </Box>
       {children}
-      <Flex pt={"1em"}>{actions}</Flex>
+      {actions && <Flex pt={"8px"}>{actions}</Flex>}
     </Card>
   );
 };

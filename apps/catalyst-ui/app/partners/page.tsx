@@ -120,19 +120,21 @@ export default function PartnersPage() {
                 cannot be undone.
               </p>
             </ModalBody>
-            <ModalFooter display={"flex"} gap={2}>
-              <OrbisButton colorScheme="gray" onClick={onClose}>
-                Cancel
-              </OrbisButton>
-              <OrbisButton
-                colorScheme="red"
-                onClick={() => {
-                  onClose();
-                  router.back();
-                }}
-              >
-                Reject
-              </OrbisButton>
+            <ModalFooter>
+              <Flex justify={"flex-end"} gap={5}>
+                <OrbisButton
+                  colorScheme="red"
+                  onClick={() => {
+                    onClose();
+                    router.back();
+                  }}
+                >
+                  Reject
+                </OrbisButton>
+                <OrbisButton colorScheme="gray" onClick={onClose}>
+                  Cancel
+                </OrbisButton>
+              </Flex>
             </ModalFooter>
           </ModalContent>
         </Modal>
