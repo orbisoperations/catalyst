@@ -8,11 +8,28 @@ import { Flex, Grid } from "@chakra-ui/layout";
 import { FormControl, Input } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
 import { FormEventHandler } from "react";
+import { gql, useMutation } from "@apollo/client";
 
+
+const CREATE_DATA_CHANNEL = gql`
+    mutation createDataChannel($organization: String!, $name: String!, $endpoint: String!, $description: String!){
+        createDataChannel(organization: $organization, name: $name, endpoint: $endpoint, description: $description) {
+            organization
+            name
+            endpoint
+            description
+        }
+    }`
 
 export default function CreateChannelPage() {
   const router = useRouter();
   const user = useUser();
+
+    const [createDataChannel, _] = useMutation(CREATE_DATA_CHANNEL, {
+        onCompleted: (data) => {
+            console.log('success');
+        },
+    });
 
     const handleSubmit:FormEventHandler<HTMLFormElement> = async (e) => {
         e.preventDefault();
@@ -24,8 +41,15 @@ export default function CreateChannelPage() {
         organization: formData.get("organization"),
         };
         console.log(data);
-        // router.push("/channels");
+
+        const newDataChannel = await createDataChannel({variables: {data}}).then(() => {
+            router.push('/channels');
+        });
+
+        console.log(newDataChannel);
+        return newDataChannel;
     };
+
   return (
     <OrbisProvider>
       <DetailedView

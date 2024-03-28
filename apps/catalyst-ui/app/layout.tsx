@@ -2,7 +2,13 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { UserProvider } from "@/components/contexts/User/UserContext";
+import {ApolloClient, ApolloProvider, InMemoryCache } from "@apollo/client";
 
+
+const gqlClient = new ApolloClient({
+    uri: '/graphql',
+    cache: new InMemoryCache(),
+});
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -18,9 +24,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
+      <ApolloProvider client={gqlClient}>
       <UserProvider>
       {children}
       </UserProvider>
+          </ApolloProvider>
       </body>
     </html>
   );
