@@ -28,6 +28,7 @@ model DataChannel {
   id       String @id @default(uuid())
   name     String
   endpoint String
+  description String?
   creatorOrganization String
   // @relation(fields: [organizationId], references: [id])
 }
