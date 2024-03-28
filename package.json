@@ -4,13 +4,15 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "sim": "turbo sim"
   },
   "keywords": [],
   "author": "",
   "license": "Elastic-2.0",
   "devDependencies": {
     "@types/node": "^20.11.16",
+    "turbo": "^1.13.0",
     "typescript": "^5.3.3"
   }
 }

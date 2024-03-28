@@ -1,7 +1,9 @@
 {
+  "name": "@catalyst-examples/datachannel_airplanes",
   "scripts": {
     "dev": "npx kill-port 4001 && wrangler dev src/index.ts",
-    "deploy": "wrangler deploy --minify src/index.ts"
+    "deploy": "wrangler deploy --minify src/index.ts",
+    "sim": "pnpm dev"
   },
   "dependencies": {
     "@pothos/core": "^3.41.0",
