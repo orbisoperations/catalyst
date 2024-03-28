@@ -1,7 +1,9 @@
 {
+  "name": "@catalyst-examples/datachannel_manufactures",
   "scripts": {
-    "dev": "npx kill-port 4002 && wrangler dev src/index.ts",
-    "deploy": "wrangler deploy --minify src/index.ts"
+    "dev": "npx kill-port 4003 && wrangler dev src/index.ts",
+    "deploy": "wrangler deploy --minify src/index.ts",
+    "sim": "pnpm dev"
   },
   "dependencies": {
     "@pothos/core": "^3.41.0",

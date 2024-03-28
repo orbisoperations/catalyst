@@ -36,7 +36,10 @@ builder.queryType({
       nullable: true,
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       resolve: async (root, args, ctx, som) => {
-        return ctx.db.selectFrom('DataChannel').selectAll().execute() as Promise<[DataChannel]>;
+        console.log('allDataChannels resolving...')
+        const result = await ctx.db.selectFrom('DataChannel').selectAll().execute() as [DataChannel];
+        console.log('allDataChannels resolved!', JSON.stringify(result))
+        return result;
       },
     }),
     dataChannelById: t.field({
