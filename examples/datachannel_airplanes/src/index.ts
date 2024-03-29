@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { createYoga } from 'graphql-yoga';
 import { printSchema, lexicographicSortSchema } from 'graphql';
-import {VerifyingClient, GradTokenInHeader, JWTError} from "@catalyst/jwt"
+import {VerifyingClient, JWTError, grabTokenInHeader} from "@catalyst/jwt"
 
 
 import SchemaBuilder from '@pothos/core';
@@ -49,7 +49,7 @@ const yoga = createYoga({
 const app = new Hono()
 
 app.use(async (c, next) => {
-  const [token, tokenError] = GradTokenInHeader(c.req.header("Authorization"))
+  const [token, tokenError] = grabTokenInHeader(c.req.header("Authorization"))
   if(tokenError) {
     return c.json({
       error: tokenError.msg

@@ -82,7 +82,7 @@ export type JWTError = {
     status: StatusCode
 }
 
-export function GradTokenInHeader(authHeader: string | undefined): [string, {msg: string, status: StatusCode}?] {
+export function grabTokenInHeader(authHeader: string | undefined): [string, {msg: string, status: StatusCode}?] {
     // authheader should be in format "Bearer tokenstring"
     if (!authHeader) {
         return ["",{
