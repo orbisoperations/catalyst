@@ -383,6 +383,12 @@ importers:
         specifier: ^3.25.0
         version: 3.36.0(@cloudflare/workers-types@4.20240222.0)
 
+  packages/errors:
+    devDependencies:
+      typescript:
+        specifier: ^5.4.3
+        version: 5.4.3
+
   packages/jwt:
     dependencies:
       '@urql/core':
@@ -391,6 +397,9 @@ importers:
       axios:
         specifier: ^1.6.7
         version: 1.6.8
+      hono:
+        specifier: ^4.1.5
+        version: 4.1.5
       jose:
         specifier: ^5.2.3
         version: 5.2.3
@@ -12635,6 +12644,11 @@ packages:
     engines: {node: '>=16.0.0'}
     dev: false
 
+  /hono@4.1.5:
+    resolution: {integrity: sha512-3ChJiIoeCxvkt6vnkxJagplrt1YZg3NyNob7ssVeK2PUqEINp4q1F94HzFnvY9QE8asVmbW5kkTDlyWylfg2vg==}
+    engines: {node: '>=16.0.0'}
+    dev: false
+
   /hosted-git-info@2.8.9:
     resolution: {integrity: sha512-mxIDAb9Lsm6DoOJ7xH+5+X4y1LU/4Hi50L9C5sIswK3JzULS4bwk1FvjdBgvYR4bzT4tuUQiC15FE2f5HbLvYw==}
 
@@ -16104,7 +16118,7 @@ packages:
       '@mrleebo/prisma-ast': 0.7.0
       '@prisma/generator-helper': 5.3.1
       '@prisma/internals': 5.3.1
-      typescript: 5.4.2
+      typescript: 5.4.3
       zod: 3.22.4
     transitivePeerDependencies:
       - encoding
