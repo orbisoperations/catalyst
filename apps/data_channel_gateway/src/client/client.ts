@@ -30,7 +30,9 @@ export class UrlqGraphqlClient {
   }
 
 
-  async allDataChannels() {
+  async allDataChannels(params: {
+    claims: []
+  }) {
       const query = gql`
           query {
               allDataChannels {
@@ -44,19 +46,24 @@ export class UrlqGraphqlClient {
     return response.data.allDataChannels
   }
 
+
   async validateToken(token: string) {
     console.log(`validating token: ${token}`)
     const query = gql`
       query {
         validate(token:"${token}")
       }
-    `
-    console.log(query)
+    `;
 
-    const response  = await this.client.query(query, {}).toPromise();
+    const response: {
+      data: {
+        valid: boolean;
+        claims: string[]
+      }
+    }  = await this.client.query(query, {}).toPromise();
 
     console.log(response)
 
-    return response.data
+    return response.data;
   }
 }
