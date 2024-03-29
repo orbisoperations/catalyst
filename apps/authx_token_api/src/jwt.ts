@@ -19,8 +19,11 @@ export class JWT implements DSSJWT{
     sub: string // subject
     aud: string // audience
     jti: string // jwt id
+    // @ts-ignore
     nbf: number // not before
+    // @ts-ignore
     exp: number // expiration
+    // @ts-ignore
     iat: number // issued at
     claims: string[] // list of urns
     constructor(entity: string, claims: string[], iss: string) {
