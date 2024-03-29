@@ -7,7 +7,7 @@ import {UrlqGraphqlClient} from "./client/client";
 import { buildSchema, parse } from 'graphql';
 import { isAsyncIterable, type Executor } from '@graphql-tools/utils';
 import { stitchingDirectives } from '@graphql-tools/stitching-directives';
-import {GradTokenInHeader} from "@catalyst/jwt"
+import {grabTokenInHeader} from "@catalyst/jwt"
 
 // https://github.com/ardatan/schema-stitching/blob/master/examples/stitching-directives-sdl/src/gateway.ts
 export async function fetchRemoteSchema(executor: Executor) {
@@ -65,7 +65,7 @@ export type Env = Record<string, string> & {
 
 const app = new Hono<{ Bindings: Env }>()
 app.use(async (c, next) => {
-  const [token, error] = GradTokenInHeader(c.req.header("Authorization"))
+  const [token, error] = grabTokenInHeader(c.req.header("Authorization"))
   if (error) {
     return c.json({
       error: error.msg
