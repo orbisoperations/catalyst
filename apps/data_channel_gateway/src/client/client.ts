@@ -45,10 +45,18 @@ export class UrlqGraphqlClient {
   }
 
   async validateToken(token: string) {
+    console.log(`validating token: ${token}`)
     const query = gql`
       query {
-        validate(token:"")
+        validate(token:"${token}")
       }
     `
+    console.log(query)
+
+    const response  = await this.client.query(query, {}).toPromise();
+
+    console.log(response)
+
+    return response.data
   }
 }
