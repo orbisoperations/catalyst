@@ -16,7 +16,7 @@ import {
 import { FormControl, Input, Switch } from "@chakra-ui/react";
 import { useState } from "react";
 
-export default function CreateChannelPage() {
+export default function DataChannelDetailsPage() {
   const [isOwner, setIsOwner] = useState(true);
   const organizations = [
     {

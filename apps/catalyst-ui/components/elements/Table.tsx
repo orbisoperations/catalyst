@@ -29,13 +29,13 @@ export const OrbisTable = (props: OrbisTableProps) => {
         <TableCaption>{caption}</TableCaption>
         <Thead>
           <Tr>
-            {headers.map((header, i) => (
+            {headers?.map((header, i) => (
               <Th key={i}>{header}</Th>
             ))}
           </Tr>
         </Thead>
         <Tbody>
-          {rows.map((row, i) => (
+          {rows?.map((row, i) => (
             <Tr
               key={i}
               _hover={
@@ -46,7 +46,7 @@ export const OrbisTable = (props: OrbisTableProps) => {
                   : {}
               }
             >
-              {row.map((cell, j) => (
+              {row?.map((cell, j) => (
                 <Td key={j}>{cell}</Td>
               ))}
             </Tr>
@@ -54,7 +54,7 @@ export const OrbisTable = (props: OrbisTableProps) => {
         </Tbody>
         <Tfoot>
           <Tr>
-            {headers.map((header, i) => (
+            {headers?.map((header, i) => (
               <Th key={i}>{header}</Th>
             ))}
           </Tr>
