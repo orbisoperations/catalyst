@@ -15,6 +15,7 @@ DataChannelObject.implement({
   fields: t => ({
     id: t.exposeID('id'),
     name: t.exposeString('name'),
+    description: t.exposeString('description', { nullable: true }),
     endpoint: t.exposeString('endpoint'),
     creatorOrganization: t.exposeString('creatorOrganization'),
   }),
@@ -24,6 +25,7 @@ const DataChannelInput = builder.inputType('DataChannelInput', {
   fields: t => ({
     id: t.string({ required: false }),
     name: t.string({ required: false }),
+    description: t.string({ required: false }),
     endpoint: t.string({ required: false }),
     creatorOrganization: t.string({ required: false }),
   }),
@@ -82,8 +84,10 @@ builder.mutationType({
         const dataChannelRec = {
           id: crypto.randomUUID(),
           name: args.input.name!,
+          description: args.input.description?? 'nothing provided',
           endpoint: args.input.endpoint!,
           creatorOrganization: args.input.creatorOrganization!,
+
         };
         return ctx.db
           .insertInto('DataChannel')

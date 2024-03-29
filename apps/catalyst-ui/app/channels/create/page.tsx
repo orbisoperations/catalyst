@@ -12,18 +12,19 @@ import { gql, useMutation } from "@apollo/client";
 export default function CreateChannelPage() {
   const CREATE_DATA_CHANNEL = gql`
     mutation createDataChannel(
-      $creatorOrganization: String!
       $name: String!
+      $description: String!
       $endpoint: String!
+      $creatorOrganization: String!
     ) {
-      createDataChannel(
-        creatorOrganization: $creatorOrganization
+      createDataChannel( input:
+      {
         name: $name
-        endpoint: $endpoint
+        description: $description
+        endpoint: $endpoint}
+        creatorOrganization: $creatorOrganization
       ) {
-        creatorOrganization
-        name
-        endpoint
+        id
       }
     }
   `;
@@ -45,16 +46,20 @@ export default function CreateChannelPage() {
       endpoint: formData.get("endpoint"),
       creatorOrganization: formData.get("organization"),
     };
-    console.log(data);
 
-    const newDataChannel = await createDataChannel({
-      variables: data,
-    }).then(() => {
-      router.push("/channels");
-    });
+try {
+  const newDataChannel = await createDataChannel({
+    variables: data,
+  })
 
-    console.log(newDataChannel);
-    return newDataChannel;
+  router.push("/channels/" + newDataChannel.data.createDataChannel.id);
+  return newDataChannel;
+} catch (error) {
+  // TODO: Handle error for user
+  console.error(error);
+  alert("Error creating data channel");
+  return error;
+}
   };
 
   return (
@@ -98,6 +103,7 @@ export default function CreateChannelPage() {
           </FormControl>
           <FormControl display={"none"}>
             <label htmlFor="organization"></label>
+            {/*TODO: Get organization from user context*/}
             <Input
               rounded="md"
               name="organization"
