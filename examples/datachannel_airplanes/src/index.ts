@@ -49,17 +49,17 @@ const yoga = createYoga({
 const app = new Hono()
 
 app.use(async (c, next) => {
-  const jwtResponse = GradTokenInHeader(c.req.header("Authorization"))
-  if (typeof jwtResponse !=  "string") {
+  const [token, tokenError] = GradTokenInHeader(c.req.header("Authorization"))
+  if(tokenError) {
     return c.json({
-      error: jwtResponse.msg
-    }, jwtResponse.status)
+      error: tokenError.msg
+    }, tokenError.status)
   }
 
   const verifier= new VerifyingClient("http://localhost:5052/graphql")
 
   const issuer = "catalyst:root:latest"
-  const [verified, error] = await verifier.verify(jwtResponse, issuer, [
+  const [verified, error] = await verifier.verify(token, issuer, [
     "catalyst:4b5cc9f6-1636-4ded-b763-d65c1dfd9fbd:airplanes"
   ])
 

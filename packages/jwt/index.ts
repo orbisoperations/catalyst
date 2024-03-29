@@ -82,22 +82,22 @@ export type JWTError = {
     status: StatusCode
 }
 
-export function GradTokenInHeader(authHeader: string | undefined): Token | JWTError {
+export function GradTokenInHeader(authHeader: string | undefined): [string, {msg: string, status: StatusCode}?] {
     // authheader should be in format "Bearer tokenstring"
     if (!authHeader) {
-        return {
+        return ["",{
                 msg: "No Credenetials Supplied",
                 status: 400
-            }
+            }]
     }
 
     const  headerElems = authHeader.split(" ")
     if (headerElems.length != 2) {
-        return {
+        return ["",{
                 msg: "No Credenetials Supplied",
                 status: 400
-            }
+            }]
     }
 
-    return headerElems[1]
+    return [headerElems[1]]
 }
