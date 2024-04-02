@@ -4,15 +4,16 @@
   "private": true,
   "scripts": {
     "vercel-build": "next build",
-    "dev": "next dev",
-    "pages:dev": "pnpm wrangler pages dev ./.vercel/output/static --compatibility-date=2023-10-30 --compatibility-flag=nodejs_compat --port 4000 --proxy 3000 --service DISCOVERY_APP_STATE_API=discovery-app-state-api --service DISCOVERY_RAG_API=discovery-rag-api",
+    "ndev": "next dev",
+    "pages:dev": "pnpm wrangler pages dev ./.vercel/output/static --compatibility-date=2023-10-30 --compatibility-flag=nodejs_compat --port 4000 --proxy 3000 --service CATALYST_DATA_CHANNEL_REGISTRAR_API=data_channel_registrar",
     "pages:build": "pnpm next-on-pages",
-    "cdev": "pnpm pages:build && pnpm pages:dev",
+    "dev": "pnpm pages:build && pnpm pages:dev",
     "cbuild": "npx @cloudflare/next-on-pages@1",
     "start": "next start",
     "lint": "next lint"
   },
   "dependencies": {
+    "@apollo/client": "^3.9.9",
     "@chakra-ui/button": "^2.1.0",
     "@chakra-ui/card": "^2.2.0",
     "@chakra-ui/layout": "^2.3.1",
@@ -30,6 +31,7 @@
   },
   "devDependencies": {
     "@types/node": "^20",
+    "@cloudflare/workers-types": "^4.20240222.0",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "autoprefixer": "^10.0.1",
