@@ -1,5 +1,6 @@
 type DataChannel {
   creatorOrganization: String!
+  description: String
   endpoint: String!
   id: ID!
   name: String!
@@ -7,6 +8,7 @@ type DataChannel {
 
 input DataChannelInput {
   creatorOrganization: String
+  description: String
   endpoint: String
   id: String
   name: String
