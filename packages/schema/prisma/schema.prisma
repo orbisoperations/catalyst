@@ -26,6 +26,7 @@ datasource db {
 
 model DataChannel {
   id       String @id @default(uuid())
+  accessSwitch Boolean?
   name     String
   endpoint String
   description String?

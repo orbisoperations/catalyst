@@ -1,4 +1,5 @@
 type DataChannel {
+  accessSwitch: Boolean!
   creatorOrganization: String!
   description: String
   endpoint: String!
@@ -7,6 +8,7 @@ type DataChannel {
 }
 
 input DataChannelInput {
+  accessSwitch: Boolean
   creatorOrganization: String
   description: String
   endpoint: String

@@ -38,6 +38,7 @@ import { useEffect, useState } from "react";
 
 type DataChannel = {
   id: string;
+  accessSwitch: boolean;
   name: string;
   description: string;
   endpoint: string;
@@ -78,6 +79,7 @@ export default function DataChannelDetailsPage() {
     query getDataChannel($id: String!) {
       dataChannelById(id: $id) {
         id
+        accessSwitch
         name
         description
         endpoint
@@ -88,6 +90,7 @@ export default function DataChannelDetailsPage() {
   const UPDATE_DATA_CHANNEL = gql`
     mutation updateDataChannel(
       $id: String!
+      $accessSwitch: Boolean!
       $name: String!
       $description: String!
       $endpoint: String!
@@ -96,6 +99,7 @@ export default function DataChannelDetailsPage() {
       updateDataChannel(
         input: {
           id: $id
+          accessSwitch: $accessSwitch
           name: $name
           description: $description
           endpoint: $endpoint
@@ -124,8 +128,26 @@ export default function DataChannelDetailsPage() {
       actions={
         <Flex gap={10}>
           <Flex gap={2} align={"center"}>
-            <Switch colorScheme="green" />
+            { channel && ( <>
+            <Switch colorScheme="green" defaultChecked={ channel?.accessSwitch ? channel.accessSwitch : false } onChange={e => {
+              if (editChannel) {
+                const variables = {
+                    ...editChannel,
+                  accessSwitch: e.target.checked ? true : false,
+                };
+                updateDataChannel({
+                  variables,
+                }).then(() => {
+                  refetch().then((res) => {
+                    setChannel(res.data.dataChannelById);
+                    setEditChannel(res.data.dataChannelById);
+                  });
+                });
+              }
+            }}/>
             <Text>Enable</Text>
+            </>
+              )}
           </Flex>
           <Flex gap={5} align={"center"}>
             <OrbisButton p={2} rounded={"full"} onClick={editDisclosure.onOpen}>
