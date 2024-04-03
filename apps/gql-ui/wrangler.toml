@@ -1,0 +1,14 @@
+name = "gql-ui"
+compatibility_date = "2023-12-01"
+compatibility_flags = ["nodejs_compat"]
+main = "./worker/index.js"
+workers_dev = false
+
+site = { bucket = "./dist" }
+
+[build]
+command = "vite build"
+
+[dev]
+ip = "localhost"
+port = 5006
