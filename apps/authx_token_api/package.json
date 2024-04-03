@@ -1,5 +1,5 @@
 {
-  "name": "authx_token_api",
+	"name": "@catalyst/authx_token_api",
   "version": "0.0.0",
   "private": true,
   "scripts": {
