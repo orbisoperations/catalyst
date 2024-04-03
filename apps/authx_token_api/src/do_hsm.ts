@@ -39,7 +39,7 @@ export class KeyState {
     }
 
     expire() {
-        this.expired = true 
+        this.expired = true
         this.publicKey = {} as KeyLike;
         this.privateKey = {} as KeyLike;
     }
@@ -54,7 +54,7 @@ export class KeyState {
         return new SignJWT(payload)
         .setProtectedHeader({alg: "ES384"})
         .sign(this.privateKey);
-        
+
     }
 
     pub() {
@@ -150,6 +150,7 @@ export class HSM {
             const {payload, protectedHeader} = await jwtVerify(token, key.publicKey);
             return c.json({
                 valid: true,
+				claims: payload.claims,
             }, 200)
         } catch (e: any) {
             return c.json({
