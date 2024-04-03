@@ -6,6 +6,7 @@ export type Timestamp = ColumnType<Date, Date | string, Date | string>;
 
 export type DataChannel = {
     id: string;
+    accessSwitch: number | null;
     name: string;
     endpoint: string;
     description: string | null;

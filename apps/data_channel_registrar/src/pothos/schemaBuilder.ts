@@ -14,6 +14,7 @@ const DataChannelObject = builder.objectRef<CatalystKyselyTypes.DataChannel>('Da
 DataChannelObject.implement({
   fields: t => ({
     id: t.exposeID('id'),
+    accessSwitch: t.exposeBoolean('accessSwitch', {value: false}),
     name: t.exposeString('name'),
     description: t.exposeString('description', { nullable: true }),
     endpoint: t.exposeString('endpoint'),
@@ -24,6 +25,7 @@ DataChannelObject.implement({
 const DataChannelInput = builder.inputType('DataChannelInput', {
   fields: t => ({
     id: t.string({ required: false }),
+    accessSwitch: t.boolean({ required: false }),
     name: t.string({ required: false }),
     description: t.string({ required: false }),
     endpoint: t.string({ required: false }),
@@ -81,13 +83,13 @@ builder.mutationType({
         input: t.arg({ type: DataChannelInput, required: true }),
       },
       resolve: (root, args, ctx) => {
-        const dataChannelRec = {
+        const dataChannelRec: DataChannel = {
           id: crypto.randomUUID(),
+          accessSwitch: args.input.accessSwitch?? false,
           name: args.input.name!,
           description: args.input.description?? 'nothing provided',
           endpoint: args.input.endpoint!,
           creatorOrganization: args.input.creatorOrganization!,
-
         };
         return ctx.db
           .insertInto('DataChannel')
@@ -124,6 +126,7 @@ builder.mutationType({
         args.input.name
           ? (dataChannelNewValuesRec.name = args.input.name)
           : delete dataChannelNewValuesRec.name;
+        (args.input.accessSwitch === undefined || args.input.accessSwitch === null)  ? delete dataChannelNewValuesRec.accessSwitch :(dataChannelNewValuesRec.accessSwitch = args.input.accessSwitch);
         args.input.endpoint
           ? (dataChannelNewValuesRec.endpoint = args.input.endpoint)
           : delete dataChannelNewValuesRec.endpoint;

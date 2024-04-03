@@ -61,12 +61,14 @@ describe('test', () => {
   it('updates data channel by id', async () => {
     const data = await giveMeADataChannel();
     const sampleId = data.createDataChannel.id;
+    const accessSwitchUpdate = true;
     const changedName = 'Help him, Help him, Help him';
-    const inputDataChannel = { id: sampleId, name: changedName };
+    const inputDataChannel = { id: sampleId, name: changedName, accessSwitch: accessSwitchUpdate };
 
     const mutation = gql`
       mutation UpdateDataChannel($input: DataChannelInput!) {
         updateDataChannel(input: $input) {
+          accessSwitch
           name
           endpoint
           creatorOrganization
@@ -77,11 +79,13 @@ describe('test', () => {
     const myDataChannel: {
         updateDataChannel: {
           name: string;
+          accessSwitch: boolean;
           endpoint: string;
           creatorOrganization: string;
         };
     } = await client.request(mutation, { input: inputDataChannel });
     expect(myDataChannel.updateDataChannel.name).toEqual(changedName);
+    expect(myDataChannel.updateDataChannel.accessSwitch).toEqual(accessSwitchUpdate);
     expect(myDataChannel.updateDataChannel.endpoint).toEqual('https://example.com/data');
     expect(myDataChannel.updateDataChannel.creatorOrganization).toEqual('Fake Organization');
   });
@@ -91,6 +95,7 @@ describe('test', () => {
       query {
         allDataChannels {
           id
+          accessSwitch
           name
           endpoint
           creatorOrganization
@@ -101,6 +106,7 @@ describe('test', () => {
     const data: {
         allDataChannels: {
           id: string;
+          accessSwitch: boolean;
           name: string;
           endpoint: string;
           creatorOrganization: string;
