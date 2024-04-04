@@ -1,15 +1,14 @@
 import {Hono} from 'hono'
 import {stitchSchemas} from '@graphql-tools/stitch';
 import {schemaFromExecutor} from '@graphql-tools/wrap';
-import { buildHTTPExecutor } from '@graphql-tools/executor-http';
 import {createYoga} from 'graphql-yoga';
 import {UrlqGraphqlClient} from "./client/client";
 import { buildSchema, parse } from 'graphql';
 import { isAsyncIterable, type Executor } from '@graphql-tools/utils';
 import { stitchingDirectives } from '@graphql-tools/stitching-directives';
 import {grabTokenInHeader} from "@catalyst/jwt"
-
-// https://github.com/ardatan/schema-stitching/blob/master/examples/stitching-directives-sdl/src/gateway.ts
+//
+// // https://github.com/ardatan/schema-stitching/blob/master/examples/stitching-directives-sdl/src/gateway.ts
 export async function fetchRemoteSchema(executor: Executor) {
   const result = await executor({
     document: parse(/* GraphQL */ `
@@ -23,12 +22,15 @@ export async function fetchRemoteSchema(executor: Executor) {
   }
   return buildSchema(result.data._sdl);
 }
-
+//
 // https://github.com/ardatan/schema-stitching/blob/master/examples/combining-local-and-remote-schemas/src/gateway.ts
 async function makeGatewaySchema(endpoints: { endpoint: string }[]) {
   const { stitchingDirectivesTransformer } = stitchingDirectives();
   // Make remote executors:
   // these are simple functions that query a remote GraphQL API for JSON.
+
+  const {buildHTTPExecutor} = await import('@graphql-tools/executor-http')
+
 
   const remoteExecutors = endpoints.map(({endpoint}) => {
     return buildHTTPExecutor({
@@ -38,14 +40,13 @@ async function makeGatewaySchema(endpoints: { endpoint: string }[]) {
       //}),
     })
   })
-
+  //
   const subschemas = Promise.all(remoteExecutors.map(async (exec) => {
     return {
       schema: await fetchRemoteSchema(exec),
       executor: exec
     }
   }))
-
   return stitchSchemas({
     subschemas: await subschemas,
     subschemaConfigTransforms: [stitchingDirectivesTransformer],
@@ -57,7 +58,7 @@ async function makeGatewaySchema(endpoints: { endpoint: string }[]) {
     },
   });
 }
-
+//
 export type Env = Record<string, string> & {
   DATA_CHANNEL_REGISTRAR: Fetcher
   AUTHX_TOKEN_API: Fetcher
