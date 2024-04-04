@@ -113,41 +113,43 @@ export default function DataChannelDetailsPage() {
 
   const [updateDataChannel] = useMutation(UPDATE_DATA_CHANNEL);
 
-  const { data, loading, error, refetch } = useQuery(GET_DATA_CHANNEL, {
+  const { data, loading, refetch } = useQuery(GET_DATA_CHANNEL, {
     variables: { id },
   });
 
   useEffect(() => {
     if (data && data.dataChannelById) {
       setChannel(data.dataChannelById);
-      setEditChannel({ ...data.dataChannelById });
+      setEditChannel(data.dataChannelById);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading]);
   return (
     <DetailedView
       actions={
         <Flex gap={10}>
           <Flex gap={2} align={"center"}>
-            { channel && ( <>
-            <Switch colorScheme="green" defaultChecked={ channel?.accessSwitch ? channel.accessSwitch : false } onChange={e => {
-              if (editChannel) {
-                const variables = {
-                    ...editChannel,
-                  accessSwitch: e.target.checked ? true : false,
-                };
-                updateDataChannel({
-                  variables,
-                }).then(() => {
-                  refetch().then((res) => {
-                    setChannel(res.data.dataChannelById);
-                    setEditChannel(res.data.dataChannelById);
-                  });
-                });
-              }
-            }}/>
-            <Text>Enable</Text>
-            </>
-              )}
+            { channel && ( 
+              <>
+                <Switch colorScheme="green" defaultChecked={ channel?.accessSwitch ? channel.accessSwitch : false } onChange={e => {
+                  if (editChannel) {
+                    const variables = {
+                        ...editChannel,
+                      accessSwitch: e.target.checked ? true : false,
+                    };
+                    updateDataChannel({
+                      variables,
+                    }).then(() => {
+                      refetch().then((res) => {
+                        setChannel(res.data.dataChannelById);
+                        setEditChannel(res.data.dataChannelById);
+                      });
+                    });
+                  }
+                }}/>
+                <Text>Enable</Text>
+              </>
+            )}
           </Flex>
           <Flex gap={5} align={"center"}>
             <OrbisButton p={2} rounded={"full"} onClick={editDisclosure.onOpen}>
@@ -159,14 +161,15 @@ export default function DataChannelDetailsPage() {
       }
       headerTitle={{
         adjacent:
-          channel?.creatorOrganization === "org1" ? (
+          channel?.creatorOrganization === "org2" ? (
+            // TODO: Enable Shared with you badge
             <OrbisBadge> Shared with you </OrbisBadge>
           ) : (
             <></>
           ),
-        text: "Channel: " + (channel ? channel.name : "Loading..."),
+        text: channel ? ("Channel: " + channel.name) : "",
       }}
-      subtitle={channel?.description ?? ""}
+      subtitle={channel?.description}
       topbaractions={navigationItems}
       topbartitle="Data Channel Details"
     >
@@ -361,6 +364,7 @@ export default function DataChannelDetailsPage() {
                   </Stack>
                 </CardBody>
               </Card>
+              {/* TODO: enable sharing view on the UI */}
               {channel?.creatorOrganization === "org2" && (
                 <Card>
                   <CardHeader>

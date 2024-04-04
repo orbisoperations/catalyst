@@ -1,22 +1,23 @@
 import { Flex, Text, TextProps } from "@chakra-ui/react";
 import { CopyButton, DisplayButton, GenerateButton } from ".";
-import { useState } from "react";
+import { MouseEventHandler, useState } from "react";
 
 export const APIKeyText = (
   props: TextProps & {
-    children: string;
+    children?: string;
     allowGenerate?: boolean;
     allowDisplay?: boolean;
     allowCopy?: boolean;
+    generateFunction?:  MouseEventHandler<HTMLButtonElement>
   }
 ) => {
   const { children, allowGenerate, allowCopy, allowDisplay, ...rest } = props;
-  const obscured =
+  const obscured = children ? (
     children.slice(0, 5) +
-    children.slice(5, children.length).replace(/./g, "*");
+    children.slice(5, children.length).replace(/./g, "*")) : "";
   const [displayText, setDisplayText] = useState(obscured);
   const toggleText = () => {
-    setDisplayText(displayText === obscured ? children : obscured);
+    setDisplayText(displayText === obscured ? (children ?? "") : obscured);
   };
   return (
     <Flex
@@ -41,7 +42,7 @@ export const APIKeyText = (
           toggletext={() => toggleText()}
         />
       )}
-      {allowGenerate && <GenerateButton variant={"ghost"} colorScheme="blue" />}
+      {allowGenerate && <GenerateButton variant={"ghost"} colorScheme="blue" onClick={props.generateFunction} />}
     </Flex>
   );
 };

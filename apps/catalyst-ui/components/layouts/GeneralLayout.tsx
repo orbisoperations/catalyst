@@ -4,7 +4,7 @@ import { HelpModal } from "../elements";
 import { Footer, TopBar } from "./components";
 
 export type GeneralLayoutProps = PropsOf<typeof Box> & {
-  title: string;
+  title?: string;
   actions?: { display: string; path: string }[];
 };
 export const GeneralLayout = (props: GeneralLayoutProps) => {
