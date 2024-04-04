@@ -59,21 +59,19 @@ async function makeGatewaySchema(endpoints: { endpoint: string }[]) {
   });
 }
 //
-export type Env = Record<string, string> & {
-  DATA_CHANNEL_REGISTRAR: Fetcher
-  AUTHX_TOKEN_API: Fetcher
-};
-console.error('something random')
 
-const app = new Hono<{ Bindings: Env }>()
+console.error('this will make the logs actually output')
+
+type Variables = {
+  claims: string[]
+};
+
+
+const app = new Hono<{ Bindings: Env & Record<string, any>, Variables: Variables  }>()
 app.use(async (c, next) => {
 
-  console.log(c.env);
 
-  const [token, error] = grabTokenInHeader(c.req.header("Authorization"));
-
-  console.log(token);
-
+  const [token, error] =  grabTokenInHeader(c.req.header("Authorization"));
 
   if (error) {
     return c.json({
@@ -88,18 +86,14 @@ app.use(async (c, next) => {
 
   const client = new UrlqGraphqlClient(c.env.AUTHX_TOKEN_API);
   const [validate, claims] = await client.validateToken(token);
+  console.log({claims});
+
+  c.set('claims', claims);
 
   if (!validate) {
     return c.text("GF'd", 403)
   }
 
-  // get claims for token
-
-  // save claims to context
-
-  c.req.addValidatedData('header', {
-    'x-catalyst-claims': claims
-  })
 
   // we good
   await next()
@@ -114,7 +108,8 @@ app.use("/graphql", async (ctx) => {
     data channels returned: [ dc1, dc3 ]
    */
   const allDataChannels = await client.allDataChannelsByClaims(
-      JSON.parse(ctx.req.header('x-catalyst-claims') as string)
+      //JSON.parse(ctx.req.header('x-catalyst-claims') as string)
+      ctx.get('claims') ?? []
   );
 
   const yoga = createYoga({

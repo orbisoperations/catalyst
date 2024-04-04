@@ -46,7 +46,7 @@ export class UrlqGraphqlClient {
 
   async allDataChannelsByClaims(claims?: string[]) {
     const query = gql`
-      query getDataChannels($claims: [String]){
+      query getDataChannels($claims: [String!]){
         dataChannelsByClaims (claims: $claims){
           name
           endpoint
@@ -78,13 +78,15 @@ export class UrlqGraphqlClient {
     // @ts-ignore
     const response: {
       data: {
-        valid: boolean;
-        claims?: string[]
+        validate: {
+          valid: boolean;
+          claims?: string[]
+        },
       }
     }  = await this.client.query(query, {}).toPromise();
 
     console.log(response)
 
-    return [response.data.valid, response.data.claims?? []];
+    return [response.data.validate.valid, response.data.validate.claims?? []];
   }
 }

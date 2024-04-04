@@ -1,5 +1,5 @@
 // test/index.spec.ts
-import { SELF } from "cloudflare:test";
+import { env, SELF } from "cloudflare:test";
 import { describe, it, expect } from "vitest";
 import worker from "../src/index";
 
@@ -8,25 +8,68 @@ import worker from "../src/index";
 // @ts-ignore
 const IncomingRequest = Request<unknown, IncomingRequestCfProperties>;
 
-describe("data channel gateway", () => {
-  it("validates a jwt", async () => {
+describe("gateway jwt validation", () => {
 
-    const query = `
-      query {
-        health
-      }
-    `;
+  it("returns gf'd for a invalid token", async () => {
+    const badToken = 'fake-and-insecure';
 
     const headers = new Headers();
+    headers.set('Authorization', `Bearer ${badToken}`)
 
-    headers.set('Authorization', `Bearer fake-and-insecure`)
 
     const response = await SELF.fetch('https://data-channel-gateway/graphql', {
       method: 'GET',
-      // body: JSON.stringify({ query }),
       headers
     });
 
-    expect(await response.text()).toMatchInlineSnapshot(`"ok"`);
+    expect(await response.text()).toMatchInlineSnapshot(`"GF'd"`);
+  });
+
+  it("returns GF'd for no auth header", async () => {
+    const response = await SELF.fetch('https://data-channel-gateway/graphql', {
+      method: 'GET',
+    });
+
+    expect(await response.text()).toMatchInlineSnapshot(`"{"error":"No Credenetials Supplied"}"`);
+  });
+
+
+  it("works with a known good token", async () => {
+
+    const getToken = async (claims: any) => {
+      const tokenQuery = `
+      mutation {
+        sign(entity: "test-entity", claims: [])
+      }
+    `
+
+      const response =  await  env.AUTHX_TOKEN_API.fetch('https://authx-token-api/graphql', {
+        method: "POST",
+        body: JSON.stringify({
+          query: tokenQuery
+        }),
+        headers: {
+          'content-type': 'application/json'
+        },
+      })
+
+      const {data} =  await response.json() as {
+        data: { sign: string }
+      };
+
+      return data.sign;
+    };
+
+    const token = await getToken([]);
+
+
+    const response = await SELF.fetch('https://data-channel-gateway/graphql', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+    });
+
+    expect(await response.text()).toMatchInlineSnapshot("");
   });
 });
