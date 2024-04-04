@@ -14,7 +14,7 @@ const DataChannelObject = builder.objectRef<CatalystKyselyTypes.DataChannel>('Da
 DataChannelObject.implement({
   fields: t => ({
     id: t.exposeID('id'),
-    accessSwitch: t.exposeBoolean('accessSwitch', {value: false}),
+    accessSwitch: t.exposeBoolean('accessSwitch', { nullable: true }),
     name: t.exposeString('name'),
     description: t.exposeString('description', { nullable: true }),
     endpoint: t.exposeString('endpoint'),
@@ -139,6 +139,28 @@ builder.mutationType({
           .where('id', '=', args.input.id as string)
           .returningAll()
           .executeTakeFirst()) as DataChannel;
+        return result;
+      },
+    }),
+
+    updateOrganizationDataChannelsAccessSwitch: t.field({
+      type: [DataChannelObject],
+      args: {
+        input: t.arg({ type: DataChannelInput, required: true }),
+      },
+      resolve: async (root, args, ctx) => {
+        const newValuesForOrgDataChannelsRec: Record<string, unknown> = {};
+
+        if (!args.input.creatorOrganization) throw new Error('creatorOrganization is required to update a data channels for an organization');
+
+        (args.input.accessSwitch === undefined || args.input.accessSwitch === null)  ? delete newValuesForOrgDataChannelsRec.accessSwitch :(newValuesForOrgDataChannelsRec.accessSwitch = args.input.accessSwitch);
+
+        const result = (await ctx.db
+            .updateTable('DataChannel')
+            .set(newValuesForOrgDataChannelsRec)
+            .where('creatorOrganization', '=', args.input.creatorOrganization as string)
+            .returningAll()
+            .execute()) as [DataChannel];
         return result;
       },
     }),

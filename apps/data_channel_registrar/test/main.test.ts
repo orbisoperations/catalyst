@@ -90,6 +90,58 @@ describe('test', () => {
     expect(myDataChannel.updateDataChannel.creatorOrganization).toEqual('Fake Organization');
   });
 
+  it('updates data channel access switch by organization', async () => {
+    const data = await giveMeADataChannel();
+    const fullDCId = data.createDataChannel.id;
+    const queryDC = gql`
+      query DataChannelById($id: String!) {
+        dataChannelById(id: $id) {
+          id
+          name
+          endpoint
+          creatorOrganization
+        }
+      }
+    `;
+
+    const fullDataChannel: {
+      dataChannelById: {
+        id: string;
+        accessSwitch: boolean;
+        name: string;
+        endpoint: string;
+        creatorOrganization: string;
+      };
+    } = await client.request(queryDC, { id: fullDCId });
+    const accessSwitchUpdate = !fullDataChannel.dataChannelById.accessSwitch;
+    const orgId = fullDataChannel.dataChannelById.creatorOrganization;
+    const inputDataChannel = { creatorOrganization: orgId, accessSwitch: accessSwitchUpdate };
+
+    const mutation = gql`
+      mutation UpdateOrganizationDataChannelsAccessSwitch($input: DataChannelInput!) {
+        updateOrganizationDataChannelsAccessSwitch(input: $input) {
+          accessSwitch
+          name
+          endpoint
+          creatorOrganization
+        }
+      }
+    `;
+
+    const myDataChannels: {
+        updateOrganizationDataChannelsAccessSwitch: {
+          name: string;
+          accessSwitch: boolean;
+          endpoint: string;
+          creatorOrganization: string;
+        }[];
+    } = await client.request(mutation, { input: inputDataChannel });
+    for ( let i=0; i<myDataChannels.updateOrganizationDataChannelsAccessSwitch.length; i++) {
+      expect(myDataChannels.updateOrganizationDataChannelsAccessSwitch[i].accessSwitch).toEqual(accessSwitchUpdate);
+      expect(myDataChannels.updateOrganizationDataChannelsAccessSwitch[i].creatorOrganization).toEqual(orgId);
+    }
+  });
+
   it('requests data channels from the api', async () => {
     const query = gql`
       query {

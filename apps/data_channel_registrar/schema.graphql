@@ -1,5 +1,5 @@
 type DataChannel {
-  accessSwitch: Boolean!
+  accessSwitch: Boolean
   creatorOrganization: String!
   description: String
   endpoint: String!
@@ -20,6 +20,7 @@ type Mutation {
   createDataChannel(input: DataChannelInput!): DataChannel!
   deleteDataChannel(id: String): Boolean!
   updateDataChannel(input: DataChannelInput!): DataChannel!
+  updateOrganizationDataChannelsAccessSwitch(input: DataChannelInput!): [DataChannel!]!
 }
 
 type Query {
