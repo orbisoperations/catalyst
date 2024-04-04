@@ -17,9 +17,14 @@ describe("data channel gateway", () => {
       }
     `;
 
-    const response = await SELF.fetch('https://data-channel-gateway/health', {
+    const headers = new Headers();
+
+    headers.set('Authorization', `Bearer fake-and-insecure`)
+
+    const response = await SELF.fetch('https://data-channel-gateway/graphql', {
       method: 'GET',
       // body: JSON.stringify({ query }),
+      headers
     });
 
     expect(await response.text()).toMatchInlineSnapshot(`"ok"`);
