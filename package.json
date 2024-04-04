@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "sim": "turbo sim",
-    "ls": "pnpm ls -r --json --long --depth 6 --prod >> ./pnpmls.json"
+    "ls": "pnpm ls -r --json --long --depth 6 --prod >> ./pnpmls.json",
     "dev": "turbo dev"
   },
   "keywords": [],

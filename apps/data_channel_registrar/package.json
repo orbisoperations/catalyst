@@ -9,9 +9,10 @@
     "dev": "pnpm wrangler dev",
     "deploy": "wrangler deploy --minify src/worker.ts",
     "migrate": "wrangler d1 migrations apply catalyst --local",
-    "postinstall": "pnpm migrate && pnpm graphql-codegen",
+    "postinstall": "pnpm migrate && pnpm graphql-codegen && pnpm build",
     "fmt": "prettier --write .",
-    "lint": "eslint . --ext .ts"
+    "lint": "eslint . --ext .ts",
+    "build": "wrangler build"
   },
   "keywords": [],
   "author": "",
