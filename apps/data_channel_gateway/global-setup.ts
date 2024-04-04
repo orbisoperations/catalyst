@@ -4,17 +4,17 @@ import path from "node:path";
 export default function () {
   // Build `api-service`'s dependencies
 
-  let label = "Built multiple-workers auth-service";
+  let label = "Compiled authx_service";
   console.time(label);
   childProcess.execSync("pnpm build", {
-    cwd: path.join("../../authx_token_api"),
+    cwd: path.join("../authx_token_api"),
   });
   console.timeEnd(label);
 
-  label = "Built multiple-workers database-service";
+  label = "Compiled data_channel_registrar";
   console.time(label);
   childProcess.execSync("pnpm build", {
-    cwd: path.join("../../data_channel_registrar"),
+    cwd: path.join("../data_channel_registrar"),
   });
   console.timeEnd(label);
 

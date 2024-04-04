@@ -41,11 +41,11 @@ export class VerifyingClient {
         if (!this.publicKey) {
             const client = new UrlqGraphqlClient(this.endpoint)
             const pubKey = await client.getPublickKey()
-            console.log(pubKey);
+            // console.log(pubKey);
             this.publicKey = await importSPKI(pubKey, 'ES384');
         }
 
-        console.log("verifying jwt");
+        // console.log("verifying jwt");
         var jwtClaims: JWTPayload
         try {
             const { payload} = await jwtVerify(token, this.publicKey);

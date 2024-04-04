@@ -1,9 +1,6 @@
 import {defineWorkersConfig, defineWorkersProject, readD1Migrations} from "@cloudflare/vitest-pool-workers/config";
 import path from "node:path";
 
-
-
-
 const authxServicePath = path.resolve("../authx_token_api/dist/index.js");
 const dataChannelRegistrarPath = path.resolve("../data_channel_registrar/dist/worker.js");
 
@@ -21,8 +18,13 @@ export default defineWorkersProject(async () => {
   const migrations = await readD1Migrations(migrationsPath);
 
   return {
+    optimizeDeps: {
+      entries: ['@graphql-tools/executor-http'],
+    },
     test: {
+      globalSetup: './global-setup.ts',
       setupFiles: ["./tests/apply-migrations.ts"],
+
       poolOptions: {
         workers: {
           main: "src/index.ts",
@@ -66,7 +68,6 @@ export default defineWorkersProject(async () => {
                 d1Databases: {
                   "APP_DB": "catalyst"
                 },
-
               },
             ],
           },

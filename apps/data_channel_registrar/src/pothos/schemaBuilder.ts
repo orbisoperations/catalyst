@@ -55,16 +55,14 @@ builder.queryType({
       },
       resolve: async (root, args, ctx, som) => {
         console.log('allDataChannels resolving...')
-        let result;
         if (args.claims) {
-          result = await ctx.db.selectFrom('DataChannel').selectAll()
+          const result = await ctx.db.selectFrom('DataChannel').selectAll()
               .where('name', 'in', args.claims?? [])
               .execute() as [DataChannel];
-        } else {
-          result = await ctx.db.selectFrom('DataChannel').selectAll().execute() as [DataChannel];
+
+          return result;
         }
-        console.log('allDataChannels resolved!', JSON.stringify(result))
-        return result;
+        return [];
       },
     }),
     dataChannelById: t.field({

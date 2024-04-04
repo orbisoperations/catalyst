@@ -7,6 +7,9 @@ import { buildSchema, parse } from 'graphql';
 import { isAsyncIterable, type Executor } from '@graphql-tools/utils';
 import { stitchingDirectives } from '@graphql-tools/stitching-directives';
 import {grabTokenInHeader} from "@catalyst/jwt"
+
+const { buildHTTPExecutor} = await import("@graphql-tools/executor-http");
+// @ts-ignore
 //
 // // https://github.com/ardatan/schema-stitching/blob/master/examples/stitching-directives-sdl/src/gateway.ts
 export async function fetchRemoteSchema(executor: Executor) {
@@ -25,14 +28,15 @@ export async function fetchRemoteSchema(executor: Executor) {
 //
 // https://github.com/ardatan/schema-stitching/blob/master/examples/combining-local-and-remote-schemas/src/gateway.ts
 async function makeGatewaySchema(endpoints: { endpoint: string }[]) {
+  console.log('makeGatewaySchema')
   const { stitchingDirectivesTransformer } = stitchingDirectives();
   // Make remote executors:
   // these are simple functions that query a remote GraphQL API for JSON.
 
-  const { buildHTTPExecutor} = await import('@graphql-tools/executor-http')
 
 
   const remoteExecutors = endpoints.map(({endpoint}) => {
+    console.log('remoteExecutors')
     return buildHTTPExecutor({
       endpoint: endpoint
       //headers: executorRequest => ({
@@ -42,6 +46,7 @@ async function makeGatewaySchema(endpoints: { endpoint: string }[]) {
   })
   //
   const subschemas = Promise.all(remoteExecutors.map(async (exec) => {
+    console.log("subschemas");
     return {
       schema: await fetchRemoteSchema(exec),
       executor: exec
@@ -86,12 +91,12 @@ app.use(async (c, next) => {
 
   const client = new UrlqGraphqlClient(c.env.AUTHX_TOKEN_API);
   const [validate, claims] = await client.validateToken(token);
-  console.log({claims});
+
 
   c.set('claims', claims);
 
   if (!validate) {
-    return c.text("GF'd", 403)
+    return c.text("Token validation failed", 403)
   }
 
 
@@ -103,6 +108,9 @@ app.use(async (c, next) => {
 app.use("/graphql", async (ctx) => {
   const client = new UrlqGraphqlClient(ctx.env.DATA_CHANNEL_REGISTRAR);
 
+  const recievedClaims = ctx.get('claims');
+
+  console.error({recievedClaims});
   /* e.g
     claims: [dc1, dc3]
     data channels returned: [ dc1, dc3 ]
@@ -111,6 +119,8 @@ app.use("/graphql", async (ctx) => {
       //JSON.parse(ctx.req.header('x-catalyst-claims') as string)
       ctx.get('claims') ?? []
   );
+
+  console.log({allDataChannels});
 
   const yoga = createYoga({
     schema: await makeGatewaySchema(allDataChannels),
