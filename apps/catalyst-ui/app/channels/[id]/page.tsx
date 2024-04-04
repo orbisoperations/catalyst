@@ -226,11 +226,12 @@ export default function DataChannelDetailsPage() {
                       description: formData.get("description"),
                       endpoint: formData.get("endpoint"),
                       creatorOrganization: formData.get("organization"),
-                    };
+                      accessSwitch: channel?.accessSwitch ?? false
+                    } as DataChannel;
                     if (channel) {
                       const variables = {
-                        id: channel.id,
                         ...data,
+                        id: channel.id,
                       };
                       updateDataChannel({
                         variables,
