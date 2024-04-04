@@ -30,15 +30,19 @@ export default defineWorkersConfig({
             // Unfortunately, auxiliary Workers cannot load their configuration
             // from `wrangler.toml` files, and must be configured with Miniflare
             // `WorkerOptions`.
-            // {
-            //   name: "authx_token_api",
-            //   modules: true,
-            //   modulesRoot: path.resolve("../authx_token_api"),
-            //   scriptPath: authxServicePath, // Built by `global-setup.ts`
-            //   compatibilityDate: "2024-01-01",
-            //   compatibilityFlags: ["nodejs_compat"],
-            //   // kvNamespaces: ["KV_NAMESPACE"],
-            // },
+            {
+              name: "authx_token_api",
+              modules: true,
+              modulesRoot: path.resolve("../authx_token_api"),
+              scriptPath: authxServicePath, // Built by `global-setup.ts`
+              compatibilityDate: "2024-01-01",
+              compatibilityFlags: ["nodejs_compat"],
+              // unsafeEphemeralDurableObjects: true,
+              durableObjects: {
+                "HSM": "HSM"
+              },
+              // kvNamespaces: ["KV_NAMESPACE"],
+            },
             {
               name: "data_channel_registrar",
               modules: true,

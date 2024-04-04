@@ -29,7 +29,7 @@ async function makeGatewaySchema(endpoints: { endpoint: string }[]) {
   // Make remote executors:
   // these are simple functions that query a remote GraphQL API for JSON.
 
-  const {buildHTTPExecutor} = await import('@graphql-tools/executor-http')
+  const { buildHTTPExecutor} = await import('@graphql-tools/executor-http')
 
 
   const remoteExecutors = endpoints.map(({endpoint}) => {
@@ -63,10 +63,18 @@ export type Env = Record<string, string> & {
   DATA_CHANNEL_REGISTRAR: Fetcher
   AUTHX_TOKEN_API: Fetcher
 };
+console.error('something random')
 
 const app = new Hono<{ Bindings: Env }>()
 app.use(async (c, next) => {
-  const [token, error] = grabTokenInHeader(c.req.header("Authorization"))
+
+  console.log(c.env);
+
+  const [token, error] = grabTokenInHeader(c.req.header("Authorization"));
+
+  console.log(token);
+
+
   if (error) {
     return c.json({
       error: error.msg
