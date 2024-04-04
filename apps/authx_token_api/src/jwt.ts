@@ -13,6 +13,7 @@ export interface DSSJWT {
     iat: number // issued at
     claims: string[] // list of urns
 }
+
 export class JWT implements DSSJWT{
     iss: string // issuer
     sub: string // subject
@@ -25,6 +26,7 @@ export class JWT implements DSSJWT{
     // @ts-ignore
     iat: number // issued at
     claims: string[] // list of urns
+
     constructor(entity: string, claims: string[], iss: string) {
         this.sub = entity;
         this.claims = claims;
@@ -44,9 +46,10 @@ export class JWT implements DSSJWT{
     }
 
     payload(keyURN:string, expiry: number) {
-        this.nbf = new Date().getTime() / 1000; //seconds
-        this.iat = new Date().getTime() / 1000; //seconds
-        this.exp = (new Date().getTime() / 1000 ) + expiry; //seconds
+			const now = Math.floor(Date.now() / 1000);
+        this.nbf = now;
+        this.iat = now;
+        this.exp = now + expiry;
         return base64url(JSON.stringify({
             iss: keyURN,
             sub: this.sub,
@@ -60,9 +63,11 @@ export class JWT implements DSSJWT{
     }
 
     payloadRaw(expiry: number) {
-        this.nbf = new Date().getTime() / 1000; //seconds
-        this.iat = new Date().getTime() / 1000; //seconds
-        this.exp = (new Date().getTime() / 1000 ) + expiry; //seconds
+				const now = Math.floor(Date.now() / 1000);
+
+        this.nbf = now; // seconds
+        this.iat = now; //seconds
+        this.exp = now  + expiry; //seconds
         return {
             iss: this.iss,
             sub: this.sub,

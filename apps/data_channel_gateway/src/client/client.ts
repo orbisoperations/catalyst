@@ -55,12 +55,10 @@ export class UrlqGraphqlClient {
     `;
 
     const response = await this.client.query(query, {
-      claims: claims
+      claims
     }).toPromise();
 
-    console.log(response)
-
-    return [] //response.data.allDataChannels
+    return response.data.dataChannelsByClaims // response.data.allDataChannels
   }
 
 
@@ -85,7 +83,6 @@ export class UrlqGraphqlClient {
       }
     }  = await this.client.query(query, {}).toPromise();
 
-    console.log(response)
 
     return [response.data.validate.valid, response.data.validate.claims?? []];
   }

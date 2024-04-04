@@ -65,11 +65,9 @@ describe("authx service", () => {
 			  }
 		  })
 	  });
-	  console.log(response)
 
 	  const resolved = await response.text();
 
-	  console.log(resolved);
 
 
 	  // const response = await client.query(query, {}).toPromise();
