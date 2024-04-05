@@ -102,7 +102,7 @@ app.use(async (c, next) => {
   c.set('claims', claims);
 
   if (!validate) {
-    return c.text("Token validation failed", 403)
+    return c.json({message: 'Token validation failed'}, 403)
   }
 
 
