@@ -15,8 +15,12 @@ console.log({
 export default defineWorkersProject(async () => {
 
   // Read all migrations in the `migrations` directory
-  const migrationsPath = path.join(__dirname, "../../packages/schema/dist/flat_migrations");
-  const migrations = await readD1Migrations(migrationsPath);
+  const appMigrationsPath = path.join(__dirname, "../../packages/schema/dist/flat_migrations");
+  const seedMigrationsPath = path.join(__dirname, "./scripts/seed");
+  const appMigrations = await readD1Migrations(appMigrationsPath);
+  const seedMigrations = await readD1Migrations(seedMigrationsPath);
+
+  // const migrations = await readD1Migrations(appMigrationsPath);
 
   return {
     optimizeDeps: {
@@ -34,7 +38,7 @@ export default defineWorkersProject(async () => {
             d1Databases: {
               "APP_DB": "catalyst"
             },
-            bindings: { TEST_MIGRATIONS: migrations },
+            bindings: { APP_MIGRATIONS: appMigrations, TEST_SEED_MIGRATIONS: seedMigrations },
             // modulesRoot: path.resolve("."),
 
             // bindings: {

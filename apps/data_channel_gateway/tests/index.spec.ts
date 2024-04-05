@@ -136,7 +136,7 @@ describe("gateway jwt validation", () => {
   it("should correlate jwt claims with channels", async (testContext) => {
 
 
-    const token = await getToken("test", ["airplanes"], testContext);
+    const token = await getToken("Org1", ["airplanes"], testContext);
     const response = await SELF.fetch('https://data-channel-gateway/graphql', {
       method: 'POST',
       headers: {
