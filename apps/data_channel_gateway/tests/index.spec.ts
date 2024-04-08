@@ -151,7 +151,7 @@ describe("gateway jwt validation", () => {
   it("should get datachannel for airplanes", async (testContext) => {
 
 
-    const token = await getToken("Org1", ["airplanes"], testContext);
+    const token = await getToken("Org1", ["catalyst:4b5cc9f6-1636-4ded-b763-d65c1dfd9fbd:airplanes"], testContext);
     const response = await SELF.fetch('https://data-channel-gateway/graphql', {
       method: 'POST',
       headers: {

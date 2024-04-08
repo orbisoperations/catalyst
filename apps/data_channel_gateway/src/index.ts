@@ -1,4 +1,4 @@
-import {Hono} from 'hono'
+import {Context, Hono} from 'hono'
 import {stitchSchemas} from '@graphql-tools/stitch';
 import {schemaFromExecutor} from '@graphql-tools/wrap';
 import {createYoga, renderGraphiQL} from 'graphql-yoga';
@@ -11,6 +11,7 @@ import { print } from 'graphql'
 import { AsyncExecutor } from '@graphql-tools/utils'
 // // https://github.com/ardatan/schema-stitching/blob/master/examples/stitching-directives-sdl/src/gateway.ts
 export async function fetchRemoteSchema(executor: Executor) {
+  // throw new Error();
   const result = await executor({
     document: parse(/* GraphQL */ `
       {
@@ -21,11 +22,12 @@ export async function fetchRemoteSchema(executor: Executor) {
   if (isAsyncIterable(result)) {
     throw new Error('Expected executor to return a single result');
   }
+  console.log({execResult: result}, 'index.ts')
   return buildSchema(result.data._sdl);
 }
 //
 // https://github.com/ardatan/schema-stitching/blob/master/examples/combining-local-and-remote-schemas/src/gateway.ts
-async function makeGatewaySchema(endpoints: { endpoint: string }[]) {
+async function makeGatewaySchema(endpoints: { endpoint: string }[], token?: string) {
   console.log('makeGatewaySchema')
   const { stitchingDirectivesTransformer } = stitchingDirectives();
   // Make remote executors:
@@ -41,6 +43,7 @@ async function makeGatewaySchema(endpoints: { endpoint: string }[]) {
         headers: {
           'Content-Type': 'application/json',
           Accept: 'application/json',
+          "Authorization": token ?? ""
           //  Authorization: executorRequest?.context?.authHeader,
         },
         body: JSON.stringify({ query, variables, operationName, extensions })
@@ -50,6 +53,7 @@ async function makeGatewaySchema(endpoints: { endpoint: string }[]) {
     return executor;
   })
   //
+  console.log('before promise all')
   const subschemas = Promise.all(remoteExecutors.map(async (exec) => {
     console.log("subschemas");
     return {
@@ -112,6 +116,7 @@ app.use(async (c, next) => {
 })
 app.use("/graphql", async (ctx) => {
   const client = new UrlqGraphqlClient(ctx.env.DATA_CHANNEL_REGISTRAR);
+  console.log({context: ctx})
 
   const recievedClaims = ctx.get('claims');
 
@@ -126,9 +131,12 @@ app.use("/graphql", async (ctx) => {
   );
 
   console.log({allDataChannels});
-
+  const token =  ctx.req.header('Authorization');
+  if(!token) console.error({tokenError: token, error: "invalid token before createYoga"})
+  else console.error('token should be working', token)
+  console.log({tokenInReq: ctx.req.header('Authorization')});
   const yoga = createYoga({
-    schema: await makeGatewaySchema(allDataChannels),
+    schema: await makeGatewaySchema(allDataChannels,  token),
   });
 
   return yoga(ctx.req.raw, ctx.env);
