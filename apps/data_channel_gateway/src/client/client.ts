@@ -61,7 +61,6 @@ export class UrlqGraphqlClient {
     return response.data.dataChannelsByClaims // response.data.allDataChannels
   }
 
-
   async validateToken(token: string): Promise<[boolean, string[]]> {
     console.log(`validating token: ${token}`)
     const query = gql`
