@@ -9,7 +9,6 @@ import { stitchingDirectives } from '@graphql-tools/stitching-directives';
 import {grabTokenInHeader} from "@catalyst/jwt"
 import { print } from 'graphql'
 import { AsyncExecutor } from '@graphql-tools/utils'
-
 // // https://github.com/ardatan/schema-stitching/blob/master/examples/stitching-directives-sdl/src/gateway.ts
 export async function fetchRemoteSchema(executor: Executor) {
   const result = await executor({
@@ -80,7 +79,7 @@ type Variables = {
 
 const app = new Hono<{ Bindings: Env & Record<string, any>, Variables: Variables  }>()
 app.use(async (c, next) => {
-
+  console.log('in da gtwy');
 
   const [token, error] =  grabTokenInHeader(c.req.header("Authorization"));
 

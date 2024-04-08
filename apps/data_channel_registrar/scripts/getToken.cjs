@@ -1,8 +1,3 @@
-import {gql, GraphQLClient} from "graphql-request";
-
-
-const DATA_CHANNEL_GATEWAY_HOST = 'http://localhost:5051';
-
 
 const getToken = async (entity, claims) => {
     const tokenQuery = `
@@ -27,7 +22,7 @@ const getToken = async (entity, claims) => {
         method: "POST",
         body: gqlPayload,
         headers: {
-            'content-type': 'application/json',
+            'content-type': 'application/json'
         },
     });
 
@@ -48,6 +43,8 @@ const getToken = async (entity, claims) => {
         const {data} = json;
         const token = data.sign;
         console.log({
+            // @ts-ignore
+            test: ctx.task.name,
             signedTokenForTest: token
         });
 
@@ -65,52 +62,4 @@ export async function fetchToken() {
     return token;
 }
 
-(async () => {
-
-    const token = new String(await fetchToken());
-
-    const graphqlClient = new GraphQLClient(`${DATA_CHANNEL_GATEWAY_HOST}/graphql`);
-
-    // TODO: Execute some queries against the schema
-    const response = await fetch(DATA_CHANNEL_GATEWAY_HOST + '/graphql', {
-        method: 'GET',
-    });
-
-    const query = gql`
-        query ExampleFullSchemaQuery {
-            airplanes {
-                manufacture
-            }
-            cars {
-                manufacture
-            }
-            manufacture(id: 1) {
-                name
-            }
-            manufactures {
-                id
-                name
-            }
-        }
-    `;
-
-
-    const data = await graphqlClient.request(query, {
-
-    }, {
-        'Authorization': `Bearer ${token}`
-    });
-    /* SAMPLE EXPECTED RESPONSE
-     {
-          apiResponse: {
-            cars: [ [Object], [Object] ],
-            airplanes: [ [Object], [Object] ],
-            manufacture: { name: 'Tesla' },
-            manufactures: [ [Object], [Object], [Object], [Object], [Object] ]
-          }
-      }
-
-     */
-
-    console.log({apiResponse: data, status: response.status});
-})();
+fetchToken();

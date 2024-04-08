@@ -85,6 +85,7 @@ export type JWTError = {
 export function grabTokenInHeader(authHeader: string | undefined): [string, {msg: string, status: StatusCode}?] {
     // authheader should be in format "Bearer tokenstring"
     if (!authHeader) {
+
         return ["",{
                 msg: "No Credenetials Supplied",
                 status: 400
