@@ -14,6 +14,12 @@ function getDurableNamespace(d0: DurableObjectNamespace): DurableObjectStub {
     return obj
 }
 
+const VerifyResponseObject = builder.objectRef<{
+    valid: boolean,
+    claims: string[]
+}>('VerifyResponse');
+
+
 builder.queryType({
     fields: (t) => ({
         publicKey: t.string({
@@ -26,13 +32,14 @@ builder.queryType({
                 return  pem
             }
         }),
-        validate: t.boolean({
+        validate: t.field({
             args: {
                 token: t.arg.string({required: true})
             },
+            type: VerifyResponseObject,
             resolve: async (root, args, context) => {
                 const d0 = getDurableNamespace(context.env.HSM)
-                const validateResp = await d0.fetch("http://d0.stub/validate", {
+                const validateResp = await d0.fetch("https://authx-token-api.do-hsm/validate", {
                     method: "POST",
                     body: JSON.stringify({
                         token: args.token
@@ -43,7 +50,10 @@ builder.queryType({
                 if (error) {
                     console.error(error)
                 }
-                return valid?? false
+                return {
+                    valid: valid?? false,
+                    claims: ['foo', 'bar'],
+                }
             }
         })
     })
@@ -59,7 +69,7 @@ builder.mutationType({
             },
             resolve: async (root, args, context) => {
                 const d0 = getDurableNamespace(context.env.HSM)
-                const validateResp = await d0.fetch("http://d0.stub/sign", {
+                const validateResp = await d0.fetch("https://authx-token-api.do-hsm/sign", {
                     method: "POST",
                     body: JSON.stringify({
                         entity: args.entity,

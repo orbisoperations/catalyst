@@ -78,14 +78,19 @@ app.use(async (c, next) => {
   }
 
   const client = new UrlqGraphqlClient(c.env.AUTHX_TOKEN_API);
-  const {validate} = await client.validateToken(token) as {validate: boolean};
+  const {validate, claims} = await client.validateToken(token);
 
   if (!validate) {
     return c.text("GF'd", 403)
   }
 
   // get claims for token
+
   // save claims to context
+
+  c.req.addValidatedData('header', {
+    'x-catalyst-claims': claims
+  })
 
   // we good
   await next()
@@ -95,16 +100,13 @@ app.use(async (c, next) => {
 app.use("/graphql", async (ctx) => {
   const client = new UrlqGraphqlClient(ctx.env.DATA_CHANNEL_REGISTRAR);
 
-  const allDataChannels = await client.allDataChannels();
-  /*
-  [
-    dc1, dc2, dc3, ...
-  ]
-  claims: [dc1, dc3]
-  [
-    dc1, dc3
-  ]
+  /* e.g
+    claims: [dc1, dc3]
+    data channels returned: [ dc1, dc3 ]
    */
+  const allDataChannels = await client.allDataChannels({
+      claims: JSON.parse(ctx.req.header('x-catalyst-claims') as string)
+  });
 
   const yoga = createYoga({
     schema: await makeGatewaySchema(allDataChannels),

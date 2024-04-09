@@ -6,6 +6,7 @@ compatibility_flags = [ "nodejs_compat" ]
 ip = "localhost"
 port = 5052
 
+# https://developers.cloudflare.com/durable-objects/
 [durable_objects]
 bindings = [{name = "HSM", class_name = "HSM"}]
 
