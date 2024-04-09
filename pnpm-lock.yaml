@@ -212,6 +212,9 @@ importers:
 
   apps/data_channel_gateway:
     dependencies:
+      '@catalyst/jwt':
+        specifier: workspace:^
+        version: link:../../packages/jwt
       '@graphql-tools/executor-http':
         specifier: ^1.0.9
         version: 1.0.9(@types/node@20.11.16)(graphql@16.8.1)
