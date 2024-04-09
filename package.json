@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "sim": "turbo sim",
+    "ls": "pnpm ls -r --json --long --depth 6 --prod >> ./pnpmls.json"
     "dev": "turbo dev"
   },
   "keywords": [],
@@ -14,6 +14,7 @@
   "license": "Elastic-2.0",
   "devDependencies": {
     "@types/node": "^20.11.16",
+    "bun": "^1.0.30",
     "turbo": "^1.13.0",
     "typescript": "^5.3.3"
   }
