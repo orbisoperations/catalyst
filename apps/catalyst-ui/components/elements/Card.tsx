@@ -42,7 +42,6 @@ export const OrbisCard = (props: OrbisCardProps) => {
       <Box
         display={"grid"}
         gridTemplateColumns={"1fr 1fr"}
-        pb={"8px"}
         alignItems={"center"}
       >
         {header && <Text fontSize={"2xl"}>{header}</Text>}

@@ -9,23 +9,23 @@ import {
 
 export type OrbisTabsProps = {
   tabsProps?: PropsOf<typeof Tabs>;
-  tabs: string[];
-  content: JSX.Element[];
+  tabs?: string[];
+  content?: JSX.Element[];
 };
 export const OrbisTabs = (props: OrbisTabsProps) => {
   return (
     <Tabs {...props.tabsProps}>
-      <TabList>
+      {props.tabs && <TabList>
         {props.tabs.map((tab, index) => (
           <Tab key={index}>{tab}</Tab>
         ))}
-      </TabList>
+      </TabList>}
 
-      <TabPanels>
+      {props.content && <TabPanels>
         {props.content.map((c, index) => {
           return <TabPanel key={index}>{c}</TabPanel>;
         })}
-      </TabPanels>
+      </TabPanels>}
     </Tabs>
   );
 };

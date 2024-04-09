@@ -7,10 +7,10 @@ import {
 } from "@/components/elements";
 import { ListView } from "@/components/layouts";
 import { navigationItems } from "@/utils/nav.utils";
+import { OperationVariables, gql, useQuery } from "@apollo/client";
 import { Flex } from "@chakra-ui/layout";
 import { Card, CardBody } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
-import { useQuery, gql, OperationVariables } from "@apollo/client";
 import { useEffect } from "react";
 export default function DataChannelListPage() {
   const router = useRouter();
@@ -54,8 +54,8 @@ export default function DataChannelListPage() {
       positionChildren="bottom"
       subtitle="All your data channels in one place."
       table={
+        (data && data.dataChannelsByCreatorOrg) ? 
         <Card variant={"outline"} shadow={"md"}>
-          {data && data.dataChannelsByCreatorOrg.length > 0 ? (
             <OrbisTable
               headers={["Data Channel", "Description", "Endpoint"]}
               rows={data.dataChannelsByCreatorOrg.map(
@@ -80,12 +80,14 @@ export default function DataChannelListPage() {
                 }
               )}
             />
-          ) : (
-            <CardBody>
-              {loading ? "Loading..." : "No data channels found"}
-            </CardBody>
-          )}
+          
+        </Card> : 
+        <Card>
+          <CardBody>
+          No Channels Available
+          </CardBody>
         </Card>
+
       }
       topbartitle="Data Channels"
     ></ListView>

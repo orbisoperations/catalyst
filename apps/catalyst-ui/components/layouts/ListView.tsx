@@ -4,12 +4,12 @@ import { HelpModal, OrbisTable } from "../elements";
 import { Footer, ListedHeader, TopBar } from "./components";
 
 export type ListViewProps = PropsOf<typeof Box> & {
-  headerTitle: { text: string; adjacent?: JSX.Element };
-  subtitle: string;
-  actions: JSX.Element;
-  topbartitle: string;
+  headerTitle?: { text: string; adjacent?: JSX.Element };
+  subtitle?: string;
+  actions?: JSX.Element;
+  topbartitle?: string;
   topbaractions?: { display: string; path: string }[];
-  positionChildren: "top" | "bottom";
+  positionChildren?: "top" | "bottom";
   table?: ReturnType<typeof OrbisTable>;
 };
 export const ListView = (props: ListViewProps) => {
