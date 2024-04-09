@@ -59,10 +59,35 @@ async function makeGatewaySchema(endpoints: { endpoint: string }[]) {
 
 export type Env = Record<string, string> & {
   DATA_CHANNEL_REGISTRAR: Fetcher
+  AUTHX_TOKEN_API: Fetcher
 };
 
 const app = new Hono<{ Bindings: Env }>()
+app.use(async (c, next) => {
+  // we only need to validate JWTs that we provide
+  const authHeader = c.req.header("Authorization")
+  // authheader should be in format "Bearer tokenstring"
+  if (!authHeader) {
+    return c.text("GF'd", 403)
+  }
 
+  const  headerElems = authHeader.split(" ")
+  if (headerElems.length != 2) {
+    return c.text("GF'd", 403)
+  }
+
+  const client = new UrlqGraphqlClient(c.env.AUTHX_TOKEN_API);
+  const {validate} = await client.validateToken(headerElems[1]) as {validate: boolean};
+
+  if (!validate) {
+    return c.text("GF'd", 403)
+  }
+
+  // we good
+  await next()
+
+  // we can add claims but do not need to enforce them here
+})
 app.use("/graphql", async (ctx) => {
   const client = new UrlqGraphqlClient(ctx.env.DATA_CHANNEL_REGISTRAR);
 
