@@ -325,6 +325,9 @@ importers:
 
   examples/datachannel_airplanes:
     dependencies:
+      '@catalyst/jwt':
+        specifier: workspace:^
+        version: link:../../packages/jwt
       '@pothos/core':
         specifier: ^3.41.0
         version: 3.41.0(graphql@16.8.1)
@@ -380,6 +383,22 @@ importers:
         specifier: ^3.25.0
         version: 3.36.0(@cloudflare/workers-types@4.20240222.0)
 
+  packages/jwt:
+    dependencies:
+      '@urql/core':
+        specifier: ^4.3.0
+        version: 4.3.0(graphql@16.8.1)
+      axios:
+        specifier: ^1.6.7
+        version: 1.6.8
+      jose:
+        specifier: ^5.2.3
+        version: 5.2.3
+    devDependencies:
+      typescript:
+        specifier: ^5.4.3
+        version: 5.4.3
+
   packages/schema:
     dependencies:
       '@prisma/client':
@@ -425,7 +444,6 @@ packages:
         optional: true
     dependencies:
       graphql: 16.8.1
-    dev: true
 
   /@aashutoshrathi/word-wrap@1.2.6:
     resolution: {integrity: sha512-1Yjs2SvM8TflER/OD3cOjhWWOZb58A2t7wpE2S9XfBYTiIl+XFhQG2bjy4Pu1I+EAlCNUzRDYDdFwFYUKvXcIA==}
@@ -7108,7 +7126,6 @@ packages:
       wonka: 6.3.4
     transitivePeerDependencies:
       - graphql
-    dev: true
 
   /@vercel/build-utils@7.9.1:
     resolution: {integrity: sha512-yqbP7d8oLAGkh5iy9/Vu1c0+s5jLFK56QHEZlkj1lY3t3OQ+7dsAi0oUP/gv8YxtUYwMDfeYSqZr/4cNhnSBsg==}
@@ -18461,6 +18478,12 @@ packages:
     hasBin: true
     dev: true
 
+  /typescript@5.4.3:
+    resolution: {integrity: sha512-KrPd3PKaCLr78MalgiwJnA25Nm8HAmdwN3mYUYZgG/wizIo9EainNVQI9/yDavtVFRN2h3k8uf3GLHuhDMgEHg==}
+    engines: {node: '>=14.17'}
+    hasBin: true
+    dev: true
+
   /ua-parser-js@1.0.37:
     resolution: {integrity: sha512-bhTyI94tZofjo+Dn8SN6Zv8nBDvyXTymAdM3LDI/0IboIUwTu1rEhW7v2TfiVsoYWgkQ4kOVqnI8APUFbIQIFQ==}
     dev: true
@@ -19111,7 +19134,6 @@ packages:
 
   /wonka@6.3.4:
     resolution: {integrity: sha512-CjpbqNtBGNAeyNS/9W6q3kSkKE52+FjIj7AkFlLr11s/VWGUu6a2CdYSdGxocIhIVjaW/zchesBQUKPVU69Cqg==}
-    dev: true
 
   /wordwrap@1.0.0:
     resolution: {integrity: sha512-gvVzJFlPycKc5dZN4yPkP8w7Dc37BtP1yczEneOb4uq34pXZcvrtRTmWV8W+Ume+XCxKgbjM+nevkyFPMybd4Q==}
