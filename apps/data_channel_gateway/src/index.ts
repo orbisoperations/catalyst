@@ -7,6 +7,7 @@ import {UrlqGraphqlClient} from "./client/client";
 import { buildSchema, parse } from 'graphql';
 import { isAsyncIterable, type Executor } from '@graphql-tools/utils';
 import { stitchingDirectives } from '@graphql-tools/stitching-directives';
+import {grabTokenInHeader} from "@catalyst/jwt"
 
 // https://github.com/ardatan/schema-stitching/blob/master/examples/stitching-directives-sdl/src/gateway.ts
 export async function fetchRemoteSchema(executor: Executor) {
@@ -64,24 +65,27 @@ export type Env = Record<string, string> & {
 
 const app = new Hono<{ Bindings: Env }>()
 app.use(async (c, next) => {
-  // we only need to validate JWTs that we provide
-  const authHeader = c.req.header("Authorization")
-  // authheader should be in format "Bearer tokenstring"
-  if (!authHeader) {
-    return c.text("GF'd", 403)
+  const [token, error] = grabTokenInHeader(c.req.header("Authorization"))
+  if (error) {
+    return c.json({
+      error: error.msg
+    }, error.status)
   }
-
-  const  headerElems = authHeader.split(" ")
-  if (headerElems.length != 2) {
-    return c.text("GF'd", 403)
+  if (token == "") {
+    return c.json({
+      error: "JWT Invalid"
+    }, 403)
   }
 
   const client = new UrlqGraphqlClient(c.env.AUTHX_TOKEN_API);
-  const {validate} = await client.validateToken(headerElems[1]) as {validate: boolean};
+  const {validate} = await client.validateToken(token) as {validate: boolean};
 
   if (!validate) {
     return c.text("GF'd", 403)
   }
+
+  // get claims for token
+  // save claims to context
 
   // we good
   await next()
@@ -92,6 +96,15 @@ app.use("/graphql", async (ctx) => {
   const client = new UrlqGraphqlClient(ctx.env.DATA_CHANNEL_REGISTRAR);
 
   const allDataChannels = await client.allDataChannels();
+  /*
+  [
+    dc1, dc2, dc3, ...
+  ]
+  claims: [dc1, dc3]
+  [
+    dc1, dc3
+  ]
+   */
 
   const yoga = createYoga({
     schema: await makeGatewaySchema(allDataChannels),
