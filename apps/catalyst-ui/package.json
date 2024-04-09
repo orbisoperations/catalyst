@@ -7,7 +7,7 @@
     "ndev": "next dev",
     "pages:dev": "pnpm wrangler pages dev ./.vercel/output/static --compatibility-date=2023-10-30 --compatibility-flag=nodejs_compat --port 4000 --proxy 3000 --service CATALYST_DATA_CHANNEL_REGISTRAR_API=data_channel_registrar",
     "pages:build": "pnpm next-on-pages",
-    "dev": "pnpm pages:build && pnpm pages:dev",
+    "dev": "pnpm pages:build --skip-build && pnpm pages:dev",
     "cbuild": "npx @cloudflare/next-on-pages@1",
     "start": "next start",
     "lint": "next lint"
