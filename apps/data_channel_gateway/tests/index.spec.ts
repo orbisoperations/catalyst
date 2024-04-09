@@ -151,8 +151,8 @@ describe("gateway jwt validation", () => {
   it("should get datachannel for airplanes", async (testContext) => {
 
 
-    const token = await getToken("Org1", ["catalyst:4b5cc9f6-1636-4ded-b763-d65c1dfd9fbd:airplanes"], testContext);
-    const response = await SELF.fetch('https://data-channel-gateway/graphql', {
+    const token = await getToken("Org1", ["airplanes"], testContext);
+    const getAvailableQueries = await SELF.fetch('https://data-channel-gateway/graphql', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -165,29 +165,21 @@ describe("gateway jwt validation", () => {
                 name
                 fields {
                   name
-                  type {
-                    name
-                    kind
-                    ofType {
-                      name
-                      kind
-                    }
-                  }
                 }
               }
           }`
       })
     });
-      const responsePayload = await response.text();
+      const getAvailableQueriesResponsePayload = await getAvailableQueries.text();
 
-      console.log({text: responsePayload});
+      console.log({text: getAvailableQueriesResponsePayload});
 
-      const json = JSON.parse(responsePayload);
+      const json = JSON.parse(getAvailableQueriesResponsePayload);
 
       console.log({json})
 
     // Since we did not provide claims when the token was created, this will only return the health query in the list of fields
-    expect(json.data["__type"].fields).toHaveLength(2);
+    expect(json.data["__type"].fields).toHaveLength(3);
     // @ts-ignore
     // expect(responsePayload.data["__type"].fields[0]['name']).toBe('health');
   });
