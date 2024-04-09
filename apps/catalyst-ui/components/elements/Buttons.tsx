@@ -150,7 +150,7 @@ export const CreateButton = (props: ButtonProps) => {
   );
 };
 
-export const CopyButton = (props: ButtonProps & { copytext: string }) => {
+export const CopyButton = (props: ButtonProps & { copytext?: string }) => {
   const [copied, setCopied] = useState(false);
   return (
     <Tooltip hasArrow placement="top" label={!copied ? "Copy Key" : "Copied!"}>
@@ -160,7 +160,7 @@ export const CopyButton = (props: ButtonProps & { copytext: string }) => {
             setCopied(false);
           }, 1000);
           setCopied(true);
-          navigator.clipboard.writeText(props.copytext);
+          navigator.clipboard.writeText(props.copytext ?? "");
         }}
         colorScheme="blue"
         borderRadius={"100%"}

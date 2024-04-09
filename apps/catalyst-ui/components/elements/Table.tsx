@@ -11,10 +11,11 @@ import {
   Thead,
   Tr,
 } from "@chakra-ui/react";
-import { Dispatch, SetStateAction, useState } from "react";
+import { useState } from "react";
+import { OrbisCard } from ".";
 type OrbisTableProps = {
-  headers: (string | JSX.Element)[];
-  rows: (string | JSX.Element)[][];
+  headers?: (string | JSX.Element)[];
+  rows?: (string | JSX.Element)[][];
   caption?: string;
   tableProps?: PropsOf<typeof Table>;
   containerProps?: PropsOf<typeof TableContainer>;
@@ -24,43 +25,50 @@ export const OrbisTable = (props: OrbisTableProps) => {
   const { headers, rows, caption, tableProps, enableHover, containerProps } =
     props;
   return (
-    <TableContainer {...containerProps}>
-      <Table variant={"simple"} {...tableProps}>
-        <TableCaption>{caption}</TableCaption>
-        <Thead>
-          <Tr>
-            {headers?.map((header, i) => (
-              <Th key={i}>{header}</Th>
-            ))}
-          </Tr>
-        </Thead>
-        <Tbody>
-          {rows?.map((row, i) => (
-            <Tr
-              key={i}
-              _hover={
-                enableHover
-                  ? {
-                      bg: "gray.100",
-                    }
-                  : {}
-              }
-            >
-              {row?.map((cell, j) => (
-                <Td key={j}>{cell}</Td>
+    (rows && rows.length > 0) ?
+      <TableContainer {...containerProps}>
+        <Table variant={"simple"} {...tableProps}>
+          
+          {headers && <Thead>
+            <Tr>
+              {headers.map((header, i) => (
+                <Th key={i}>{header}</Th>
               ))}
             </Tr>
-          ))}
-        </Tbody>
-        <Tfoot>
-          <Tr>
-            {headers?.map((header, i) => (
-              <Th key={i}>{header}</Th>
+          </Thead>}
+          <Tbody>
+            {rows.map((row, i) => (
+              <Tr
+                key={i}
+                _hover={
+                  enableHover
+                    ? {
+                      bg: "gray.100",
+                    }
+                    : {}
+                }
+              >
+                {row?.map((cell, j) => (
+                  <Td key={j}>{cell}</Td>
+                ))}
+              </Tr>
             ))}
-          </Tr>
-        </Tfoot>
-      </Table>
-    </TableContainer>
+          </Tbody>
+          <Tfoot>
+            <Tr>
+              {headers?.map((header, i) => (
+                <Th key={i}>{header}</Th>
+              ))}
+            </Tr>
+          </Tfoot>
+          {caption && <TableCaption>{caption}</TableCaption>}
+        </Table>
+
+      </TableContainer> :
+      <OrbisCard>
+        No Content available
+      </OrbisCard>
+
   );
 };
 
@@ -73,16 +81,16 @@ export const SelectableTable = (
     props;
   const [selectableRows, setSelectableRows] = useState<number[]>([]);
   return (
-    <TableContainer {...containerProps}>
+    (rows && rows.length > 0) ? <TableContainer {...containerProps}>
       <Table variant={"simple"} {...tableProps}>
-        <TableCaption>{caption}</TableCaption>
-        <Thead>
+        {caption && <TableCaption>{caption}</TableCaption>}
+        {headers && <Thead>
           <Tr>
             {headers.map((header, i) => (
               <Th key={i}>{header}</Th>
             ))}
           </Tr>
-        </Thead>
+        </Thead>}
         <Tbody>
           {rows.map((row, i) => (
             <Tr
@@ -90,8 +98,8 @@ export const SelectableTable = (
               _hover={
                 enableHover
                   ? {
-                      bg: "gray.100",
-                    }
+                    bg: "gray.100",
+                  }
                   : {}
               }
             >
@@ -122,14 +130,20 @@ export const SelectableTable = (
             </Tr>
           ))}
         </Tbody>
-        <Tfoot>
-          <Tr>
-            {headers.map((header, i) => (
-              <Th key={i}>{header}</Th>
-            ))}
-          </Tr>
-        </Tfoot>
+        {headers &&( 
+          <Tfoot>
+            <Tr>
+              {headers.map((header, i) => (
+                <Th key={i}>{header}</Th>
+              ))}
+            </Tr>
+          </Tfoot>)
+        }
+
       </Table>
-    </TableContainer>
+    </TableContainer> :
+      <OrbisCard>
+        No Content available
+      </OrbisCard>
   );
 };

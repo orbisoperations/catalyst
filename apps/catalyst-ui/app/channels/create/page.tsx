@@ -69,7 +69,6 @@ export default function CreateChannelPage() {
       headerTitle={{
         text: "Create Data Channel",
       }}
-      subtitle=""
       topbaractions={navigationItems}
       topbartitle="Catalyst"
     >

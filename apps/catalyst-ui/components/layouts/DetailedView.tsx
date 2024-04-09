@@ -4,11 +4,11 @@ import { DetailedHeader, Footer, TopBar } from "./components";
 import { HelpModal } from "../elements";
 
 type DetailedViewProps = PropsOf<typeof Box> & {
-  headerTitle: { text: string; adjacent?: JSX.Element };
-  actions: JSX.Element;
+  headerTitle?: { text?: string; adjacent?: JSX.Element };
+  actions?: JSX.Element | undefined;
   topbaractions?: { display: string; path: string }[];
-  topbartitle: string;
-  subtitle: string;
+  topbartitle?: string;
+  subtitle?: string;
 };
 export const DetailedView = (props: DetailedViewProps) => {
   const {

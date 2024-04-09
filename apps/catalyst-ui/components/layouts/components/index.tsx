@@ -22,15 +22,16 @@ export const TopBar = (props: TopBarProps) => {
         alignItems={"center"}
         zIndex={10}
       >
-        <div>{title}</div>
-        <Flex gap={5} alignItems={"center"}>
-          {actions?.map((action, index) => (
+        {title && <div>{title}</div>}
+        {(actions || customActions) && <Flex gap={5} alignItems={"center"}>
+          {actions && actions.map((action, index) => (
             <a href={action.path} key={index} className="">
               <OrbisButton variant={"ghost"}>{action.display}</OrbisButton>
             </a>
           ))}
           {customActions}
         </Flex>
+        }
       </Flex>
     </Box>
   );
@@ -40,7 +41,7 @@ export const Footer = (props: PropsOf<typeof Box>) => {
   const { children, ...boxProps } = props;
   return (
     <Box
-      {...props}
+      {...boxProps}
       padding={"1em"}
       bg={"gray.50"}
       position={"sticky"}
@@ -59,8 +60,8 @@ export const DetailedHeader = ({
   subtitle,
 }: {
   actions?: JSX.Element;
-  subtitle: string;
-  title: { text: string; adjacent?: JSX.Element };
+  subtitle?: string;
+  title?: { text?: string; adjacent?: JSX.Element };
 }) => {
   return (
     <Grid
@@ -83,23 +84,29 @@ export const DetailedHeader = ({
               <Box>
                 <BackButton />
               </Box>
-              <Text
-                fontSize={"2xl"}
-                fontWeight={"bold"}
-                color={"gray.800"}
-                textTransform={"uppercase"}
-              >
-                {title?.text}
-              </Text>
-              <Box>{title?.adjacent}</Box>
+              {title && 
+              <Box>
+              {title.text && 
+                <Text
+                  fontSize={"2xl"}
+                  fontWeight={"bold"}
+                  color={"gray.800"}
+                  textTransform={"uppercase"}
+                >
+                  {title.text}
+                </Text>
+              }
+              {title.adjacent && <Box>{title.adjacent}</Box>}
+              </Box>
+              }
             </Flex>
           </Box>
         </Flex>
-        <Box>{actions}</Box>
+        {actions && <Box>{actions}</Box>}
       </Flex>
-      <Text fontSize={"lg"} color={"gray.400"}>
+      {subtitle && <Text fontSize={"lg"} color={"gray.400"}>
         {subtitle}
-      </Text>
+      </Text>}
     </Grid>
   );
 };
@@ -110,8 +117,8 @@ export const ListedHeader = ({
   subtitle,
 }: {
   actions?: JSX.Element;
-  subtitle: string;
-  title: { text: string; adjacent?: JSX.Element };
+  subtitle?: string;
+  title?: { text?: string; adjacent?: JSX.Element };
 }) => {
   return (
     <Grid
@@ -129,25 +136,27 @@ export const ListedHeader = ({
           justifyContent={"flex-start"}
           flex={1}
         >
-          <Box>
+          {title && <Box>
             <Flex gap={5} align={"center"}>
-              <Text
+              {title.text && <Text
                 fontSize={"2xl"}
                 fontWeight={"bold"}
                 color={"gray.800"}
                 textTransform={"uppercase"}
               >
-                {title?.text}
-              </Text>
-              <Box>{title?.adjacent}</Box>
+                {title.text}
+              </Text>}
+              {title.adjacent && <Box>{title.adjacent}</Box>}
             </Flex>
-          </Box>
+          </Box>}
         </Flex>
-        <Box>{actions}</Box>
+        {actions && <Box>{actions}</Box>}
       </Flex>
-      <Text fontSize={"lg"} color={"gray.400"}>
-        {subtitle}
-      </Text>
+     {subtitle && 
+        <Text fontSize={"lg"} color={"gray.400"}>
+          {subtitle}
+        </Text>
+      }
     </Grid>
   );
 };
