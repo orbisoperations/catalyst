@@ -2,10 +2,11 @@
 import {env, SELF} from "cloudflare:test";
 import {describe, it, expect, beforeAll} from "vitest";
 import {Logger} from "tslog";
+import {gql} from "@apollo/client";
 
 const logger = new Logger();
 
-describe("gateway jwt validation", () => {
+describe("gateway integration tests", () => {
     const getToken = async (entity: string, claims?: string[], ctx?: any) => {
         const tokenQuery = `
             mutation GetTokenForTests($entity: String!, $claims: [String!]) {
@@ -183,4 +184,46 @@ describe("gateway jwt validation", () => {
     // @ts-ignore
     // expect(responsePayload.data["__type"].fields[0]['name']).toBe('health');
   });
+
+  it("should get data-channel for airplanes only when accessSwitch is 1", async (testContext) => {
+
+    const token = await getToken("Org1", ["airplanes", "cars"], testContext);
+
+
+    const getAvailableQueries = await SELF.fetch('https://data-channel-gateway/graphql', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        // Query that resolves the available queries of the schema
+        query: `{
+            __type(name: "Query") {
+                name
+                fields {
+                  name
+                }
+              }
+          }`
+      })
+    });
+
+
+
+    const getAvailableQueriesResponsePayload = await getAvailableQueries.text();
+
+    console.log({text: getAvailableQueriesResponsePayload});
+
+    const json = JSON.parse(getAvailableQueriesResponsePayload);
+
+    console.log({json})
+
+    // Since we did not provide claims when the token was created, this will only return the health query in the list of fields
+    expect(json.data["__type"].fields).toHaveLength(3);
+    // @ts-ignore
+    // expect(responsePayload.data["__type"].fields[0]['name']).toBe('health');
+  });
+
+
 });
