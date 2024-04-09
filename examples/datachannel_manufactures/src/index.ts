@@ -1,70 +1,50 @@
 import { Hono } from 'hono'
-import { createYoga } from 'graphql-yoga';
-
-import SchemaBuilder from '@pothos/core';
-
-const builder = new SchemaBuilder({});
-
-class Manufacture {
-  id: number
-  name: string
-  
-  constructor(id: number, name: string) {
-    this.name = name
-    this.id = id
-  }
-}
+import {createYoga, filter} from 'graphql-yoga';
+import { createSchema } from 'graphql-yoga'
+import { stitchingDirectives } from '@graphql-tools/stitching-directives';
+const { stitchingDirectivesTypeDefs, stitchingDirectivesValidator } = stitchingDirectives();
 
 const manufactures = [
-  new Manufacture(1, "Tesla"),
-  new Manufacture(2, "Rivian"),
-  new Manufacture(3, "Saab"),
-  new Manufacture(4, "Airbus"),
-  new Manufacture(5, "Boeing"),
+  {id: "1", name: "Tesla"},
+  {id: "2", name: "Rivian"},
+  {id: "3", name: "Saab"},
+  {id: "4", name: "Airbus"},
+  {id: "5", name: "Boeing"}
 ]
 
-builder.objectType(Manufacture, {
-  name: "Manufacture",
-  description: "Manufacture object",
-  fields: (t) => ({
-    name: t.exposeString("name", {}),
-    id: t.exposeInt("id", {})
-  })
-})
+const typeDefs = `
+  ${stitchingDirectivesTypeDefs}
+    type Manufacture @canonical {
+      id: ID!
+      name: String
+    }
+  
+    type Query {
+      manufactures: [Manufacture]!
+      manufacture(id: ID!): Manufacture @merge(keyField: "id")
+      _sdl: String!
+    }
+  `
 
-builder.queryType({
-  fields: (t) => ({
-    manufactures: t.field({
-      type: [Manufacture],
-      resolve: () => {
-        return manufactures
-      }
-    }),
-    manufacture: t.field({
-      type: Manufacture,
-      args: {
-        id: t.arg.int({required: true}),
-      },
-      resolve: (parent, {id}) => {
-        const matches = manufactures.filter(man => {
-          if (man.id === id) {
-            return true
+export const schema = createSchema({
+  typeDefs: typeDefs ,
+  resolvers: {
+    Query: {
+      manufactures: () => manufactures,
+      manufacture: (_, {id}) => {
+          const filtered = manufactures.filter((man) => {
+            return man.id === id
+          })
+          if (filtered.length === 1) {
+            return filtered[0]
           }
 
-          return false
-        })
-
-        if (matches.length > 0) {
-          return matches[0]
-        } else {
-          throw new Error("no matching manufacture")
-        }
-      }
-    })
-  }),
-});
-
-const schema = builder.toSchema();
+          return undefined
+      },
+      _sdl: () => typeDefs,
+    }
+  }
+})
 
 const yoga = createYoga({
   schema: schema,
@@ -77,6 +57,8 @@ app.get('/', (c) => {
 })
 
 app.use("/graphql", async (c) => {
+  console.log(c.req.raw)
+  //console.log(await c.req.json())
   return yoga.handle(c.req.raw as Request, c);
 });
 
