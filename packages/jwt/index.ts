@@ -1,4 +1,3 @@
-import axios from "axios";
 import {KeyLike, importSPKI, jwtVerify, JWTPayload} from "jose";
 
 import {Client, fetchExchange, gql} from '@urql/core';
