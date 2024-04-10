@@ -8,7 +8,6 @@
   },
   "dependencies": {
     "@catalyst/jwt": "workspace:*",
-    "@graphql-tools/executor-http": "1.0.8",
     "@graphql-tools/stitch": "^9.0.5",
     "@graphql-tools/stitching-directives": "^3.0.1",
     "@graphql-tools/utils": "^10.1.0",

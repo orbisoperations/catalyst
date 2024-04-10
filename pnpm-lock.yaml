@@ -218,8 +218,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/jwt
       '@graphql-tools/executor-http':
-        specifier: 1.0.8
-        version: 1.0.8(@types/node@20.11.16)(graphql@16.8.1)
+        specifier: 1.0.9
+        version: 1.0.9(@types/node@20.11.16)(graphql@16.8.1)
       '@graphql-tools/stitch':
         specifier: ^9.0.5
         version: 9.0.5(graphql@16.8.1)
@@ -4411,24 +4411,6 @@ packages:
       - utf-8-validate
     dev: true
 
-  /@graphql-tools/executor-http@1.0.8(@types/node@20.11.16)(graphql@16.8.1):
-    resolution: {integrity: sha512-tBHT4aRkMCeyo+tcfEz7znqdd4QqoYF9vY1YTSo2+FV00usBB+R1YL3YaINBQNVkSVpZ41elffoF/fjI+QE8ZQ==}
-    engines: {node: '>=16.0.0'}
-    peerDependencies:
-      graphql: ^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0
-    dependencies:
-      '@graphql-tools/utils': 10.1.2(graphql@16.8.1)
-      '@repeaterjs/repeater': 3.0.5
-      '@whatwg-node/fetch': 0.9.17
-      extract-files: 11.0.0
-      graphql: 16.8.1
-      meros: 1.3.0(@types/node@20.11.16)
-      tslib: 2.6.2
-      value-or-promise: 1.0.12
-    transitivePeerDependencies:
-      - '@types/node'
-    dev: false
-
   /@graphql-tools/executor-http@1.0.9(@types/node@20.11.16)(graphql@16.8.1):
     resolution: {integrity: sha512-+NXaZd2MWbbrWHqU4EhXcrDbogeiCDmEbrAN+rMn4Nu2okDjn2MTFDbTIab87oEubQCH4Te1wDkWPKrzXup7+Q==}
     engines: {node: '>=16.0.0'}
@@ -4445,7 +4427,6 @@ packages:
       value-or-promise: 1.0.12
     transitivePeerDependencies:
       - '@types/node'
-    dev: true
 
   /@graphql-tools/executor-legacy-ws@1.0.6(graphql@16.8.1):
     resolution: {integrity: sha512-lDSxz9VyyquOrvSuCCnld3256Hmd+QI2lkmkEv7d4mdzkxkK4ddAWW1geQiWrQvWmdsmcnGGlZ7gDGbhEExwqg==}
