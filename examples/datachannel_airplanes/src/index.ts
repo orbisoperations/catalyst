@@ -59,21 +59,21 @@ app.use(async (c, next) => {
   const verifier= new VerifyingClient("http://localhost:5052/graphql")
 
   const issuer = "catalyst:root:latest"
-  const [verified, error] = await verifier.verify(token, issuer, [
-    "catalyst:4b5cc9f6-1636-4ded-b763-d65c1dfd9fbd:airplanes"
-  ])
+  // const [verified, error] = await verifier.verify(token, issuer, [
+  //   "airplanes"
+  // ])
+  //
+  // if (error) {
+  //   return  c.json({
+  //     error: error.msg
+  //   }, error.status)
+  // }
 
-  if (error) {
-    return  c.json({
-      error: error.msg
-    }, error.status)
-  }
-
-  if (!verified) {
-    return c.json({
-      error: "JWT Invalid"
-    }, 401)
-  }
+  // if (!verified) {
+  //   return c.json({
+  //     error: "JWT Invalid"
+  //   }, 401)
+  // }
 
   // we good
   await next()
