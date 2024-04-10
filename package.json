@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "sim": "turbo sim",
+    "test": "pnpm run -r test",
+    "sim": "pnpm run -r sim",
     "ls": "pnpm ls -r --json --long --depth 6 --prod >> ./pnpmls.json",
     "dev": "turbo dev"
   },
