@@ -25,5 +25,6 @@ type Mutation {
 type Query {
   allDataChannels: [DataChannel!]
   dataChannelById(id: String): DataChannel
+  dataChannelsByClaims(claims: [String!]): [DataChannel!]
   dataChannelsByCreatorOrg(creatorOrganization: String): [DataChannel!]
 }
