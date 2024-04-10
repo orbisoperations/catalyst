@@ -74,8 +74,6 @@ async function makeGatewaySchema(endpoints: { endpoint: string }[], token?: stri
 }
 //
 
-console.error('this will make the logs actually output')
-
 type Variables = {
   claims: string[]
 };
