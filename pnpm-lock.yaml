@@ -21,6 +21,58 @@ importers:
         specifier: ^5.3.3
         version: 5.3.3
 
+  apps/authx_authzed_api:
+    dependencies:
+      '@buf/authzed_api.bufbuild_es':
+        specifier: 1.8.0-20240319091308-63d281452654.2
+        version: 1.8.0-20240319091308-63d281452654.2(@bufbuild/protobuf@1.8.0)
+      '@buf/authzed_api.connectrpc_es':
+        specifier: 1.4.0-20240319091308-63d281452654.2
+        version: 1.4.0-20240319091308-63d281452654.2(@bufbuild/protobuf@1.8.0)(@connectrpc/connect@1.4.0)
+      '@buf/authzed_api.grpc_web':
+        specifier: 1.5.0-20240319091308-63d281452654.1
+        version: 1.5.0-20240319091308-63d281452654.1(google-protobuf@3.21.2)(grpc-web@1.5.0)
+      '@connectrpc/connect':
+        specifier: ^1.4.0
+        version: 1.4.0(@bufbuild/protobuf@1.8.0)
+      '@connectrpc/connect-node':
+        specifier: ^1.4.0
+        version: 1.4.0(@bufbuild/protobuf@1.8.0)(@connectrpc/connect@1.4.0)
+      '@connectrpc/connect-web':
+        specifier: ^1.4.0
+        version: 1.4.0(@bufbuild/protobuf@1.8.0)(@connectrpc/connect@1.4.0)
+      '@pothos/core':
+        specifier: ^3.41.0
+        version: 3.41.0(graphql@16.8.1)
+      '@trpc/client':
+        specifier: 11.0.0-rc.334
+        version: 11.0.0-rc.334(@trpc/server@11.0.0-rc.334)
+      '@trpc/server':
+        specifier: 11.0.0-rc.334
+        version: 11.0.0-rc.334
+      tslog:
+        specifier: ^4.9.2
+        version: 4.9.2
+      zod:
+        specifier: ^3.22.4
+        version: 3.22.4
+    devDependencies:
+      '@cloudflare/vitest-pool-workers':
+        specifier: ^0.1.19
+        version: 0.1.19(@cloudflare/workers-types@4.20240405.0)(@vitest/runner@1.3.0)(@vitest/snapshot@1.3.0)(vitest@1.3.0)
+      '@cloudflare/workers-types':
+        specifier: ^4.20240405.0
+        version: 4.20240405.0
+      typescript:
+        specifier: ^5.0.4
+        version: 5.4.3
+      vitest:
+        specifier: 1.3.0
+        version: 1.3.0(@types/node@20.11.16)
+      wrangler:
+        specifier: ^3.50.0
+        version: 3.50.0(@cloudflare/workers-types@4.20240405.0)
+
   apps/authx_token_api:
     devDependencies:
       '@cloudflare/vitest-pool-workers':
@@ -1914,6 +1966,174 @@ packages:
       '@babel/helper-validator-identifier': 7.22.20
       to-fast-properties: 2.0.0
 
+  /@buf/authzed_api.bufbuild_es@1.7.2-20240319091308-63d281452654.1(@bufbuild/protobuf@1.8.0):
+    resolution: {registry: https://buf.build/gen/npm/v1/, tarball: https://buf.build/gen/npm/v1/@buf/authzed_api.bufbuild_es/-/authzed_api.bufbuild_es-1.7.2-20240319091308-63d281452654.1.tgz}
+    peerDependencies:
+      '@bufbuild/protobuf': ^1.7.2
+    dependencies:
+      '@buf/envoyproxy_protoc-gen-validate.bufbuild_es': 1.7.2-20220812150255-45685e052c7e.1(@bufbuild/protobuf@1.8.0)
+      '@buf/googleapis_googleapis.bufbuild_es': 1.7.2-20220906171522-62f35d8aed11.1(@bufbuild/protobuf@1.8.0)
+      '@buf/grpc-ecosystem_grpc-gateway.bufbuild_es': 1.7.2-20220906183531-bc28b723cd77.1(@bufbuild/protobuf@1.8.0)
+      '@bufbuild/protobuf': 1.8.0
+    dev: false
+
+  /@buf/authzed_api.bufbuild_es@1.8.0-20240319091308-63d281452654.2(@bufbuild/protobuf@1.8.0):
+    resolution: {registry: https://buf.build/gen/npm/v1/, tarball: https://buf.build/gen/npm/v1/@buf/authzed_api.bufbuild_es/-/authzed_api.bufbuild_es-1.8.0-20240319091308-63d281452654.2.tgz}
+    peerDependencies:
+      '@bufbuild/protobuf': ^1.8.0
+    dependencies:
+      '@buf/envoyproxy_protoc-gen-validate.bufbuild_es': 1.8.0-20220812150255-45685e052c7e.2(@bufbuild/protobuf@1.8.0)
+      '@buf/googleapis_googleapis.bufbuild_es': 1.8.0-20220906171522-62f35d8aed11.2(@bufbuild/protobuf@1.8.0)
+      '@buf/grpc-ecosystem_grpc-gateway.bufbuild_es': 1.8.0-20220906183531-bc28b723cd77.2(@bufbuild/protobuf@1.8.0)
+      '@bufbuild/protobuf': 1.8.0
+    dev: false
+
+  /@buf/authzed_api.connectrpc_es@1.4.0-20240319091308-63d281452654.2(@bufbuild/protobuf@1.8.0)(@connectrpc/connect@1.4.0):
+    resolution: {registry: https://buf.build/gen/npm/v1/, tarball: https://buf.build/gen/npm/v1/@buf/authzed_api.connectrpc_es/-/authzed_api.connectrpc_es-1.4.0-20240319091308-63d281452654.2.tgz}
+    peerDependencies:
+      '@connectrpc/connect': ^1.4.0
+    dependencies:
+      '@buf/authzed_api.bufbuild_es': 1.7.2-20240319091308-63d281452654.1(@bufbuild/protobuf@1.8.0)
+      '@buf/envoyproxy_protoc-gen-validate.connectrpc_es': 1.4.0-20220812150255-45685e052c7e.2(@bufbuild/protobuf@1.8.0)(@connectrpc/connect@1.4.0)
+      '@buf/googleapis_googleapis.connectrpc_es': 1.4.0-20220906171522-62f35d8aed11.2(@bufbuild/protobuf@1.8.0)(@connectrpc/connect@1.4.0)
+      '@buf/grpc-ecosystem_grpc-gateway.connectrpc_es': 1.4.0-20220906183531-bc28b723cd77.2(@bufbuild/protobuf@1.8.0)(@connectrpc/connect@1.4.0)
+      '@connectrpc/connect': 1.4.0(@bufbuild/protobuf@1.8.0)
+    transitivePeerDependencies:
+      - '@bufbuild/protobuf'
+    dev: false
+
+  /@buf/authzed_api.grpc_web@1.5.0-20240319091308-63d281452654.1(google-protobuf@3.21.2)(grpc-web@1.5.0):
+    resolution: {registry: https://buf.build/gen/npm/v1/, tarball: https://buf.build/gen/npm/v1/@buf/authzed_api.grpc_web/-/authzed_api.grpc_web-1.5.0-20240319091308-63d281452654.1.tgz}
+    peerDependencies:
+      google-protobuf: ^3.21.2
+      grpc-web: ^1.5.0
+    dependencies:
+      '@buf/envoyproxy_protoc-gen-validate.grpc_web': 1.5.0-20220812150255-45685e052c7e.1(google-protobuf@3.21.2)(grpc-web@1.5.0)
+      '@buf/googleapis_googleapis.grpc_web': 1.5.0-20220906171522-62f35d8aed11.1(google-protobuf@3.21.2)(grpc-web@1.5.0)
+      '@buf/grpc-ecosystem_grpc-gateway.grpc_web': 1.5.0-20220906183531-bc28b723cd77.1(google-protobuf@3.21.2)(grpc-web@1.5.0)
+      google-protobuf: 3.21.2
+      grpc-web: 1.5.0
+    dev: false
+
+  /@buf/envoyproxy_protoc-gen-validate.bufbuild_es@1.7.2-20220812150255-45685e052c7e.1(@bufbuild/protobuf@1.8.0):
+    resolution: {registry: https://buf.build/gen/npm/v1/, tarball: https://buf.build/gen/npm/v1/@buf/envoyproxy_protoc-gen-validate.bufbuild_es/-/envoyproxy_protoc-gen-validate.bufbuild_es-1.7.2-20220812150255-45685e052c7e.1.tgz}
+    peerDependencies:
+      '@bufbuild/protobuf': ^1.7.2
+    dependencies:
+      '@bufbuild/protobuf': 1.8.0
+    dev: false
+
+  /@buf/envoyproxy_protoc-gen-validate.bufbuild_es@1.8.0-20220812150255-45685e052c7e.2(@bufbuild/protobuf@1.8.0):
+    resolution: {registry: https://buf.build/gen/npm/v1/, tarball: https://buf.build/gen/npm/v1/@buf/envoyproxy_protoc-gen-validate.bufbuild_es/-/envoyproxy_protoc-gen-validate.bufbuild_es-1.8.0-20220812150255-45685e052c7e.2.tgz}
+    peerDependencies:
+      '@bufbuild/protobuf': ^1.8.0
+    dependencies:
+      '@bufbuild/protobuf': 1.8.0
+    dev: false
+
+  /@buf/envoyproxy_protoc-gen-validate.connectrpc_es@1.4.0-20220812150255-45685e052c7e.2(@bufbuild/protobuf@1.8.0)(@connectrpc/connect@1.4.0):
+    resolution: {registry: https://buf.build/gen/npm/v1/, tarball: https://buf.build/gen/npm/v1/@buf/envoyproxy_protoc-gen-validate.connectrpc_es/-/envoyproxy_protoc-gen-validate.connectrpc_es-1.4.0-20220812150255-45685e052c7e.2.tgz}
+    peerDependencies:
+      '@connectrpc/connect': ^1.4.0
+    dependencies:
+      '@buf/envoyproxy_protoc-gen-validate.bufbuild_es': 1.7.2-20220812150255-45685e052c7e.1(@bufbuild/protobuf@1.8.0)
+      '@connectrpc/connect': 1.4.0(@bufbuild/protobuf@1.8.0)
+    transitivePeerDependencies:
+      - '@bufbuild/protobuf'
+    dev: false
+
+  /@buf/envoyproxy_protoc-gen-validate.grpc_web@1.5.0-20220812150255-45685e052c7e.1(google-protobuf@3.21.2)(grpc-web@1.5.0):
+    resolution: {registry: https://buf.build/gen/npm/v1/, tarball: https://buf.build/gen/npm/v1/@buf/envoyproxy_protoc-gen-validate.grpc_web/-/envoyproxy_protoc-gen-validate.grpc_web-1.5.0-20220812150255-45685e052c7e.1.tgz}
+    peerDependencies:
+      google-protobuf: ^3.21.2
+      grpc-web: ^1.5.0
+    dependencies:
+      google-protobuf: 3.21.2
+      grpc-web: 1.5.0
+    dev: false
+
+  /@buf/googleapis_googleapis.bufbuild_es@1.7.2-20220906171522-62f35d8aed11.1(@bufbuild/protobuf@1.8.0):
+    resolution: {registry: https://buf.build/gen/npm/v1/, tarball: https://buf.build/gen/npm/v1/@buf/googleapis_googleapis.bufbuild_es/-/googleapis_googleapis.bufbuild_es-1.7.2-20220906171522-62f35d8aed11.1.tgz}
+    peerDependencies:
+      '@bufbuild/protobuf': ^1.7.2
+    dependencies:
+      '@bufbuild/protobuf': 1.8.0
+    dev: false
+
+  /@buf/googleapis_googleapis.bufbuild_es@1.8.0-20220906171522-62f35d8aed11.2(@bufbuild/protobuf@1.8.0):
+    resolution: {registry: https://buf.build/gen/npm/v1/, tarball: https://buf.build/gen/npm/v1/@buf/googleapis_googleapis.bufbuild_es/-/googleapis_googleapis.bufbuild_es-1.8.0-20220906171522-62f35d8aed11.2.tgz}
+    peerDependencies:
+      '@bufbuild/protobuf': ^1.8.0
+    dependencies:
+      '@bufbuild/protobuf': 1.8.0
+    dev: false
+
+  /@buf/googleapis_googleapis.connectrpc_es@1.4.0-20220906171522-62f35d8aed11.2(@bufbuild/protobuf@1.8.0)(@connectrpc/connect@1.4.0):
+    resolution: {registry: https://buf.build/gen/npm/v1/, tarball: https://buf.build/gen/npm/v1/@buf/googleapis_googleapis.connectrpc_es/-/googleapis_googleapis.connectrpc_es-1.4.0-20220906171522-62f35d8aed11.2.tgz}
+    peerDependencies:
+      '@connectrpc/connect': ^1.4.0
+    dependencies:
+      '@buf/googleapis_googleapis.bufbuild_es': 1.7.2-20220906171522-62f35d8aed11.1(@bufbuild/protobuf@1.8.0)
+      '@connectrpc/connect': 1.4.0(@bufbuild/protobuf@1.8.0)
+    transitivePeerDependencies:
+      - '@bufbuild/protobuf'
+    dev: false
+
+  /@buf/googleapis_googleapis.grpc_web@1.5.0-20220906171522-62f35d8aed11.1(google-protobuf@3.21.2)(grpc-web@1.5.0):
+    resolution: {registry: https://buf.build/gen/npm/v1/, tarball: https://buf.build/gen/npm/v1/@buf/googleapis_googleapis.grpc_web/-/googleapis_googleapis.grpc_web-1.5.0-20220906171522-62f35d8aed11.1.tgz}
+    peerDependencies:
+      google-protobuf: ^3.21.2
+      grpc-web: ^1.5.0
+    dependencies:
+      google-protobuf: 3.21.2
+      grpc-web: 1.5.0
+    dev: false
+
+  /@buf/grpc-ecosystem_grpc-gateway.bufbuild_es@1.7.2-20220906183531-bc28b723cd77.1(@bufbuild/protobuf@1.8.0):
+    resolution: {registry: https://buf.build/gen/npm/v1/, tarball: https://buf.build/gen/npm/v1/@buf/grpc-ecosystem_grpc-gateway.bufbuild_es/-/grpc-ecosystem_grpc-gateway.bufbuild_es-1.7.2-20220906183531-bc28b723cd77.1.tgz}
+    peerDependencies:
+      '@bufbuild/protobuf': ^1.7.2
+    dependencies:
+      '@buf/googleapis_googleapis.bufbuild_es': 1.7.2-20220906171522-62f35d8aed11.1(@bufbuild/protobuf@1.8.0)
+      '@bufbuild/protobuf': 1.8.0
+    dev: false
+
+  /@buf/grpc-ecosystem_grpc-gateway.bufbuild_es@1.8.0-20220906183531-bc28b723cd77.2(@bufbuild/protobuf@1.8.0):
+    resolution: {registry: https://buf.build/gen/npm/v1/, tarball: https://buf.build/gen/npm/v1/@buf/grpc-ecosystem_grpc-gateway.bufbuild_es/-/grpc-ecosystem_grpc-gateway.bufbuild_es-1.8.0-20220906183531-bc28b723cd77.2.tgz}
+    peerDependencies:
+      '@bufbuild/protobuf': ^1.8.0
+    dependencies:
+      '@buf/googleapis_googleapis.bufbuild_es': 1.8.0-20220906171522-62f35d8aed11.2(@bufbuild/protobuf@1.8.0)
+      '@bufbuild/protobuf': 1.8.0
+    dev: false
+
+  /@buf/grpc-ecosystem_grpc-gateway.connectrpc_es@1.4.0-20220906183531-bc28b723cd77.2(@bufbuild/protobuf@1.8.0)(@connectrpc/connect@1.4.0):
+    resolution: {registry: https://buf.build/gen/npm/v1/, tarball: https://buf.build/gen/npm/v1/@buf/grpc-ecosystem_grpc-gateway.connectrpc_es/-/grpc-ecosystem_grpc-gateway.connectrpc_es-1.4.0-20220906183531-bc28b723cd77.2.tgz}
+    peerDependencies:
+      '@connectrpc/connect': ^1.4.0
+    dependencies:
+      '@buf/googleapis_googleapis.connectrpc_es': 1.4.0-20220906171522-62f35d8aed11.2(@bufbuild/protobuf@1.8.0)(@connectrpc/connect@1.4.0)
+      '@buf/grpc-ecosystem_grpc-gateway.bufbuild_es': 1.7.2-20220906183531-bc28b723cd77.1(@bufbuild/protobuf@1.8.0)
+      '@connectrpc/connect': 1.4.0(@bufbuild/protobuf@1.8.0)
+    transitivePeerDependencies:
+      - '@bufbuild/protobuf'
+    dev: false
+
+  /@buf/grpc-ecosystem_grpc-gateway.grpc_web@1.5.0-20220906183531-bc28b723cd77.1(google-protobuf@3.21.2)(grpc-web@1.5.0):
+    resolution: {registry: https://buf.build/gen/npm/v1/, tarball: https://buf.build/gen/npm/v1/@buf/grpc-ecosystem_grpc-gateway.grpc_web/-/grpc-ecosystem_grpc-gateway.grpc_web-1.5.0-20220906183531-bc28b723cd77.1.tgz}
+    peerDependencies:
+      google-protobuf: ^3.21.2
+      grpc-web: ^1.5.0
+    dependencies:
+      '@buf/googleapis_googleapis.grpc_web': 1.5.0-20220906171522-62f35d8aed11.1(google-protobuf@3.21.2)(grpc-web@1.5.0)
+      google-protobuf: 3.21.2
+      grpc-web: 1.5.0
+    dev: false
+
+  /@bufbuild/protobuf@1.8.0:
+    resolution: {integrity: sha512-qR9FwI8QKIveDnUYutvfzbC21UZJJryYrLuZGjeZ/VGz+vXelUkK+xgkOHsvPEdYEdxtgUUq4313N8QtOehJ1Q==}
+    dev: false
+
   /@chakra-ui/accordion@2.3.1(@chakra-ui/system@2.6.2)(framer-motion@11.1.1)(react@18.2.0):
     resolution: {integrity: sha512-FSXRm8iClFyU+gVaXisOSEw0/4Q+qZbFRiuhIAkVU6Boj0FxAMrlo9a8AV5TuF77rgaHytCdHk0Ng+cyUijrag==}
     peerDependencies:
@@ -3085,6 +3305,30 @@ packages:
       - utf-8-validate
     dev: true
 
+  /@cloudflare/vitest-pool-workers@0.1.7(@cloudflare/workers-types@4.20240222.0)(@vitest/runner@1.3.0)(@vitest/snapshot@1.3.0)(vitest@1.3.0):
+    resolution: {integrity: sha512-pIeW9vyShpfkSQFrNfc2pfL+VjF178pFcL0KaLboC8tgcDEIXm04NYR3IMUFOHKNXxuuqPCNybdUVuGjyhjGpg==}
+    peerDependencies:
+      '@vitest/runner': 1.3.0
+      '@vitest/snapshot': 1.3.0
+      vitest: 1.3.0
+    dependencies:
+      '@vitest/runner': 1.3.0
+      '@vitest/snapshot': 1.3.0
+      birpc: 0.2.14
+      cjs-module-lexer: 1.2.3
+      devalue: 4.3.2
+      esbuild: 0.17.19
+      miniflare: 3.20240320.0
+      vitest: 1.3.0(@types/node@20.11.16)
+      wrangler: 3.39.0(@cloudflare/workers-types@4.20240222.0)
+      zod: 3.22.4
+    transitivePeerDependencies:
+      - '@cloudflare/workers-types'
+      - bufferutil
+      - supports-color
+      - utf-8-validate
+    dev: true
+
   /@cloudflare/vitest-pool-workers@0.1.7(@cloudflare/workers-types@4.20240402.0)(@vitest/runner@1.3.0)(@vitest/snapshot@1.3.0)(vitest@1.3.0):
     resolution: {integrity: sha512-pIeW9vyShpfkSQFrNfc2pfL+VjF178pFcL0KaLboC8tgcDEIXm04NYR3IMUFOHKNXxuuqPCNybdUVuGjyhjGpg==}
     peerDependencies:
@@ -3128,6 +3372,15 @@ packages:
 
   /@cloudflare/workerd-darwin-64@1.20240320.1:
     resolution: {integrity: sha512-ioG5k2M17xyiAlK/k3L21NZLMVeSHMjwlmGtZyCyzSLL5/zGINcgZ5yPLV0UuWiysw07/6Jjzm5Sx94hzMVybg==}
+    engines: {node: '>=16'}
+    cpu: [x64]
+    os: [darwin]
+    requiresBuild: true
+    dev: true
+    optional: true
+
+  /@cloudflare/workerd-darwin-64@1.20240405.0:
+    resolution: {integrity: sha512-ut8kwpHmlz9dNSjoov6v1b6jS50J46Mj9QcMA0t1Hne36InaQk/qqPSd12fN5p2GesZ9OOBJvBdDsTblVdyJ1w==}
     engines: {node: '>=16'}
     cpu: [x64]
     os: [darwin]
@@ -3249,6 +3502,15 @@ packages:
     dev: true
     optional: true
 
+  /@cloudflare/workerd-linux-arm64@1.20240405.0:
+    resolution: {integrity: sha512-NpKZlvmdgcX/m4tP5zM91AfJpZrue2/GRA+Sl3szxAivu2uE5jDVf5SS9dzqzCVfPrdhylqH7yeL4U/cafFNOg==}
+    engines: {node: '>=16'}
+    cpu: [arm64]
+    os: [linux]
+    requiresBuild: true
+    dev: true
+    optional: true
+
   /@cloudflare/workerd-windows-64@1.20240223.1:
     resolution: {integrity: sha512-eNP5sfaP6WL07DaoigYou5ASPF7jHsFiNzzD2vGOI7yFd5sPlb7sJ4SpIy+BCX0LdqFnjmlUo5Xr+/I6qJ2Nww==}
     engines: {node: '>=16'}
@@ -3289,6 +3551,10 @@ packages:
 
   /@cloudflare/workers-types@4.20240402.0:
     resolution: {integrity: sha512-GEtg71Gs5iBIQBQB0sBkEOJrmJGpenT2XAODwbvfWADwQpDxgEQfGrcOhaJfLPCfvNpKaMxcBlH9cekWwQEsLQ==}
+    dev: true
+
+  /@cloudflare/workers-types@4.20240405.0:
+    resolution: {integrity: sha512-sEVOhyOgXUwfLkgHqbLZa/sfkSYrh7/zLmI6EZNibPaVPvAnAcItbNNl3SAlLyLKuwf8m4wAIAgu9meKWCvXjg==}
     dev: true
 
   /@cloudflare/workers-types@4.20240405.0:
@@ -6578,10 +6844,6 @@ packages:
     resolution: {integrity: sha512-XCuKFP5PS55gnMVu3dty8KPatLqUoy/ZYzDzAGCQ8JNFCkLXzmI7vNHCR+XpbZaMWQK/vQubr7PkYq8g470J/A==}
     engines: {node: '>= 10'}
 
-  /@trpc/server@10.45.2:
-    resolution: {integrity: sha512-wOrSThNNE4HUnuhJG6PfDRp4L2009KDVxsd+2VYH8ro6o/7/jwYZ8Uu5j+VaW+mOmc8EHerHzGcdbGNQSAUPgg==}
-    dev: false
-
   /@ts-morph/common@0.11.1:
     resolution: {integrity: sha512-7hWZS0NRpEsNV8vWJzg7FEz6V8MaLNeJOmwmghqUXTpzk16V1LLZhdo+4QvE/+zv4cVci0OviuJFnqhEfoV3+g==}
     dependencies:
@@ -6589,6 +6851,10 @@ packages:
       minimatch: 3.1.2
       mkdirp: 1.0.4
       path-browserify: 1.0.1
+    dev: false
+
+  /@tsconfig/node10@1.0.11:
+    resolution: {integrity: sha512-DcRjDCujK/kCk/cUe8Xz8ZSpm8mS3mNNpta+jGCA6USEDfktlNvm1+IuZ9eTcDbNk41BHwpHHeW+N1lKCz4zOw==}
     dev: false
 
   /@tsconfig/node10@1.0.11:
@@ -6645,7 +6911,7 @@ packages:
     dependencies:
       '@types/http-cache-semantics': 4.0.4
       '@types/keyv': 3.1.4
-      '@types/node': 18.19.22
+      '@types/node': 20.11.25
       '@types/responselike': 1.0.3
     dev: true
 
@@ -6759,7 +7025,7 @@ packages:
   /@types/keyv@3.1.4:
     resolution: {integrity: sha512-BQ5aZNSCpj7D6K2ksrRCTmKRLEpnPvWDiLPfoGyhZ++8YtiK9d/3DBKPJgry359X/P1PfruyYwvnvwFjuEiEIg==}
     dependencies:
-      '@types/node': 18.19.22
+      '@types/node': 20.11.25
     dev: true
 
   /@types/koa-compose@3.2.8:
@@ -6883,7 +7149,7 @@ packages:
   /@types/responselike@1.0.3:
     resolution: {integrity: sha512-H/+L+UkTV33uf49PH5pCAUBVPNj2nDBXTN+qS1dOwyyg24l3CcicicCA7ca+HMvJBZcFgl5r8e+RR6elsb4Lyw==}
     dependencies:
-      '@types/node': 18.19.22
+      '@types/node': 20.11.25
     dev: true
 
   /@types/retry@0.12.0:
@@ -9783,7 +10049,7 @@ packages:
       supports-color:
         optional: true
     dependencies:
-      ms: 2.1.3
+      ms: 2.1.1
     dev: false
 
   /debug@4.3.4(supports-color@8.1.1):
@@ -12470,6 +12736,10 @@ packages:
       slash: 4.0.0
     dev: true
 
+  /google-protobuf@3.21.2:
+    resolution: {integrity: sha512-3MSOYFO5U9mPGikIYCzK0SaThypfGgS6bHqrUGXG3DPHCrb+txNqeEcns1W0lkGfk0rCyNXm7xB9rMxnCiZOoA==}
+    dev: false
+
   /gopd@1.0.1:
     resolution: {integrity: sha512-d65bNlIadxvpb/A2abVdlqKqV563juRnZ1Wtk6s1sIR8uNsXR70xqIzVqxVf1eTqDunwT2MkczEeaezCKTZhwA==}
     dependencies:
@@ -12712,6 +12982,10 @@ packages:
     resolution: {integrity: sha512-/PiFUa7WIsl48dUeCvhIHnwNmAAzlI/eHoJl0vu3nsFA366JleY7Ff8EVTplZu5kO0MIdZjKTTnzItL61ahbnw==}
     engines: {node: '>=8.0.0'}
     dev: true
+
+  /grpc-web@1.5.0:
+    resolution: {integrity: sha512-y1tS3BBIoiVSzKTDF3Hm7E8hV2n7YY7pO0Uo7depfWJqKzWE+SKr0jvHNIJsJJYILQlpYShpi/DRJJMbosgDMQ==}
+    dev: false
 
   /har-schema@2.0.0:
     resolution: {integrity: sha512-Oqluz6zhGX8cyRaTQlFMPw80bSJVG2x/cFb8ZPhUILGgHka9SsokCCOQgpveePerqidZOrT14ipqfJb7ILcW5Q==}
@@ -14617,6 +14891,29 @@ packages:
       - utf-8-validate
     dev: true
 
+  /miniflare@3.20240405.1:
+    resolution: {integrity: sha512-oShOR/ckr9JTO1bkPQH0nXvuSgJjoE+E5+M1tvP01Q8Z+Q0GJnzU2+FDYUH8yIK/atHv7snU8yy0X6KWVn1YdQ==}
+    engines: {node: '>=16.13'}
+    hasBin: true
+    dependencies:
+      '@cspotcode/source-map-support': 0.8.1
+      acorn: 8.11.3
+      acorn-walk: 8.3.2
+      capnp-ts: 0.7.0
+      exit-hook: 2.2.1
+      glob-to-regexp: 0.4.1
+      stoppable: 1.1.0
+      undici: 5.28.4
+      workerd: 1.20240405.0
+      ws: 8.16.0
+      youch: 3.3.3
+      zod: 3.22.4
+    transitivePeerDependencies:
+      - bufferutil
+      - supports-color
+      - utf-8-validate
+    dev: true
+
   /minimatch@3.1.2:
     resolution: {integrity: sha512-J7p63hRiAjw1NDEww1W7i37+ByIrOWO5XQQAzZ3VOcL0PNybwpfmV/N05zFAzwQ9USyEcX6t3UO+K5aqBQOIHw==}
     dependencies:
@@ -14654,6 +14951,13 @@ packages:
     engines: {node: '>=16 || 14 >=14.17'}
     dependencies:
       brace-expansion: 2.0.1
+
+  /minimatch@9.0.4:
+    resolution: {integrity: sha512-KqWh+VchfxcMNRAJjj2tnsSJdNbHsVgnkBhTNrW7AjVo6OvLtxw8zfT9oLw1JSohlFzJ8jCoTgaoXvJ+kHt6fw==}
+    engines: {node: '>=16 || 14 >=14.17'}
+    dependencies:
+      brace-expansion: 2.0.1
+    dev: true
 
   /minimatch@9.0.4:
     resolution: {integrity: sha512-KqWh+VchfxcMNRAJjj2tnsSJdNbHsVgnkBhTNrW7AjVo6OvLtxw8zfT9oLw1JSohlFzJ8jCoTgaoXvJ+kHt6fw==}
@@ -14860,6 +15164,7 @@ packages:
 
   /ms@2.1.3:
     resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
+    dev: true
 
   /multidict@1.0.7:
     resolution: {integrity: sha512-uQSnn7wCaYdLO0jsNOJ8ojxV8Zoz4zzR/SHlwP73yTwLoRUU82n50IDZEJyD5doxoHlyJ8bPfktiTcPJ8MmDEw==}
@@ -16121,6 +16426,14 @@ packages:
       minipass: 7.0.4
     dev: true
 
+  /path-scurry@1.10.2:
+    resolution: {integrity: sha512-7xTavNy5RQXnsjANvVvMkEjvloOinkAjv/Z6Ildz9v2RinZ4SBKTWFOVRbaF8p0vpHnyjV/UwNDdKuUv6M5qcA==}
+    engines: {node: '>=16 || 14 >=14.17'}
+    dependencies:
+      lru-cache: 10.2.0
+      minipass: 7.0.4
+    dev: true
+
   /path-to-regexp@0.1.7:
     resolution: {integrity: sha512-5DFkuoqlv1uYQKxy8omFBeJPQcdoE07Kv2sferDCrAq1ohOU+MSDswDIbnx3YAM60qIOnYa53wBhXW0EbMonrQ==}
     dev: true
@@ -17257,6 +17570,11 @@ packages:
     resolution: {integrity: sha512-aJXcif4xnaNUzvUuC5gcb46oTS7zvg4jpMTnuqtrEPlR3vFr4pxtdTwaF1Qs3Enjn9HK+ZlwQui+a7z0SywIzg==}
     dependencies:
       ret: 0.1.15
+    dev: true
+
+  /safe-stable-stringify@2.4.3:
+    resolution: {integrity: sha512-e2bDA2WJT0wxseVd4lsDP4+3ONX6HpMXQa1ZhFQ7SU+GjvORCmShbCMltrtIDfkYhVHrOcPtj+KhmDBdPdZD1g==}
+    engines: {node: '>=10'}
     dev: true
 
   /safe-stable-stringify@2.4.3:
@@ -18474,6 +18792,20 @@ packages:
       typescript: 5.4.5
     dev: true
 
+  /ts-json-schema-generator@1.5.1:
+    resolution: {integrity: sha512-apX5qG2+NA66j7b4AJm8q/DpdTeOsjfh7A3LpKsUiil0FepkNwtN28zYgjrsiiya2/OPhsr/PSjX5FUYg79rCg==}
+    engines: {node: '>=10.0.0'}
+    hasBin: true
+    dependencies:
+      '@types/json-schema': 7.0.15
+      commander: 12.0.0
+      glob: 8.1.0
+      json5: 2.2.3
+      normalize-path: 3.0.0
+      safe-stable-stringify: 2.4.3
+      typescript: 5.4.3
+    dev: true
+
   /ts-log@2.2.5:
     resolution: {integrity: sha512-PGcnJoTBnVGy6yYNFxWVNkdcAuAMstvutN9MgDJIV6L0oG8fB+ZNNy1T+wJzah8RPGor1mZuPQkVfXNDpy9eHA==}
     dev: true
@@ -18888,6 +19220,7 @@ packages:
     engines: {node: '>=14.0'}
     dependencies:
       '@fastify/busboy': 2.1.1
+    dev: true
 
   /union-value@1.0.1:
     resolution: {integrity: sha512-tJfXmxMeWYnczCVs7XAEvIV7ieppALdyepWMkHkwciRpZraG/xwT+s2JN8+pr1+8jCRf80FFzvr+MpQeeoF4Xg==}
@@ -19558,6 +19891,19 @@ packages:
       '@cloudflare/workerd-windows-64': 1.20240405.0
     dev: true
 
+  /workerd@1.20240405.0:
+    resolution: {integrity: sha512-AWrOSBh4Ll7sBWHuh0aywm8hDkKqsZmcwnDB0PVGszWZM5mndNBI5iJ/8haXVpdoyqkJQEVdhET9JDi4yU8tRg==}
+    engines: {node: '>=16'}
+    hasBin: true
+    requiresBuild: true
+    optionalDependencies:
+      '@cloudflare/workerd-darwin-64': 1.20240405.0
+      '@cloudflare/workerd-darwin-arm64': 1.20240405.0
+      '@cloudflare/workerd-linux-64': 1.20240405.0
+      '@cloudflare/workerd-linux-arm64': 1.20240405.0
+      '@cloudflare/workerd-windows-64': 1.20240405.0
+    dev: true
+
   /workerpool@6.2.1:
     resolution: {integrity: sha512-ILEIE97kDZvF9Wb9f6h5aXK4swSlKGUcOEGiIYb2OOu/IrDU9iwj0fD//SsA6E5ibwJxpEvhullJY4Sl4GcpAw==}
     dev: true
@@ -19647,6 +19993,40 @@ packages:
       miniflare: 3.20240405.1
       nanoid: 3.3.7
       path-to-regexp: 6.2.2
+      resolve: 1.22.8
+      resolve.exports: 2.0.2
+      selfsigned: 2.4.1
+      source-map: 0.6.1
+      ts-json-schema-generator: 1.5.1
+      xxhash-wasm: 1.0.2
+    optionalDependencies:
+      fsevents: 2.3.3
+    transitivePeerDependencies:
+      - bufferutil
+      - supports-color
+      - utf-8-validate
+    dev: true
+
+  /wrangler@3.50.0(@cloudflare/workers-types@4.20240405.0):
+    resolution: {integrity: sha512-JlLuch+6DtaC5HGp8YD9Au++XvMv34g3ySdlB5SyPbaObELi8P9ZID5vgyf9AA75djzxL7cuNOk1YdKCJEuq0w==}
+    engines: {node: '>=16.17.0'}
+    hasBin: true
+    peerDependencies:
+      '@cloudflare/workers-types': ^4.20240405.0
+    peerDependenciesMeta:
+      '@cloudflare/workers-types':
+        optional: true
+    dependencies:
+      '@cloudflare/kv-asset-handler': 0.3.1
+      '@cloudflare/workers-types': 4.20240405.0
+      '@esbuild-plugins/node-globals-polyfill': 0.2.3(esbuild@0.17.19)
+      '@esbuild-plugins/node-modules-polyfill': 0.2.2(esbuild@0.17.19)
+      blake3-wasm: 2.1.5
+      chokidar: 3.6.0
+      esbuild: 0.17.19
+      miniflare: 3.20240405.1
+      nanoid: 3.3.7
+      path-to-regexp: 6.2.1
       resolve: 1.22.8
       resolve.exports: 2.0.2
       selfsigned: 2.4.1
