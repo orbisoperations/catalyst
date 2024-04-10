@@ -1,8 +1,9 @@
 // test/index.spec.ts
 import {env, SELF} from "cloudflare:test";
-import {describe, it, expect} from "vitest";
-import {createRequest, gql} from "@urql/core";
+import {describe, it, expect, beforeAll} from "vitest";
+import {Logger} from "tslog";
 
+const logger = new Logger();
 
 describe("gateway jwt validation", () => {
     const getToken = async (entity: string, claims?: string[], ctx?: any) => {
@@ -20,11 +21,11 @@ describe("gateway jwt validation", () => {
         },
       });
 
-      console.log({
+      logger.info({
         tokenRequestPayload: gqlPayload,
         // @ts-ignore
         test: ctx.task.name,
-      });
+      })
 
       const response = await env.AUTHX_TOKEN_API.fetch('https://authx-token-api/graphql', {
         method: "POST",
@@ -36,7 +37,7 @@ describe("gateway jwt validation", () => {
 
         // Fail early
       if (response.status !== 200) {
-        console.log({
+        logger.info({
           test: ctx.task.name,
           // @ts-ignore
           tokenGenerationFailureResponse: response,
@@ -64,6 +65,20 @@ describe("gateway jwt validation", () => {
       }
     };
 
+
+
+  it("shows the data in the database before other tests", async () => {
+    const qResult = await env.APP_DB.prepare('SELECT name FROM sqlite_master WHERE type = "table";').run();
+
+    const dataChannels = await env.APP_DB.prepare('SELECT * FROM DataChannel;').run();
+
+    // @ts-ignore
+    console.log({dataChannels: dataChannels.results});
+    // @ts-ignore
+    console.log({qResult: qResult.results});
+  });
+
+
   it("returns gf'd for a invalid token", async () => {
     const badToken = 'fake-and-insecure';
 
@@ -75,8 +90,8 @@ describe("gateway jwt validation", () => {
       method: 'GET',
       headers
     });
-
-    expect(await response.text()).toMatchInlineSnapshot('"Token validation failed"');
+    const expected = {message: "Token validation failed"};
+    expect(JSON.parse(await response.text())).toStrictEqual(expected);
   });
 
   it("returns GF'd for no auth header", async () => {
@@ -88,8 +103,8 @@ describe("gateway jwt validation", () => {
   });
 
 
-  it("should return health a known good token no claims", async () => {
-    const token = await getToken("test");
+  it("should return health a known good token no claims", async (textCtx) => {
+    const token = await getToken("test", [], textCtx);
     const response = await SELF.fetch('https://data-channel-gateway/graphql', {
       method: 'POST',
       headers: {
@@ -133,18 +148,18 @@ describe("gateway jwt validation", () => {
     expect(responsePayload.data["__type"].fields[0]['name']).toBe('health');
   });
 
-  it("should correlate jwt claims with channels", async (testContext) => {
+  it("should get datachannel for airplanes", async (testContext) => {
 
 
-    const token = await getToken("test", ["airplanes"], testContext);
+    const token = await getToken("Org1", ["airplanes"], testContext);
     const response = await SELF.fetch('https://data-channel-gateway/graphql', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
         'content-type': 'application/json',
-        'Accepts': 'application/json'
       },
       body: JSON.stringify({
+        // Query that resolves the available queries of the schema
         query: `{
             __type(name: "Query") {
                 name
@@ -163,20 +178,16 @@ describe("gateway jwt validation", () => {
           }`
       })
     });
+      const responsePayload = await response.text();
 
-    const responsePayload = await response.json<{
-      data: {
-        __type: {
-          name: string;
-          fields: unknown[]
-        }
-      }
-    }>();
+      console.log({text: responsePayload});
 
-    console.log(JSON.stringify(responsePayload.data))
+      const json = JSON.parse(responsePayload);
+
+      console.log({json})
 
     // Since we did not provide claims when the token was created, this will only return the health query in the list of fields
-    expect(responsePayload.data["__type"].fields).toHaveLength(2);
+    expect(json.data["__type"].fields).toHaveLength(2);
     // @ts-ignore
     // expect(responsePayload.data["__type"].fields[0]['name']).toBe('health');
   });
