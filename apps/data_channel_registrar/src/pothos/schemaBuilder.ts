@@ -46,6 +46,27 @@ builder.queryType({
         return result;
       },
     }),
+    dataChannelsByClaims: t.field({
+      type: [DataChannelObject],
+      nullable: true,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      args: {
+        claims: t.arg.stringList({required: false})
+      },
+      resolve: async (root, args, ctx, som) => {
+        console.log('allDataChannels resolving...')
+        let result;
+        if (args.claims) {
+          result = await ctx.db.selectFrom('DataChannel').selectAll()
+              .where('name', 'in', args.claims?? [])
+              .execute() as [DataChannel];
+        } else {
+          result = await ctx.db.selectFrom('DataChannel').selectAll().execute() as [DataChannel];
+        }
+        console.log('allDataChannels resolved!', JSON.stringify(result))
+        return result;
+      },
+    }),
     dataChannelById: t.field({
       type: DataChannelObject,
       nullable: true,

@@ -14,11 +14,27 @@ function getDurableNamespace(d0: DurableObjectNamespace): DurableObjectStub {
     return obj
 }
 
-const VerifyResponseObject = builder.objectRef<{
-    valid: boolean,
-    claims: string[]
-}>('VerifyResponse');
+export class VerifiedResponse {
+	valid?: boolean
+	error?: string
+	claims?: string[]
 
+	constructor(v?: boolean, c?: string[], e?: string) {
+		this.valid = v
+		this.claims = c
+		this.error = e
+	}
+}
+
+
+builder.objectType(VerifiedResponse, {
+	name: "VerifiedResponse",
+	fields: (t) => ({
+		valid: t.exposeBoolean('valid', {nullable: true}),
+		claims: t.exposeStringList('claims', {nullable: true}),
+		error: t.exposeString("error", {nullable: true})
+	})
+})
 
 builder.queryType({
     fields: (t) => ({
@@ -36,7 +52,7 @@ builder.queryType({
             args: {
                 token: t.arg.string({required: true})
             },
-            type: VerifyResponseObject,
+            type: VerifiedResponse,
             resolve: async (root, args, context) => {
                 const d0 = getDurableNamespace(context.env.HSM)
                 const validateResp = await d0.fetch("https://authx-token-api.do-hsm/validate", {
@@ -46,13 +62,13 @@ builder.queryType({
                     })
                 })
 
-                const {valid, error} = await validateResp.json<{valid?: true, error?: string}>()
+                const {valid, claims,  error} = await validateResp.json<{valid?: true, error?: string, claims?: string[]}>()
                 if (error) {
                     console.error(error)
                 }
                 return {
                     valid: valid?? false,
-                    claims: ['foo', 'bar'],
+                    claims: claims?? undefined,
                 }
             }
         })

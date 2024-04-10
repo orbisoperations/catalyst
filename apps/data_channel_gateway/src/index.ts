@@ -78,7 +78,7 @@ app.use(async (c, next) => {
   }
 
   const client = new UrlqGraphqlClient(c.env.AUTHX_TOKEN_API);
-  const {validate, claims} = await client.validateToken(token);
+  const [validate, claims] = await client.validateToken(token);
 
   if (!validate) {
     return c.text("GF'd", 403)
@@ -104,9 +104,9 @@ app.use("/graphql", async (ctx) => {
     claims: [dc1, dc3]
     data channels returned: [ dc1, dc3 ]
    */
-  const allDataChannels = await client.allDataChannels({
-      claims: JSON.parse(ctx.req.header('x-catalyst-claims') as string)
-  });
+  const allDataChannels = await client.allDataChannelsByClaims(
+      JSON.parse(ctx.req.header('x-catalyst-claims') as string)
+  );
 
   const yoga = createYoga({
     schema: await makeGatewaySchema(allDataChannels),

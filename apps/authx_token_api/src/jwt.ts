@@ -1,7 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import base64url from "base64url";
-import axios from "axios";
-import {KeyLike, importSPKI, jwtVerify, JWTPayload} from "jose";
+import {JWTPayload} from "jose";
 
 
 export interface DSSJWT {
@@ -56,7 +55,7 @@ export class JWT implements DSSJWT{
             jti: this.jti,
             nbf: this.nbf,
             iat: this.iat,
-            exp: this.exp,    
+            exp: this.exp,
         }));
     }
 
@@ -72,7 +71,7 @@ export class JWT implements DSSJWT{
             jti: this.jti,
             nbf: this.nbf,
             iat: this.iat,
-            exp: this.exp,    
+            exp: this.exp,
         };
     }
 
@@ -86,7 +85,7 @@ export class JWT implements DSSJWT{
         jwt.nbf = payload.nbf!;
         jwt.iat = payload.iat!;
         jwt.exp = payload.exp!;
-        
+
         return jwt
     }
 }
@@ -95,24 +94,4 @@ export interface JWTSigningRequest {
     entity: string
     claims: string[]
     expiresIn?: number
-}
-
-export class VerifyingClient {
-    endpoint: string;
-    publicKey: KeyLike | undefined = undefined;
-    constructor(publicKeyEndpoint: string) {
-        this.endpoint = publicKeyEndpoint;
-    }
-
-    async verify(token: string): Promise<JWT | undefined> {
-        if (!this.publicKey) {
-            const response = await axios.get(`${this.endpoint}`);
-            console.log(response.data);
-            this.publicKey = await importSPKI(response.data, 'ES384');
-        }
-
-        console.log("verifying jwt");
-        const { payload, protectedHeader } = await jwtVerify(token, this.publicKey);
-        return JWT.fromJOSEJWT(payload);
-    }
 }
