@@ -124,7 +124,6 @@ app.use("/graphql", async (ctx) => {
     data channels returned: [ dc1, dc3 ]
    */
   const allDataChannels = await client.allDataChannelsByClaims(
-      //JSON.parse(ctx.req.header('x-catalyst-claims') as string)
       ctx.get('claims') ?? []
   );
 
