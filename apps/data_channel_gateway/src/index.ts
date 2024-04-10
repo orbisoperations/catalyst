@@ -1,16 +1,15 @@
 import {Hono} from 'hono'
 import {stitchSchemas} from '@graphql-tools/stitch';
 import {schemaFromExecutor} from '@graphql-tools/wrap';
-import {createYoga} from 'graphql-yoga';
+import {createYoga, renderGraphiQL} from 'graphql-yoga';
 import {UrlqGraphqlClient} from "./client/client";
 import { buildSchema, parse } from 'graphql';
 import { isAsyncIterable, type Executor } from '@graphql-tools/utils';
 import { stitchingDirectives } from '@graphql-tools/stitching-directives';
 import {grabTokenInHeader} from "@catalyst/jwt"
+import { print } from 'graphql'
+import { AsyncExecutor } from '@graphql-tools/utils'
 
-const { buildHTTPExecutor} = await import("@graphql-tools/executor-http");
-// @ts-ignore
-//
 // // https://github.com/ardatan/schema-stitching/blob/master/examples/stitching-directives-sdl/src/gateway.ts
 export async function fetchRemoteSchema(executor: Executor) {
   const result = await executor({
@@ -36,13 +35,20 @@ async function makeGatewaySchema(endpoints: { endpoint: string }[]) {
 
 
   const remoteExecutors = endpoints.map(({endpoint}) => {
-    console.log('remoteExecutors')
-    return buildHTTPExecutor({
-      endpoint: endpoint
-      //headers: executorRequest => ({
-      //  Authorization: executorRequest?.context?.authHeader,
-      //}),
-    })
+    const executor: AsyncExecutor = async ({ document, variables, operationName, extensions }) => {
+      const query = print(document)
+      const fetchResult = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          //  Authorization: executorRequest?.context?.authHeader,
+        },
+        body: JSON.stringify({ query, variables, operationName, extensions })
+      })
+      return fetchResult.json()
+    }
+    return executor;
   })
   //
   const subschemas = Promise.all(remoteExecutors.map(async (exec) => {
@@ -96,7 +102,7 @@ app.use(async (c, next) => {
   c.set('claims', claims);
 
   if (!validate) {
-    return c.text("Token validation failed", 403)
+    return c.json({message: 'Token validation failed'}, 403)
   }
 
 
