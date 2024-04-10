@@ -137,8 +137,8 @@ describe("registrar integration tests", () => {
   })
 })
 
-describe("authzed integration tests", () => {
-  it("get schema",  async () => {
+describe.sequential("authzed integration tests", () => {
+  it.sequential("get schema",  async () => {
     console.log(env)
     const schema = await env.AUTHX_AUTHZED_API.schema()
     expect(schema).toBeDefined()
@@ -165,8 +165,8 @@ describe("authzed integration tests", () => {
       definition orbisops_catalyst_dev/user {}`)*/
   })
 
-  describe("organization tests", () => {
-    it("add user", async () => {
+  describe.sequential("organization tests", () => {
+    it.sequential("add user", async () => {
       const org = "Org1"
       const userStatement = await env.AUTHX_AUTHZED_API.addUserToOrg(org,"TestUser")
       console.log(userStatement)
@@ -174,7 +174,7 @@ describe("authzed integration tests", () => {
       expect(userStatement.writtenAt).toBeDefined()
       await env.AUTHX_AUTHZED_API.deleteUserFromOrg(org,"TestUser")
     })
-    it("add data custodian", async () => {
+    it.sequential("add data custodian", async () => {
       const org = "Org2"
       const userStatement = await env.AUTHX_AUTHZED_API.addDataCustodianToOrg(org,"TestUser")
       console.log(userStatement)
@@ -182,7 +182,7 @@ describe("authzed integration tests", () => {
       expect(userStatement.writtenAt).toBeDefined()
       await env.AUTHX_AUTHZED_API.deleteDataCustodianFromOrg(org,"TestUser")
     })
-    it("add admin", async () => {
+    it.sequential("add admin", async () => {
       const org = "Org3"
       const userStatement = await env.AUTHX_AUTHZED_API.addAdminToOrg(org,"TestUser")
       console.log(userStatement)
@@ -190,7 +190,7 @@ describe("authzed integration tests", () => {
       expect(userStatement.writtenAt).toBeDefined()
       await env.AUTHX_AUTHZED_API.deleteAdminFromOrg(org,"TestUser")
     })
-    it("read users, data custodians, and admins", async () => {
+    it.sequential("read users, data custodians, and admins", async () => {
       const org = "Org4"
       await env.AUTHX_AUTHZED_API.addUserToOrg(org,"TestUser")
       await env.AUTHX_AUTHZED_API.addDataCustodianToOrg(org,"TestUser")
@@ -198,9 +198,9 @@ describe("authzed integration tests", () => {
       const users = await env.AUTHX_AUTHZED_API.listUsersInOrg(org,"TestUser")
       console.log(users)
       expect(users).toHaveLength(3)
-      expect(users).toContainEqual({ orgId: org, relation: 'user', subject: 'TestUser' })
-      expect(users).toContainEqual({ orgId: org, relation: 'data_custodian', subject: 'TestUser' })
-      expect(users).toContainEqual({ orgId: org, relation: 'admin', subject: 'TestUser' })
+      expect(users).toContainEqual({ object: org, relation: 'user', subject: 'TestUser' })
+      expect(users).toContainEqual({ object: org, relation: 'data_custodian', subject: 'TestUser' })
+      expect(users).toContainEqual({ object: org, relation: 'admin', subject: 'TestUser' })
 
       const data_custodians = await env.AUTHX_AUTHZED_API.listUsersInOrg(org,"TestUser", [Catalyst.RoleEnum.enum.data_custodian])
       expect(data_custodians).toHaveLength(1)
@@ -215,7 +215,7 @@ describe("authzed integration tests", () => {
       await env.AUTHX_AUTHZED_API.deleteDataCustodianFromOrg(org,"TestUser")
       await env.AUTHX_AUTHZED_API.deleteAdminFromOrg(org,"TestUser")
     })
-    it("check membership", async () =>{
+    it.sequential("check membership", async () =>{
       const org = "Org5"
       await env.AUTHX_AUTHZED_API.addUserToOrg(org,"TestUser")
       const permsCheck = await env.AUTHX_AUTHZED_API.addUserToOrg(org,"TestUser")
@@ -225,7 +225,7 @@ describe("authzed integration tests", () => {
       expect(await env.AUTHX_AUTHZED_API.isMemberOfOrg(org,"NotAUser")).toBeFalsy()
       await env.AUTHX_AUTHZED_API.deleteUserFromOrg(org,"TestUser")
     })
-    it("check add role", async () => {
+    it.sequential("check add role", async () => {
       const org = "Org6"
       // add a normal user
       await env.AUTHX_AUTHZED_API.addUserToOrg(org,"User")
@@ -242,7 +242,7 @@ describe("authzed integration tests", () => {
       await env.AUTHX_AUTHZED_API.deleteDataCustodianFromOrg(org, "DataCustodian")
       await env.AUTHX_AUTHZED_API.deleteAdminFromOrg(org, "Admin")
     })
-    it("check CUD of data channel", async () => {
+    it.sequential("check CUD of data channel", async () => {
       const org = "Org7"
       // add a normal user
       await env.AUTHX_AUTHZED_API.addUserToOrg(org,"User")
@@ -258,7 +258,7 @@ describe("authzed integration tests", () => {
       await env.AUTHX_AUTHZED_API.deleteDataCustodianFromOrg(org, "DataCustodian")
       await env.AUTHX_AUTHZED_API.deleteAdminFromOrg(org, "Admin")
     })
-    it("check R of data channel", async () => {
+    it.sequential("check R of data channel", async () => {
       const org = "Org8"
       // add a normal user
       await env.AUTHX_AUTHZED_API.addUserToOrg(org,"User")
@@ -274,7 +274,7 @@ describe("authzed integration tests", () => {
       await env.AUTHX_AUTHZED_API.deleteDataCustodianFromOrg(org, "DataCustodian")
       await env.AUTHX_AUTHZED_API.deleteAdminFromOrg(org, "Admin")
     })
-    it("delete users, data custodians, and admins", async () => {
+    it.sequential("delete users, data custodians, and admins", async () => {
       const org = "Org9"
       // add a normal user
       await env.AUTHX_AUTHZED_API.addUserToOrg(org,"User")
@@ -290,7 +290,7 @@ describe("authzed integration tests", () => {
       const listUserDelete = await env.AUTHX_AUTHZED_API.listUsersInOrg(org)
       console.log(listUserDelete)
       expect(listUserDelete).toHaveLength(2)
-      expect(listUserDelete).not.toContain({ orgId: org, relation: 'user', subject: 'User' })
+      expect(listUserDelete).not.toContain({ object: org, relation: 'user', subject: 'User' })
 
       await env.AUTHX_AUTHZED_API.deleteDataCustodianFromOrg(org,"DataCustodian")
       console.log(await env.AUTHX_AUTHZED_API.listUsersInOrg(org))
@@ -300,7 +300,7 @@ describe("authzed integration tests", () => {
       console.log(await env.AUTHX_AUTHZED_API.listUsersInOrg(org))
       expect(await env.AUTHX_AUTHZED_API.listUsersInOrg(org)).toHaveLength(0)
     })
-    it("add, list, and delete data channels", async () => {
+    it.sequential("add, list, and delete data channels", async () => {
       const resp = await env.AUTHX_AUTHZED_API.addDataChannelToOrg("Org1", "DC1")
       expect(resp).toBeDefined()
       expect(resp.writtenAt!.token).toBeDefined()
@@ -314,9 +314,10 @@ describe("authzed integration tests", () => {
       const deleteResp = await env.AUTHX_AUTHZED_API.deleteDataChannelInOrg("Org1", "DC1")
       expect(deleteResp).toBeDefined()
 
+      console.log(await env.AUTHX_AUTHZED_API.listDataChannelsInOrg("Org1"))
       expect(await env.AUTHX_AUTHZED_API.listDataChannelsInOrg("Org1")).toHaveLength(0)
     })
-    it("add, list, and delete partners", async () => {
+    it.sequential("add, list, and delete partners", async () => {
       const resp = await env.AUTHX_AUTHZED_API.addPartnerToOrg("Org1", "Org2")
       console.log(resp)
       expect(resp).toBeDefined()
@@ -330,8 +331,8 @@ describe("authzed integration tests", () => {
       expect(await env.AUTHX_AUTHZED_API.listPartnersInOrg("Org1")).toHaveLength(0)
     })
   })
-  describe("data channel tests", () => {
-    it("add organization", async () => {
+  describe.sequential("data channel tests", () => {
+    it.sequential("add organization", async () => {
       const resp = await env.AUTHX_AUTHZED_API.addOrgToDataChannel("DC1", "Org1")
       console.log(resp)
       expect(resp).toBeDefined()
@@ -343,8 +344,7 @@ describe("authzed integration tests", () => {
 
       expect(await env.AUTHX_AUTHZED_API.listOrgsInDataChannel("DC1")).toHaveLength(0)
     })
-
-    it("check user in parent org can read", async () => {
+    it.sequential("check user in parent org can read", async () => {
       await env.AUTHX_AUTHZED_API.addOrgToDataChannel("DC1", "Org1")
       await env.AUTHX_AUTHZED_API.addUserToOrg("Org1", "User1")
       expect(await env.AUTHX_AUTHZED_API.listOrgsInDataChannel("DC1")).toHaveLength(1)
@@ -361,30 +361,46 @@ describe("authzed integration tests", () => {
     })
   })
 
-  describe("multi functional tests", () => {
-    describe("share data channel between orgs", async () => {
-      await env.AUTHX_AUTHZED_API.addOrgToDataChannel("DC1", "Org1")
-      await env.AUTHX_AUTHZED_API.addOrgToDataChannel("DC2", "Org2")
-      await env.AUTHX_AUTHZED_API.addUserToOrg("Org1", "User1")
-      await env.AUTHX_AUTHZED_API.addUserToOrg("Org2", "User2")
-      it("orgs can read own data channels", async () => {
+  const authzedSetup = async (env: ProvidedEnv) => {
+    await env.AUTHX_AUTHZED_API.addOrgToDataChannel("DC1", "Org1")
+    await env.AUTHX_AUTHZED_API.addOrgToDataChannel("DC2", "Org2")
+    await env.AUTHX_AUTHZED_API.addUserToOrg("Org1", "User1")
+    await env.AUTHX_AUTHZED_API.addUserToOrg("Org2", "User2")
+  }
+
+  const authzedTeardown = async (env: ProvidedEnv) => {
+    await env.AUTHX_AUTHZED_API.addOrgToDataChannel("DC1", "Org1")
+    await env.AUTHX_AUTHZED_API.addOrgToDataChannel("DC2", "Org2")
+    await env.AUTHX_AUTHZED_API.addUserToOrg("Org1", "User1")
+    await env.AUTHX_AUTHZED_API.addUserToOrg("Org2", "User2")
+  }
+  describe.sequential("multi functional tests", () => {
+    describe.sequential("share data channel between orgs", async () => {
+      it.sequential("orgs can read own data channels", async () => {
+        await authzedSetup(env)
         expect(await env.AUTHX_AUTHZED_API.canReadFromDataChannel("DC1", "User1")).toBeTruthy()
         expect(await env.AUTHX_AUTHZED_API.canReadFromDataChannel("DC2", "User2")).toBeTruthy()
+        await authzedTeardown(env)
       })
-      it("cannot read other org data channel without share", async () => {
+      it.sequential("cannot read other org data channel without share", async () => {
+        await authzedSetup(env)
         expect(await env.AUTHX_AUTHZED_API.canReadFromDataChannel("DC1", "User2")).toBeFalsy()
         expect(await env.AUTHX_AUTHZED_API.canReadFromDataChannel("DC2", "User1")).toBeFalsy()
+        await authzedTeardown(env)
       })
-      it("org1 shares with org2", async () => {
+      it.sequential("org1 shares with org2", async () => {
+        await authzedSetup(env)
         await env.AUTHX_AUTHZED_API.addPartnerToOrg("Org1", "Org2")
         expect(await env.AUTHX_AUTHZED_API.canReadFromDataChannel("DC1", "User1")).toBeTruthy()
         expect(await env.AUTHX_AUTHZED_API.canReadFromDataChannel("DC2", "User1")).toBeFalsy()
         expect(await env.AUTHX_AUTHZED_API.canReadFromDataChannel("DC1", "User2")).toBeTruthy()
-
-        await env.AUTHX_AUTHZED_API.deletePartnerInOrg("Org1", "Org2")
+        expect(await env.AUTHX_AUTHZED_API.deletePartnerInOrg("Org1", "Org2")).toBeDefined()
+        expect(await env.AUTHX_AUTHZED_API.canReadFromDataChannel("DC1", "User2")).toBeFalsy()
+        await authzedTeardown(env)
       })
 
-      it("org 2 shares with org1", async () => {
+      it.sequential("org 2 shares with org1", async () => {
+        await authzedSetup(env)
         // this adds org1 as a partner to org2
         await env.AUTHX_AUTHZED_API.addPartnerToOrg("Org2", "Org1")
         // since user 2 is in org 2 it can read dc2
@@ -395,8 +411,11 @@ describe("authzed integration tests", () => {
         // dc1:read -> org2:parnter -> org1:datachannel_read -> user1
         expect(await env.AUTHX_AUTHZED_API.canReadFromDataChannel("DC2", "User1")).toBeTruthy()
 
-        await env.AUTHX_AUTHZED_API.deletePartnerInOrg("Org1", "Org2")
+        expect(await env.AUTHX_AUTHZED_API.deletePartnerInOrg("Org2", "Org1")).toBeDefined()
+        expect(await env.AUTHX_AUTHZED_API.canReadFromDataChannel("DC2", "User1")).toBeFalsy()
+        await authzedTeardown(env)
       })
+      // issue here with running after all it-tests
     })
   })
 })
@@ -451,14 +470,14 @@ describe("registrar integration tests", () => {
     expect(await env.DATA_CHANNEL_REGISTRAR.list("dotest", ["testsvc"])).toHaveLength(1)
     expect(await env.DATA_CHANNEL_REGISTRAR.list("dotest", ["testsvc-nope"])).toHaveLength(0)
 
-    await setupRegistrar(env)
+    await setup(env)
     expect(await env.DATA_CHANNEL_REGISTRAR.list("default")).toHaveLength(3)
-    await teardownRegistrar(env)
+    await teardown(env)
     expect(await env.DATA_CHANNEL_REGISTRAR.list("default")).toHaveLength(0)
   })
 
   it("list filter data channels", async () => {
-    await setupRegistrar(env)
+    await setup(env)
     expect(await env.DATA_CHANNEL_REGISTRAR.list("default")).toHaveLength(3)
     expect(await env.DATA_CHANNEL_REGISTRAR.list("default", ["cars"])).toHaveLength(1)
     expect(await env.DATA_CHANNEL_REGISTRAR.list("default", ["cars", "airplanes"])).toHaveLength(2)
@@ -633,7 +652,6 @@ describe("gateway integration tests", () => {
   });
 
   it("should get datachannel for airplanes", async (testContext) => {
-
     await setup(env)
     const token = await getToken("Org1", ["airplanes"], testContext);
     const getAvailableQueries = await SELF.fetch('https://data-channel-gateway/graphql', {

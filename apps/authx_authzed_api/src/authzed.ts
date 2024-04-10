@@ -114,16 +114,16 @@ export class AuthzedClient {
 		console.log(data)
 		return this.utils.parseOrganizationData(data)
 	}
-	async deleteDataChannelInOrganization(orgId: OrgId, partnerId: OrgId): Promise<Authzed.Relationships.DeletResult> {
+	async deleteDataChannelInOrganization(orgId: OrgId, dataChannelId: DataChannelId): Promise<Authzed.Relationships.DeletResult> {
 		const body = this.utils.deleteRelationship({
 			relationOwner: {
 				objectType: Catalyst.EntityEnum.enum.organization,
 				objectId: orgId,
 			},
-			relation:  Catalyst.Org.EntityEnum.enum.partner_organization,
+			relation:  Catalyst.Org.EntityEnum.enum.data_channel,
 			relatedItem: {
-				objectType: Catalyst.EntityEnum.enum.organization,
-				objectId: partnerId,
+				objectType: Catalyst.EntityEnum.enum.data_channel,
+				objectId: dataChannelId,
 			},
 		});
 		const { data } = await this.utils.fetcher('delete', body);
@@ -163,16 +163,16 @@ export class AuthzedClient {
 		console.log(data)
 		return this.utils.parseOrganizationData(data)
 	}
-	async deleteParnterInOrganization(orgId: OrgId, dataChannelId: DataChannelId): Promise<Authzed.Relationships.DeletResult> {
+	async deleteParnterInOrganization(orgId: OrgId, partnerId: OrgId): Promise<Authzed.Relationships.DeletResult> {
 		const body = this.utils.deleteRelationship({
 			relationOwner: {
 				objectType: Catalyst.EntityEnum.enum.organization,
 				objectId: orgId,
 			},
-			relation:  Catalyst.Org.EntityEnum.enum.data_channel,
+			relation:  Catalyst.Org.EntityEnum.enum.partner_organization,
 			relatedItem: {
-				objectType: Catalyst.EntityEnum.enum.data_channel,
-				objectId: dataChannelId,
+				objectType: Catalyst.EntityEnum.enum.organization,
+				objectId: partnerId,
 			},
 		});
 		const { data } = await this.utils.fetcher('delete', body);

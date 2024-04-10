@@ -106,7 +106,7 @@ export default class AuthzedWorker extends WorkerEntrypoint<ENV> {
 	}
 	async deletePartnerInOrg(orgId: OrgId, parnterId: OrgId){
 		const client = new AuthzedClient(this.env.AUTHZED_ENDPOINT, this.env.AUTHZED_KEY, this.env.AUTHZED_PREFIX)
-		return await client.deleteDataChannelInOrganization(orgId, parnterId)
+		return await client.deleteParnterInOrganization(orgId, parnterId)
 	}
 
 	async isMemberOfOrg(orgId: OrgId, userId: UserId) {
