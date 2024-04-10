@@ -218,7 +218,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/jwt
       '@graphql-tools/executor-http':
-        specifier: ^1.0.9
+        specifier: ^1.0.9-rc-20240223123247-f0b510157b67249ec9bf02bbcd5683876ce0112f
         version: 1.0.9(@types/node@20.11.16)(graphql@16.8.1)
       '@graphql-tools/stitch':
         specifier: ^9.0.5
