@@ -30,9 +30,7 @@ export class UrlqGraphqlClient {
   }
 
 
-  async allDataChannels(params: {
-    claims: []
-  }) {
+  async allDataChannels() {
       const query = gql`
           query {
               allDataChannels {
@@ -46,24 +44,47 @@ export class UrlqGraphqlClient {
     return response.data.allDataChannels
   }
 
-
-  async validateToken(token: string) {
-    console.log(`validating token: ${token}`)
+  async allDataChannelsByClaims(claims?: string[]) {
     const query = gql`
-      query {
-        validate(token:"${token}")
+      query getDataChannels($claims: [String]){
+        dataChannelsByClaims (claims: $claims){
+          name
+          endpoint
+        }
       }
     `;
 
+    const response = await this.client.query(query, {
+      claims: claims
+    }).toPromise();
+
+    console.log(response)
+
+    return [] //response.data.allDataChannels
+  }
+
+
+  async validateToken(token: string): Promise<[boolean, string[]]> {
+    console.log(`validating token: ${token}`)
+    const query = gql`
+      query {
+        validate(token:"${token}") {
+          valid
+          claims
+        }
+      }
+    `;
+
+    // @ts-ignore
     const response: {
       data: {
         valid: boolean;
-        claims: string[]
+        claims?: string[]
       }
     }  = await this.client.query(query, {}).toPromise();
 
     console.log(response)
 
-    return response.data;
+    return [response.data.valid, response.data.claims?? []];
   }
 }
