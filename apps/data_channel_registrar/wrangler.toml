@@ -8,6 +8,7 @@ workers_dev = false
 ip = "localhost"
 port = 5050
 
+
 [[d1_databases]]
 binding = "APP_DB" # available in your Worker on env.DB
 database_name = "catalyst"
