@@ -16,7 +16,6 @@ app.use("/graphql", async (c) => {
 		context: async () => ({ HSM: c.env.HSM }),
 		graphqlEndpoint: "/graphql"
 	});
-	console.log(c);
 	return yoga.handle(c.req.raw as Request, c);
 });
 

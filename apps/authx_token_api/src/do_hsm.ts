@@ -22,7 +22,7 @@ export class KeyState {
     expiry;
     constructor() {
         this.uuid = uuidv4();
-        this.expiry = 60 * 60 * 24 * 7; // 1 week
+        this.expiry = (60 * 60 * 24 * 7); // 1 week in millis
         this.publicKey = {} as KeyLike;
         this.privateKey = {} as KeyLike;
         this.publicKeyPEM = ""
@@ -145,12 +145,13 @@ export class HSM {
                 error: "no key found"
             }, 500)
         }
-        const key = await KeyState.deserialize(keySerialized)
-        try {
+        const key = await KeyState.deserialize(keySerialized);
+
+			try {
             const {payload, protectedHeader} = await jwtVerify(token, key.publicKey);
             return c.json({
                 valid: true,
-				claims: payload.claims,
+								claims: payload.claims,
             }, 200)
         } catch (e: any) {
             return c.json({
