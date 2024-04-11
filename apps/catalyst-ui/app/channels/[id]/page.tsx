@@ -1,6 +1,7 @@
 "use client";
 export const runtime = "edge";
 import {
+  APIKeyText,
   OrbisBadge,
   OrbisButton,
   ShareButton,
@@ -329,14 +330,13 @@ export default function DataChannelDetailsPage() {
           <Grid gap={5}>
             <FormControl display={"grid"} gap={2}>
               <label htmlFor="endpoint">Endpoint URL</label>
-              <Input
-                rounded="md"
-                name="endpoint"
-                required={true}
-                readOnly={true}
-                value={channel?.endpoint ?? ""}
-                placeholder="Endpoint URL"
-              />
+              <APIKeyText
+              w={'100%'}
+              showAsClearText
+              allowCopy
+              >
+                {channel?.endpoint}
+              </APIKeyText>
             </FormControl>
 
             <Flex direction={"column"} gap={5}>
