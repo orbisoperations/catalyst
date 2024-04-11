@@ -1,7 +1,7 @@
 import SchemaBuilder from '@pothos/core';
-import {CatalystKyselySchema, CatalystKyselyTypes} from '@catalyst/schema';
-import {Kysely} from 'kysely';
-import {DataChannel} from '@catalyst/schema/prisma/generated/kysely';
+import { CatalystKyselySchema, CatalystKyselyTypes } from '@catalyst/schema';
+import { Kysely } from 'kysely';
+import { DataChannel } from '@catalyst/schema/prisma/generated/kysely';
 
 const builder = new SchemaBuilder<{
   Context: {
@@ -15,9 +15,9 @@ DataChannelObject.implement({
   fields: t => ({
     id: t.exposeID('id'),
     // @ts-ignore
-    accessSwitch: t.exposeBoolean('accessSwitch', {value: false}),
+    accessSwitch: t.exposeBoolean('accessSwitch', { value: false }),
     name: t.exposeString('name'),
-    description: t.exposeString('description', {nullable: true}),
+    description: t.exposeString('description', { nullable: true }),
     endpoint: t.exposeString('endpoint'),
     creatorOrganization: t.exposeString('creatorOrganization'),
   }),
@@ -25,12 +25,12 @@ DataChannelObject.implement({
 
 const DataChannelInput = builder.inputType('DataChannelInput', {
   fields: t => ({
-    id: t.string({required: false}),
-    accessSwitch: t.boolean({required: false}),
-    name: t.string({required: false}),
-    description: t.string({required: false}),
-    endpoint: t.string({required: false}),
-    creatorOrganization: t.string({required: false}),
+    id: t.string({ required: false }),
+    accessSwitch: t.boolean({ required: false }),
+    name: t.string({ required: false }),
+    description: t.string({ required: false }),
+    endpoint: t.string({ required: false }),
+    creatorOrganization: t.string({ required: false }),
   }),
 });
 
@@ -41,9 +41,11 @@ builder.queryType({
       nullable: true,
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       resolve: async (root, args, ctx, som) => {
-        console.log('allDataChannels resolving...')
-        const result = await ctx.db.selectFrom('DataChannel').selectAll().execute() as [DataChannel];
-        console.log('allDataChannels resolved!', JSON.stringify(result))
+        console.log('allDataChannels resolving...');
+        const result = (await ctx.db.selectFrom('DataChannel').selectAll().execute()) as [
+          DataChannel,
+        ];
+        console.log('allDataChannels resolved!', JSON.stringify(result));
         return result;
       },
     }),
@@ -52,20 +54,21 @@ builder.queryType({
       nullable: true,
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       args: {
-        claims: t.arg.stringList({required: false})
+        claims: t.arg.stringList({ required: false }),
       },
       resolve: async (root, args, ctx, som) => {
         console.log('dataChannelsByClaims resolving...');
 
         if (args.claims) {
-          const result = await ctx.db.selectFrom('DataChannel').selectAll()
-              .where(({eb, and}) => and([
-                eb('name', 'in', args.claims ?? []),
-                eb('accessSwitch', '=', 1),
-              ]))
-              .execute() as [DataChannel];
+          const result = (await ctx.db
+            .selectFrom('DataChannel')
+            .selectAll()
+            .where(({ eb, and }) =>
+              and([eb('name', 'in', args.claims ?? []), eb('accessSwitch', '=', 1)]),
+            )
+            .execute()) as [DataChannel];
 
-          console.log({RESULT: result});
+          console.log({ RESULT: result });
 
           return result;
         }
@@ -75,27 +78,27 @@ builder.queryType({
     dataChannelById: t.field({
       type: DataChannelObject,
       nullable: true,
-      args: {id: t.arg.string()},
+      args: { id: t.arg.string() },
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       resolve: async (root, args, ctx, som) => {
         return ctx.db
-            .selectFrom('DataChannel')
-            .selectAll()
-            .where('id', '=', args.id as string)
-            .executeTakeFirst() as Promise<DataChannel>;
+          .selectFrom('DataChannel')
+          .selectAll()
+          .where('id', '=', args.id as string)
+          .executeTakeFirst() as Promise<DataChannel>;
       },
     }),
     dataChannelsByCreatorOrg: t.field({
       type: [DataChannelObject],
       nullable: true,
-      args: {creatorOrganization: t.arg.string()},
+      args: { creatorOrganization: t.arg.string() },
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       resolve: async (root, args, ctx, som) => {
         return ctx.db
-            .selectFrom('DataChannel')
-            .selectAll()
-            .where('creatorOrganization', '=', args.creatorOrganization as string)
-            .execute() as Promise<[DataChannel]>;
+          .selectFrom('DataChannel')
+          .selectAll()
+          .where('creatorOrganization', '=', args.creatorOrganization as string)
+          .execute() as Promise<[DataChannel]>;
       },
     }),
   }),
@@ -106,7 +109,7 @@ builder.mutationType({
     createDataChannel: t.field({
       type: DataChannelObject,
       args: {
-        input: t.arg({type: DataChannelInput, required: true}),
+        input: t.arg({ type: DataChannelInput, required: true }),
       },
       resolve: (root, args, ctx) => {
         const dataChannelRec: DataChannel = {
@@ -119,10 +122,10 @@ builder.mutationType({
           creatorOrganization: args.input.creatorOrganization!,
         };
         return ctx.db
-            .insertInto('DataChannel')
-            .values(dataChannelRec)
-            .returningAll()
-            .executeTakeFirst() as Promise<DataChannel>;
+          .insertInto('DataChannel')
+          .values(dataChannelRec)
+          .returningAll()
+          .executeTakeFirst() as Promise<DataChannel>;
       },
     }),
 
@@ -133,9 +136,9 @@ builder.mutationType({
       },
       resolve: async (root, args, ctx) => {
         const result = await ctx.db
-            .deleteFrom('DataChannel')
-            .where('id', '=', args.id as string)
-            .executeTakeFirst();
+          .deleteFrom('DataChannel')
+          .where('id', '=', args.id as string)
+          .executeTakeFirst();
         return result.numDeletedRows > 0;
       },
     }),
@@ -143,7 +146,7 @@ builder.mutationType({
     updateDataChannel: t.field({
       type: DataChannelObject,
       args: {
-        input: t.arg({type: DataChannelInput, required: true}),
+        input: t.arg({ type: DataChannelInput, required: true }),
       },
       resolve: async (root, args, ctx) => {
         const dataChannelNewValuesRec: Record<string, unknown> = {};
@@ -151,21 +154,31 @@ builder.mutationType({
         if (!args.input.id) throw new Error('id is required to update a data channel');
 
         args.input.name
-            ? (dataChannelNewValuesRec.name = args.input.name)
-            : delete dataChannelNewValuesRec.name;
-        (args.input.accessSwitch === undefined || args.input.accessSwitch === null) ? delete dataChannelNewValuesRec.accessSwitch : (dataChannelNewValuesRec.accessSwitch = args.input.accessSwitch);
+          ? (dataChannelNewValuesRec.name = args.input.name)
+          : delete dataChannelNewValuesRec.name;
+
+        args.input.accessSwitch === undefined || args.input.accessSwitch === null
+          ? delete dataChannelNewValuesRec.accessSwitch
+          : (dataChannelNewValuesRec.accessSwitch = args.input.accessSwitch);
+
+        args.input.description
+          ? (dataChannelNewValuesRec.description = args.input.description)
+          : delete dataChannelNewValuesRec.description;
+
         args.input.endpoint
-            ? (dataChannelNewValuesRec.endpoint = args.input.endpoint)
-            : delete dataChannelNewValuesRec.endpoint;
+          ? (dataChannelNewValuesRec.endpoint = args.input.endpoint)
+          : delete dataChannelNewValuesRec.endpoint;
+
         args.input.creatorOrganization
-            ? (dataChannelNewValuesRec.creatorOrganization = args.input.creatorOrganization)
-            : delete dataChannelNewValuesRec.creatorOrganization;
+          ? (dataChannelNewValuesRec.creatorOrganization = args.input.creatorOrganization)
+          : delete dataChannelNewValuesRec.creatorOrganization;
+
         const result = (await ctx.db
-            .updateTable('DataChannel')
-            .set(dataChannelNewValuesRec)
-            .where('id', '=', args.input.id as string)
-            .returningAll()
-            .executeTakeFirst()) as DataChannel;
+          .updateTable('DataChannel')
+          .set(dataChannelNewValuesRec)
+          .where('id', '=', args.input.id as string)
+          .returningAll()
+          .executeTakeFirst()) as DataChannel;
         return result;
       },
     }),
