@@ -37,6 +37,7 @@ export default function DataChannelListPage() {
 
   return (
     <ListView
+      showSpinner={loading}
       actions={
         <Flex gap={5}>
           <CreateButton

@@ -126,6 +126,7 @@ export default function DataChannelDetailsPage() {
   }, [loading]);
   return (
     <DetailedView
+      showSpinner={loading}
       actions={
         <Flex gap={10}>
           <Flex gap={2} align={"center"}>
