@@ -153,7 +153,7 @@ export const CreateButton = (props: ButtonProps) => {
 export const CopyButton = (props: ButtonProps & { copytext?: string }) => {
   const [copied, setCopied] = useState(false);
   return (
-    <Tooltip hasArrow placement="top" label={!copied ? "Copy Key" : "Copied!"}>
+    <Tooltip hasArrow placement="top" label={!copied ? "Copy Text" : "Copied!"}>
       <Button
         onClick={() => {
           setTimeout(() => {
