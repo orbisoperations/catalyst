@@ -1,10 +1,11 @@
 {
   "compilerOptions": {
+    "esModuleInterop": true,
     "module": "ESNext",
     "target": "ESNext",
-    "moduleResolution": "Node16",
+    "moduleResolution": "Node",
     "strict": true,
-    "types": ["@cloudflare/workers-types"]
+    "types": ["@cloudflare/workers-types"],
   },
   "include": ["src"]
 }

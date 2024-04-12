@@ -18,13 +18,10 @@ input DataChannelInput {
 
 type Mutation {
   createDataChannel(input: DataChannelInput!): DataChannel!
-  deleteDataChannel(id: String): Boolean!
-  updateDataChannel(input: DataChannelInput!): DataChannel!
 }
 
 type Query {
   allDataChannels: [DataChannel!]
   dataChannelById(id: String): DataChannel
   dataChannelsByClaims(claims: [String!]): [DataChannel!]
-  dataChannelsByCreatorOrg(creatorOrganization: String): [DataChannel!]
 }
