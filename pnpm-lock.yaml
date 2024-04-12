@@ -409,7 +409,7 @@ importers:
         specifier: ^3.25.0
         version: 3.36.0(@cloudflare/workers-types@4.20240222.0)
 
-  examples/datachannel_tak:
+  examples/datachannel_tak_old:
     dependencies:
       '@apollo/client':
         specifier: ^3.9.9
@@ -437,7 +437,7 @@ importers:
         specifier: ^3.25.0
         version: 3.39.0(@cloudflare/workers-types@4.20240402.0)
 
-  examples/datachannel_tak/datachannel-ui:
+  examples/datachannel_tak_old/datachannel-ui:
     dependencies:
       '@testing-library/jest-dom':
         specifier: ^5.17.0
@@ -475,6 +475,31 @@ importers:
       web-vitals:
         specifier: ^2.1.4
         version: 2.1.4
+
+  examples/tak:
+    dependencies:
+      geo-route-generator:
+        specifier: ^1.3.0
+        version: 1.3.0
+      mgrs:
+        specifier: ^2.0.0
+        version: 2.0.0
+    devDependencies:
+      '@cloudflare/workers-types':
+        specifier: ^4.20240405.0
+        version: 4.20240405.0
+      '@types/bun':
+        specifier: ^1.0.12
+        version: 1.0.12
+      bun:
+        specifier: ^1.1.3
+        version: 1.1.3
+      typescript:
+        specifier: ^5.0.4
+        version: 5.4.3
+      wrangler:
+        specifier: ^3.0.0
+        version: 3.39.0(@cloudflare/workers-types@4.20240405.0)
 
   packages/errors:
     devDependencies:
@@ -577,13 +602,13 @@ packages:
     hasBin: true
     dev: true
 
-  /@apideck/better-ajv-errors@0.3.6(ajv@8.6.3):
+  /@apideck/better-ajv-errors@0.3.6(ajv@8.12.0):
     resolution: {integrity: sha512-P+ZygBLZtkp0qqOAJJVX4oX/sFo5JR3eBWwwuqHHhK0GIgQOKWrAfiAaWX0aArHkRWHMuggFEgAZNxVPwPZYaA==}
     engines: {node: '>=10'}
     peerDependencies:
       ajv: '>=8'
     dependencies:
-      ajv: 8.6.3
+      ajv: 8.12.0
       json-schema: 0.4.0
       jsonpointer: 5.0.1
       leven: 3.1.0
@@ -1406,14 +1431,9 @@ packages:
       '@babel/highlight': 7.24.2
       picocolors: 1.0.0
 
-  /@babel/compat-data@7.24.1:
-    resolution: {integrity: sha512-Pc65opHDliVpRHuKfzI+gSA4zcgr65O4cl64fFJIWEEh8JoHIHh0Oez1Eo8Arz8zq/JhgKodQaxEwUPRtZylVA==}
-    engines: {node: '>=6.9.0'}
-
   /@babel/compat-data@7.24.4:
     resolution: {integrity: sha512-vg8Gih2MLK+kOkHJp4gBEIkyaIi00jgWot2D9QOmmfLC8jINSOzmCLta6Bvz/JSBCqnegV0L80jhxkol5GWNfQ==}
     engines: {node: '>=6.9.0'}
-    dev: false
 
   /@babel/core@7.24.3:
     resolution: {integrity: sha512-5FcvN1JHw2sHJChotgx8Ek0lyuh4kCKelgMTTqhYJJtloNvUfpAFMeNQUtdlIaktwrSV9LtCdqwk48wL2wBacQ==}
@@ -1477,27 +1497,10 @@ packages:
     resolution: {integrity: sha512-9JB548GZoQVmzrFgp8o7KxdgkTGm6xs9DW0o/Pim72UDjzr5ObUQ6ZzYPqA+g9OTS2bBQoctLJrky0RDCAWRgQ==}
     engines: {node: '>=6.9.0'}
     dependencies:
-      '@babel/compat-data': 7.24.1
+      '@babel/compat-data': 7.24.4
       '@babel/helper-validator-option': 7.23.5
       browserslist: 4.23.0
       lru-cache: 5.1.1
-      semver: 6.3.1
-
-  /@babel/helper-create-class-features-plugin@7.24.1(@babel/core@7.24.3):
-    resolution: {integrity: sha512-1yJa9dX9g//V6fDebXoEfEsxkZHk3Hcbm+zLhyu6qVgYFLvmTALTeV+jNU9e5RnYtioBrGEOdoI2joMSNQ/+aA==}
-    engines: {node: '>=6.9.0'}
-    peerDependencies:
-      '@babel/core': ^7.0.0
-    dependencies:
-      '@babel/core': 7.24.3
-      '@babel/helper-annotate-as-pure': 7.22.5
-      '@babel/helper-environment-visitor': 7.22.20
-      '@babel/helper-function-name': 7.23.0
-      '@babel/helper-member-expression-to-functions': 7.23.0
-      '@babel/helper-optimise-call-expression': 7.22.5
-      '@babel/helper-replace-supers': 7.24.1(@babel/core@7.24.3)
-      '@babel/helper-skip-transparent-expression-wrappers': 7.22.5
-      '@babel/helper-split-export-declaration': 7.22.6
       semver: 6.3.1
 
   /@babel/helper-create-class-features-plugin@7.24.4(@babel/core@7.24.3):
@@ -1516,7 +1519,6 @@ packages:
       '@babel/helper-skip-transparent-expression-wrappers': 7.22.5
       '@babel/helper-split-export-declaration': 7.22.6
       semver: 6.3.1
-    dev: false
 
   /@babel/helper-create-regexp-features-plugin@7.22.15(@babel/core@7.24.3):
     resolution: {integrity: sha512-29FkPLFjn4TPEa3RE7GpW+qbE8tlsu3jntNYNfcGsc49LphF1PQIiD+vMZ1z1xVOKt+93khA9tc2JBs3kBjA7w==}
@@ -1737,7 +1739,7 @@ packages:
       '@babel/core': ^7.0.0-0
     dependencies:
       '@babel/core': 7.24.3
-      '@babel/helper-create-class-features-plugin': 7.24.1(@babel/core@7.24.3)
+      '@babel/helper-create-class-features-plugin': 7.24.4(@babel/core@7.24.3)
       '@babel/helper-plugin-utils': 7.24.0
 
   /@babel/plugin-proposal-decorators@7.24.1(@babel/core@7.24.3):
@@ -1747,7 +1749,7 @@ packages:
       '@babel/core': ^7.0.0-0
     dependencies:
       '@babel/core': 7.24.3
-      '@babel/helper-create-class-features-plugin': 7.24.1(@babel/core@7.24.3)
+      '@babel/helper-create-class-features-plugin': 7.24.4(@babel/core@7.24.3)
       '@babel/helper-plugin-utils': 7.24.0
       '@babel/plugin-syntax-decorators': 7.24.1(@babel/core@7.24.3)
     dev: false
@@ -1783,7 +1785,7 @@ packages:
     peerDependencies:
       '@babel/core': ^7.0.0-0
     dependencies:
-      '@babel/compat-data': 7.24.1
+      '@babel/compat-data': 7.24.4
       '@babel/core': 7.24.3
       '@babel/helper-compilation-targets': 7.23.6
       '@babel/helper-plugin-utils': 7.24.0
@@ -1812,7 +1814,7 @@ packages:
       '@babel/core': ^7.0.0-0
     dependencies:
       '@babel/core': 7.24.3
-      '@babel/helper-create-class-features-plugin': 7.24.1(@babel/core@7.24.3)
+      '@babel/helper-create-class-features-plugin': 7.24.4(@babel/core@7.24.3)
       '@babel/helper-plugin-utils': 7.24.0
     dev: false
 
@@ -1834,7 +1836,7 @@ packages:
     dependencies:
       '@babel/core': 7.24.3
       '@babel/helper-annotate-as-pure': 7.22.5
-      '@babel/helper-create-class-features-plugin': 7.24.1(@babel/core@7.24.3)
+      '@babel/helper-create-class-features-plugin': 7.24.4(@babel/core@7.24.3)
       '@babel/helper-plugin-utils': 7.24.0
       '@babel/plugin-syntax-private-property-in-object': 7.14.5(@babel/core@7.24.3)
     dev: false
@@ -2095,16 +2097,6 @@ packages:
       '@babel/core': 7.24.3
       '@babel/helper-plugin-utils': 7.24.0
 
-  /@babel/plugin-transform-block-scoping@7.24.1(@babel/core@7.24.3):
-    resolution: {integrity: sha512-h71T2QQvDgM2SmT29UYU6ozjMlAt7s7CSs5Hvy8f8cf/GM/Z4a2zMfN+fjVGaieeCrXR3EdQl6C4gQG+OgmbKw==}
-    engines: {node: '>=6.9.0'}
-    peerDependencies:
-      '@babel/core': ^7.0.0-0
-    dependencies:
-      '@babel/core': 7.24.3
-      '@babel/helper-plugin-utils': 7.24.0
-    dev: true
-
   /@babel/plugin-transform-block-scoping@7.24.4(@babel/core@7.24.3):
     resolution: {integrity: sha512-nIFUZIpGKDf9O9ttyRXpHFpKC+X3Y5mtshZONuEUYBomAKoM4y029Jr+uB1bHGPhNmK8YXHevDtKDOLmtRrp6g==}
     engines: {node: '>=6.9.0'}
@@ -2113,7 +2105,6 @@ packages:
     dependencies:
       '@babel/core': 7.24.3
       '@babel/helper-plugin-utils': 7.24.0
-    dev: false
 
   /@babel/plugin-transform-class-properties@7.24.1(@babel/core@7.24.3):
     resolution: {integrity: sha512-OMLCXi0NqvJfORTaPQBwqLXHhb93wkBKZ4aNwMl6WtehO7ar+cmp+89iPEQPqxAnxsOKTaMcs3POz3rKayJ72g==}
@@ -2122,7 +2113,7 @@ packages:
       '@babel/core': ^7.0.0-0
     dependencies:
       '@babel/core': 7.24.3
-      '@babel/helper-create-class-features-plugin': 7.24.1(@babel/core@7.24.3)
+      '@babel/helper-create-class-features-plugin': 7.24.4(@babel/core@7.24.3)
       '@babel/helper-plugin-utils': 7.24.0
     dev: false
 
@@ -2449,7 +2440,7 @@ packages:
       '@babel/core': ^7.0.0-0
     dependencies:
       '@babel/core': 7.24.3
-      '@babel/helper-create-class-features-plugin': 7.24.1(@babel/core@7.24.3)
+      '@babel/helper-create-class-features-plugin': 7.24.4(@babel/core@7.24.3)
       '@babel/helper-plugin-utils': 7.24.0
     dev: false
 
@@ -2461,7 +2452,7 @@ packages:
     dependencies:
       '@babel/core': 7.24.3
       '@babel/helper-annotate-as-pure': 7.22.5
-      '@babel/helper-create-class-features-plugin': 7.24.1(@babel/core@7.24.3)
+      '@babel/helper-create-class-features-plugin': 7.24.4(@babel/core@7.24.3)
       '@babel/helper-plugin-utils': 7.24.0
       '@babel/plugin-syntax-private-property-in-object': 7.14.5(@babel/core@7.24.3)
     dev: false
@@ -4178,6 +4169,10 @@ packages:
 
   /@cloudflare/workers-types@4.20240402.0:
     resolution: {integrity: sha512-GEtg71Gs5iBIQBQB0sBkEOJrmJGpenT2XAODwbvfWADwQpDxgEQfGrcOhaJfLPCfvNpKaMxcBlH9cekWwQEsLQ==}
+    dev: true
+
+  /@cloudflare/workers-types@4.20240405.0:
+    resolution: {integrity: sha512-sEVOhyOgXUwfLkgHqbLZa/sfkSYrh7/zLmI6EZNibPaVPvAnAcItbNNl3SAlLyLKuwf8m4wAIAgu9meKWCvXjg==}
     dev: true
 
   /@cspotcode/source-map-support@0.8.1:
@@ -6870,8 +6865,24 @@ packages:
     dev: true
     optional: true
 
+  /@oven/bun-darwin-aarch64@1.1.3:
+    resolution: {integrity: sha512-EgcHnvwC/A6WoF2F6gV1cc09i5CsYbPM6FX0xyEViUuyvC00z9SmhgqvocGFa1eFmKQODQBIZsovxEZxhLqfQw==}
+    cpu: [arm64]
+    os: [darwin]
+    requiresBuild: true
+    dev: true
+    optional: true
+
   /@oven/bun-darwin-x64-baseline@1.0.30:
     resolution: {integrity: sha512-hx32GA5bMJdOK8WlioiaFjx1vr6ZDBgi4sg50cCJmoK0grg5yNVcOlmRz8g6Q5ngfR8dKC61R7B++hnZtOpTHw==}
+    cpu: [x64]
+    os: [darwin]
+    requiresBuild: true
+    dev: true
+    optional: true
+
+  /@oven/bun-darwin-x64-baseline@1.1.3:
+    resolution: {integrity: sha512-vaxqGRsIJ+lSmFBEACapgQS+mHBSS8XxCaQn7lbjUsr/LnFyNBzgSlDrU7cCVbxXMa7vVqDa/dRJ9rEpi0fqLA==}
     cpu: [x64]
     os: [darwin]
     requiresBuild: true
@@ -6886,8 +6897,24 @@ packages:
     dev: true
     optional: true
 
+  /@oven/bun-darwin-x64@1.1.3:
+    resolution: {integrity: sha512-WNzpUzUampox5SKLx93JPcm8cRkjLyYKRqYhG7I21+psYtSicbcINoYjpW20NRdlk123u2rmb0a98dEPIj1Xaw==}
+    cpu: [x64]
+    os: [darwin]
+    requiresBuild: true
+    dev: true
+    optional: true
+
   /@oven/bun-linux-aarch64@1.0.30:
     resolution: {integrity: sha512-32AbJ9Jt2sPNBS27QeWkn4MBYBXY0VqkRnh6M41i70I+IvjUj3vdZMMtushOxYdnlPzn+zv7J+JzyeYydvNJcw==}
+    cpu: [arm64]
+    os: [linux]
+    requiresBuild: true
+    dev: true
+    optional: true
+
+  /@oven/bun-linux-aarch64@1.1.3:
+    resolution: {integrity: sha512-s6rsbpsHzu19wl25WyAbi9yQRCOtigQN3IfbuiL+c71zctI5MGWdMz1yhBcjkFW64t656kGsvhHieS8n3rLjSw==}
     cpu: [arm64]
     os: [linux]
     requiresBuild: true
@@ -6902,10 +6929,42 @@ packages:
     dev: true
     optional: true
 
+  /@oven/bun-linux-x64-baseline@1.1.3:
+    resolution: {integrity: sha512-mxw4Lo4c6epzkM/WTYbd8K2EeNoaMxzyYIB69mw26fSZmI/Sr4hmn14/SDZF6qwvnurignlqdYwWRasmhnC2hw==}
+    cpu: [x64]
+    os: [linux]
+    requiresBuild: true
+    dev: true
+    optional: true
+
   /@oven/bun-linux-x64@1.0.30:
     resolution: {integrity: sha512-/8e3xDlaFh1AIpwshnau6+ecrIyLD1U85EqohuSFm8guQ/9aoQ/luxr/V+ujfJHay7taImL3mPXHORL7HYVIoA==}
     cpu: [x64]
     os: [linux]
+    requiresBuild: true
+    dev: true
+    optional: true
+
+  /@oven/bun-linux-x64@1.1.3:
+    resolution: {integrity: sha512-hCAuEKLSjd0XxhgU/K+aZIvmDVnkHK1mSbD7pGWvTN+z2g6Ac64tQSBin+TyhiS4DzOxr2nNelMllFjFMwOd+Q==}
+    cpu: [x64]
+    os: [linux]
+    requiresBuild: true
+    dev: true
+    optional: true
+
+  /@oven/bun-windows-x64-baseline@1.1.3:
+    resolution: {integrity: sha512-LgGYYWA6f5FKp3QeT8PCQ6JpQkz2kLu21i6um4BYyh1U7hZb75LoLzetfhdOJa00hy9Zrt+8Z8QnQ7ffmGevyQ==}
+    cpu: [x64]
+    os: [win32]
+    requiresBuild: true
+    dev: true
+    optional: true
+
+  /@oven/bun-windows-x64@1.1.3:
+    resolution: {integrity: sha512-IBV+DCOAyaQGhtqQ0gliBprMRBoRGwDBSOQJrQ6Df/0t0R7eyJzl8SyR2C89jZ/vK4VsNMgEv5Mxa6zP7SSQOw==}
+    cpu: [x64]
+    os: [win32]
     requiresBuild: true
     dev: true
     optional: true
@@ -8255,6 +8314,12 @@ packages:
     dependencies:
       '@types/node': 20.11.25
     dev: false
+
+  /@types/bun@1.0.12:
+    resolution: {integrity: sha512-qPb5FcygbpSS1NDBjWyQCWeI9kKXwSYSR1Enu7yb+gMXgFwGMhlyOvgV/7FGrdvAjlSXWRY6IDepos7k8WzAtQ==}
+    dependencies:
+      bun-types: 1.0.36
+    dev: true
 
   /@types/bun@1.0.8:
     resolution: {integrity: sha512-E6UWZuN4ymAxzUBWVIGDHJ3Zey7I8cMzDZ+cB1BqhZsmd1uPb9iAQzpWMruY1mKzsuD3R+dZPoBkZz8QL1KhSA==}
@@ -10668,7 +10733,7 @@ packages:
       '@babel/plugin-syntax-object-rest-spread': 7.8.3(@babel/core@7.24.3)
       '@babel/plugin-transform-arrow-functions': 7.24.1(@babel/core@7.24.3)
       '@babel/plugin-transform-block-scoped-functions': 7.24.1(@babel/core@7.24.3)
-      '@babel/plugin-transform-block-scoping': 7.24.1(@babel/core@7.24.3)
+      '@babel/plugin-transform-block-scoping': 7.24.4(@babel/core@7.24.3)
       '@babel/plugin-transform-classes': 7.24.1(@babel/core@7.24.3)
       '@babel/plugin-transform-computed-properties': 7.24.1(@babel/core@7.24.3)
       '@babel/plugin-transform-destructuring': 7.24.1(@babel/core@7.24.3)
@@ -10979,6 +11044,13 @@ packages:
       '@types/ws': 8.5.10
     dev: true
 
+  /bun-types@1.0.36:
+    resolution: {integrity: sha512-gaIb1SyhB0JZfIEg73/kSFhqolUqJXC68peguhXGwqr27HuvI8nkD0LTIHp/1DY4cNadfXHYgYrZIWX7oEoXlg==}
+    dependencies:
+      '@types/node': 20.11.25
+      '@types/ws': 8.5.10
+    dev: true
+
   /bun@1.0.30:
     resolution: {integrity: sha512-E83G/1f0VjJFmud3899lJ6eWKH4kzHKLrvP7DvwkSnV4Aou5p/JvLinHWNTyRl0yyWytAv+rMdsTgJaRbmw8tA==}
     cpu: [arm64, x64]
@@ -10992,6 +11064,23 @@ packages:
       '@oven/bun-linux-aarch64': 1.0.30
       '@oven/bun-linux-x64': 1.0.30
       '@oven/bun-linux-x64-baseline': 1.0.30
+    dev: true
+
+  /bun@1.1.3:
+    resolution: {integrity: sha512-1jPSmSJcRlBmgBUFbaaw6DKy7HvyotWRNjafZKkhvVHoDhEXK1YRkHo99IG/0vvwj8BmkMnFpQu9R0T7JArllw==}
+    cpu: [arm64, x64]
+    os: [darwin, linux, win32]
+    hasBin: true
+    requiresBuild: true
+    optionalDependencies:
+      '@oven/bun-darwin-aarch64': 1.1.3
+      '@oven/bun-darwin-x64': 1.1.3
+      '@oven/bun-darwin-x64-baseline': 1.1.3
+      '@oven/bun-linux-aarch64': 1.1.3
+      '@oven/bun-linux-x64': 1.1.3
+      '@oven/bun-linux-x64-baseline': 1.1.3
+      '@oven/bun-windows-x64': 1.1.3
+      '@oven/bun-windows-x64-baseline': 1.1.3
     dev: true
 
   /busboy@0.3.1:
@@ -12121,7 +12210,7 @@ packages:
       jest-worker: 27.5.1
       postcss: 8.4.38
       schema-utils: 4.2.0
-      serialize-javascript: 6.0.0
+      serialize-javascript: 6.0.2
       source-map: 0.6.1
       webpack: 5.91.0
     dev: false
@@ -15270,6 +15359,10 @@ packages:
     resolution: {integrity: sha512-3hN7NaskYvMDLQY55gnW3NQ+mesEAepTqlg+VEbj7zzqEMBVNhzcGYYeqFo/TlYz6eQiFcp1HcsCZO+nGgS8zg==}
     engines: {node: '>=6.9.0'}
 
+  /geo-route-generator@1.3.0:
+    resolution: {integrity: sha512-GJyV+PVtkDx9IuokLsSU2n1RI9dmGzHEQmHi+8giS1G7X+g7gZ1SIz7QAGCQJXNJaupK5r7QPJE6D9wnQ9xdmg==}
+    dev: false
+
   /get-caller-file@2.0.5:
     resolution: {integrity: sha512-DyFP3BM/3YHTQOCUL/w0OZHR0lpKeGrxotcHWcqNEdnltqFwXVfhEBQ94eIo34AfQpo0rGki4cyIiftY06h2Fg==}
     engines: {node: 6.* || 8.* || >= 10.*}
@@ -18331,6 +18424,10 @@ packages:
   /methods@1.1.2:
     resolution: {integrity: sha512-iclAHeNqNm68zFtnZ0e+1L2yUIdvzNoauKU4WBA3VvH/vPFieF7qfRlwUZU+DA9P9bPXIS90ulxoUoCH23sV2w==}
     engines: {node: '>= 0.6'}
+
+  /mgrs@2.0.0:
+    resolution: {integrity: sha512-dZcHEp/5onp3XN9A/ZSTVB46uhvZPaoepJa1col3K+ZnkrSeY++4AXXHUEplev5pk7BYYorXaZluHHn0GsZK1Q==}
+    dev: false
 
   /micro@9.3.5-canary.3:
     resolution: {integrity: sha512-viYIo9PefV+w9dvoIBh1gI44Mvx1BOk67B4BpC2QK77qdY0xZF0Q+vWLt/BII6cLkIc8rLmSIcJaB/OrXXKe1g==}
@@ -22357,6 +22454,7 @@ packages:
     resolution: {integrity: sha512-Qr3TosvguFt8ePWqsvRfrKyQXIiW+nGbYpy8XK24NQHE83caxWt+mIymTT19DGFbNWNLfEwsrkSmN64lVWB9ag==}
     dependencies:
       randombytes: 2.1.0
+    dev: true
 
   /serialize-javascript@6.0.2:
     resolution: {integrity: sha512-Saa1xPByTTq2gdeFZYLLo+RFE35NHZkAbqZeWNd3BpzppeVisAqpDjcp8dyf6uIvEqJRd46jemmyA4iFIeVk8g==}
@@ -25091,7 +25189,7 @@ packages:
     resolution: {integrity: sha512-Tjf+gBwOTuGyZwMz2Nk/B13Fuyeo0Q84W++bebbVsfr9iLkDSo6j6PST8tET9HYA58mlRXwlMGpyWO8ETJiXdQ==}
     engines: {node: '>=10.0.0'}
     dependencies:
-      '@apideck/better-ajv-errors': 0.3.6(ajv@8.6.3)
+      '@apideck/better-ajv-errors': 0.3.6(ajv@8.12.0)
       '@babel/core': 7.24.3
       '@babel/preset-env': 7.24.4(@babel/core@7.24.3)
       '@babel/runtime': 7.24.1
@@ -25099,7 +25197,7 @@ packages:
       '@rollup/plugin-node-resolve': 11.2.1(rollup@2.79.1)
       '@rollup/plugin-replace': 2.4.2(rollup@2.79.1)
       '@surma/rollup-plugin-off-main-thread': 2.2.3
-      ajv: 8.6.3
+      ajv: 8.12.0
       common-tags: 1.8.2
       fast-json-stable-stringify: 2.1.0
       fs-extra: 9.1.0
@@ -25153,7 +25251,6 @@ packages:
 
   /workbox-google-analytics@6.6.0:
     resolution: {integrity: sha512-p4DJa6OldXWd6M9zRl0H6vB9lkrmqYFkRQ2xEiNdBFp9U0LhsGO7hsBscVEyH9H2/3eZZt8c97NB2FD9U2NJ+Q==}
-    deprecated: It is not compatible with newer versions of GA starting with v4, as long as you are using GAv3 it should be ok, but the package is not longer being maintained
     dependencies:
       workbox-background-sync: 6.6.0
       workbox-core: 6.6.0
@@ -25390,6 +25487,39 @@ packages:
     dependencies:
       '@cloudflare/kv-asset-handler': 0.3.1
       '@cloudflare/workers-types': 4.20240402.0
+      '@esbuild-plugins/node-globals-polyfill': 0.2.3(esbuild@0.17.19)
+      '@esbuild-plugins/node-modules-polyfill': 0.2.2(esbuild@0.17.19)
+      blake3-wasm: 2.1.5
+      chokidar: 3.6.0
+      esbuild: 0.17.19
+      miniflare: 3.20240320.0
+      nanoid: 3.3.7
+      path-to-regexp: 6.2.1
+      resolve: 1.22.8
+      resolve.exports: 2.0.2
+      selfsigned: 2.4.1
+      source-map: 0.6.1
+      xxhash-wasm: 1.0.2
+    optionalDependencies:
+      fsevents: 2.3.3
+    transitivePeerDependencies:
+      - bufferutil
+      - supports-color
+      - utf-8-validate
+    dev: true
+
+  /wrangler@3.39.0(@cloudflare/workers-types@4.20240405.0):
+    resolution: {integrity: sha512-bcSuZSsC2FCLrdtpFqAu1vV993wG+z3zASbZlPP1iq1VhJyuWeRS3GlObtCrbgRTJIva1T+ZOLCno8kaMSc8Pg==}
+    engines: {node: '>=16.17.0'}
+    hasBin: true
+    peerDependencies:
+      '@cloudflare/workers-types': ^4.20240320.1
+    peerDependenciesMeta:
+      '@cloudflare/workers-types':
+        optional: true
+    dependencies:
+      '@cloudflare/kv-asset-handler': 0.3.1
+      '@cloudflare/workers-types': 4.20240405.0
       '@esbuild-plugins/node-globals-polyfill': 0.2.3(esbuild@0.17.19)
       '@esbuild-plugins/node-modules-polyfill': 0.2.2(esbuild@0.17.19)
       blake3-wasm: 2.1.5
