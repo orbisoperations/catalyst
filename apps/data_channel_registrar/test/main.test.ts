@@ -55,67 +55,37 @@ describe("Data Channel Registrar as Durable Object integration tests", () => {
         expect(foundDataChannel.status).toEqual(200);
     });
 
+    it('update data channel by id, then retrieve it and make sure changed', async () => {
+        const createdDataChannel = await giveMeADataChannel();
+        const useId: string  = await createdDataChannel.json();
+
+        const updateDataChannelById = new Request ("http://dcd/update", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                id: useId,
+                name: "Data Channel 2",
+                endpoint: "https://example.com/data2",
+                creatorOrganization: "Ghost Organization"
+            })
+        })
+        const alteredDataChannelId = await SELF.fetch( updateDataChannelById);
+        const getAlteredDataChannelID: string = await alteredDataChannelId.json();
+
+        const checkDataChannelById = new Request ("http://dcd/"+getAlteredDataChannelID, {
+            method: "GET",
+            headers: {"Content-Type": "application/json"}
+        })
+
+        const alteredDataChannel = await SELF.fetch(checkDataChannelById);
+        expect(await alteredDataChannel.text()).toEqual("{\"id\":\""+useId+"\",\"name\":\"Data Channel 2\",\"endpoint\":\"https://example.com/data2\",\"creatorOrganization\":\"Ghost Organization\"}");
+        expect(alteredDataChannel.status).toEqual(200);
+    });
+
 
 })
 
 
-//
-//   it('updates data channel by id', async () => {
-//     const data = await giveMeADataChannel();
-//     const sampleId = data.createDataChannel.id;
-//     const accessSwitchUpdate = true;
-//     const changedName = 'Help him, Help him, Help him';
-//     const inputDataChannel = { id: sampleId, name: changedName, accessSwitch: accessSwitchUpdate };
-//
-//     const mutation = gql`
-//       mutation UpdateDataChannel($input: DataChannelInput!) {
-//         updateDataChannel(input: $input) {
-//           accessSwitch
-//           name
-//           endpoint
-//           creatorOrganization
-//         }
-//       }
-//     `;
-//
-//     const myDataChannel: {
-//         updateDataChannel: {
-//           name: string;
-//           accessSwitch: boolean;
-//           endpoint: string;
-//           creatorOrganization: string;
-//         };
-//     } = await client.request(mutation, { input: inputDataChannel });
-//     expect(myDataChannel.updateDataChannel.name).toEqual(changedName);
-//     expect(myDataChannel.updateDataChannel.accessSwitch).toEqual(accessSwitchUpdate);
-//     expect(myDataChannel.updateDataChannel.endpoint).toEqual('https://example.com/data');
-//     expect(myDataChannel.updateDataChannel.creatorOrganization).toEqual('Fake Organization');
-//   });
-//
-//   it('requests data channels from the api', async () => {
-//     const query = gql`
-//       query {
-//         allDataChannels {
-//           id
-//           accessSwitch
-//           name
-//           endpoint
-//           creatorOrganization
-//         }
-//       }
-//     `;
-//
-//     const data: {
-//         allDataChannels: {
-//           id: string;
-//           accessSwitch: boolean;
-//           name: string;
-//           endpoint: string;
-//           creatorOrganization: string;
-//         }[];
-//     } = await client.request(query);
-//     expect(data.allDataChannels.length).toBeGreaterThan(0);
-//   });
 //
 //   it('deletes a data channel by id', async () => {
 //     const data = await giveMeADataChannel();
