@@ -17,19 +17,17 @@ export default {
       const encoder = new TextEncoder();
 
 
-
       const cotEvents = data.map(item => {
 
-        let cotEvent = `
-    <event version="2.0" uid="Marker" type="a-f-G-U-C" time="2024-06-15T19:22:35Z" start="2024-06-15T19:22:35Z" stale="2025-06-15T20:22:35Z" how="h-g-i-g-o">
-      <point mgrs="${item.mgrs}" hae="0" ce="9999999.0" le="9999999.0"/>
-      <detail>
-        <link uid="Platform" type="a-f-G-U-C" relation="p-p"/>
-        <__event>
-          <remarks>${item.name}</remarks>
-        </__event>
-      </detail>
-    </event>
+        let cotEvent = `<event version="2.0" uid="Marker" type="a-f-G-U-C" time="2024-06-15T19:22:35Z" start="2024-06-15T19:22:35Z" stale="2025-06-15T20:22:35Z" how="h-g-i-g-o">
+  <point mgrs="${item.mgrs}" hae="0" ce="9999999.0" le="9999999.0"/>
+  <detail>
+    <link uid="Platform" type="a-f-G-U-C" relation="p-p"/>
+    <__event>
+      <remarks>${item.name}</remarks>
+    </__event>
+  </detail>
+</event>
 `;
        return cotEvent;
       })
