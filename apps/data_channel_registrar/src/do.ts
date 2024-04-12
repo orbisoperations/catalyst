@@ -24,7 +24,7 @@ export  class Registrar {
             const {id} = c.req.param()
 
             const dataChannel: DataChannel | undefined = await this.state.storage.get(id);
-
+console.log(dataChannel, "THIS IS THE DATA CHANNEL");
             if (dataChannel) {
                 return c.json(dataChannel, 200)
             }
@@ -38,8 +38,6 @@ export  class Registrar {
             //     return c.json(`No data channel found: ${id}`, 500)
             // }
         })
-
-
 
         // this handles create and update for a data channel
         this.app.post("/create", async (c) => {
