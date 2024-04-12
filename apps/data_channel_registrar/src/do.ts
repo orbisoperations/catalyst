@@ -24,7 +24,7 @@ export  class Registrar {
             const {id} = c.req.param()
 
             const dataChannel: DataChannel | undefined = await this.state.storage.get(id);
-console.log(dataChannel, "THIS IS THE DATA CHANNEL");
+
             if (dataChannel) {
                 return c.json(dataChannel, 200)
             }
@@ -53,11 +53,15 @@ console.log(dataChannel, "THIS IS THE DATA CHANNEL");
             return c.json(datachannel.id, 200)
         })
 
-        // this.app.delete("/delete", async (c) => {
-        //     const {id} = c.req.param(id)
-        //     this.state.storage.delete(id)
-        //     return c.status(200)
-        // })
+        this.app.get("/delete/:id", async (c) => {
+            console.log( "MADE IT HERE>>>");
+            // const {id} = await c.req.param()
+            // const removeDataChannel = await c.req.json<DataChannel>()
+
+            // const success = this.state.storage.delete(id);
+            // console.log(await success, "What is your plan?");
+            // return c.json(success, 200)
+        })
 
 
 

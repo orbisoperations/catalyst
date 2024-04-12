@@ -82,23 +82,27 @@ describe("Data Channel Registrar as Durable Object integration tests", () => {
         expect(alteredDataChannel.status).toEqual(200);
     });
 
+    it('delete data channel by id, then cannot retrieve', async () => {
+        const shortLivedDataChannel = await giveMeADataChannel();
+        const removeId: string = await shortLivedDataChannel.json();
+        console.log(removeId, "MADE IT HERE>>>");
+        const deleteDataChannelById = new Request ("http://dcd/delete/"+removeId, {
+            method: "GET",
+            headers: {"Content-Type": "application/json"},
+        })
+        console.log(deleteDataChannelById, "MADE IT HERE>>>");
+        // const success = await SELF.fetch( deleteDataChannelById);
+
+        // expect(await success.json()).toEqual(true);
+        //
+        // const checkDataChannelById = new Request ("http://dcd/"+removeId, {
+        //     method: "GET",
+        //     headers: {"Content-Type": "application/json"}
+        // })
+        //
+        // const phantomDataChannel = await SELF.fetch(checkDataChannelById);
+        // expect(await phantomDataChannel.text()).toEqual("o data channel found: "+removeId);
+        // expect(phantomDataChannel.status).toEqual(500);
+    });
 
 })
-
-
-//
-//   it('deletes a data channel by id', async () => {
-//     const data = await giveMeADataChannel();
-//     const sampleId = data.createDataChannel.id;
-//     const mutation = gql`
-//       mutation DeleteDataChannel($id: String!) {
-//         deleteDataChannel(id: $id)
-//       }
-//     `;
-//
-//     const result: {
-//         deleteDataChannel: boolean;
-//     } = await client.request(mutation, { id: sampleId });
-//     expect(result.deleteDataChannel).toEqual(true);
-//   });
-// });
