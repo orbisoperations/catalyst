@@ -1,0 +1,31 @@
+schema: |-
+  // Exported from permissions system catalyst dev (orbisops_catalyst_dev) on Fri Apr 05 2024 10:16:05 GMT-0700 (Pacific Daylight Time)
+
+  definition orbisops_catalyst_dev/user {}
+
+  definition orbisops_catalyst_dev/organization {
+      relation admin: orbisops_catalyst_dev/user
+      relation data_custodian: orbisops_catalyst_dev/user
+      relation user: orbisops_catalyst_dev/user
+
+      relation partner_organization: orbisops_catalyst_dev/organization
+
+      relation data_channel: orbisops_catalyst_dev/data_channel
+
+      permission member = admin + data_custodian + user
+
+      permission role_assign = admin
+
+      permission data_channel_create = data_custodian
+      permission data_channel_update = data_channel_create
+      permission data_channel_delete = data_channel_create
+      permission data_channel_read = admin + data_custodian + user + partner_organization->data_channel_read
+
+
+  }
+
+  definition orbisops_catalyst_dev/data_channel {
+      relation organization: orbisops_catalyst_dev/organization
+
+      permission read = organization->data_channel_read
+  }
