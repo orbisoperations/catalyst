@@ -426,6 +426,9 @@ importers:
       hono:
         specifier: ^4.0.5
         version: 4.1.5
+      xml-js:
+        specifier: ^1.6.11
+        version: 1.6.11
     devDependencies:
       '@cloudflare/workers-types':
         specifier: ^4.20240208.0
@@ -25511,6 +25514,13 @@ packages:
     engines: {node: '>= 6.0'}
     dependencies:
       os-paths: 4.4.0
+    dev: false
+
+  /xml-js@1.6.11:
+    resolution: {integrity: sha512-7rVi2KMfwfWFl+GpPg6m80IVMWXLRjO+PxTq7V2CDhoGak0wzYzFgUY2m4XJ47OGdXd8eLE8EmwfAmdjw7lC1g==}
+    hasBin: true
+    dependencies:
+      sax: 1.2.4
     dev: false
 
   /xml-name-validator@3.0.0:

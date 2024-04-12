@@ -128,6 +128,7 @@ app.use("/graphql", async (ctx) => {
   );
 
   console.log({allDataChannels});
+
   const token =  ctx.req.header('Authorization');
   if(!token) console.error({tokenError: token, error: "invalid token before createYoga"})
   else console.error('token should be working', token)
