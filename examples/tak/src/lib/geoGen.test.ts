@@ -1,5 +1,5 @@
 import {describe, test, expect} from 'bun:test';
-import {convertLatLonToMGRS, generateLineCoordinates} from "./geoGen";
+import {generateLineCoordinates} from "./geoGen";
 
 describe("outputSetOfCoordinatesInALine", () => {
 	test("returns a set of coordinates for a valid route", () => {
@@ -63,17 +63,5 @@ describe("outputSetOfCoordinatesInALine", () => {
 		const result = generateLineCoordinates(startName, endName);
 
 		expect(result.length).toBe(1000);
-	});
-});
-
-describe("convertLatLonToMGRS", () => {
-	test("converts latitude and longitude to MGRS coordinates", () => {
-		const latitude = 40.7128;
-		const longitude = -74.006;
-
-		const result = convertLatLonToMGRS(latitude, longitude);
-
-		expect(typeof result).toBe("string");
-		expect(result).toMatch(/^[0-9A-Z]{5,}$/); // MGRS format: alphanumeric string of at least 5 characters
 	});
 });

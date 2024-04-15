@@ -1,5 +1,4 @@
 import { generateRoute } from "geo-route-generator";
-import * as mgrs from "mgrs";
 
 interface NamedPosition {
 	name: string;
@@ -59,8 +58,4 @@ export function generateLineCoordinates(
 		{ lat: finalPos.lat, lng: finalPos.lng },
 		steps
 	);
-}
-
-export function convertLatLonToMGRS(lat: number, lng: number) {
-	return mgrs.forward([lat, lng])
 }
