@@ -48,6 +48,5 @@ export default {
 		// You could store this result in KV, write to a D1 Database, or publish to a Queue.
 		// In this template, we'll just log the result:
 		console.log(`trigger fired at ${event.cron}: ${wasSuccessful}`);
-
 	},
 };
