@@ -1,5 +1,6 @@
 name = "data_channel_registrar"
-compatibility_date = "2023-12-01"
+compatibility_date = "2024-04-05"
+compatibility_flags = ["rpc"]
 main = "./src/worker.ts"
 node_compat = true
 workers_dev = false
@@ -10,7 +11,7 @@ port = 5050
 
 
 [durable_objects]
-bindings = [{name = "DATA_CHANNEL_REGISTRAR_DO", class_name = "Registrar"}]
+bindings = [{name = "DO", class_name = "Registrar"}]
 
 [[migrations]]
 tag = "v1" # Should be unique for each entry
