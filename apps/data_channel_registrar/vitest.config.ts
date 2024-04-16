@@ -16,12 +16,6 @@ logger.info(`Setting up vite tests for the Data Channel Registrar...`)
 export default defineWorkersProject(async () => {
 
   return {
-    customLogger: {
-      ...logger,
-      warnOnce(msg, opts) {
-        logger.warn(msg);
-      },
-    },
     optimizeDeps: {
       entries: ['@graphql-tools/executor-http'],
     },
@@ -36,8 +30,8 @@ export default defineWorkersProject(async () => {
           wrangler: {configPath: "./wrangler.toml"},
           entrypoint: "RegistrarWorker",
           miniflare: {
-            compatibilityDate: "2024-01-01",
-            compatibilityFlags: ["nodejs_compat", "rpc"],
+            compatibilityDate: "2024-04-05",
+            compatibilityFlags: ["nodejs_compat"],
           },
         },
       },
