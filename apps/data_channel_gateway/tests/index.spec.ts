@@ -1,11 +1,140 @@
 // test/index.spec.ts
-import {env, SELF} from "cloudflare:test";
-import {describe, it, expect, beforeAll} from "vitest";
+import { env, ProvidedEnv, SELF } from 'cloudflare:test';
+import {describe, it, expect, beforeAll, afterAll} from "vitest";
 import {Logger} from "tslog";
 import {gql} from "@apollo/client";
+import { DataChannel } from '@catalyst/schema_zod';
 
 const logger = new Logger();
 
+const setupRegistrar = async (env: ProvidedEnv) => {
+  console.log(env)
+  await env.DATA_CHANNEL_REGISTRAR.update('default', {
+    id: 'airplanes1',
+    name: 'airplanes',
+    endpoint: 'http://localhost:4001/graphql',
+    accessSwitch: true,
+    description: 'na',
+    creatorOrganization: 'Org1',
+  });
+  await env.DATA_CHANNEL_REGISTRAR.update("default", {
+    id: "cars1",
+    name: "cars",
+    endpoint: "http://localhost:4002/graphql",
+    accessSwitch: true,
+    description: "na",
+    creatorOrganization: "Org1"
+  })
+  await env.DATA_CHANNEL_REGISTRAR.update("default", {
+    id: "man1",
+    name: "manufacture",
+    endpoint: "http://localhost:4003/graphql",
+    accessSwitch: true,
+    description: "na",
+    creatorOrganization: "Org1"
+  })
+  console.log(await env.DATA_CHANNEL_REGISTRAR.list("default"))
+  expect((await env.DATA_CHANNEL_REGISTRAR.list("default"))).toHaveLength(3)
+}
+
+const teardownRegistrar = async (env: ProvidedEnv) => {
+  await env.DATA_CHANNEL_REGISTRAR.delete("default", "airplanes1")
+  await env.DATA_CHANNEL_REGISTRAR.delete("default", "cars1")
+  await env.DATA_CHANNEL_REGISTRAR.delete("default", "man1")
+  console.log(await env.DATA_CHANNEL_REGISTRAR.list("default"))
+  expect((await env.DATA_CHANNEL_REGISTRAR.list("default"))).toHaveLength(0)
+}
+
+// testing in module doesnt seem to work now but works fine through miniflare
+describe("registrar integration tests", () => {
+  it("create data channel", async () => {
+    const newDC = {
+      name: "testsvc",
+      endpoint: "https://example.com/graphql",
+      accessSwitch: true,
+      description: "",
+      creatorOrganization: ""
+    }
+
+    const savedDC = await env.DATA_CHANNEL_REGISTRAR.create("dotest", newDC)
+    expect(savedDC.id).toBeDefined()
+    expect(savedDC.name).toBe(newDC.name)
+    expect(savedDC.endpoint).toBe(newDC.endpoint)
+  })
+
+  it("create/get/delete data channel", async () => {
+    const emptyDC = await env.DATA_CHANNEL_REGISTRAR.get("dotest","nextval")
+    expect(emptyDC).toBeUndefined()
+    await env.DATA_CHANNEL_REGISTRAR.update("dotest", {
+      id: "nextval",
+      name: "nextval",
+      endpoint: "testend",
+      description: "desc",
+      creatorOrganization: "org",
+      accessSwitch: true
+    })
+
+    expect(await env.DATA_CHANNEL_REGISTRAR.get("dotest","nextval")).toBeDefined()
+
+    await env.DATA_CHANNEL_REGISTRAR.delete("dotest", "nextval")
+    expect(await env.DATA_CHANNEL_REGISTRAR.get("dotest","nextval")).toBeUndefined()
+  })
+
+  it("list data channels", async ()=> {
+    const newDC = {
+      name: "testsvc",
+      endpoint: "https://example.com/graphql",
+      accessSwitch: true,
+      description: "",
+      creatorOrganization: ""
+    }
+
+    const savedDC = await env.DATA_CHANNEL_REGISTRAR.create("dotest", newDC)
+    expect(await env.DATA_CHANNEL_REGISTRAR.list("dotest")).toHaveLength(1)
+    expect(await env.DATA_CHANNEL_REGISTRAR.list("dotest", [])).toHaveLength(0)
+    expect(await env.DATA_CHANNEL_REGISTRAR.list("dotest", ["testsvc"])).toHaveLength(1)
+    expect(await env.DATA_CHANNEL_REGISTRAR.list("dotest", ["testsvc-nope"])).toHaveLength(0)
+
+    await setupRegistrar(env)
+    expect(await env.DATA_CHANNEL_REGISTRAR.list("default")).toHaveLength(3)
+    await teardownRegistrar(env)
+    expect(await env.DATA_CHANNEL_REGISTRAR.list("default")).toHaveLength(0)
+  })
+
+  it("list filter data channels", async () => {
+    await setupRegistrar(env)
+    expect(await env.DATA_CHANNEL_REGISTRAR.list("default")).toHaveLength(3)
+    expect(await env.DATA_CHANNEL_REGISTRAR.list("default", ["cars"])).toHaveLength(1)
+    expect(await env.DATA_CHANNEL_REGISTRAR.list("default", ["cars", "airplanes"])).toHaveLength(2)
+    expect(await env.DATA_CHANNEL_REGISTRAR.list("default", ["cars", "airplanes", "manufacture"])).toHaveLength(3)
+
+    await env.DATA_CHANNEL_REGISTRAR.update("default", {
+      id: "man1",
+      name: "manufacture",
+      endpoint: "http://localhost:4003/graphql",
+      accessSwitch: false,
+      description: "na",
+      creatorOrganization: "Org1"
+    })
+
+    expect(await env.DATA_CHANNEL_REGISTRAR.list("default", ["cars"])).toHaveLength(1)
+    expect(await env.DATA_CHANNEL_REGISTRAR.list("default", ["cars", "airplanes"])).toHaveLength(2)
+    expect(await env.DATA_CHANNEL_REGISTRAR.list("default", ["cars", "airplanes", "manufacture"])).toHaveLength(2)
+
+    await env.DATA_CHANNEL_REGISTRAR.update("default", {
+      id: "cars1",
+      name: "cars",
+      endpoint: "http://localhost:4002/graphql",
+      accessSwitch: false,
+      description: "na",
+      creatorOrganization: "Org1"
+    })
+
+    expect(await env.DATA_CHANNEL_REGISTRAR.list("default", ["cars"])).toHaveLength(0)
+    expect(await env.DATA_CHANNEL_REGISTRAR.list("default", ["cars", "airplanes"])).toHaveLength(1)
+    expect(await env.DATA_CHANNEL_REGISTRAR.list("default", ["cars", "airplanes", "manufacture"])).toHaveLength(1)
+  })
+})
 describe("gateway integration tests", () => {
     const getToken = async (entity: string, claims?: string[], ctx?: any) => {
         const tokenQuery = `
@@ -66,9 +195,7 @@ describe("gateway integration tests", () => {
       }
     };
 
-
-
-  it("shows the data in the database before other tests", async () => {
+  /*it("shows the data in the database before other tests", async () => {
     const qResult = await env.APP_DB.prepare('SELECT name FROM sqlite_master WHERE type = "table";').run();
 
     const dataChannels = await env.APP_DB.prepare('SELECT * FROM DataChannel;').run();
@@ -77,7 +204,7 @@ describe("gateway integration tests", () => {
     console.log({dataChannels: dataChannels.results});
     // @ts-ignore
     console.log({qResult: qResult.results});
-  });
+  });*/
 
 
   it("returns gf'd for a invalid token", async () => {
@@ -150,8 +277,7 @@ describe("gateway integration tests", () => {
   });
 
   it("should get datachannel for airplanes", async (testContext) => {
-
-
+    await setupRegistrar(env)
     const token = await getToken("Org1", ["airplanes"], testContext);
     const getAvailableQueries = await SELF.fetch('https://data-channel-gateway/graphql', {
       method: 'POST',
@@ -183,13 +309,23 @@ describe("gateway integration tests", () => {
     expect(json.data["__type"].fields).toHaveLength(3);
     // @ts-ignore
     // expect(responsePayload.data["__type"].fields[0]['name']).toBe('health');
+    await teardownRegistrar(env)
   });
 
   it("should get data-channel for airplanes only when accessSwitch is 1", async (testContext) => {
-
-    const token = await getToken("Org1", ["airplanes", "cars"], testContext);
-
-
+    await setupRegistrar(env)
+    await env.DATA_CHANNEL_REGISTRAR.update("default", {
+      id: "airplanes1",
+      name: "airplanes",
+      endpoint: "http://localhost:4001/graphql",
+      accessSwitch: false,
+      description: "na",
+      creatorOrganization: "Org1"
+    })
+    // checks that airplanes is disabled
+    console.log(await env.DATA_CHANNEL_REGISTRAR.list("default"))
+    expect((await env.DATA_CHANNEL_REGISTRAR.list("default")).length).toBe(2)
+    const token = await getToken("Org1", ["airplanes"], testContext);
     const getAvailableQueries = await SELF.fetch('https://data-channel-gateway/graphql', {
       method: 'POST',
       headers: {
@@ -220,9 +356,10 @@ describe("gateway integration tests", () => {
     console.log({json})
 
     // Since we did not provide claims when the token was created, this will only return the health query in the list of fields
-    expect(json.data["__type"].fields).toHaveLength(3);
+    expect(json.data["__type"].fields).toHaveLength(1);
     // @ts-ignore
     // expect(responsePayload.data["__type"].fields[0]['name']).toBe('health');
+    await teardownRegistrar(env)
   });
 
 
