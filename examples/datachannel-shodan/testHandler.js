@@ -1,17 +1,26 @@
 const apiUrl = 'http://localhost:4008/graphql';
 
-async function testAircraftWithinDistance() {
+
+const location = {
+    latitude:  51.46888,
+    longitude: 0.45536
+};
+
+const searchRadiusNauticalMiles = 200;
+
+async function testCriticalAssetsWithinDistance() {
     const query = `
     query {
-      aircraftWithinDistance(lat: 51.46888, lon: 0.45536, dist: 200) {
-        icao
-        call
+      criticalAssetsWithinDistance(lat: ${location.latitude}, lon: ${location.longitude}, dist: ${searchRadiusNauticalMiles}) {
+        ip
+        port
+        service
+        location
+        org
+        product
+        version
         lat
         lon
-        altitude
-        trak
-        speed
-        type
       }
     }
   `;
@@ -29,9 +38,9 @@ async function testAircraftWithinDistance() {
     if (errors) {
         console.error('GraphQL Errors:', errors);
     } else {
-        console.log('Aircraft within distance:');
-        console.log(JSON.stringify(data.aircraftWithinDistance, null, 2));
+        console.log('Critical assets within distance:');
+        console.log(JSON.stringify(data.criticalAssetsWithinDistance, null, 2));
     }
 }
 
-testAircraftWithinDistance();
+testCriticalAssetsWithinDistance();

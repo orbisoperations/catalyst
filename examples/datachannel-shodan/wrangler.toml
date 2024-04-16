@@ -1,6 +1,6 @@
-name = "datachannel-adsb"
+name = "datachannel-shodan"
 compatibility_date = "2024-04-15"
 main = "index.ts"
 
 [dev]
-port = 4008
+port = 4009
