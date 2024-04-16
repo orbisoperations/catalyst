@@ -9,6 +9,7 @@ import { stitchingDirectives } from '@graphql-tools/stitching-directives';
 import {grabTokenInHeader} from "@catalyst/jwt"
 import { print } from 'graphql'
 import { AsyncExecutor } from '@graphql-tools/utils'
+import {Env} from "./env"
 // // https://github.com/ardatan/schema-stitching/blob/master/examples/stitching-directives-sdl/src/gateway.ts
 export async function fetchRemoteSchema(executor: Executor) {
   // throw new Error();
@@ -119,13 +120,8 @@ app.use("/graphql", async (ctx) => {
   const recievedClaims = ctx.get('claims');
 
   console.error({recievedClaims});
-  /* e.g
-    claims: [dc1, dc3]
-    data channels returned: [ dc1, dc3 ]
-   */
-  const allDataChannels = await client.allDataChannelsByClaims(
-      ctx.get('claims') ?? []
-  );
+  // default is used here get the default registrar
+  const allDataChannels = await ctx.env.DATA_CHANNEL_REGISTRAR.list("default", ctx.get('claims') ?? [])
 
   console.log({allDataChannels});
   const token =  ctx.req.header('Authorization');

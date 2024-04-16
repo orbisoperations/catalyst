@@ -12,7 +12,6 @@
     "skipLibCheck": true,
     "allowSyntheticDefaultImports": true,
     "types": [
-      "@cloudflare/workers-types",
       "@cloudflare/workers-types/experimental",
       "@cloudflare/vitest-pool-workers"
     ]
