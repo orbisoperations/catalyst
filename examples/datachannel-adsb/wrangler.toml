@@ -4,3 +4,7 @@ main = "index.ts"
 
 [dev]
 port = 4008
+
+services = [
+    { binding = "GATEWAY_API", service = "data_channel_gateway" }
+]

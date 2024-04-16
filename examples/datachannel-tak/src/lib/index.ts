@@ -4,13 +4,55 @@ import convert from "xml-js";
 
 export async function runTask(event: any, env: any, ctx: any) {
 
+	// Expect this to be set on this environment variable to simplify implementation
+	const token = env.CATALYST_API_TOKEN;
+
+	const query = `
+				query {
+					aircraftWithinDistance(lat: 51.46888, lon: 0.45536, dist: 200) {
+						icao
+						call
+						lat
+						lon
+						altitude
+						trak
+						speed
+						type
+      		}
+				}
+			`;
+
 		// TODO: Replace this exact function with a call to catalyst to retrieve data
-		function getTestData() {
-			return [...generateTestEntities(100)]
+		async function getCatalystData(gqlQuery: string) {
+
+			const queryResult: {
+			data: {
+				aircraftWithinDistance: {
+					icao: string;
+          call: string;
+          lat: number;
+          lon: number;
+          altitude: number;
+          trak: number;
+          speed: number;
+          type: string;
+				}
+			},
+			} = await env.GATEWAY_API.fetch('/graphql', {
+				headers: {
+					'authorization': `Bearer ${token}`,
+					'content-type': "application/json"
+				},
+				body: JSON.stringify({
+					query: gqlQuery
+				}),
+			});
+
+			return [queryResult.data.aircraftWithinDistance]
 		}
 
-		const sendStuffToTak = async () => {
-			const data = await getTestData();
+		const forward2Tak = async () => {
+			const data = await getCatalystData(query);
 
 			console.log({data});
 
@@ -25,8 +67,7 @@ export async function runTask(event: any, env: any, ctx: any) {
       stale.setSeconds(stale.getSeconds() + 5);
 
 
-			// TODO: Evaluate values in the CoT XML for something more accurate. ce="45.3" hae="1-42.6" 1e="99.5"
-			// Documentation: https://www.mitre.org/sites/default/files/pdf/09_4937.pdf
+			// Helpful CoTXML Documentation: https://www.mitre.org/sites/default/files/pdf/09_4937.pdf
 			const cotEvents = data.map(item => {
 				console.log(item);
 
@@ -42,7 +83,7 @@ export async function runTask(event: any, env: any, ctx: any) {
 					event: {
 						_attributes: {
 							version: '2.0',
-							uid: item.id,
+							uid: item.call,
 							type: 'a-f-G-U-C',
 							time: now,
 							start: now,
@@ -57,16 +98,6 @@ export async function runTask(event: any, env: any, ctx: any) {
 								le: '9999999'
 							}
 						},
-						// detail: {
-						// 	contact: {
-						// 		_attributes: {
-						// 			callsign: 'Unit1'
-						// 		}
-						// 	},
-						// 	remarks: {
-						// 		_text: 'Example CoT event'
-						// 	}
-						// }
 					}
 				};
 
@@ -75,7 +106,6 @@ export async function runTask(event: any, env: any, ctx: any) {
 
 				const xml = convert.js2xml(cotEvent, options);
 
-				console.log({xml});
 				return xml;
 			})
 
@@ -89,23 +119,7 @@ export async function runTask(event: any, env: any, ctx: any) {
 			await socket.close();
 		};
 
-		await ctx.waitUntil(sendStuffToTak());
+		await ctx.waitUntil(forward2Tak());
 }
 
-function generateTestEntities(n: number) {
-	const testEntities = [];
 
-	const track = generateLineCoordinates("New York City", "Houston", n)
-
-	console.log({track});
-
-	for (let i = 0; i < n; i++) {
-		testEntities.push({
-			id: i + 1,
-			name: `Entity ${i + 1}`,
-			lat: track[i].lat,
-			lon: track[i].lng,
-		});
-	}
-	return testEntities;
-}
