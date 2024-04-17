@@ -3,7 +3,7 @@ import { env, ProvidedEnv, SELF } from 'cloudflare:test';
 import {describe, it, expect, beforeAll, afterAll} from "vitest";
 import {Logger} from "tslog";
 import {gql} from "@apollo/client";
-import { DataChannel } from '@catalyst/schema_zod';
+import { CatalystRole, DataChannel } from '@catalyst/schema_zod';
 
 const logger = new Logger();
 
@@ -75,10 +75,40 @@ describe("authzed integration tests", () => {
   })
 
   describe("organization tests", () => {
-    it("add user", () => {})
-    it("add data custodian", () => {})
-    it("add admin", () => {})
-    it("read users, data custodians, and admins", () => {})
+    it("add user", async () => {
+      const userStatement = await env.AUTHX_AUTHZED_API.org("Org1").addUser("TestUser")
+      console.log(userStatement)
+      expect(userStatement.entity).toBe("orbisops_catalyst_dev/organization:Org1#user@orbisops_catalyst_dev/user:TestUser")
+      expect(userStatement.writtenAt).toBeDefined()
+    })
+    it("add data custodian", async () => {
+      const userStatement = await env.AUTHX_AUTHZED_API.org("Org1").addDataCustodian("TestUser")
+      console.log(userStatement)
+      expect(userStatement.entity).toBe("orbisops_catalyst_dev/organization:Org1#data_custodian@orbisops_catalyst_dev/user:TestUser")
+      expect(userStatement.writtenAt).toBeDefined()
+    })
+    it("add admin", async () => {
+      const userStatement = await env.AUTHX_AUTHZED_API.org("Org1").addAdmin("TestUser")
+      console.log(userStatement)
+      expect(userStatement.entity).toBe("orbisops_catalyst_dev/organization:Org1#admin@orbisops_catalyst_dev/user:TestUser")
+      expect(userStatement.writtenAt).toBeDefined()
+    })
+    it("read users, data custodians, and admins", async () => {
+      const users = await env.AUTHX_AUTHZED_API.org("Org1").listUsers("TestUser")
+      expect(users).toHaveLength(3)
+      expect(users).toContainEqual({ orgId: 'Org1', relation: 'user', subject: 'TestUser' })
+      expect(users).toContainEqual({ orgId: 'Org1', relation: 'data_custodian', subject: 'TestUser' })
+      expect(users).toContainEqual({ orgId: 'Org1', relation: 'admin', subject: 'TestUser' })
+
+      const data_custodians = await env.AUTHX_AUTHZED_API.org("Org1").listUsers("TestUser", [CatalystRole.enum.data_custodian])
+      expect(data_custodians).toHaveLength(1)
+
+      const admins = await env.AUTHX_AUTHZED_API.org("Org1").listUsers("TestUser", [CatalystRole.enum.admin])
+      expect(admins).toHaveLength(1)
+
+      const noUser = await env.AUTHX_AUTHZED_API.org("Org1").listUsers("notauser", [CatalystRole.enum.admin])
+      expect(noUser).toHaveLength(0)
+    })
 
     it("check membership", () =>{})
     it("check add role", () => {})

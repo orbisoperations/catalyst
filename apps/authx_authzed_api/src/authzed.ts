@@ -1,4 +1,12 @@
 //import { UserManager, GroupManager, OrganizationManager } from "./managers";
+import {
+	CatalystRole,
+	CatalystEntity,
+	UserId,
+	OrgId,
+	AuthzedRelationshipQueryResponse,
+	CatalystOrgRelationship,
+} from '@catalyst/schema_zod';
 
 export type AuthzedObject = {
 	objectType: String;
@@ -148,16 +156,15 @@ export class AuthzedClient {
 	async addUserToOrganization(
 		org: string,
 		user: string,
-		isOwner?: boolean
 	): Promise<WriteRelationshipResult> {
 		const body = this.utils.writeRelationship({
 			relationOwner: {
-				objectType: `organization`,
+				objectType: CatalystEntity.enum.organization,
 				objectId: org,
 			},
-			relation: isOwner ? 'owner' : 'member',
+			relation:  CatalystRole.enum.user,
 			relatedItem: {
-				objectType: `user`,
+				objectType: CatalystEntity.enum.user,
 				objectId: user,
 			},
 		});
@@ -166,6 +173,76 @@ export class AuthzedClient {
 		return data as WriteRelationshipResult;
 	}
 
+	async addDataCustodianToOrganization(
+		org: string,
+		user: string,
+	): Promise<WriteRelationshipResult> {
+		const body = this.utils.writeRelationship({
+			relationOwner: {
+				objectType: CatalystEntity.enum.organization,
+				objectId: org,
+			},
+			relation:  CatalystRole.enum.data_custodian,
+			relatedItem: {
+				objectType: CatalystEntity.enum.user,
+				objectId: user,
+			},
+		});
+		const { data } = await this.utils.fetcher('write', body);
+
+		return data as WriteRelationshipResult;
+	}
+
+	async addAdminToOrganization(
+		org: string,
+		user: string,
+	): Promise<WriteRelationshipResult> {
+		const body = this.utils.writeRelationship({
+			relationOwner: {
+				objectType: CatalystEntity.enum.organization,
+				objectId: org,
+			},
+			relation:  CatalystRole.enum.admin,
+			relatedItem: {
+				objectType: CatalystEntity.enum.user,
+				objectId: user,
+			},
+		});
+		const { data } = await this.utils.fetcher('write', body);
+
+		return data as WriteRelationshipResult;
+	}
+
+	async listUsersInOrganization(orgId: OrgId, args: {
+		userId?: UserId,
+		roles?: CatalystRole[]
+	}) {
+		const searchRoles = args.roles?? [
+			CatalystRole.enum.user,
+			CatalystRole.enum.data_custodian,
+			CatalystRole.enum.admin
+		]
+
+		let results : CatalystOrgRelationship[] = []
+
+		for (const role of searchRoles) {
+			const body = this.utils.readRelationship({
+				resourceType: CatalystEntity.enum.organization,
+				resourceId: orgId,
+				relation: role,
+				optionalSubjectFilter: args.userId ? {
+					subjectType: CatalystEntity.enum.user,
+					optionalSubjectId: args.userId
+				} : undefined
+			})
+
+			const { data } = await this.utils.fetcher('read', body);
+			const result = this.utils.parseOrganizationData(data)
+			results.push(...result)
+		}
+
+		return results
+	}
 	async getUserOrganizations(user: string): Promise<string[]> {
 		const body = this.utils.readRelationship({
 			resourceType: 'organization',
@@ -177,6 +254,11 @@ export class AuthzedClient {
 		});
 		const { data } = await this.utils.fetcher('read', body);
 		return this.utils.parseResourceIdsFromResults(data);
+	}
+
+	async isMemberofOrganization(orgId: OrgId, userId: UserId) {
+//zed permission check orbisops_catalyst_dev/organization:Org1  member orbisops_catalyst_dev/user:TestUser --insecure --token atoken
+		const { data } = await this.utils.fetcher('check')
 	}
 }
 
@@ -240,6 +322,21 @@ export class AuthzedUtils {
 		];
 	}
 
+	parseOrganizationData(
+		data: any
+	):  CatalystOrgRelationship[] {
+		const resp = this.parseNDJONFromAuthzed(data).map(val => {
+			return AuthzedRelationshipQueryResponse.parse(val)
+		})
+
+		return resp.map(result => {
+			return {
+				orgId: result.result.relationship.resource.objectId,
+					relation: result.result.relationship.relation,
+				subject: result.result.relationship.subject.object.objectId
+			}
+		})
+	}
 	parseObjectandSubjectFromResults(
 		data: any
 	):
@@ -357,6 +454,8 @@ export class AuthzedUtils {
 			},
 		};
 	}
+
+	checkPermission
 
 	// might belong somewhere else, but it gets used by multiple managers and is not exposed through the api
 	async getDataServiceParentOrg(): Promise<
