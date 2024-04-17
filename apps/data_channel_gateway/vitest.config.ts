@@ -8,11 +8,13 @@ const logger = new Logger({});
 
 const authxServicePath = path.resolve("../authx_token_api/dist/index.js");
 const dataChannelRegistrarPath = path.resolve("../data_channel_registrar/dist/worker.js");
+const authzedServicePath = path.resolve("../authx_authzed_api/dist/worker.js")
 
 logger.info('Using built services from other workspaces within @catalyst');
 logger.info({
   authxServicePath,
   dataChannelRegistrarPath,
+  authzedServicePath
 })
 
 // Setup files run outside isolated storage, and may be run multiple times.
@@ -99,6 +101,18 @@ export default defineWorkersProject(async () => {
                   "APP_DB": "catalyst"
                 },*/
               },
+              {
+                name: "authx_authzed_api",
+                modules: true,
+                modulesRoot: path.resolve("../authx_authzed_api"),
+                scriptPath: authzedServicePath, // Built by `global-setup.ts`
+                compatibilityDate: "2024-04-05",
+                compatibilityFlags: ["nodejs_compat"],
+                entrypoint: "AuthzedWorker",
+                /*d1Databases: {
+                  "APP_DB": "catalyst"
+                },*/
+              }
             ],
           },
         },

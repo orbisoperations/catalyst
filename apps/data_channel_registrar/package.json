@@ -8,7 +8,6 @@
     "test": "vitest --config vitest.config.ts --reporter basic",
     "dev": "pnpm wrangler dev",
     "deploy": "wrangler deploy --minify src/worker.ts",
-    "postinstall": "pnpm graphql-codegen && pnpm build",
     "fmt": "prettier --write .",
     "lint": "eslint . --ext .ts",
     "build": "wrangler build"
@@ -17,7 +16,6 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@catalyst/schema": "workspace:*",
     "@cloudflare/vitest-pool-workers": "^0.1.19",
     "@cloudflare/workers-types": "^4.20240405.0",
     "@graphql-codegen/cli": "^5.0.2",
