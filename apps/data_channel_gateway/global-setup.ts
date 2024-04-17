@@ -18,4 +18,11 @@ export default function () {
   });
   console.timeEnd(label);
 
+  label = "Compiled authx_authzed_api";
+  console.time(label);
+  childProcess.execSync("pnpm build", {
+    cwd: path.join("../authx_authzed_api"),
+  });
+  console.timeEnd(label);
+
 }
