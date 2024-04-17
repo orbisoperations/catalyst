@@ -2,7 +2,7 @@ declare module "cloudflare:test" {
   // Controls the type of `import("cloudflare:test").env`
 
   import RegistrarWorker from '@catalyst/data_channel_registrar/src/worker';
-  import AuthzedWorker from "@catalyst/authx_authzed_api";
+  import AuthzedWorker from "@catalyst/authx_authzed_api/src";
 
   interface ProvidedEnv extends Env {
     APP_MIGRATIONS: D1Migration[];

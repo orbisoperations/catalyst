@@ -8,7 +8,7 @@
   },
   "dependencies": {
     "@catalyst/data_channel_registrar": "workspace:*",
-    "@catalyst/authx_authzed_api": "workspace:*",
+    "@catalyst/authx_authzed_api": "workspace:^",
     "@catalyst/jwt": "workspace:*",
     "@catalyst/schema_zod": "workspace:*",
     "@graphql-tools/stitch": "^9.1.0",
