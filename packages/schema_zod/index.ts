@@ -21,3 +21,11 @@ export const DataChannel = z.object({
 })
 
 export type DataChannel = z.infer<typeof DataChannel>
+
+export const CatalystRole = z.enum([
+    "ADMIN",
+    "DATA_CUSTODIAN",
+    "USER"
+])
+
+export type CatalystRole = z.infer<typeof CatalystRole>

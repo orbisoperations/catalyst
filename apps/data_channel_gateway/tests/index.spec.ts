@@ -45,6 +45,49 @@ const teardownRegistrar = async (env: ProvidedEnv) => {
   expect((await env.DATA_CHANNEL_REGISTRAR.list("default"))).toHaveLength(0)
 }
 
+
+describe("authzed integration tests", () => {
+  it("get schema",  async () => {
+    console.log(env)
+    const schema = await env.AUTHX_AUTHZED_API.schema()
+    expect(schema).toBeDefined()
+    /*(schema.schemaText).toEqual(`definition orbisops_catalyst_dev/data_channel {
+      \trelation organization: orbisops_catalyst_dev/organization
+      \tpermission read = organization->data_channel_read
+      }
+      
+      definition orbisops_catalyst_dev/organization {
+      \trelation admin: orbisops_catalyst_dev/user
+      \trelation data_custodian: orbisops_catalyst_dev/user
+      \trelation user: orbisops_catalyst_dev/user
+      \trelation partner_organization: orbisops_catalyst_dev/organization
+      \trelation data_channel: orbisops_catalyst_dev/data_channel
+      \tpermission member = admin + data_custodian + user
+      \tpermission role_assign = admin
+      \tpermission data_channel_create = data_custodian
+      \tpermission data_channel_update = data_channel_create
+      \tpermission data_channel_delete = data_channel_create
+      \tpermission data_channel_read = admin + data_custodian + user + partner_organization->data_channel_read
+      }
+      
+      // Exported from permissions system catalyst dev (orbisops_catalyst_dev) on Fri Apr 05 2024 10:16:05 GMT-0700 (Pacific Daylight Time)
+      definition orbisops_catalyst_dev/user {}`)*/
+  })
+
+  describe("organization tests", () => {
+    it("add user", () => {})
+    it("add data custodian", () => {})
+    it("add admin", () => {})
+    it("read users, data custodians, and admins", () => {})
+
+    it("check membership", () =>{})
+    it("check add role", () => {})
+    it("check CUD of data channel", () => {})
+    it("check R of data channel", () => {})
+    it("delete users, data custodians, and admins", () => {})
+  })
+})
+
 // testing in module doesnt seem to work now but works fine through miniflare
 describe("registrar integration tests", () => {
   it("create data channel", async () => {
