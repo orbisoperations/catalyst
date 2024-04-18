@@ -355,6 +355,18 @@ importers:
         specifier: ^3.50.0
         version: 3.50.0(@cloudflare/workers-types@4.20240405.0)
 
+  apps/registrar2:
+    devDependencies:
+      '@cloudflare/vitest-pool-workers':
+        specifier: ^0.1.0
+        version: 0.1.19(@cloudflare/workers-types@4.20240405.0)(@vitest/runner@1.3.0)(@vitest/snapshot@1.3.0)(vitest@1.3.0)
+      vitest:
+        specifier: 1.3.0
+        version: 1.3.0(@types/node@20.11.16)
+      wrangler:
+        specifier: ^3.0.0
+        version: 3.50.0(@cloudflare/workers-types@4.20240405.0)
+
   examples/datachannel_airplanes:
     dependencies:
       '@catalyst/jwt':
@@ -9784,7 +9796,7 @@ packages:
       supports-color:
         optional: true
     dependencies:
-      ms: 2.1.1
+      ms: 2.1.3
     dev: false
 
   /debug@4.3.4(supports-color@8.1.1):
@@ -14860,7 +14872,6 @@ packages:
 
   /ms@2.1.3:
     resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
-    dev: true
 
   /multidict@1.0.7:
     resolution: {integrity: sha512-uQSnn7wCaYdLO0jsNOJ8ojxV8Zoz4zzR/SHlwP73yTwLoRUU82n50IDZEJyD5doxoHlyJ8bPfktiTcPJ8MmDEw==}
@@ -15019,7 +15030,7 @@ packages:
       '@sinonjs/fake-timers': 11.2.2
       '@sinonjs/text-encoding': 0.7.2
       just-extend: 6.2.0
-      path-to-regexp: 6.2.1
+      path-to-regexp: 6.2.2
     dev: true
 
   /no-case@3.0.4:
@@ -18472,7 +18483,7 @@ packages:
       json5: 2.2.3
       normalize-path: 3.0.0
       safe-stable-stringify: 2.4.3
-      typescript: 5.4.2
+      typescript: 5.4.5
     dev: true
 
   /ts-log@2.2.5:

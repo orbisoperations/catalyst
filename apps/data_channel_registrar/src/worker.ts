@@ -5,9 +5,15 @@ export type Env = Record<string, string> & {
   DO: DurableObjectNamespace<Registrar>;
 };
 
-export class RegistrarWorker extends WorkerEntrypoint<Env>{
-  async fetch(req: Request): Promise<Response>{
-    return new Response("ok")
+export default class RegistrarWorker extends WorkerEntrypoint<Env> {
+  async fetch(request: Request) {
+    return Response.json({
+      source: "RegistrarWorker",
+      method: request.method,
+      url: request.url,
+      ctxWaitUntil: typeof this.ctx.waitUntil,
+      envKeys: Object.keys(this.env).sort(),
+    });
   }
   create(doNamespace: string, dataChannel: DataChannel){
     const doId = this.env.DO.idFromName(doNamespace)
@@ -35,8 +41,6 @@ export class RegistrarWorker extends WorkerEntrypoint<Env>{
     return stub.delete(dataChannelID)
   }
 }
-
-export default RegistrarWorker
 
 export class Registrar extends  DurableObject {
   async list(){
