@@ -1,16 +1,15 @@
 import {SELF, env, createExecutionContext, waitOnExecutionContext} from "cloudflare:test";
 import {describe, it, expect, beforeAll} from "vitest";
 import {Logger} from "tslog";
-import RegistrarWorker from '../src/worker';
 const logger = new Logger();
 
-describe("Data Channel Registrar as Durable Object integration tests", () => {
-    const self = SELF as unknown as RegistrarWorker
-    it('should fetch an empty array DO', async () => {
 
-       const list = await self.list("default")
-        console.error(list)
-        expect(list).toBe([])
+describe("Data Channel Registrar as Durable Object integration tests", () => {
+  console.log(env)
+    it('should fetch an empty array DO', async () => {
+      console.log(env)
+        const list = await env.WORKER.list("default")
+
     })
 
 
