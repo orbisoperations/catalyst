@@ -32,11 +32,12 @@ export default defineWorkersProject(async () => {
         workers: {
           isolatedStorage: true,
           singleWorker: true,
-          main: "src/do.ts",
+          main: "src/worker.ts",
           wrangler: {configPath: "./wrangler.toml"},
+          entrypoint: "RegistrarWorker",
           miniflare: {
             compatibilityDate: "2024-01-01",
-            compatibilityFlags: ["nodejs_compat"],
+            compatibilityFlags: ["nodejs_compat", "rpc"],
           },
         },
       },
