@@ -1,18 +1,16 @@
 import {SELF, env, createExecutionContext, waitOnExecutionContext} from "cloudflare:test";
 import {describe, it, expect, beforeAll} from "vitest";
 import {Logger} from "tslog";
+import RegistrarWorker from '../src/worker';
 const logger = new Logger();
-import worker, {RegistrarWorker} from "../src/worker"
 
 describe("Data Channel Registrar as Durable Object integration tests", () => {
+    const self = SELF as unknown as RegistrarWorker
     it('should fetch an empty array DO', async () => {
-        const resp = await SELF.fetch("http://test", {})
-        const js = await resp.text()
-        expect(js).toBe("")
-        /*const listResponse = await SE
-        const responseText = await listResponse.text()
-        expect(listResponse.status).toEqual(200);
-        expect(responseText).toEqual("[]");*/
+
+       const list = await self.list("default")
+        console.error(list)
+        expect(list).toBe([])
     })
 
 
