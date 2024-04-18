@@ -3,7 +3,7 @@ import { env, ProvidedEnv, SELF } from 'cloudflare:test';
 import {describe, it, expect, beforeAll, afterAll} from "vitest";
 import {Logger} from "tslog";
 import {gql} from "@apollo/client";
-import { CatalystRole, DataChannel } from '@catalyst/schema_zod';
+import { Catalyst, DataChannel } from '@catalyst/schema_zod';
 
 const logger = new Logger();
 
@@ -111,20 +111,19 @@ describe("authzed integration tests", () => {
       expect(users).toContainEqual({ orgId: org, relation: 'data_custodian', subject: 'TestUser' })
       expect(users).toContainEqual({ orgId: org, relation: 'admin', subject: 'TestUser' })
 
-      const data_custodians = await env.AUTHX_AUTHZED_API.listUsersInOrg(org,"TestUser", [CatalystRole.enum.data_custodian])
+      const data_custodians = await env.AUTHX_AUTHZED_API.listUsersInOrg(org,"TestUser", [Catalyst.RoleEnum.enum.data_custodian])
       expect(data_custodians).toHaveLength(1)
 
-      const admins = await env.AUTHX_AUTHZED_API.listUsersInOrg(org,"TestUser", [CatalystRole.enum.admin])
+      const admins = await env.AUTHX_AUTHZED_API.listUsersInOrg(org,"TestUser", [Catalyst.RoleEnum.enum.admin])
       expect(admins).toHaveLength(1)
 
-      const noUser = await env.AUTHX_AUTHZED_API.listUsersInOrg(org,"notauser", [CatalystRole.enum.admin])
+      const noUser = await env.AUTHX_AUTHZED_API.listUsersInOrg(org,"notauser", [Catalyst.RoleEnum.enum.admin])
       expect(noUser).toHaveLength(0)
 
       await env.AUTHX_AUTHZED_API.deleteUserFromOrg(org,"TestUser")
       await env.AUTHX_AUTHZED_API.deleteDataCustodianFromOrg(org,"TestUser")
       await env.AUTHX_AUTHZED_API.deleteAdminFromOrg(org,"TestUser")
     })
-
     it("check membership", async () =>{
       const org = "Org5"
       await env.AUTHX_AUTHZED_API.addUserToOrg(org,"TestUser")
@@ -184,7 +183,6 @@ describe("authzed integration tests", () => {
       await env.AUTHX_AUTHZED_API.deleteDataCustodianFromOrg(org, "DataCustodian")
       await env.AUTHX_AUTHZED_API.deleteAdminFromOrg(org, "Admin")
     })
-
     it("delete users, data custodians, and admins", async () => {
       const org = "Org9"
       // add a normal user
@@ -211,7 +209,12 @@ describe("authzed integration tests", () => {
       console.log(await env.AUTHX_AUTHZED_API.listUsersInOrg(org))
       expect(await env.AUTHX_AUTHZED_API.listUsersInOrg(org)).toHaveLength(0)
     })
+    it("add, list, and delete data channels", () => {
+
+    })
+    it("add, list, and delete partners", () => {})
   })
+  //describe()
 })
 
 // testing in module doesnt seem to work now but works fine through miniflare

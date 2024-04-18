@@ -1,113 +1,16 @@
-//import { UserManager, GroupManager, OrganizationManager } from "./managers";
 import {
-	CatalystRole,
-	CatalystEntity,
-	UserId,
+	Catalyst,
+	Authzed,
 	OrgId,
+	UserId,
+	DataChannelId,
 	AuthzedRelationshipQueryResponse,
 	CatalystOrgRelationship,
-	CatalystOrgPermissions,
 	AuthzedPermissionCheckResponse,
 	AuthzedPermissionCheckResponseError,
 	AuthzedPermissionCheckResponseSuccess,
 	AuthzedPermissionCheck,
 } from '@catalyst/schema_zod';
-
-export type AuthzedObject = {
-	objectType: String;
-	objectId: String;
-};
-export type RelationShip = {
-	relationOwner: AuthzedObject;
-	relation: String;
-	relatedItem: AuthzedObject;
-};
-export type SearchInfo = {
-	resourceType: string;
-	resourceId?: string;
-	relation?: string;
-	optionalSubjectFilter?: {
-		subjectType: string;
-		optionalSubjectId: string;
-	};
-};
-export interface ReadRelationshipResult {
-	result: {
-		readAt: {
-			token: string;
-		};
-		relationship: {
-			resource: {
-				objectType: string;
-				objectId: string;
-			};
-			relation: string;
-			subject: {
-				object: {
-					objectType: string;
-					objectId: string;
-				};
-				optionalRelation: string;
-			};
-			optionalCaveat: {
-				caveatName: string;
-				context: string;
-			};
-		};
-	};
-	error: {
-		code: string;
-		message: string;
-	};
-}
-
-export interface WriteRelationshipResult {
-	writtenAt?: {
-		token: string;
-	};
-	code?: number;
-	message?: string;
-}
-
-export interface DeleteRelationshipResult {
-	deletedAt?: {
-		token: string;
-	};
-	code?: number;
-	message?: string;
-	deletionProgress?: string;
-}
-
-export type WriteRelationshipBody = {
-	updates: {
-		operation: 'OPERATION_TOUCH';
-		relationship: {
-			resource: {
-				objectType: String;
-				objectId: String;
-			};
-			relation: String;
-			subject: {
-				object: {
-					objectType: String;
-					objectId: String;
-				};
-			};
-		};
-	}[];
-};
-
-export type DeleteRelationshipBody = {
-	relationshipFilter: {
-		resourceType: String;
-		optionalResourceId: String;
-		optionalRelation: String;
-		optionalSubjectFilter: {
-			subjectType: String;
-			optionalSubjectId: String;
-		};
-	};
-};
 
 export type SearchInfoBody = {
 	consistency?: {
@@ -186,106 +89,112 @@ export class AuthzedClient {
 		return result
 	}
 
-	async addUserToOrganization(
-		org: string,
-		user: string,
-	): Promise<WriteRelationshipResult> {
+	async addDataChannelToOrganization(orgId: OrgId, dataChannelId: DataChannelId): Promise<Authzed.Relationships.WriteBody>{
 		const body = this.utils.writeRelationship({
 			relationOwner: {
-				objectType: CatalystEntity.enum.organization,
+				objectType: Catalyst.EntityEnum.enum.organization,
+				objectId: orgId,
+			},
+			relation:  Catalyst.Org.EntityEnum.enum.data_channel,
+			relatedItem: {
+				objectType: Catalyst.EntityEnum.enum.data_channel,
+				objectId: dataChannelId,
+			},
+		});
+		const { data } = await this.utils.fetcher('write', body);
+
+		return Authzed.Relationships.WriteBody.parse(data);
+	}
+	async listDataChannelsInOrganization() {}
+	async deleteDataChannelInOrganization() {}
+
+	async addUserToOrganization(org: string, user: string,): Promise<Authzed.Relationships.WriteResult> {
+		const body = this.utils.writeRelationship({
+			relationOwner: {
+				objectType: Catalyst.EntityEnum.enum.organization,
 				objectId: org,
 			},
-			relation:  CatalystRole.enum.user,
+			relation:  Catalyst.RoleEnum.enum.user,
 			relatedItem: {
-				objectType: CatalystEntity.enum.user,
+				objectType: Catalyst.EntityEnum.enum.user,
 				objectId: user,
 			},
 		});
 		const { data } = await this.utils.fetcher('write', body);
 
-		return data as WriteRelationshipResult;
+		return Authzed.Relationships.WriteResult.parse(data);
 	}
 
-	async removeUserRoleFromOrganization(
-		org: string,
-		user: string,
-		role: CatalystRole
-	): Promise<WriteRelationshipResult> {
+	async removeUserRoleFromOrganization (org: string, user: string, role: Catalyst.RoleEnum): Promise<Authzed.Relationships.DeletResult> {
 		const body = this.utils.deleteRelationship({
 			relationOwner: {
-				objectType: CatalystEntity.enum.organization,
+				objectType: Catalyst.EntityEnum.enum.organization,
 				objectId: org,
 			},
 			relation:  role,
 			relatedItem: {
-				objectType: CatalystEntity.enum.user,
+				objectType: Catalyst.EntityEnum.enum.user,
 				objectId: user,
 			},
 		});
 		const { data } = await this.utils.fetcher('delete', body);
 		console.log(data)
-		return data as WriteRelationshipResult;
+		return Authzed.Relationships.DeletResult.parse(data);
 	}
 
-	async addDataCustodianToOrganization(
-		org: string,
-		user: string,
-	): Promise<WriteRelationshipResult> {
+	async addDataCustodianToOrganization(org: string, user: string): Promise<Authzed.Relationships.WriteResult> {
 		const body = this.utils.writeRelationship({
 			relationOwner: {
-				objectType: CatalystEntity.enum.organization,
+				objectType: Catalyst.EntityEnum.enum.organization,
 				objectId: org,
 			},
-			relation:  CatalystRole.enum.data_custodian,
+			relation:  Catalyst.RoleEnum.enum.data_custodian,
 			relatedItem: {
-				objectType: CatalystEntity.enum.user,
+				objectType: Catalyst.EntityEnum.enum.user,
 				objectId: user,
 			},
 		});
 		const { data } = await this.utils.fetcher('write', body);
 
-		return data as WriteRelationshipResult;
+		return Authzed.Relationships.WriteResult.parse(data);
 	}
 
-	async addAdminToOrganization(
-		org: string,
-		user: string,
-	): Promise<WriteRelationshipResult> {
+	async addAdminToOrganization(org: string, user: string): Promise<Authzed.Relationships.WriteResult> {
 		const body = this.utils.writeRelationship({
 			relationOwner: {
-				objectType: CatalystEntity.enum.organization,
+				objectType: Catalyst.EntityEnum.enum.organization,
 				objectId: org,
 			},
-			relation:  CatalystRole.enum.admin,
+			relation:  Catalyst.RoleEnum.enum.admin,
 			relatedItem: {
-				objectType: CatalystEntity.enum.user,
+				objectType: Catalyst.EntityEnum.enum.user,
 				objectId: user,
 			},
 		});
 		const { data } = await this.utils.fetcher('write', body);
 
-		return data as WriteRelationshipResult;
+		return Authzed.Relationships.WriteResult.parse(data);
 	}
 
 	async listUsersInOrganization(orgId: OrgId, args: {
 		userId?: UserId,
-		roles?: CatalystRole[]
+		roles?: Catalyst.RoleEnum[]
 	}) {
 		const searchRoles = args.roles?? [
-			CatalystRole.enum.user,
-			CatalystRole.enum.data_custodian,
-			CatalystRole.enum.admin
+			Catalyst.RoleEnum.enum.user,
+			Catalyst.RoleEnum.enum.data_custodian,
+			Catalyst.RoleEnum.enum.admin
 		]
 
 		let results : CatalystOrgRelationship[] = []
 
 		for (const role of searchRoles) {
 			const body = this.utils.readRelationship({
-				resourceType: CatalystEntity.enum.organization,
+				resourceType: Catalyst.EntityEnum.enum.organization,
 				resourceId: orgId,
 				relation: role,
 				optionalSubjectFilter: args.userId ? {
-					subjectType: CatalystEntity.enum.user,
+					subjectType: Catalyst.EntityEnum.enum.user,
 					optionalSubjectId: args.userId
 				} : undefined
 			})
@@ -297,7 +206,7 @@ export class AuthzedClient {
 
 		return results
 	}
-	async getUserOrganizations(user: string): Promise<string[]> {
+	/*async getUserOrganizations(user: string): Promise<string[]> {
 		const body = this.utils.readRelationship({
 			resourceType: 'organization',
 			relation: 'member',
@@ -308,9 +217,9 @@ export class AuthzedClient {
 		});
 		const { data } = await this.utils.fetcher('read', body);
 		return this.utils.parseResourceIdsFromResults(data);
-	}
+	}*/
 
-	async organizationPermissionsCheck(orgId: OrgId, userId: UserId, permission: CatalystOrgPermissions) {
+	async organizationPermissionsCheck(orgId: OrgId, userId: UserId, permission: Catalyst.Org.PermissionsEnum) {
 		//zed permission check orbisops_catalyst_dev/organization:Org1  member orbisops_catalyst_dev/user:TestUser --insecure --token atoken
 		const req = this.utils.checkPermission(orgId, userId, permission)
 		const { data } = await this.utils.permissionFetcher(req)
@@ -348,8 +257,8 @@ export class AuthzedUtils {
 		action: 'read' | 'write' | 'delete',
 		data:
 			| SearchInfoBody
-			| WriteRelationshipBody
-			| DeleteRelationshipBody
+			| Authzed.Relationships.WriteBody
+			| Authzed.Relationships.DeleteBody
 	) {
 		return await fetch(`${this.endpoint}/v1/relationships/${action}`, {
 			method: 'POST',
@@ -398,14 +307,14 @@ export class AuthzedUtils {
 	parseResourceIdsFromResults(data: any): string[] | PromiseLike<string[]> {
 		if (typeof data === 'string') {
 			const objectIds = this.parseNDJONFromAuthzed(data).map((result) => {
-				return (result as ReadRelationshipResult).result.relationship
+				return Authzed.Relationships.ReadResult.parse(result).result.relationship
 					.resource.objectId;
 			});
 			return objectIds;
 		}
 
 		return [
-			(data as ReadRelationshipResult).result.relationship.resource
+			Authzed.Relationships.ReadResult.parse(data).result.relationship.resource
 				.objectId,
 		];
 	}
@@ -433,9 +342,9 @@ export class AuthzedUtils {
 		if (typeof data === 'string') {
 			const objectIds = this.parseNDJONFromAuthzed(data).map((result) => {
 				return {
-					subject: (result as ReadRelationshipResult).result.relationship
+					subject: Authzed.Relationships.ReadResult.parse(result).result.relationship
 						.subject.object.objectId,
-					resource: (result as ReadRelationshipResult).result.relationship
+					resource: Authzed.Relationships.ReadResult.parse(result).result.relationship
 						.resource.objectId,
 				};
 			});
@@ -444,9 +353,9 @@ export class AuthzedUtils {
 
 		return [
 			{
-				subject: (data as ReadRelationshipResult).result.relationship
+				subject: Authzed.Relationships.ReadResult.parse(data).result.relationship
 					.subject.object.objectId,
-				resource: (data as ReadRelationshipResult).result.relationship
+				resource: Authzed.Relationships.ReadResult.parse(data).result.relationship
 					.resource.objectId,
 			},
 		];
@@ -454,7 +363,7 @@ export class AuthzedUtils {
 	parseSubjectIdsFromResults(data: any): string[] | PromiseLike<string[]> {
 		if (typeof data === 'string') {
 			const objectIds = this.parseNDJONFromAuthzed(data).map((result) => {
-				return (result as ReadRelationshipResult).result.relationship
+				return Authzed.Relationships.ReadResult.parse(result).result.relationship
 					.subject.object.objectId;
 			});
 
@@ -462,7 +371,7 @@ export class AuthzedUtils {
 		}
 
 		return [
-			(data as ReadRelationshipResult).result.relationship.subject.object
+			Authzed.Relationships.ReadResult.parse(data).result.relationship.subject.object
 				.objectId,
 		];
 	}
@@ -471,15 +380,13 @@ export class AuthzedUtils {
 		let parsedData: any[] = [];
 		rawData.split('\n').forEach((row) => {
 			if (row.length > 0) {
-				parsedData.push(JSON.parse(row) as ReadRelationshipResult);
+				parsedData.push(JSON.parse(row) as Authzed.Relationships.ReadResult);
 			}
 		});
 
 		return parsedData;
 	}
-	deleteRelationship(
-		relationshipInfo: RelationShip
-	): DeleteRelationshipBody {
+	deleteRelationship(relationshipInfo: Authzed.Relationships.Relationship): Authzed.Relationships.DeleteBody {
 		return {
 			relationshipFilter: {
 				resourceType:
@@ -495,8 +402,8 @@ export class AuthzedUtils {
 		};
 	}
 	writeRelationship(
-		relationshipInfo: RelationShip
-	): WriteRelationshipBody {
+		relationshipInfo: Authzed.Relationships.Relationship
+	): Authzed.Relationships.WriteBody {
 		return {
 			updates: [
 				{
@@ -521,7 +428,7 @@ export class AuthzedUtils {
 		};
 	}
 
-	readRelationship(searchInfo: SearchInfo): SearchInfoBody {
+	readRelationship(searchInfo: Authzed.Relationships.SearchInfo): SearchInfoBody {
 		const { resourceType, resourceId, relation, optionalSubjectFilter } =
 			searchInfo;
 		const filter = optionalSubjectFilter
@@ -543,19 +450,19 @@ export class AuthzedUtils {
 		};
 	}
 
-	checkPermission(orgId: OrgId, userId: UserId, permission: CatalystOrgPermissions): PermissionCheckRequest {
+	checkPermission(orgId: OrgId, userId: UserId, permission: Catalyst.Org.PermissionsEnum): PermissionCheckRequest {
 		return {
 			consistency: {
 				minimizeLatency: true
 			},
 			resource: {
-				objectType: this.schemaPrefix + CatalystEntity.enum.organization,
+				objectType: this.schemaPrefix + Catalyst.EntityEnum.enum.organization,
 				objectId: orgId
 			},
 			permission: permission,
 			subject: {
 				object: {
-					objectType: this.schemaPrefix + CatalystEntity.enum.user,
+					objectType: this.schemaPrefix + Catalyst.EntityEnum.enum.user,
 					objectId: userId
 				}
 			}
@@ -563,7 +470,7 @@ export class AuthzedUtils {
 	}
 
 	// might belong somewhere else, but it gets used by multiple managers and is not exposed through the api
-	async getDataServiceParentOrg(): Promise<
+	/*async getDataServiceParentOrg(): Promise<
 		{ resource: string; subject: string }[]
 	> {
 		const body = this.readRelationship({
@@ -573,5 +480,5 @@ export class AuthzedUtils {
 		const { data } = await this.fetcher('read', body);
 		const orgs = this.parseObjectandSubjectFromResults(data);
 		return orgs;
-	}
+	}*/
 }
