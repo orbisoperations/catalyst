@@ -9,8 +9,9 @@ ip = "localhost"
 port = 5050
 
 
-[[d1_databases]]
-binding = "APP_DB" # available in your Worker on env.DB
-database_name = "catalyst"
-database_id = "87d35dfe-69b2-42cb-9aeb-45efacde0d14"
-migrations_dir = "node_modules/@catalyst/schema/dist/flat_migrations" # Customize this value to rename the `migrations` folder
+[durable_objects]
+bindings = [{name = "DATA_CHANNEL_REGISTRAR_DO", class_name = "Registrar"}]
+
+[[migrations]]
+tag = "v1" # Should be unique for each entry
+new_classes = ["Registrar"]

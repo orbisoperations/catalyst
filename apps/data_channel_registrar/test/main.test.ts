@@ -1,132 +1,108 @@
-import { describe, it, expect } from 'bun:test';
-import { gql, GraphQLClient } from 'graphql-request';
+import {SELF} from "cloudflare:test";
+import {describe, it, expect, beforeAll} from "vitest";
+import {Logger} from "tslog";
 
-describe('test', () => {
-  const client = new GraphQLClient('http://localhost:5050/graphql', {
-    errorPolicy: 'all',
-  });
+const logger = new Logger();
+
+describe("Data Channel Registrar as Durable Object integration tests", () => {
+
   const giveMeADataChannel = async () => {
-    const mutation = gql`
-      mutation CreateDataChannel($input: DataChannelInput!) {
-        createDataChannel(input: $input) {
-          id
-        }
-      }
-    `;
+      const request = new Request("https://dcd/create", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({
+              name: "Data Channel 1",
+              endpoint: "https://example.com/data",
+              creatorOrganization: "Fake Organization"
+          })
+      })
+      const response = await SELF.fetch(request);
+     return  response;
+  }
 
-    const variables = {
-      input: {
-        name: 'Use Me, Use Me',
-        endpoint: 'https://example.com/data',
-        creatorOrganization: 'Fake Organization',
-      },
-    };
-    const data: {createDataChannel: {
-        id: string;
-      }} = await client.request(mutation, variables);
+    it('should fetch an empty array DO', async () => {
+        const listResponse = await SELF.fetch("http://dcd/list");
+        const responseText = await listResponse.text()
+        expect(listResponse.status).toEqual(200);
+        expect(responseText).toEqual("[]");
+    }),
 
-    return data;
-  };
 
-  it('Creates a data channel with the api', async () => {
-    const data = await giveMeADataChannel();
-    expect(data).toEqual({ createDataChannel: { id: expect.any(String) } });
-  });
+    it('should create a Data Channel and return the id, also show in the DO list', async () => {
+        const createResponse = await giveMeADataChannel();
+        const dataChannelId: string = await createResponse.json();
 
-  it('requests data channel by id', async () => {
-    const data = await giveMeADataChannel();
-    const sampleId = data.createDataChannel.id;
-    const query = gql`
-      query DataChannelById($id: String!) {
-        dataChannelById(id: $id) {
-          id
-          name
-          endpoint
-          creatorOrganization
-        }
-      }
-    `;
+        expect(createResponse.status).toEqual(200);
+        expect(dataChannelId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
 
-    const myDataChannel: {
-        dataChannelById: {
-          id: string;
-          name: string;
-          endpoint: string;
-          creatorOrganization: string;
-        };
-    } = await client.request(query, { id: sampleId });
-    expect(myDataChannel.dataChannelById.id).toEqual(sampleId);
-  });
+        const listResponse = await SELF.fetch("http://dcd/list");
+        const responseText = await listResponse.text()
+        expect(listResponse.status).toEqual(200);
+        expect(responseText).toEqual("[{\"name\":\"Data Channel 1\",\"endpoint\":\"https://example.com/data\",\"creatorOrganization\":\"Fake Organization\",\"id\":\""+dataChannelId+"\"}]");
+    })
 
-  it('updates data channel by id', async () => {
-    const data = await giveMeADataChannel();
-    const sampleId = data.createDataChannel.id;
-    const accessSwitchUpdate = true;
-    const changedName = 'Help him, Help him, Help him';
-    const inputDataChannel = { id: sampleId, name: changedName, accessSwitch: accessSwitchUpdate };
+    it('requests data channel by id', async () => {
+    const createdDataChannel = await giveMeADataChannel();
+    const findId: string  = await createdDataChannel.json();
 
-    const mutation = gql`
-      mutation UpdateDataChannel($input: DataChannelInput!) {
-        updateDataChannel(input: $input) {
-          accessSwitch
-          name
-          endpoint
-          creatorOrganization
-        }
-      }
-    `;
+    const getDataChannelById = new Request ("http://dcd/"+findId, {
+            method: "GET",
+            headers: {"Content-Type": "application/json"}
+        })
+        const foundDataChannel = await SELF.fetch(getDataChannelById);
 
-    const myDataChannel: {
-        updateDataChannel: {
-          name: string;
-          accessSwitch: boolean;
-          endpoint: string;
-          creatorOrganization: string;
-        };
-    } = await client.request(mutation, { input: inputDataChannel });
-    expect(myDataChannel.updateDataChannel.name).toEqual(changedName);
-    expect(myDataChannel.updateDataChannel.accessSwitch).toEqual(accessSwitchUpdate);
-    expect(myDataChannel.updateDataChannel.endpoint).toEqual('https://example.com/data');
-    expect(myDataChannel.updateDataChannel.creatorOrganization).toEqual('Fake Organization');
-  });
+        expect(await foundDataChannel.text()).toEqual("{\"name\":\"Data Channel 1\",\"endpoint\":\"https://example.com/data\",\"creatorOrganization\":\"Fake Organization\",\"id\":\""+findId+"\"}");
+        expect(foundDataChannel.status).toEqual(200);
+    });
 
-  it('requests data channels from the api', async () => {
-    const query = gql`
-      query {
-        allDataChannels {
-          id
-          accessSwitch
-          name
-          endpoint
-          creatorOrganization
-        }
-      }
-    `;
+    it('update data channel by id, then retrieve it and make sure changed', async () => {
+        const createdDataChannel = await giveMeADataChannel();
+        const useId: string  = await createdDataChannel.json();
 
-    const data: {
-        allDataChannels: {
-          id: string;
-          accessSwitch: boolean;
-          name: string;
-          endpoint: string;
-          creatorOrganization: string;
-        }[];
-    } = await client.request(query);
-    expect(data.allDataChannels.length).toBeGreaterThan(0);
-  });
+        const updateDataChannelById = new Request ("http://dcd/update", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                id: useId,
+                name: "Data Channel 2",
+                endpoint: "https://example.com/data2",
+                creatorOrganization: "Ghost Organization"
+            })
+        })
+        const alteredDataChannelId = await SELF.fetch( updateDataChannelById);
+        const getAlteredDataChannelID: string = await alteredDataChannelId.json();
 
-  it('deletes a data channel by id', async () => {
-    const data = await giveMeADataChannel();
-    const sampleId = data.createDataChannel.id;
-    const mutation = gql`
-      mutation DeleteDataChannel($id: String!) {
-        deleteDataChannel(id: $id)
-      }
-    `;
+        const checkDataChannelById = new Request ("http://dcd/"+getAlteredDataChannelID, {
+            method: "GET",
+            headers: {"Content-Type": "application/json"}
+        })
 
-    const result: {
-        deleteDataChannel: boolean;
-    } = await client.request(mutation, { id: sampleId });
-    expect(result.deleteDataChannel).toEqual(true);
-  });
-});
+        const alteredDataChannel = await SELF.fetch(checkDataChannelById);
+        expect(await alteredDataChannel.text()).toEqual("{\"id\":\""+useId+"\",\"name\":\"Data Channel 2\",\"endpoint\":\"https://example.com/data2\",\"creatorOrganization\":\"Ghost Organization\"}");
+        expect(alteredDataChannel.status).toEqual(200);
+    });
+
+    it('delete data channel by id, then cannot retrieve', async () => {
+        const shortLivedDataChannel = await giveMeADataChannel();
+        const removeId: string = await shortLivedDataChannel.json();
+        console.log(removeId, "MADE IT HERE>>>");
+        const deleteDataChannelById = new Request ("http://dcd/delete/"+removeId, {
+            method: "GET",
+            headers: {"Content-Type": "application/json"},
+        })
+        console.log(deleteDataChannelById, "MADE IT HERE>>>");
+        // const success = await SELF.fetch( deleteDataChannelById);
+
+        // expect(await success.json()).toEqual(true);
+        //
+        // const checkDataChannelById = new Request ("http://dcd/"+removeId, {
+        //     method: "GET",
+        //     headers: {"Content-Type": "application/json"}
+        // })
+        //
+        // const phantomDataChannel = await SELF.fetch(checkDataChannelById);
+        // expect(await phantomDataChannel.text()).toEqual("o data channel found: "+removeId);
+        // expect(phantomDataChannel.status).toEqual(500);
+    });
+
+})

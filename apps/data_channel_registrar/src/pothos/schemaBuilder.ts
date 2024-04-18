@@ -1,15 +1,29 @@
 import SchemaBuilder from '@pothos/core';
-import { CatalystKyselySchema, CatalystKyselyTypes } from '@catalyst/schema';
-import { Kysely } from 'kysely';
-import { DataChannel } from '@catalyst/schema/prisma/generated/kysely';
+import { DurableObjectNamespace } from "@cloudflare/workers-types"
 
 const builder = new SchemaBuilder<{
   Context: {
-    db: Kysely<CatalystKyselySchema>;
-  };
+    env: {
+      DONamespace: DurableObjectNamespace
+    }
+  }
 }>({});
 
-const DataChannelObject = builder.objectRef<CatalystKyselyTypes.DataChannel>('DataChannel');
+function getDOStub(namespace: DurableObjectNamespace) {
+  const id = namespace.idFromName("default")
+  return namespace.get(id)
+}
+
+export type DataChannel = {
+  id: string;
+  accessSwitch: boolean;
+  name: string;
+  endpoint: string;
+  description: string | null;
+  creatorOrganization: string;
+}
+
+const DataChannelObject = builder.objectRef<DataChannel>('DataChannel');
 
 DataChannelObject.implement({
   fields: t => ({
@@ -68,9 +82,11 @@ builder.queryType({
             )
             .execute()) as [DataChannel];
 
-          console.log({ RESULT: result });
+          const channels = await resp.json<DataChannel[]>()
 
-          return result;
+          console.log({RESULT: channels});
+
+          return channels;
         }
         return [];
       },
@@ -81,14 +97,11 @@ builder.queryType({
       args: { id: t.arg.string() },
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       resolve: async (root, args, ctx, som) => {
-        return ctx.db
-          .selectFrom('DataChannel')
-          .selectAll()
-          .where('id', '=', args.id as string)
-          .executeTakeFirst() as Promise<DataChannel>;
+        // @ts-ignore
+        return ctx.env.state.storage.get<DataChannel>(args.id, {})
       },
     }),
-    dataChannelsByCreatorOrg: t.field({
+    /*dataChannelsByCreatorOrg: t.field({
       type: [DataChannelObject],
       nullable: true,
       args: { creatorOrganization: t.arg.string() },
@@ -100,7 +113,7 @@ builder.queryType({
           .where('creatorOrganization', '=', args.creatorOrganization as string)
           .execute() as Promise<[DataChannel]>;
       },
-    }),
+    }),*/
   }),
 });
 
@@ -111,7 +124,7 @@ builder.mutationType({
       args: {
         input: t.arg({ type: DataChannelInput, required: true }),
       },
-      resolve: (root, args, ctx) => {
+      resolve: async (root, args, ctx) => {
         const dataChannelRec: DataChannel = {
           id: crypto.randomUUID(),
           // @ts-ignore
@@ -121,15 +134,24 @@ builder.mutationType({
           endpoint: args.input.endpoint!,
           creatorOrganization: args.input.creatorOrganization!,
         };
-        return ctx.db
-          .insertInto('DataChannel')
-          .values(dataChannelRec)
-          .returningAll()
-          .executeTakeFirst() as Promise<DataChannel>;
+
+        console.log(ctx.env)
+        const doStub = getDOStub(ctx.env.DONamespace)
+        const resp = await doStub.fetch("https://registrar/create", {
+          method: "POST",
+          body: JSON.stringify(dataChannelRec),
+          headers: {
+          "Content-Type": "application/json"
+          }
+        })
+        console.log(resp)
+        const {id} = await resp.json<{id: string}>()
+        console.log(id)
+        return dataChannelRec
       },
     }),
 
-    deleteDataChannel: t.field({
+    /*deleteDataChannel: t.field({
       type: 'Boolean',
       args: {
         id: t.arg.string(),
@@ -181,7 +203,7 @@ builder.mutationType({
           .executeTakeFirst()) as DataChannel;
         return result;
       },
-    }),
+    }),*/
   }),
 });
 

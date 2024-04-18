@@ -1,29 +1,31 @@
 import {Hono} from 'hono';
-import {createYoga} from 'graphql-yoga';
-import schemaBuilder from './pothos/schemaBuilder';
-import {CatalystKyselySchema} from '@catalyst/schema';
-import {Kysely} from 'kysely';
-import {D1Dialect} from 'kysely-d1';
-
-const app = new Hono<{ Bindings: Env }>();
+import {DurableObjectNamespace} from "@cloudflare/workers-types"
+import {createYoga} from "graphql-yoga";
+import schemaBuilder from "./pothos/schemaBuilder.js";
+export {Registrar} from "./do.js"
 
 export type Env = Record<string, string> & {
-  APP_DB: D1Database;
+  DO: DurableObjectNamespace;
 };
+const app = new Hono<{ Bindings: Env }>();
 
-app.use('/graphql', async ctx => {
 
-  const db = new Kysely<CatalystKyselySchema>({
-    dialect: new D1Dialect({database: ctx.env.APP_DB}),
-  });
 
+app.use('/graphql', async (ctx) => {
   const yoga = createYoga({
     schema: schemaBuilder,
-    graphqlEndpoint: '/graphql',
+    context: async () => ({
+      env: {
+        DONamespace: ctx.env.DO
+      }
+    }),
+    graphqlEndpoint: '/graphql'
   });
 
-  return yoga(ctx.req.raw, {
-    db: db,
+  return  yoga.handle(ctx.req.raw, {
+    env: {
+      DONamespace: ctx.env.DO,
+    }
   });
 });
 
