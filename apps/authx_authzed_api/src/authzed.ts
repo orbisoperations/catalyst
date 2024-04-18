@@ -6,6 +6,8 @@ import {
 	OrgId,
 	AuthzedRelationshipQueryResponse,
 	CatalystOrgRelationship,
+	CatalystOrgPermissions,
+	AuthzedPermissionCheckResponse,
 } from '@catalyst/schema_zod';
 
 export type AuthzedObject = {
@@ -130,6 +132,34 @@ export type LookupBody = {
 		objectId: string;
 	};
 };
+
+export interface PermissionCheckRequest {
+	consistency: {
+		minimizeLatency: boolean
+		atLeastAsFresh?: {
+			token: string
+		},
+		atExactSnapshot?: {
+			token: string
+		},
+		fullyConsistent?: boolean
+	},
+	resource: {
+		objectType: string,
+		objectId: string
+	},
+	permission: string,
+	subject: {
+		object: {
+			objectType: string,
+			objectId: string
+		},
+		optionalRelation?: string
+	},
+	context?: {}
+}
+
+
 export class AuthzedClient {
 	utils: AuthzedUtils;
 	constructor(endpoint: string, token: string, schemaPrefix?: string) {
@@ -256,9 +286,13 @@ export class AuthzedClient {
 		return this.utils.parseResourceIdsFromResults(data);
 	}
 
-	async isMemberofOrganization(orgId: OrgId, userId: UserId) {
-//zed permission check orbisops_catalyst_dev/organization:Org1  member orbisops_catalyst_dev/user:TestUser --insecure --token atoken
-		const { data } = await this.utils.fetcher('check')
+	async organizationPermissionsCheck(orgId: OrgId, userId: UserId, permission: CatalystOrgPermissions) {
+		//zed permission check orbisops_catalyst_dev/organization:Org1  member orbisops_catalyst_dev/user:TestUser --insecure --token atoken
+		const req = this.utils.checkPermission(orgId, userId, permission)
+		const { data } = await this.utils.permissionFetcher(req)
+
+		const permissionResp = AuthzedPermissionCheckResponse.parse(data)
+		return permissionResp
 	}
 }
 
@@ -307,6 +341,31 @@ export class AuthzedUtils {
 			})
 			.then((res) => res);
 	}
+
+	async permissionFetcher(
+		data:
+			| PermissionCheckRequest
+	) {
+		return await fetch(`${this.endpoint}/v1/permissions/check`, {
+			method: 'POST',
+			headers: {
+				...this.headers(),
+			},
+			body: JSON.stringify(data),
+		})
+			.then(async (res) => {
+				try {
+					return {
+						data: await res.json(),
+						success: true,
+					};
+				} catch (e) {
+					return { data: {}, success: false };
+				}
+			})
+			.then((res) => res);
+	}
+
 	parseResourceIdsFromResults(data: any): string[] | PromiseLike<string[]> {
 		if (typeof data === 'string') {
 			const objectIds = this.parseNDJONFromAuthzed(data).map((result) => {
@@ -455,7 +514,24 @@ export class AuthzedUtils {
 		};
 	}
 
-	checkPermission
+	checkPermission(orgId: OrgId, userId: UserId, permission: CatalystOrgPermissions): PermissionCheckRequest {
+		return {
+			consistency: {
+				minimizeLatency: true
+			},
+			resource: {
+				objectType: this.schemaPrefix + CatalystEntity.enum.organization,
+				objectId: orgId
+			},
+			permission: permission,
+			subject: {
+				object: {
+					objectType: this.schemaPrefix + CatalystEntity.enum.user,
+					objectId: userId
+				}
+			}
+		}
+	}
 
 	// might belong somewhere else, but it gets used by multiple managers and is not exposed through the api
 	async getDataServiceParentOrg(): Promise<

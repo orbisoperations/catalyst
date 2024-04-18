@@ -110,7 +110,11 @@ describe("authzed integration tests", () => {
       expect(noUser).toHaveLength(0)
     })
 
-    it("check membership", () =>{})
+    it("check membership", async () =>{
+      const permsCheck = await env.AUTHX_AUTHZED_API.org("Org1").isMember("TestUser")
+      console.log(permsCheck)
+      expect(permsCheck).toBeDefined()
+    })
     it("check add role", () => {})
     it("check CUD of data channel", () => {})
     it("check R of data channel", () => {})

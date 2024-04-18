@@ -35,6 +35,18 @@ export const CatalystRole = z.enum([
 
 export type CatalystRole = z.infer<typeof CatalystRole>
 
+export const CatalystOrgPermissions = z.enum([
+    "member",
+    "role_assign",
+    "data_channel_create",
+    "data_channel_update",
+    "data_channel_delete",
+    "data_channel_read"
+
+])
+
+export type CatalystOrgPermissions = z.infer<typeof CatalystOrgPermissions>
+
 export const CatalystEntity = z.enum([
   "user",
   "organization"
@@ -75,3 +87,31 @@ export const AuthzedRelationshipQueryResponse = z.object({
       optionalCaveat: z.undefined()
   }),
 })
+
+export const AuthzedPermissionCheckResponseError = z.object({
+	code: z.number(),
+	message: z.string(),
+	details: z.object({
+        "@type" : z.string().optional(),
+		eiusmod93: z.object({}).optional(),
+		labore2e: z.object({}).optional(),
+		in_81a: z.object({}).optional()
+    }).array()
+})
+
+export const  AuthzedPermissionCheckResponseSuccess = z.object({
+	checkedAt: z.object({
+		token: z.string()
+	}),
+	permissionship: z.string(),
+	partialCaveatInfo: z.object({
+		missingRequiredContext: z.string().array()
+	}).optional()
+})
+
+export const AuthzedPermissionCheckResponse = z.union([
+    AuthzedPermissionCheckResponseSuccess,
+    AuthzedPermissionCheckResponseError
+])
+
+export type AuthzedPermissionCheckResponse = z.infer<typeof AuthzedPermissionCheckResponse>
