@@ -99,14 +99,18 @@ export const AuthzedPermissionCheckResponseError = z.object({
     }).array()
 })
 
+export const AuthzedPermissionCheck = z.enum([
+  "PERMISSIONSHIP_HAS_PERMISSION",
+"PERMISSIONSHIP_NO_PERMISSION"])
+export type AuthzedPermissionCheck = z.infer<typeof AuthzedPermissionCheck>
 export const  AuthzedPermissionCheckResponseSuccess = z.object({
 	checkedAt: z.object({
 		token: z.string()
 	}),
-	permissionship: z.string(),
+	permissionship: AuthzedPermissionCheck,
 	partialCaveatInfo: z.object({
 		missingRequiredContext: z.string().array()
-	}).optional()
+	}).nullish().optional()
 })
 
 export const AuthzedPermissionCheckResponse = z.union([
@@ -114,4 +118,6 @@ export const AuthzedPermissionCheckResponse = z.union([
     AuthzedPermissionCheckResponseError
 ])
 
+export type AuthzedPermissionCheckResponseSuccess = z.infer<typeof  AuthzedPermissionCheckResponseSuccess>
+export type AuthzedPermissionCheckResponseError = z.infer<typeof AuthzedPermissionCheckResponseError>
 export type AuthzedPermissionCheckResponse = z.infer<typeof AuthzedPermissionCheckResponse>

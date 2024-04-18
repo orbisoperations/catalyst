@@ -8,6 +8,9 @@ import {
 	CatalystOrgRelationship,
 	CatalystOrgPermissions,
 	AuthzedPermissionCheckResponse,
+	AuthzedPermissionCheckResponseError,
+	AuthzedPermissionCheckResponseSuccess,
+	AuthzedPermissionCheck,
 } from '@catalyst/schema_zod';
 
 export type AuthzedObject = {
@@ -203,6 +206,27 @@ export class AuthzedClient {
 		return data as WriteRelationshipResult;
 	}
 
+	async removeUserRoleFromOrganization(
+		org: string,
+		user: string,
+		role: CatalystRole
+	): Promise<WriteRelationshipResult> {
+		const body = this.utils.deleteRelationship({
+			relationOwner: {
+				objectType: CatalystEntity.enum.organization,
+				objectId: org,
+			},
+			relation:  role,
+			relatedItem: {
+				objectType: CatalystEntity.enum.user,
+				objectId: user,
+			},
+		});
+		const { data } = await this.utils.fetcher('delete', body);
+		console.log(data)
+		return data as WriteRelationshipResult;
+	}
+
 	async addDataCustodianToOrganization(
 		org: string,
 		user: string,
@@ -292,7 +316,12 @@ export class AuthzedClient {
 		const { data } = await this.utils.permissionFetcher(req)
 
 		const permissionResp = AuthzedPermissionCheckResponse.parse(data)
-		return permissionResp
+		if (typeof  permissionResp === typeof AuthzedPermissionCheckResponseSuccess) {
+			const success = AuthzedPermissionCheckResponseSuccess.parse(permissionResp)
+			return success.permissionship === AuthzedPermissionCheck.enum.PERMISSIONSHIP_HAS_PERMISSION
+		}
+		console.log(permissionResp)
+		return false
 	}
 }
 
