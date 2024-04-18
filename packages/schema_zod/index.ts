@@ -1,66 +1,9 @@
 import {z} from "zod"
+export  * as Authzed from "./authzed"
+export * as Catalyst from "./catalyst"
+export * from "./types"
 
-/*
-export type DataChannel = {
-    id: string;
-    accessSwitch: number | null;
-    name: string;
-    endpoint: string;
-    description: string | null;
-    creatorOrganization: string;
-};
-*/
-
-export const DataChannel = z.object({
-    id: z.string(),
-    accessSwitch: z.boolean(),
-    name: z.string(),
-    endpoint: z.string(),
-    description: z.string(),
-    creatorOrganization: z.string(),
-})
-
-export type DataChannel = z.infer<typeof DataChannel>
-
-export const OrgId = z.string()
-export type OrgId = z.infer<typeof OrgId>
-
-export const UserId = z.string()
-export type UserId = z.infer<typeof UserId>
-export const CatalystRole = z.enum([
-    "admin",
-    "data_custodian",
-    "user"
-])
-
-export type CatalystRole = z.infer<typeof CatalystRole>
-
-export const CatalystOrgPermissions = z.enum([
-    "member",
-    "role_assign",
-    "data_channel_create",
-    "data_channel_update",
-    "data_channel_delete",
-    "data_channel_read"
-
-])
-
-export type CatalystOrgPermissions = z.infer<typeof CatalystOrgPermissions>
-
-export const CatalystEntity = z.enum([
-  "user",
-  "organization"
-])
-
-export type CatalystEntity = z.infer<typeof CatalystEntity>
-
-export const CatalystOrgRelationship = z.object({
-    orgId: OrgId,
-    relation: CatalystRole,
-    subject: UserId
-})
-
-export type CatalystOrgRelationship = z.infer<typeof CatalystOrgRelationship>
+import * as Catalyst from "./catalyst"
 
 export const AuthzedRelationshipQueryResponse = z.object({
   result: z.object({
@@ -75,7 +18,7 @@ export const AuthzedRelationshipQueryResponse = z.object({
               objectType: z.string(),
               objectId: z.string()
           }),
-          relation: CatalystRole,
+          relation: Catalyst.RoleEnum,
           subject: z.object({
               object: z.object({
                   objectType: z.string(),
