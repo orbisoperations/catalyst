@@ -1,6 +1,6 @@
 import {AuthzedClient} from "./authzed"
 import { WorkerEntrypoint, RpcTarget } from "cloudflare:workers";
-import { CatalystRole, OrgId, UserId } from '@catalyst/schema_zod';
+import { CatalystOrgPermissions, CatalystRole, OrgId, UserId } from '@catalyst/schema_zod';
 
 type ENV = {
 	AUTHZED_ENDPOINT: string
@@ -48,7 +48,7 @@ export default class AuthzedWorker extends WorkerEntrypoint<ENV> {
 				return resp
 			},
 			isMember: async (userId: UserId) => {
-				const resp = await client.isMemberofOrganization
+				return client.organizationPermissionsCheck(orgId, userId, CatalystOrgPermissions.enum.member)
 			}
 		}
 	}
