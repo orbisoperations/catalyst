@@ -76,49 +76,141 @@ describe("authzed integration tests", () => {
 
   describe("organization tests", () => {
     it("add user", async () => {
-      const userStatement = await env.AUTHX_AUTHZED_API.org("Org1").addUser("TestUser")
+      const org = "Org1"
+      const userStatement = await env.AUTHX_AUTHZED_API.addUserToOrg(org,"TestUser")
       console.log(userStatement)
       expect(userStatement.entity).toBe("orbisops_catalyst_dev/organization:Org1#user@orbisops_catalyst_dev/user:TestUser")
       expect(userStatement.writtenAt).toBeDefined()
+      await env.AUTHX_AUTHZED_API.deleteUserFromOrg(org,"TestUser")
     })
     it("add data custodian", async () => {
-      const userStatement = await env.AUTHX_AUTHZED_API.org("Org1").addDataCustodian("TestUser")
+      const org = "Org2"
+      const userStatement = await env.AUTHX_AUTHZED_API.addDataCustodianToOrg(org,"TestUser")
       console.log(userStatement)
-      expect(userStatement.entity).toBe("orbisops_catalyst_dev/organization:Org1#data_custodian@orbisops_catalyst_dev/user:TestUser")
+      expect(userStatement.entity).toBe("orbisops_catalyst_dev/organization:Org2#data_custodian@orbisops_catalyst_dev/user:TestUser")
       expect(userStatement.writtenAt).toBeDefined()
+      await env.AUTHX_AUTHZED_API.deleteDataCustodianFromOrg(org,"TestUser")
     })
     it("add admin", async () => {
-      const userStatement = await env.AUTHX_AUTHZED_API.org("Org1").addAdmin("TestUser")
+      const org = "Org3"
+      const userStatement = await env.AUTHX_AUTHZED_API.addAdminToOrg(org,"TestUser")
       console.log(userStatement)
-      expect(userStatement.entity).toBe("orbisops_catalyst_dev/organization:Org1#admin@orbisops_catalyst_dev/user:TestUser")
+      expect(userStatement.entity).toBe("orbisops_catalyst_dev/organization:Org3#admin@orbisops_catalyst_dev/user:TestUser")
       expect(userStatement.writtenAt).toBeDefined()
+      await env.AUTHX_AUTHZED_API.deleteAdminFromOrg(org,"TestUser")
     })
     it("read users, data custodians, and admins", async () => {
-      const users = await env.AUTHX_AUTHZED_API.org("Org1").listUsers("TestUser")
+      const org = "Org4"
+      await env.AUTHX_AUTHZED_API.addUserToOrg(org,"TestUser")
+      await env.AUTHX_AUTHZED_API.addDataCustodianToOrg(org,"TestUser")
+      await env.AUTHX_AUTHZED_API.addAdminToOrg(org,"TestUser")
+      const users = await env.AUTHX_AUTHZED_API.listUsersInOrg(org,"TestUser")
+      console.log(users)
       expect(users).toHaveLength(3)
-      expect(users).toContainEqual({ orgId: 'Org1', relation: 'user', subject: 'TestUser' })
-      expect(users).toContainEqual({ orgId: 'Org1', relation: 'data_custodian', subject: 'TestUser' })
-      expect(users).toContainEqual({ orgId: 'Org1', relation: 'admin', subject: 'TestUser' })
+      expect(users).toContainEqual({ orgId: org, relation: 'user', subject: 'TestUser' })
+      expect(users).toContainEqual({ orgId: org, relation: 'data_custodian', subject: 'TestUser' })
+      expect(users).toContainEqual({ orgId: org, relation: 'admin', subject: 'TestUser' })
 
-      const data_custodians = await env.AUTHX_AUTHZED_API.org("Org1").listUsers("TestUser", [CatalystRole.enum.data_custodian])
+      const data_custodians = await env.AUTHX_AUTHZED_API.listUsersInOrg(org,"TestUser", [CatalystRole.enum.data_custodian])
       expect(data_custodians).toHaveLength(1)
 
-      const admins = await env.AUTHX_AUTHZED_API.org("Org1").listUsers("TestUser", [CatalystRole.enum.admin])
+      const admins = await env.AUTHX_AUTHZED_API.listUsersInOrg(org,"TestUser", [CatalystRole.enum.admin])
       expect(admins).toHaveLength(1)
 
-      const noUser = await env.AUTHX_AUTHZED_API.org("Org1").listUsers("notauser", [CatalystRole.enum.admin])
+      const noUser = await env.AUTHX_AUTHZED_API.listUsersInOrg(org,"notauser", [CatalystRole.enum.admin])
       expect(noUser).toHaveLength(0)
+
+      await env.AUTHX_AUTHZED_API.deleteUserFromOrg(org,"TestUser")
+      await env.AUTHX_AUTHZED_API.deleteDataCustodianFromOrg(org,"TestUser")
+      await env.AUTHX_AUTHZED_API.deleteAdminFromOrg(org,"TestUser")
     })
 
     it("check membership", async () =>{
-      const permsCheck = await env.AUTHX_AUTHZED_API.org("Org1").isMember("TestUser")
+      const org = "Org5"
+      await env.AUTHX_AUTHZED_API.addUserToOrg(org,"TestUser")
+      const permsCheck = await env.AUTHX_AUTHZED_API.addUserToOrg(org,"TestUser")
       console.log(permsCheck)
-      expect(permsCheck).toBeDefined()
+      expect(permsCheck).toBeTruthy()
+
+      expect(await env.AUTHX_AUTHZED_API.isMemberOfOrg(org,"NotAUser")).toBeFalsy()
+      await env.AUTHX_AUTHZED_API.deleteUserFromOrg(org,"TestUser")
     })
-    it("check add role", () => {})
-    it("check CUD of data channel", () => {})
-    it("check R of data channel", () => {})
-    it("delete users, data custodians, and admins", () => {})
+    it("check add role", async () => {
+      const org = "Org6"
+      // add a normal user
+      await env.AUTHX_AUTHZED_API.addUserToOrg(org,"User")
+      // add a normal admin
+      await env.AUTHX_AUTHZED_API.addAdminToOrg(org,"Admin")
+      // add a data_custodian
+      await env.AUTHX_AUTHZED_API.addDataCustodianToOrg(org,"DataCustodian")
+
+      expect(await env.AUTHX_AUTHZED_API.canAssignRolesInOrg(org,"User")).toBeFalsy()
+      expect(await env.AUTHX_AUTHZED_API.canAssignRolesInOrg(org,"DataCustodian")).toBeFalsy()
+      expect(await env.AUTHX_AUTHZED_API.canAssignRolesInOrg(org,"Admin")).toBeTruthy()
+
+      await env.AUTHX_AUTHZED_API.deleteUserFromOrg(org, "User")
+      await env.AUTHX_AUTHZED_API.deleteDataCustodianFromOrg(org, "DataCustodian")
+      await env.AUTHX_AUTHZED_API.deleteAdminFromOrg(org, "Admin")
+    })
+    it("check CUD of data channel", async () => {
+      const org = "Org7"
+      // add a normal user
+      await env.AUTHX_AUTHZED_API.addUserToOrg(org,"User")
+      // add a normal admin
+      await env.AUTHX_AUTHZED_API.addAdminToOrg(org,"Admin")
+      // add a data_custodian
+      await env.AUTHX_AUTHZED_API.addDataCustodianToOrg(org,"DataCustodian")
+
+      expect(await env.AUTHX_AUTHZED_API.canCreateUpdateDeleteDataChannel(org,"User")).toBeFalsy()
+      expect(await env.AUTHX_AUTHZED_API.canCreateUpdateDeleteDataChannel(org,"DataCustodian")).toBeTruthy()
+      expect(await env.AUTHX_AUTHZED_API.canCreateUpdateDeleteDataChannel(org,"Admin")).toBeFalsy()
+      await env.AUTHX_AUTHZED_API.deleteUserFromOrg(org, "User")
+      await env.AUTHX_AUTHZED_API.deleteDataCustodianFromOrg(org, "DataCustodian")
+      await env.AUTHX_AUTHZED_API.deleteAdminFromOrg(org, "Admin")
+    })
+    it("check R of data channel", async () => {
+      const org = "Org8"
+      // add a normal user
+      await env.AUTHX_AUTHZED_API.addUserToOrg(org,"User")
+      // add a normal admin
+      await env.AUTHX_AUTHZED_API.addUserToOrg(org,"Admin")
+      // add a data_custodian
+      await env.AUTHX_AUTHZED_API.addUserToOrg(org,"DataCustodian")
+
+      expect(await env.AUTHX_AUTHZED_API.canReadDataChannel(org,"User")).toBeTruthy()
+      expect(await env.AUTHX_AUTHZED_API.canReadDataChannel(org,"DataCustodian")).toBeTruthy()
+      expect(await env.AUTHX_AUTHZED_API.canReadDataChannel(org,"Admin")).toBeTruthy()
+      await env.AUTHX_AUTHZED_API.deleteUserFromOrg(org, "User")
+      await env.AUTHX_AUTHZED_API.deleteDataCustodianFromOrg(org, "DataCustodian")
+      await env.AUTHX_AUTHZED_API.deleteAdminFromOrg(org, "Admin")
+    })
+
+    it("delete users, data custodians, and admins", async () => {
+      const org = "Org9"
+      // add a normal user
+      await env.AUTHX_AUTHZED_API.addUserToOrg(org,"User")
+      // add a normal admin
+      await env.AUTHX_AUTHZED_API.addAdminToOrg(org,"Admin")
+      // add a data_custodian
+      await env.AUTHX_AUTHZED_API.addDataCustodianToOrg(org,"DataCustodian")
+      expect(await env.AUTHX_AUTHZED_API.listUsersInOrg(org)).toHaveLength(3)
+
+      const deleteUser = await env.AUTHX_AUTHZED_API.deleteUserFromOrg(org,"User")
+      expect(deleteUser).toBeTruthy()
+
+      const listUserDelete = await env.AUTHX_AUTHZED_API.listUsersInOrg(org)
+      console.log(listUserDelete)
+      expect(listUserDelete).toHaveLength(2)
+      expect(listUserDelete).not.toContain({ orgId: org, relation: 'user', subject: 'User' })
+
+      await env.AUTHX_AUTHZED_API.deleteDataCustodianFromOrg(org,"DataCustodian")
+      console.log(await env.AUTHX_AUTHZED_API.listUsersInOrg(org))
+      expect(await env.AUTHX_AUTHZED_API.listUsersInOrg(org)).toHaveLength(1)
+
+      await env.AUTHX_AUTHZED_API.deleteAdminFromOrg(org,"Admin")
+      console.log(await env.AUTHX_AUTHZED_API.listUsersInOrg(org))
+      expect(await env.AUTHX_AUTHZED_API.listUsersInOrg(org)).toHaveLength(0)
+    })
   })
 })
 
