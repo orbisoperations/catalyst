@@ -6,34 +6,33 @@ export type Env = Record<string, string> & {
 };
 
 export default class RegistrarWorker extends WorkerEntrypoint<Env> {
-  async fetch(request: Request) {
-    return Response.json({
-      source: "RegistrarWorker",
-      method: request.method,
-      url: request.url,
-      ctxWaitUntil: typeof this.ctx.waitUntil,
-      envKeys: Object.keys(this.env).sort(),
-    });
-  }
-  create(doNamespace: string, dataChannel: DataChannel){
+  async create(doNamespace: string, dataChannel: Omit<DataChannel, "id">): Promise<DataChannel> {
     const doId = this.env.DO.idFromName(doNamespace)
     const stub = this.env.DO.get(doId)
     return stub.create(dataChannel)
   }
-  update(doNamespace: string, dataChannel: DataChannel){
+  async update(doNamespace: string, dataChannel: DataChannel){
     const doId = this.env.DO.idFromName(doNamespace)
     const stub = this.env.DO.get(doId)
     return stub.update(dataChannel)
   }
-  get(doNamespace: string, dataChannelId: string){
+  async get(doNamespace: string, dataChannelId: string): Promise<DataChannel | undefined>{
     const doId = this.env.DO.idFromName(doNamespace)
     const stub = this.env.DO.get(doId)
     return stub.get(dataChannelId)
   }
-  list(doNamespace: string) {
+  async list(doNamespace: string, filterClaims?: string[]) {
     const doId = this.env.DO.idFromName(doNamespace)
     const stub = this.env.DO.get(doId)
-    return stub.list()
+    const list = await stub.list()
+    if (filterClaims) {
+      const filtered = list.filter(dc => {
+        return filterClaims.includes(dc.name)
+      })
+
+      return filtered
+    }
+    return list
   }
   delete(doNamespace: string, dataChannelID: string){
     const doId = this.env.DO.idFromName(doNamespace)
@@ -44,11 +43,15 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
 
 export class Registrar extends  DurableObject {
   async list(){
-    return this.ctx.storage.list<DataChannel>()
+    const allChannels = await this.ctx.storage.list<DataChannel>()
+    return Array.from(allChannels.entries())
+      .map(([, value]) => value)
+      .filter(dc => dc.accessSwitch)
   }
 
   async get(id: string) {
-    return await this.ctx.storage.get<DataChannel>(id)
+    const dc = await this.ctx.storage.get<DataChannel>(id)
+    return dc?.accessSwitch ? dc : undefined
       //TODO: implement claims
       // const {claims} = await c.req.json<{claims?: string[]}>()
 
@@ -64,11 +67,17 @@ export class Registrar extends  DurableObject {
 
   async create(dataChannel: Omit<DataChannel, "id">) {
     const newDC = Object.assign(dataChannel, {id: crypto.randomUUID()})
-    return this.ctx.storage.put(newDC.id, newDC)
+    await this.ctx.blockConcurrencyWhile(async () => {
+      await this.ctx.storage.put(newDC.id, newDC)
+    })
+    return newDC
   }
 
   async update (dataChannel: DataChannel) {
-    return this.ctx.storage.put(dataChannel.id, dataChannel)
+    await this.ctx.blockConcurrencyWhile(async () => {
+      await this.ctx.storage.put(dataChannel.id, dataChannel)
+    })
+    return dataChannel
   }
 
   async delete (id: string) {
