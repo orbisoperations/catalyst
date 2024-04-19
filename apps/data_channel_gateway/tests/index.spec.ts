@@ -633,6 +633,7 @@ describe("gateway integration tests", () => {
   });
 
   it("should get datachannel for airplanes", async (testContext) => {
+
     await setup(env)
     const token = await getToken("Org1", ["airplanes"], testContext);
     const getAvailableQueries = await SELF.fetch('https://data-channel-gateway/graphql', {
