@@ -4,12 +4,6 @@ import {
 	OrgId,
 	UserId,
 	DataChannelId,
-	AuthzedRelationshipQueryResponse,
-	CatalystOrgRelationship,
-	AuthzedPermissionCheckResponse,
-	AuthzedPermissionCheckResponseError,
-	AuthzedPermissionCheckResponseSuccess,
-	AuthzedPermissionCheck,
 } from '@catalyst/schema_zod';
 
 export type SearchInfoBody = {
@@ -89,7 +83,7 @@ export class AuthzedClient {
 		return result
 	}
 
-	async addDataChannelToOrganization(orgId: OrgId, dataChannelId: DataChannelId): Promise<Authzed.Relationships.WriteBody>{
+	async addDataChannelToOrganization(orgId: OrgId, dataChannelId: DataChannelId): Promise<Authzed.Relationships.WriteResult>{
 		const body = this.utils.writeRelationship({
 			relationOwner: {
 				objectType: Catalyst.EntityEnum.enum.organization,
@@ -103,12 +97,90 @@ export class AuthzedClient {
 		});
 		const { data } = await this.utils.fetcher('write', body);
 
-		return Authzed.Relationships.WriteBody.parse(data);
+		return Authzed.Relationships.WriteResult.parse(data);
 	}
-	async listDataChannelsInOrganization() {}
-	async deleteDataChannelInOrganization() {}
+	async listDataChannelsInOrganization(orgId: OrgId, dataChannelId?: DataChannelId) {
+		const body = this.utils.readRelationship({
+			resourceType: Catalyst.EntityEnum.enum.organization,
+			resourceId: orgId,
+			relation: Catalyst.Org.EntityEnum.enum.data_channel,
+			optionalSubjectFilter: dataChannelId ? {
+				subjectType: Catalyst.EntityEnum.enum.data_channel,
+				optionalSubjectId: dataChannelId
+			} : undefined
+		})
 
-	async addUserToOrganization(org: string, user: string,): Promise<Authzed.Relationships.WriteResult> {
+		const { data } = await this.utils.fetcher('read', body);
+		console.log(data)
+		return this.utils.parseOrganizationData(data)
+	}
+	async deleteDataChannelInOrganization(orgId: OrgId, partnerId: OrgId): Promise<Authzed.Relationships.DeletResult> {
+		const body = this.utils.deleteRelationship({
+			relationOwner: {
+				objectType: Catalyst.EntityEnum.enum.organization,
+				objectId: orgId,
+			},
+			relation:  Catalyst.Org.EntityEnum.enum.partner_organization,
+			relatedItem: {
+				objectType: Catalyst.EntityEnum.enum.organization,
+				objectId: partnerId,
+			},
+		});
+		const { data } = await this.utils.fetcher('delete', body);
+		console.log(data)
+		return Authzed.Relationships.DeletResult.parse(data);
+	}
+
+	async addParnterToOrganization(orgId: OrgId, partnerId: OrgId): Promise<Authzed.Relationships.WriteResult>{
+		const body = this.utils.writeRelationship({
+			relationOwner: {
+				objectType: Catalyst.EntityEnum.enum.organization,
+				objectId: orgId,
+			},
+			relation:  Catalyst.Org.EntityEnum.enum.partner_organization,
+			relatedItem: {
+				objectType: Catalyst.EntityEnum.enum.organization,
+				objectId: partnerId,
+			},
+		});
+		const { data } = await this.utils.fetcher('write', body);
+
+		return Authzed.Relationships.WriteResult.parse(data);
+	}
+	async listParntersInOrganization(orgId: OrgId, partnerId?: DataChannelId) {
+		const body = this.utils.readRelationship({
+			resourceType: Catalyst.EntityEnum.enum.organization,
+			resourceId: orgId,
+			relation: Catalyst.Org.EntityEnum.enum.partner_organization,
+			optionalSubjectFilter: partnerId ? {
+				subjectType: Catalyst.EntityEnum.enum.organization,
+				optionalSubjectId: partnerId
+			} : undefined
+		})
+
+		console.log(body)
+		const { data } = await this.utils.fetcher('read', body);
+		console.log(data)
+		return this.utils.parseOrganizationData(data)
+	}
+	async deleteParnterInOrganization(orgId: OrgId, dataChannelId: DataChannelId): Promise<Authzed.Relationships.DeletResult> {
+		const body = this.utils.deleteRelationship({
+			relationOwner: {
+				objectType: Catalyst.EntityEnum.enum.organization,
+				objectId: orgId,
+			},
+			relation:  Catalyst.Org.EntityEnum.enum.data_channel,
+			relatedItem: {
+				objectType: Catalyst.EntityEnum.enum.data_channel,
+				objectId: dataChannelId,
+			},
+		});
+		const { data } = await this.utils.fetcher('delete', body);
+		console.log(data)
+		return Authzed.Relationships.DeletResult.parse(data);
+	}
+
+	async addUserToOrganization(org: string, user: string): Promise<Authzed.Relationships.WriteResult> {
 		const body = this.utils.writeRelationship({
 			relationOwner: {
 				objectType: Catalyst.EntityEnum.enum.organization,
@@ -186,7 +258,7 @@ export class AuthzedClient {
 			Catalyst.RoleEnum.enum.admin
 		]
 
-		let results : CatalystOrgRelationship[] = []
+		let results : Catalyst.Relationship[] = []
 
 		for (const role of searchRoles) {
 			const body = this.utils.readRelationship({
@@ -221,13 +293,75 @@ export class AuthzedClient {
 
 	async organizationPermissionsCheck(orgId: OrgId, userId: UserId, permission: Catalyst.Org.PermissionsEnum) {
 		//zed permission check orbisops_catalyst_dev/organization:Org1  member orbisops_catalyst_dev/user:TestUser --insecure --token atoken
-		const req = this.utils.checkPermission(orgId, userId, permission)
+		const req = this.utils.checkOrgPermission(orgId, userId, permission)
 		const { data } = await this.utils.permissionFetcher(req)
 
-		const permissionResp = AuthzedPermissionCheckResponse.parse(data)
-		if (typeof  permissionResp === typeof AuthzedPermissionCheckResponseSuccess) {
-			const success = AuthzedPermissionCheckResponseSuccess.parse(permissionResp)
-			return success.permissionship === AuthzedPermissionCheck.enum.PERMISSIONSHIP_HAS_PERMISSION
+		const permissionResp = Authzed.Permissions.Response.parse(data)
+		if (typeof  permissionResp === typeof Authzed.Permissions.CheckReponse) {
+			const success = Authzed.Permissions.CheckReponse.parse(permissionResp)
+			return success.permissionship === Authzed.Permissions.PermissionValues.enum.PERMISSIONSHIP_HAS_PERMISSION
+		}
+		console.log(permissionResp)
+		return false
+	}
+
+	async addOrganizationToDataChannel(dataChannelId: DataChannelId, orgId: OrgId): Promise<Authzed.Relationships.WriteResult>{
+		const body = this.utils.writeRelationship({
+			relationOwner: {
+				objectType: Catalyst.EntityEnum.enum.data_channel,
+				objectId: dataChannelId,
+			},
+			relation:  Catalyst.DataChannel.EntityEnum.enum.organization,
+			relatedItem: {
+				objectType: Catalyst.EntityEnum.enum.organization,
+				objectId: orgId,
+			},
+		});
+		const { data } = await this.utils.fetcher('write', body);
+
+		return Authzed.Relationships.WriteResult.parse(data);
+	}
+	async listOrgsInDataChannels(dataChannelId: DataChannelId, orgId?: OrgId,) {
+		const body = this.utils.readRelationship({
+			resourceType: Catalyst.EntityEnum.enum.data_channel,
+			resourceId: dataChannelId,
+			relation: Catalyst.DataChannel.EntityEnum.enum.organization,
+			optionalSubjectFilter: orgId ? {
+				subjectType: Catalyst.EntityEnum.enum.organization,
+				optionalSubjectId: orgId
+			} : undefined
+		})
+
+		const { data } = await this.utils.fetcher('read', body);
+		console.log(data)
+		return this.utils.parseOrganizationData(data)
+	}
+	async deleteOrgInDataChannel( dataChannelId: DataChannelId, orgId: OrgId,): Promise<Authzed.Relationships.DeletResult> {
+		const body = this.utils.deleteRelationship({
+			relationOwner: {
+				objectType: Catalyst.EntityEnum.enum.data_channel,
+				objectId: dataChannelId,
+			},
+			relation:  Catalyst.DataChannel.EntityEnum.enum.organization,
+			relatedItem: {
+				objectType: Catalyst.EntityEnum.enum.organization,
+				objectId: orgId,
+			},
+		});
+		const { data } = await this.utils.fetcher('delete', body);
+		console.log(data)
+		return Authzed.Relationships.DeletResult.parse(data);
+	}
+
+	async dataChannelPermissionsCheck(dataChannelId: DataChannelId, userId: UserId, permission: Catalyst.DataChannel.PermissionsEnum) {
+		//zed permission check orbisops_catalyst_dev/organization:Org1  member orbisops_catalyst_dev/user:TestUser --insecure --token atoken
+		const req = this.utils.checkDataChannelPermission(dataChannelId, userId, permission)
+		const { data } = await this.utils.permissionFetcher(req)
+
+		const permissionResp = Authzed.Permissions.Response.parse(data)
+		if (typeof  permissionResp === typeof Authzed.Permissions.CheckReponse) {
+			const success = Authzed.Permissions.CheckReponse.parse(permissionResp)
+			return success.permissionship === Authzed.Permissions.PermissionValues.enum.PERMISSIONSHIP_HAS_PERMISSION
 		}
 		console.log(permissionResp)
 		return false
@@ -321,14 +455,14 @@ export class AuthzedUtils {
 
 	parseOrganizationData(
 		data: any
-	):  CatalystOrgRelationship[] {
+	):  Catalyst.Relationship[] {
 		const resp = this.parseNDJONFromAuthzed(data).map(val => {
-			return AuthzedRelationshipQueryResponse.parse(val)
+			return Authzed.Relationships.QueryResponse.parse(val)
 		})
 
 		return resp.map(result => {
 			return {
-				orgId: result.result.relationship.resource.objectId,
+				object: result.result.relationship.resource.objectId,
 					relation: result.result.relationship.relation,
 				subject: result.result.relationship.subject.object.objectId
 			}
@@ -450,7 +584,7 @@ export class AuthzedUtils {
 		};
 	}
 
-	checkPermission(orgId: OrgId, userId: UserId, permission: Catalyst.Org.PermissionsEnum): PermissionCheckRequest {
+	checkOrgPermission(orgId: OrgId, userId: UserId, permission: Catalyst.Org.PermissionsEnum): PermissionCheckRequest {
 		return {
 			consistency: {
 				minimizeLatency: true
@@ -469,6 +603,24 @@ export class AuthzedUtils {
 		}
 	}
 
+	checkDataChannelPermission(dataChannelId: DataChannelId, userId: UserId, permission: Catalyst.DataChannel.PermissionsEnum): PermissionCheckRequest {
+		return {
+			consistency: {
+				minimizeLatency: true
+			},
+			resource: {
+				objectType: this.schemaPrefix + Catalyst.EntityEnum.enum.data_channel,
+				objectId: dataChannelId
+			},
+			permission: permission,
+			subject: {
+				object: {
+					objectType: this.schemaPrefix + Catalyst.EntityEnum.enum.user,
+					objectId: userId
+				}
+			}
+		}
+	}
 	// might belong somewhere else, but it gets used by multiple managers and is not exposed through the api
 	/*async getDataServiceParentOrg(): Promise<
 		{ resource: string; subject: string }[]

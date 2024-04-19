@@ -209,12 +209,105 @@ describe("authzed integration tests", () => {
       console.log(await env.AUTHX_AUTHZED_API.listUsersInOrg(org))
       expect(await env.AUTHX_AUTHZED_API.listUsersInOrg(org)).toHaveLength(0)
     })
-    it("add, list, and delete data channels", () => {
+    it("add, list, and delete data channels", async () => {
+      const resp = await env.AUTHX_AUTHZED_API.addDataChannelToOrg("Org1", "DC1")
+      expect(resp).toBeDefined()
+      expect(resp.writtenAt!.token).toBeDefined()
+      console.log(resp)
 
+      const list = await env.AUTHX_AUTHZED_API.listDataChannelsInOrg("Org1")
+      expect(list).toBeDefined()
+      console.log(list)
+      expect(list).toHaveLength(1)
+
+      const deleteResp = await env.AUTHX_AUTHZED_API.deleteDataChannelInOrg("Org1", "DC1")
+      expect(deleteResp).toBeDefined()
+
+      expect(await env.AUTHX_AUTHZED_API.listDataChannelsInOrg("Org1")).toHaveLength(0)
     })
-    it("add, list, and delete partners", () => {})
+    it("add, list, and delete partners", async () => {
+      const resp = await env.AUTHX_AUTHZED_API.addPartnerToOrg("Org1", "Org2")
+      console.log(resp)
+      expect(resp).toBeDefined()
+      expect(resp.writtenAt!.token).toBeDefined()
+
+      expect(await env.AUTHX_AUTHZED_API.listPartnersInOrg("Org1")).toHaveLength(1)
+
+      const deleteResp = await env.AUTHX_AUTHZED_API.deletePartnerInOrg("Org1", "Org2")
+      expect(deleteResp).toBeDefined()
+
+      expect(await env.AUTHX_AUTHZED_API.listPartnersInOrg("Org1")).toHaveLength(0)
+    })
   })
-  //describe()
+  describe("data channel tests", () => {
+    it("add organization", async () => {
+      const resp = await env.AUTHX_AUTHZED_API.addOrgToDataChannel("DC1", "Org1")
+      console.log(resp)
+      expect(resp).toBeDefined()
+
+      expect(await env.AUTHX_AUTHZED_API.listOrgsInDataChannel("DC1")).toHaveLength(1)
+
+      const deleteResp = await env.AUTHX_AUTHZED_API.deleteOrgInDataChannel("DC1", "Org1")
+      expect(deleteResp).toBeDefined()
+
+      expect(await env.AUTHX_AUTHZED_API.listOrgsInDataChannel("DC1")).toHaveLength(0)
+    })
+
+    it("check user in parent org can read", async () => {
+      await env.AUTHX_AUTHZED_API.addOrgToDataChannel("DC1", "Org1")
+      await env.AUTHX_AUTHZED_API.addUserToOrg("Org1", "User1")
+      expect(await env.AUTHX_AUTHZED_API.listOrgsInDataChannel("DC1")).toHaveLength(1)
+      expect(await env.AUTHX_AUTHZED_API.listUsersInOrg("Org1","User1")).toHaveLength(1)
+
+      const perms = await env.AUTHX_AUTHZED_API.canReadFromDataChannel("DC1", "User1")
+      expect(perms).toBeDefined()
+      expect(perms).toBeTruthy()
+
+      await env.AUTHX_AUTHZED_API.deleteOrgInDataChannel("DC1", "Org1")
+      await env.AUTHX_AUTHZED_API.deleteUserFromOrg("Org1", "User1")
+      expect(await env.AUTHX_AUTHZED_API.listOrgsInDataChannel("DC1")).toHaveLength(0)
+      expect(await env.AUTHX_AUTHZED_API.listUsersInOrg("Org1", "User1"))
+    })
+  })
+
+  describe("multi functional tests", () => {
+    describe("share data channel between orgs", async () => {
+      await env.AUTHX_AUTHZED_API.addOrgToDataChannel("DC1", "Org1")
+      await env.AUTHX_AUTHZED_API.addOrgToDataChannel("DC2", "Org2")
+      await env.AUTHX_AUTHZED_API.addUserToOrg("Org1", "User1")
+      await env.AUTHX_AUTHZED_API.addUserToOrg("Org2", "User2")
+      it("orgs can read own data channels", async () => {
+        expect(await env.AUTHX_AUTHZED_API.canReadFromDataChannel("DC1", "User1")).toBeTruthy()
+        expect(await env.AUTHX_AUTHZED_API.canReadFromDataChannel("DC2", "User2")).toBeTruthy()
+      })
+      it("cannot read other org data channel without share", async () => {
+        expect(await env.AUTHX_AUTHZED_API.canReadFromDataChannel("DC1", "User2")).toBeFalsy()
+        expect(await env.AUTHX_AUTHZED_API.canReadFromDataChannel("DC2", "User1")).toBeFalsy()
+      })
+      it("org1 shares with org2", async () => {
+        await env.AUTHX_AUTHZED_API.addPartnerToOrg("Org1", "Org2")
+        expect(await env.AUTHX_AUTHZED_API.canReadFromDataChannel("DC1", "User1")).toBeTruthy()
+        expect(await env.AUTHX_AUTHZED_API.canReadFromDataChannel("DC2", "User1")).toBeFalsy()
+        expect(await env.AUTHX_AUTHZED_API.canReadFromDataChannel("DC1", "User2")).toBeTruthy()
+
+        await env.AUTHX_AUTHZED_API.deletePartnerInOrg("Org1", "Org2")
+      })
+
+      it("org 2 shares with org1", async () => {
+        // this adds org1 as a partner to org2
+        await env.AUTHX_AUTHZED_API.addPartnerToOrg("Org2", "Org1")
+        // since user 2 is in org 2 it can read dc2
+        expect(await env.AUTHX_AUTHZED_API.canReadFromDataChannel("DC2", "User2")).toBeTruthy()
+        // dc1 belongs to org1, so user2 cannot access because org1 is not a partner with org2
+        expect(await env.AUTHX_AUTHZED_API.canReadFromDataChannel("DC1", "User2")).toBeFalsy()
+        // dc2 belongs to org2, so user1 can access dc2 because the chain of permissions go
+        // dc1:read -> org2:parnter -> org1:datachannel_read -> user1
+        expect(await env.AUTHX_AUTHZED_API.canReadFromDataChannel("DC2", "User1")).toBeTruthy()
+
+        await env.AUTHX_AUTHZED_API.deletePartnerInOrg("Org1", "Org2")
+      })
+    })
+  })
 })
 
 // testing in module doesnt seem to work now but works fine through miniflare

@@ -6,6 +6,7 @@ export * from "./read"
 export * from "./write"
 export * from "./delete"
 export * from "./search"
+export * from "./response"
 
 export const Relationship = z.object({
   relationOwner: AuthzedObject,
