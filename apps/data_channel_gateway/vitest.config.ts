@@ -48,6 +48,7 @@ export default defineWorkersProject(async () => {
     logLevel: 'info',
     clearScreen: false,
     test: {
+      maxConcurrency: 1,
       globalSetup: './global-setup.ts',
       //setupFiles: ["./tests/apply-migrations.ts"],
       poolOptions: {
