@@ -120,10 +120,7 @@ app.use("/graphql", async (ctx) => {
   const recievedClaims = ctx.get('claims');
 
   console.error({recievedClaims});
-  /* e.g
-    claims: [dc1, dc3]
-    data channels returned: [ dc1, dc3 ]
-   */
+  // default is used here get the default registrar
   const allDataChannels = await ctx.env.DATA_CHANNEL_REGISTRAR.list("default", ctx.get('claims') ?? [])
 
   console.log({allDataChannels});
