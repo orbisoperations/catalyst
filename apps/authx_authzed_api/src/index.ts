@@ -85,10 +85,29 @@ export default class AuthzedWorker extends WorkerEntrypoint<ENV> {
 
 	async addDataChannelToOrg(orgId: OrgId, dataChannelId: DataChannelId) {
 		const client = new AuthzedClient(this.env.AUTHZED_ENDPOINT, this.env.AUTHZED_KEY, this.env.AUTHZED_PREFIX)
-		await client.addDataChannelToOrganization(orgId, dataChannelId)
+		return await client.addDataChannelToOrganization(orgId, dataChannelId)
 	}
-	async listDataChannelsInOrg() {}
-	async deleteDataChannelInOrg(){}
+	async listDataChannelsInOrg(orgId: OrgId, dataChannelId?: DataChannelId) {
+		const client = new AuthzedClient(this.env.AUTHZED_ENDPOINT, this.env.AUTHZED_KEY, this.env.AUTHZED_PREFIX)
+		return await client.listDataChannelsInOrganization(orgId, dataChannelId)
+	}
+	async deleteDataChannelInOrg(orgId: OrgId, dataChannelId: DataChannelId){
+		const client = new AuthzedClient(this.env.AUTHZED_ENDPOINT, this.env.AUTHZED_KEY, this.env.AUTHZED_PREFIX)
+		return await client.deleteDataChannelInOrganization(orgId, dataChannelId)
+	}
+
+	async addPartnerToOrg(orgId: OrgId, partnerId: OrgId) {
+		const client = new AuthzedClient(this.env.AUTHZED_ENDPOINT, this.env.AUTHZED_KEY, this.env.AUTHZED_PREFIX)
+		return await client.addParnterToOrganization(orgId, partnerId)
+	}
+	async listPartnersInOrg(orgId: OrgId, parnterId?: DataChannelId) {
+		const client = new AuthzedClient(this.env.AUTHZED_ENDPOINT, this.env.AUTHZED_KEY, this.env.AUTHZED_PREFIX)
+		return await client.listParntersInOrganization(orgId, parnterId)
+	}
+	async deletePartnerInOrg(orgId: OrgId, parnterId: OrgId){
+		const client = new AuthzedClient(this.env.AUTHZED_ENDPOINT, this.env.AUTHZED_KEY, this.env.AUTHZED_PREFIX)
+		return await client.deleteDataChannelInOrganization(orgId, parnterId)
+	}
 
 	async isMemberOfOrg(orgId: OrgId, userId: UserId) {
 		const client = new AuthzedClient(this.env.AUTHZED_ENDPOINT, this.env.AUTHZED_KEY, this.env.AUTHZED_PREFIX)
@@ -111,5 +130,20 @@ export default class AuthzedWorker extends WorkerEntrypoint<ENV> {
 		const client = new AuthzedClient(this.env.AUTHZED_ENDPOINT, this.env.AUTHZED_KEY, this.env.AUTHZED_PREFIX)
 		return await client.organizationPermissionsCheck(orgId, userId, Catalyst.Org.PermissionsEnum.enum.data_channel_read)
 
+	}
+
+	async addOrgToDataChannel(dataChannelId: DataChannelId, orgId: OrgId) {
+		const client = new AuthzedClient(this.env.AUTHZED_ENDPOINT, this.env.AUTHZED_KEY, this.env.AUTHZED_PREFIX)
+		return await client.addOrganizationToDataChannel(dataChannelId, orgId)
+	}
+
+	async listOrgsInDataChannel(dataChannelId: DataChannelId, orgId?: OrgId) {
+		const client = new AuthzedClient(this.env.AUTHZED_ENDPOINT, this.env.AUTHZED_KEY, this.env.AUTHZED_PREFIX)
+		return await client.listOrgsInDataChannels(dataChannelId, orgId)
+	}
+
+	async deleteOrgInDataChannel(dataChannelId: DataChannelId, orgId: OrgId) {
+		const client = new AuthzedClient(this.env.AUTHZED_ENDPOINT, this.env.AUTHZED_KEY, this.env.AUTHZED_PREFIX)
+		return await client.deleteOrgInDataChannel(dataChannelId, orgId)
 	}
 }
