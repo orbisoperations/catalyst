@@ -3,6 +3,7 @@ declare module "cloudflare:test" {
 
   import RegistrarWorker from '@catalyst/data_channel_registrar/src/worker';
   import AuthzedWorker from "@catalyst/authx_authzed_api/src";
+  import JWTWorker from "@catalyst/authx_token_api";
 
   interface ProvidedEnv extends Env {
     APP_MIGRATIONS: D1Migration[];
@@ -10,5 +11,6 @@ declare module "cloudflare:test" {
     APP_DB: D1Database;
     DATA_CHANNEL_REGISTRAR: Service<RegistrarWorker>
     AUTHX_AUTHZED_API: Service<AuthzedWorker>
+    AUTHX_TOKEN_API: Service<JWTWorker>
   }
 }

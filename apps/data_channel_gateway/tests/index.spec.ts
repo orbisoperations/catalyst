@@ -510,76 +510,62 @@ describe("registrar integration tests", () => {
     expect(await env.DATA_CHANNEL_REGISTRAR.list("default", ["cars", "airplanes", "manufacture"])).toHaveLength(1)
   })
 })
+
+describe("jwt integration tests", () => {
+  it("can get the public key", async () =>{
+    const pkey = await env.AUTHX_TOKEN_API.getPublicKey()
+    expect(pkey).toBeDefined()
+    expect(pkey).toBeTypeOf("object")
+    expect(pkey.pem).toBeTypeOf("string")
+  })
+  it("can rotate the key", async () => {
+    const pkey1 = await env.AUTHX_TOKEN_API.getPublicKey()
+    expect(pkey1).toBeDefined()
+    expect(pkey1).toBeTypeOf("object")
+    expect(pkey1.pem).toBeTypeOf("string")
+
+    expect(await env.AUTHX_TOKEN_API.rotateKey()).toBeTruthy()
+    const pkey2 = await env.AUTHX_TOKEN_API.getPublicKey()
+    expect(pkey2).toBeDefined()
+    expect(pkey2).toBeTypeOf("object")
+    expect(pkey2.pem).toBeTypeOf("string")
+
+    expect(pkey1.pem).not.toBe(pkey2.pem)
+  })
+  it("can sign and verify a jwt", async () => {
+    const jwtRequest = {
+      entity: "testuser",
+      claims: ["testclaim"],
+    }
+    const tokenResp = await env.AUTHX_TOKEN_API.signJWT(jwtRequest)
+    console.log(tokenResp)
+    const validateResp = await env.AUTHX_TOKEN_API.validateToken(tokenResp.token)
+    delete validateResp["Symbol(dispose)"]
+    console.log(validateResp)
+    expect(validateResp.claims[0]).toBe( 'testclaim' )
+    expect(validateResp.valid).toBeTruthy()
+    expect(validateResp.entity).toBe("testuser")
+
+    const invalid = await env.AUTHX_TOKEN_API.validateToken(tokenResp.token + "makebad")
+    expect(invalid.valid).toBeFalsy()
+  })
+})
 describe("gateway integration tests", () => {
     const getToken = async (entity: string, claims?: string[], ctx?: any) => {
-        const tokenQuery = `
-            mutation GetTokenForTests($entity: String!, $claims: [String!]) {
-                sign(entity: $entity, claims: $claims)
-            }
-        `;
-
-      const gqlPayload = JSON.stringify({
-        query: tokenQuery,
-        variables: {
-          entity: entity,
-          claims: claims,
-        },
-      });
-
-      logger.info({
-        tokenRequestPayload: gqlPayload,
-        // @ts-ignore
-        test: ctx.task.name,
+      const tokenResp = await env.AUTHX_TOKEN_API.signJWT({
+        entity: entity,
+        claims: claims
       })
 
-      const response = await env.AUTHX_TOKEN_API.fetch('https://authx-token-api/graphql', {
-        method: "POST",
-        body: gqlPayload,
-        headers: {
-          'content-type': 'application/json'
-        },
+      console.log({
+        // @ts-ignore
+        test: ctx.task.name,
+        signedTokenForTest: tokenResp.token
       });
 
-        // Fail early
-      if (response.status !== 200) {
-        logger.info({
-          test: ctx.task.name,
-          // @ts-ignore
-          tokenGenerationFailureResponse: response,
-        });
-        throw new Error('getToken in tests failed')
-      }
+      return tokenResp.token;
 
-        // Parse the response and return the token
-      try {
-        const responseRaw = await response.text();
-
-        console.log({responseRaw});
-        const json = JSON.parse(responseRaw);
-        const {data} = json;
-        const token = data.sign;
-        console.log({
-          // @ts-ignore
-          test: ctx.task.name,
-          signedTokenForTest: token
-        });
-
-        return token;
-      } catch (e) {
-        console.error(e)
-      }
     };
-
-  /*it("shows the data in the database before other tests", async () => {
-    const qResult = await env.APP_DB.prepare('SELECT name FROM sqlite_master WHERE type = "table";').run();
-
-    const dataChannels = await env.APP_DB.prepare('SELECT * FROM DataChannel;').run();
-
-    // @ts-ignore
-    console.log({dataChannels: dataChannels.results});
-    // @ts-ignore
-    console.log({qResult: qResult.results});
-  });*/
 
 
   it("returns gf'd for a invalid token", async () => {
@@ -687,7 +673,7 @@ describe("gateway integration tests", () => {
     await teardown(env)
   });
 
-  it("should get data-channel for airplanes only when accessSwitch is 1", async (testContext) => {
+  it("should get data-channel for airplanes only when accessSwitch is 1 - THIS IS A BAD TEST", async (testContext) => {
     await setup(env)
     await env.DATA_CHANNEL_REGISTRAR.update("default", {
       id: "airplanes1",
