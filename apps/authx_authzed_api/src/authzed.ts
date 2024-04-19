@@ -293,7 +293,7 @@ export class AuthzedClient {
 
 	async organizationPermissionsCheck(orgId: OrgId, userId: UserId, permission: Catalyst.Org.PermissionsEnum) {
 		//zed permission check orbisops_catalyst_dev/organization:Org1  member orbisops_catalyst_dev/user:TestUser --insecure --token atoken
-		const req = this.utils.checkPermission(orgId, userId, permission)
+		const req = this.utils.checkOrgPermission(orgId, userId, permission)
 		const { data } = await this.utils.permissionFetcher(req)
 
 		const permissionResp = Authzed.Permissions.Response.parse(data)
@@ -351,6 +351,20 @@ export class AuthzedClient {
 		const { data } = await this.utils.fetcher('delete', body);
 		console.log(data)
 		return Authzed.Relationships.DeletResult.parse(data);
+	}
+
+	async dataChannelPermissionsCheck(dataChannelId: DataChannelId, userId: UserId, permission: Catalyst.DataChannel.PermissionsEnum) {
+		//zed permission check orbisops_catalyst_dev/organization:Org1  member orbisops_catalyst_dev/user:TestUser --insecure --token atoken
+		const req = this.utils.checkDataChannelPermission(dataChannelId, userId, permission)
+		const { data } = await this.utils.permissionFetcher(req)
+
+		const permissionResp = Authzed.Permissions.Response.parse(data)
+		if (typeof  permissionResp === typeof Authzed.Permissions.CheckReponse) {
+			const success = Authzed.Permissions.CheckReponse.parse(permissionResp)
+			return success.permissionship === Authzed.Permissions.PermissionValues.enum.PERMISSIONSHIP_HAS_PERMISSION
+		}
+		console.log(permissionResp)
+		return false
 	}
 }
 
@@ -570,7 +584,7 @@ export class AuthzedUtils {
 		};
 	}
 
-	checkPermission(orgId: OrgId, userId: UserId, permission: Catalyst.Org.PermissionsEnum): PermissionCheckRequest {
+	checkOrgPermission(orgId: OrgId, userId: UserId, permission: Catalyst.Org.PermissionsEnum): PermissionCheckRequest {
 		return {
 			consistency: {
 				minimizeLatency: true
@@ -589,6 +603,24 @@ export class AuthzedUtils {
 		}
 	}
 
+	checkDataChannelPermission(dataChannelId: DataChannelId, userId: UserId, permission: Catalyst.DataChannel.PermissionsEnum): PermissionCheckRequest {
+		return {
+			consistency: {
+				minimizeLatency: true
+			},
+			resource: {
+				objectType: this.schemaPrefix + Catalyst.EntityEnum.enum.data_channel,
+				objectId: dataChannelId
+			},
+			permission: permission,
+			subject: {
+				object: {
+					objectType: this.schemaPrefix + Catalyst.EntityEnum.enum.user,
+					objectId: userId
+				}
+			}
+		}
+	}
 	// might belong somewhere else, but it gets used by multiple managers and is not exposed through the api
 	/*async getDataServiceParentOrg(): Promise<
 		{ resource: string; subject: string }[]

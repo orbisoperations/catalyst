@@ -129,7 +129,6 @@ export default class AuthzedWorker extends WorkerEntrypoint<ENV> {
 	async canReadDataChannel(orgId: OrgId, userId: UserId) {
 		const client = new AuthzedClient(this.env.AUTHZED_ENDPOINT, this.env.AUTHZED_KEY, this.env.AUTHZED_PREFIX)
 		return await client.organizationPermissionsCheck(orgId, userId, Catalyst.Org.PermissionsEnum.enum.data_channel_read)
-
 	}
 
 	async addOrgToDataChannel(dataChannelId: DataChannelId, orgId: OrgId) {
@@ -145,5 +144,10 @@ export default class AuthzedWorker extends WorkerEntrypoint<ENV> {
 	async deleteOrgInDataChannel(dataChannelId: DataChannelId, orgId: OrgId) {
 		const client = new AuthzedClient(this.env.AUTHZED_ENDPOINT, this.env.AUTHZED_KEY, this.env.AUTHZED_PREFIX)
 		return await client.deleteOrgInDataChannel(dataChannelId, orgId)
+	}
+
+	async canReadFromDataChannel(dataChannelId: DataChannelId, userId: UserId) {
+		const client = new AuthzedClient(this.env.AUTHZED_ENDPOINT, this.env.AUTHZED_KEY, this.env.AUTHZED_PREFIX)
+		return await client.dataChannelPermissionsCheck(dataChannelId, userId, Catalyst.DataChannel.PermissionsEnum.enum.read)
 	}
 }
