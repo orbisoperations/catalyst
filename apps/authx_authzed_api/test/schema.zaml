@@ -17,11 +17,9 @@ schema: |-
       permission role_assign = admin
 
       permission data_channel_create = data_custodian
-      permission data_channel_update = data_channel_create
-      permission data_channel_delete = data_channel_create
+      permission data_channel_update = data_custodian
+      permission data_channel_delete = data_custodian
       permission data_channel_read = admin + data_custodian + user + partner_organization->data_channel_read
-
-
   }
 
   definition orbisops_catalyst_dev/data_channel {
