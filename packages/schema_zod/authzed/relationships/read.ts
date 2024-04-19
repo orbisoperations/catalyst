@@ -9,7 +9,7 @@ export const ReadResult = z.object({
     }),
     relationship: z.object({
       resource: AuthzedObject,
-      relation: Catalyst.DataChannel.CatalystDataChannelEntitySubEntities.or(Catalyst.Org.EntityEnum),
+      relation: Catalyst.DataChannel.EntityEnum.or(Catalyst.Org.EntityEnum),
       subject: z.object({
         object: AuthzedObject,
         optionalRelation: z.string().optional()

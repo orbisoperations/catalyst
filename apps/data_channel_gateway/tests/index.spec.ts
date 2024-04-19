@@ -209,12 +209,66 @@ describe("authzed integration tests", () => {
       console.log(await env.AUTHX_AUTHZED_API.listUsersInOrg(org))
       expect(await env.AUTHX_AUTHZED_API.listUsersInOrg(org)).toHaveLength(0)
     })
-    it("add, list, and delete data channels", () => {
+    it("add, list, and delete data channels", async () => {
+      const resp = await env.AUTHX_AUTHZED_API.addDataChannelToOrg("Org1", "DC1")
+      expect(resp).toBeDefined()
+      expect(resp.writtenAt!.token).toBeDefined()
+      console.log(resp)
 
+      const list = await env.AUTHX_AUTHZED_API.listDataChannelsInOrg("Org1")
+      expect(list).toBeDefined()
+      console.log(list)
+      expect(list).toHaveLength(1)
+
+      const deleteResp = await env.AUTHX_AUTHZED_API.deleteDataChannelInOrg("Org1", "DC1")
+      expect(deleteResp).toBeDefined()
+
+      expect(await env.AUTHX_AUTHZED_API.listDataChannelsInOrg("Org1")).toHaveLength(0)
     })
-    it("add, list, and delete partners", () => {})
+    it("add, list, and delete partners", async () => {
+      const resp = await env.AUTHX_AUTHZED_API.addPartnerToOrg("Org1", "Org2")
+      console.log(resp)
+      expect(resp).toBeDefined()
+      expect(resp.writtenAt!.token).toBeDefined()
+
+      expect(await env.AUTHX_AUTHZED_API.listPartnersInOrg("Org1")).toHaveLength(1)
+
+      const deleteResp = await env.AUTHX_AUTHZED_API.deletePartnerInOrg("Org1", "Org2")
+      expect(deleteResp).toBeDefined()
+
+      expect(await env.AUTHX_AUTHZED_API.listPartnersInOrg("Org1")).toHaveLength(0)
+    })
   })
-  //describe()
+  describe("data channel tests", () => {
+    it("add organization", async () => {
+      const resp = await env.AUTHX_AUTHZED_API.addOrgToDataChannel("DC1", "Org1")
+      console.log(resp)
+      expect(resp).toBeDefined()
+
+      expect(await env.AUTHX_AUTHZED_API.listOrgsInDataChannel("DC1")).toHaveLength(1)
+
+      const deleteResp = await env.AUTHX_AUTHZED_API.deleteOrgInDataChannel("DC1", "Org1")
+      expect(deleteResp).toBeDefined()
+
+      expect(await env.AUTHX_AUTHZED_API.listOrgsInDataChannel("DC1")).toHaveLength(0)
+    })
+
+    it("check user in parent org can read", () => {
+      expect(true).toBeFalsy()
+    })
+  })
+
+  describe("multi functional tests", () => {
+    describe("share data channel between orgs", () => {
+      it("org1 shares with org2", () => {
+        expect(true).toBeFalsy()
+      })
+
+      it("org 2 shares with org1", () => {
+        expect(true).toBeFalsy()
+      })
+    })
+  })
 })
 
 // testing in module doesnt seem to work now but works fine through miniflare
