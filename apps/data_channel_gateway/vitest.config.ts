@@ -8,7 +8,7 @@ const logger = new Logger({});
 
 const authxServicePath = path.resolve("../authx_token_api/dist/index.js");
 const dataChannelRegistrarPath = path.resolve("../data_channel_registrar/dist/worker.js");
-const authzedServicePath = path.resolve("../authx_authzed_api/dist/worker.js")
+const authzedServicePath = path.resolve("../authx_authzed_api/dist/index.js")
 
 logger.info('Using built services from other workspaces within @catalyst');
 logger.info({
@@ -48,6 +48,7 @@ export default defineWorkersProject(async () => {
     logLevel: 'info',
     clearScreen: false,
     test: {
+      maxConcurrency: 1,
       globalSetup: './global-setup.ts',
       //setupFiles: ["./tests/apply-migrations.ts"],
       poolOptions: {
@@ -109,6 +110,11 @@ export default defineWorkersProject(async () => {
                 compatibilityDate: "2024-04-05",
                 compatibilityFlags: ["nodejs_compat"],
                 entrypoint: "AuthzedWorker",
+                bindings: {
+                  AUTHZED_ENDPOINT: "http://localhost:8081",
+                  AUTHZED_KEY: "atoken",
+                  AUTHZED_PREFIX: "orbisops_catalyst_dev/"
+                },
                 /*d1Databases: {
                   "APP_DB": "catalyst"
                 },*/
