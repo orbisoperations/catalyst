@@ -1,23 +1,38 @@
-import { Hono } from 'hono'
-export {HSM} from "./do_hsm"
-import { createYoga } from "graphql-yoga";
-import schema from "./graphql"
 import { DurableObjectNamespace } from "@cloudflare/workers-types"
+import {HSM} from "./do_hsm"
+import {WorkerEntrypoint} from "cloudflare:workers"
+import {Env} from "./env"
+import { JWTSigningRequest } from './jwt';
+export {HSM} from "./do_hsm"
 
 type Bindings = {
-	HSM: DurableObjectNamespace
+	// @ts-ignore
+	HSM: DurableObjectNamespace<HSM>
 }
 
-const app = new Hono<{Bindings: Bindings}>()
 
-app.use("/graphql", async (c) => {
-	const yoga = createYoga({
-		schema: schema,
-		context: async () => ({ HSM: c.env.HSM }),
-		graphqlEndpoint: "/graphql"
-	});
-	return yoga.handle(c.req.raw as Request, c);
-});
+export default class JWTWorker extends WorkerEntrypoint<Env> {
+	async getPublicKey(keyNamespace: string = "default") {
+		const id = this.env.HSM.idFromName(keyNamespace)
+		const stub = this.env.HSM.get(id)
+		return stub.getPublicKey()
+	}
 
+	async rotateKey(keyNamespace: string = "default") {
+		const id = this.env.HSM.idFromName(keyNamespace)
+		const stub = this.env.HSM.get(id)
+		return stub.rotateKey()
+	}
 
-export default app
+	async signJWT(jwtRequest: JWTSigningRequest, keyNamespace: string = "default") {
+		const id = this.env.HSM.idFromName(keyNamespace)
+		const stub = this.env.HSM.get(id)
+		return stub.signJWT(jwtRequest)
+	}
+
+	async validateToken( token: string, keyNamespace: string = "default") {
+		const id = this.env.HSM.idFromName(keyNamespace)
+		const stub = this.env.HSM.get(id)
+		return stub.validateToken(token)
+	}
+}

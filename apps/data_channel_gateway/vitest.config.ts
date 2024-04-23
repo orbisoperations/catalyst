@@ -78,9 +78,10 @@ export default defineWorkersProject(async () => {
                 modules: true,
                 modulesRoot: path.resolve("../authx_token_api"),
                 scriptPath: authxServicePath, // Built by `global-setup.ts`
+                entrypoint: "JWTWorker",
                 compatibilityDate: "2024-04-05",
                 compatibilityFlags: ["nodejs_compat"],
-                // unsafeEphemeralDurableObjects: true,
+                unsafeEphemeralDurableObjects: true,
                 durableObjects: {
                   "HSM": "HSM"
                 },
