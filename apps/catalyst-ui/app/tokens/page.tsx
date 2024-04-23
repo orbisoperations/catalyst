@@ -20,7 +20,7 @@ export default function APIKeys() {
       <Flex justify={"space-between"} key={0} align={"center"}>
         <OpenButton
           onClick={() => {
-            router.push("/api-keys/1");
+            router.push("/tokens/1");
           }}
         >
           <Text>TAK Server</Text>
@@ -37,7 +37,7 @@ export default function APIKeys() {
       <Flex justify={"space-between"} key={0} align={"center"}>
         <OpenButton
           onClick={() => {
-            router.push("/api-keys/1");
+            router.push("/tokens/1");
           }}
         >
           <Text>TAK Server 2</Text>
@@ -54,7 +54,7 @@ export default function APIKeys() {
       <Flex justify={"space-between"} key={0} align={"center"}>
         <OpenButton
           onClick={() => {
-            router.push("/api-keys/1");
+            router.push("/tokens/1");
           }}
         >
           <Text>TAK Server 3</Text>
@@ -74,7 +74,7 @@ export default function APIKeys() {
         <Flex gap={5}>
           <CreateButton
             onClick={() => {
-              router.push("/api-keys/create");
+              router.push("/tokens/create");
             }}
           />
         </Flex>

@@ -5,7 +5,7 @@
   "scripts": {
     "vercel-build": "next build",
     "ndev": "next dev",
-    "pages:dev": "pnpm wrangler pages dev ./.vercel/output/static",
+    "pages:dev": "pnpm wrangler pages dev ./.vercel/output/static --port 4000",
     "pages:build": "pnpm next-on-pages",
     "bdev": "pnpm pages:build && pnpm pages:dev",
     "dev": "pnpm pages:build --skip-build && pnpm pages:dev",
