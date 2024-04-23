@@ -1,8 +1,6 @@
 import {Context, Hono} from 'hono'
 import {stitchSchemas} from '@graphql-tools/stitch';
-import {schemaFromExecutor} from '@graphql-tools/wrap';
 import {createYoga, renderGraphiQL} from 'graphql-yoga';
-import {UrlqGraphqlClient} from "./client/client";
 import { buildSchema, parse } from 'graphql';
 import { isAsyncIterable, type Executor } from '@graphql-tools/utils';
 import { stitchingDirectives } from '@graphql-tools/stitching-directives';
@@ -97,24 +95,18 @@ app.use(async (c, next) => {
     }, 403)
   }
 
-  const client = new UrlqGraphqlClient(c.env.AUTHX_TOKEN_API);
-  const [validate, claims] = await client.validateToken(token);
+  const { valid, entity, claims, error:ValidError } = await c.env.AUTHX_TOKEN_API.validateToken(token)
 
-
-  c.set('claims', claims);
-
-  if (!validate) {
+  if (!valid || ValidError) {
     return c.json({message: 'Token validation failed'}, 403)
   }
-
-
+  c.set('claims', claims);
   // we good
   await next()
 
   // we can add claims but do not need to enforce them here
 })
 app.use("/graphql", async (ctx) => {
-  const client = new UrlqGraphqlClient(ctx.env.DATA_CHANNEL_REGISTRAR);
   console.log({context: ctx})
 
   const recievedClaims = ctx.get('claims');
