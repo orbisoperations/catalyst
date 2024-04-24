@@ -1,0 +1,88 @@
+"use client";
+import { useUser } from "@/components/contexts/User/UserContext";
+import { OrbisButton } from "@/components/elements";
+import { DetailedView } from "@/components/layouts";
+import { navigationItems } from "@/utils/nav.utils";
+import { Flex, Grid } from "@chakra-ui/layout";
+import { Card, CardBody, FormControl, Input } from "@chakra-ui/react";
+import { useRouter } from "next/navigation";
+
+type DataChannelFormProps = {
+  createDataChannel: (fd: FormData) => Promise<any>;
+};
+
+export default function CreateChannelForm({
+  createDataChannel,
+}: DataChannelFormProps) {
+  const router = useRouter();
+  const user = useUser();
+
+  return (
+    <DetailedView
+      actions={<></>}
+      headerTitle={{
+        text: "Create Data Channel",
+      }}
+      topbaractions={navigationItems}
+      topbartitle="Catalyst"
+    >
+      <Card>
+        <CardBody>
+          <form
+            action={async (fd) => {
+              const newChannel = await createDataChannel(fd);
+              console.log(newChannel);
+              router.push("/channels/" + newChannel.id);
+            }}
+          >
+            <Grid gap={5}>
+              <FormControl display={"grid"} gap={2}>
+                <label htmlFor="name">Data Channel Name</label>
+                <Input
+                  rounded="md"
+                  name="name"
+                  required={true}
+                  placeholder="Data Channel Name"
+                />
+              </FormControl>
+              <FormControl display={"grid"} gap={2}>
+                <label htmlFor="description">Description</label>
+                <Input
+                  rounded="md"
+                  name="description"
+                  required={true}
+                  placeholder="Description"
+                />
+              </FormControl>
+              <FormControl display={"grid"} gap={2}>
+                <label htmlFor="endpoint">Endpoint URL</label>
+                <Input
+                  rounded="md"
+                  name="endpoint"
+                  required={true}
+                  placeholder="Endpoint URL"
+                />
+              </FormControl>
+              <FormControl display={"none"}>
+                <label htmlFor="organization"></label>
+                {/*TODO: Get organization from user context*/}
+                <Input
+                  rounded="md"
+                  name="organization"
+                  required={true}
+                  value={"org1"}
+                />
+              </FormControl>
+              <Flex justifyContent={"space-between"}>
+                <OrbisButton colorScheme="gray" onClick={router.back}>
+                  Cancel
+                </OrbisButton>
+                <OrbisButton type="submit">Create</OrbisButton>
+              </Flex>
+            </Grid>
+          </form>
+        </CardBody>
+      </Card>
+    </DetailedView>
+  );
+}
