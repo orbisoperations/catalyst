@@ -83,7 +83,13 @@ export default class AuthzedWorker extends WorkerEntrypoint<ENV> {
 			userId: userId ? emailTob64(userId) : undefined,
 			roles
 		})
-		return resp
+		return resp.map((elem) => {
+			return {
+				object: elem.object,
+				relation: elem.relation,
+				subject: atob(elem.subject)
+			}
+		})
 	}
 
 	async addDataChannelToOrg(orgId: OrgId, dataChannelId: DataChannelId) {
