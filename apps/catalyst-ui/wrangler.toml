@@ -9,3 +9,4 @@ services = [
   { binding = "AUTHX_AUTHZED_API", service = "authx_authzed_api"},
   { binding = "USER_CREDS_CACHE", service = "user_credentials_cache"}
 ]
+
