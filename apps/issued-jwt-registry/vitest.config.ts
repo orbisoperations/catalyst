@@ -17,7 +17,7 @@ export default defineWorkersProject(async () => {
 	return {
 		customLogger: {
 			...logger,
-			warnOnce(msg, opts) {
+			warnOnce(msg: unknown, opts: any) {
 				logger.warn(msg);
 			},
 		},

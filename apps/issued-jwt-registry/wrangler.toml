@@ -52,13 +52,13 @@ compatibility_flags = [ "nodejs_compat" ]
 # Docs: https://developers.cloudflare.com/workers/runtime-apis/durable-objects
 [[durable_objects.bindings]]
 name = "ISSUED_JWT_REGISTRY"
-class_name = "IssuedJWTRegistry"
+class_name = "IJ_Registry"
 
 # Durable Object migrations.
 # Docs: https://developers.cloudflare.com/workers/learning/using-durable-objects#configure-durable-object-classes-with-migrations
 [[migrations]]
 tag = "v1"
-new_classes = ["IssuedJWTRegistry"]
+new_classes = ["IJ_Registry"]
 
 # Bind a Hyperdrive configuration. Use to accelerate access to your existing databases from Cloudflare Workers.
 # Docs: https://developers.cloudflare.com/workers/wrangler/configuration/#hyperdrive
