@@ -48,8 +48,9 @@ export class KeyState {
 		return this.expired;
 	}
 
-	async sign(jwt: JWT) {
-		const payload = jwt.payloadRaw(this.expiry);
+	async sign(jwt: JWT, expiry: number = 60 * 60 * 24 * 7) {
+		console.log({ expiry });
+		const payload = jwt.payloadRaw(expiry);
 
 		return new SignJWT(payload).setProtectedHeader({ alg: 'ES384' }).sign(this.privateKey);
 	}
@@ -118,12 +119,10 @@ export class HSM extends DurableObject {
 		return true;
 	}
 
-	async signJWT(req: JWTSigningRequest) {
-		console.log(req);
-		console.log('siging jwt: ', req);
+	async signJWT(req: JWTSigningRequest, expiresIn: number) {
 		const jwt = new JWT(req.entity, req.claims, 'catalyst:system:jwt:latest');
 		return {
-			token: await (await this.key()).sign(jwt),
+			token: await (await this.key()).sign(jwt, expiresIn),
 		};
 	}
 

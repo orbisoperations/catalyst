@@ -9,6 +9,6 @@ export const navigationItems: { display: string; path: string }[] = [
   },
   {
     display: "API Keys",
-    path: "/api-keys",
+    path: "/tokens",
   },
 ];
