@@ -4,7 +4,14 @@ import { OrbisButton } from "@/components/elements";
 import { DetailedView } from "@/components/layouts";
 import { navigationItems } from "@/utils/nav.utils";
 import { Flex, Grid } from "@chakra-ui/layout";
-import { Card, CardBody, FormControl, Input } from "@chakra-ui/react";
+import {
+  Card,
+  CardBody,
+  FormControl,
+  Input,
+  InputGroup,
+  InputLeftAddon,
+} from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
 
 type DataChannelFormProps = {
@@ -15,7 +22,8 @@ export default function CreateChannelForm({
   createDataChannel,
 }: DataChannelFormProps) {
   const router = useRouter();
-  const user = useUser();
+
+  const { user } = useUser();
 
   return (
     <DetailedView
@@ -30,20 +38,25 @@ export default function CreateChannelForm({
         <CardBody>
           <form
             action={async (fd) => {
+              fd.set("organization", user?.custom.org);
+              fd.set("name", user?.custom.org + "/" + fd.get("name"));
               const newChannel = await createDataChannel(fd);
-              console.log(newChannel);
               router.push("/channels/" + newChannel.id);
             }}
           >
             <Grid gap={5}>
               <FormControl display={"grid"} gap={2}>
                 <label htmlFor="name">Data Channel Name</label>
-                <Input
-                  rounded="md"
-                  name="name"
-                  required={true}
-                  placeholder="Data Channel Name"
-                />
+                <InputGroup>
+                  <InputLeftAddon>{user?.custom.org}/</InputLeftAddon>
+
+                  <Input
+                    rounded="md"
+                    name="name"
+                    required={true}
+                    placeholder="Data Channel Name"
+                  />
+                </InputGroup>
               </FormControl>
               <FormControl display={"grid"} gap={2}>
                 <label htmlFor="description">Description</label>

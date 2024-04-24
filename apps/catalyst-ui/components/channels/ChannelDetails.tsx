@@ -23,6 +23,8 @@ import {
 import {
   FormControl,
   Input,
+  InputGroup,
+  InputLeftAddon,
   Modal,
   ModalBody,
   ModalContent,
@@ -36,6 +38,7 @@ import {
 import { PencilSquareIcon } from "@heroicons/react/20/solid";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useUser } from "../contexts/User/UserContext";
 type DataChannelDetailsProps = {
   channelDetails: (id: string) => Promise<any | undefined>;
   updateChannel: (data: FormData) => Promise<void>;
@@ -51,6 +54,7 @@ export default function DataChannelDetailsComponent({
   const { isOpen, onOpen, onClose } = useDisclosure();
   const editDisclosure = useDisclosure();
   const router = useRouter();
+  const { user } = useUser();
   const { id } = useParams();
   const [channel, setChannel] = useState<any>();
   const [editChannel, setEditChannel] = useState<any>();
@@ -179,6 +183,11 @@ export default function DataChannelDetailsComponent({
                     const formData = new FormData(e.currentTarget);
                     if (editChannel) {
                       formData.append("id", editChannel.id);
+                      formData.append("organization", user?.custom.org);
+                      formData.set(
+                        "name",
+                        user?.custom.org + "/" + editChannel.name
+                      );
                       updateChannel(formData).then(fetchChannelDetails);
                     }
                     // todo update data channel here
@@ -187,20 +196,23 @@ export default function DataChannelDetailsComponent({
                   <Grid gap={5}>
                     <FormControl display={"grid"} gap={2}>
                       <label htmlFor="name">Data Channel Name</label>
-                      <Input
-                        rounded="md"
-                        name="name"
-                        required={true}
-                        value={editChannel?.name}
-                        onChange={(e) => {
-                          editChannel &&
-                            setEditChannel({
-                              ...editChannel,
-                              name: e.target.value,
-                            });
-                        }}
-                        placeholder="Data Channel Name"
-                      />
+                      <InputGroup>
+                        <InputLeftAddon>{user?.custom.org}/</InputLeftAddon>
+                        <Input
+                          rounded="md"
+                          name="name"
+                          required={true}
+                          defaultValue={editChannel?.name.split("/")[1]}
+                          onChange={(e) => {
+                            editChannel &&
+                              setEditChannel({
+                                ...editChannel,
+                                name: e.target.value,
+                              });
+                          }}
+                          placeholder="Data Channel Name"
+                        />
+                      </InputGroup>
                     </FormControl>
                     <FormControl display={"grid"} gap={2}>
                       <label htmlFor="description">Description</label>
