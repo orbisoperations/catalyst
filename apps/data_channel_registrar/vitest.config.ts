@@ -26,7 +26,7 @@ export default defineWorkersProject(async () => {
         workers: {
           isolatedStorage: true,
           singleWorker: true,
-          main: "src/worker.ts",
+          main: "src/index.ts",
           wrangler: {configPath: "./wrangler.toml"},
           entrypoint: "RegistrarWorker",
           miniflare: {
