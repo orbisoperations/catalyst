@@ -109,7 +109,6 @@ export default function APIKeysDetails() {
               <OrbisButton
                 colorScheme="red"
                 onClick={() => {
-                  console.log("API Key Deleted");
                   onClose();
                   router.back();
                 }}
