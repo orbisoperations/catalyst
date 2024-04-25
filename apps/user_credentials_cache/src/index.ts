@@ -81,6 +81,8 @@ export class UserCredsCache extends DurableObject<Env> {
 			this.ctx.waitUntil(this.purge(token, user))
 			return user
 		}
+
+		return user
 	}
 
 	async validateUser(token: string) {

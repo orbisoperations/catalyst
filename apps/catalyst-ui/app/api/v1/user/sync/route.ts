@@ -32,33 +32,14 @@ export async function GET(request: NextRequest) {
   const cfToken = request.cookies.get("CF_Authorization")?.value
   if (cfToken) {
     // validate CF token
-    // curl -H 'cookie: CF_Authorization=<user-token>' https://<your-team-name>.cloudflareaccess.com/cdn-cgi/access/get-identity
-    const resp = await fetch(
-      'https://orbisops.cloudflareaccess.com/cdn-cgi/access/get-identity',
-      {
-        method: "GET",
-        headers: {
-          cookie: `CF_Authorization=${cfToken}`
-        }
-      }
-    )
-
-    const cfUser = await resp.json() as {email: string, custom: Record<string, Record<string, Record< string,string>>>}
-    const user: string = cfUser.email
-    const org: string | undefined = getOrgFromRoles(cfUser.custom['urn:zitadel:iam:org:project:roles'])
-
-    console.log("verified user attribs", user, org)
-
-    // make call to Authzed to add user to org
-    if (user && org) {
-      const writeResp = await getRequestContext().env.AUTHX_AUTHZED_API.addUserToOrg(org, user)
+    const {USER_CREDS_CACHE: user_cache} = getRequestContext().env as CloudflareEnv
+    const user: {userId: string, orgId: string} | undefined = user_cache.getUser(cfToken)
+    if (user) {
+      const writeResp = await getRequestContext().env.AUTHX_AUTHZED_API.addUserToOrg(user.orgId, user.userId)
       console.log("completed user sync", writeResp)
     } else {
       console.error("user or org is undefined")
     }
-
-  } else {
-    console.error("no token provided and cannot sync user")
   }
 
   return Response.json({endpoint: "user-sync"})
