@@ -15,7 +15,7 @@ import {
 import { useRouter } from "next/navigation";
 
 type DataChannelFormProps = {
-  createDataChannel: (fd: FormData) => Promise<any>;
+  createDataChannel: (fd: FormData, token: string) => Promise<any>;
 };
 
 export default function CreateChannelForm({
@@ -23,7 +23,7 @@ export default function CreateChannelForm({
 }: DataChannelFormProps) {
   const router = useRouter();
 
-  const { user } = useUser();
+  const { user, token } = useUser();
 
   return (
     <DetailedView
@@ -40,7 +40,7 @@ export default function CreateChannelForm({
             action={async (fd) => {
               fd.set("organization", user?.custom.org);
               fd.set("name", user?.custom.org + "/" + fd.get("name"));
-              const newChannel = await createDataChannel(fd);
+              const newChannel = await createDataChannel(fd, token ?? "");
               router.push("/channels/" + newChannel.id);
             }}
           >

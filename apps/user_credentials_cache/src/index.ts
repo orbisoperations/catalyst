@@ -33,14 +33,14 @@ export interface Env {
 	// MY_QUEUE: Queue;
 }
 
-function getOrgFromRoles(
-	roles: Record<string, Record<string, string>>
-): string | undefined {
+function getOrgFromRoles(roles: Record<string, Record<string, string>>): [string, string[]] | undefined {
 	const roleKeys = Object.keys(roles);
-	const key = roleKeys.find(
-		(key) =>
-			key === "platform-admin" || key === "org-admin" || key === "org-user"
-	) as "platform-admin" | "org-admin" | "org-user" | undefined;
+	let rolesList = roleKeys.filter((key) => key === 'platform-admin' || key === 'org-admin' || key === 'org-user');
+	const key = roleKeys.find((key) => key === 'platform-admin' || key === 'org-admin' || key === 'org-user') as
+		| 'platform-admin'
+		| 'org-admin'
+		| 'org-user'
+		| undefined;
 
 	if (!key) return undefined;
 
@@ -49,7 +49,7 @@ function getOrgFromRoles(
 		const orgKeys = Object.keys(role);
 		if (orgKeys.length > 0) {
 			const org = orgKeys[0];
-			return role[org].split(".")[0];
+			return [role[org].split('.')[0], rolesList];
 		} else {
 			return undefined;
 		}
@@ -57,8 +57,9 @@ function getOrgFromRoles(
 }
 
 interface User {
-	userId: string
-	orgId: string
+	userId: string;
+	orgId: string;
+	zitadelRoles: string[];
 }
 export class UserCredsCache extends DurableObject<Env> {
 	async getUser(token: string) {
@@ -84,15 +85,12 @@ export class UserCredsCache extends DurableObject<Env> {
 	}
 
 	async validateUser(token: string) {
-		const resp = await fetch(
-			'https://orbisops.cloudflareaccess.com/cdn-cgi/access/get-identity',
-			{
-				method: "GET",
-				headers: {
-					cookie: `CF_Authorization=${token}`
-				}
-			}
-		)
+		const resp = await fetch('https://orbisops.cloudflareaccess.com/cdn-cgi/access/get-identity', {
+			method: 'GET',
+			headers: {
+				cookie: `CF_Authorization=${token}`,
+			},
+		});
 
 		try {
 			const cfUser = (await resp.json()) as {
@@ -100,7 +98,9 @@ export class UserCredsCache extends DurableObject<Env> {
 				custom: Record<string, Record<string, Record<string, string>>>;
 			};
 			const user: string = cfUser.email;
-			const org: string | undefined = getOrgFromRoles(cfUser.custom['urn:zitadel:iam:org:project:roles']);
+			const result = getOrgFromRoles(cfUser.custom['urn:zitadel:iam:org:project:roles']);
+			if (!result) return undefined;
+			const [org, roles] = result;
 
 			console.log('verified user attribs', user, org);
 
@@ -108,6 +108,7 @@ export class UserCredsCache extends DurableObject<Env> {
 				return {
 					userId: user,
 					orgId: org,
+					zitadelRoles: roles,
 				} as User;
 			} else {
 				console.error('user or org is undefined and unable to validate user');
