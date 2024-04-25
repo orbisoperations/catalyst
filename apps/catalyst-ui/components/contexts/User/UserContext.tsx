@@ -1,5 +1,4 @@
 "use client";
-import { useRouter } from "next/router";
 import React, {
   createContext,
   ReactNode,
@@ -36,6 +35,7 @@ export type CloudflareUser = {
 
 type UserContextType = {
   user?: CloudflareUser;
+  token?: string;
 };
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -67,38 +67,51 @@ function getOrgFromRoles(
   }
 }
 
+function getIdentity() {
+  return fetch(`${window.location.origin}/cdn-cgi/access/get-identity`, {
+    method: "GET",
+  }).then((res) => {
+    return res.json() as Promise<CloudflareUser>;
+  });
+}
+
+function syncUser() {
+  return fetch("/api/v1/user/sync", {
+    method: "GET",
+  }).then((res) => {
+    return res.json() as Promise<{ token: string } | { error: string }>;
+  });
+}
+
 export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   // const router = useRouter();
 
   const [user, setUser] = useState<CloudflareUser | undefined>();
+  const [token, setToken] = useState<string | undefined>();
 
   useEffect(() => {
-    fetch(`${window.location.origin}/cdn-cgi/access/get-identity`, {
-      method: "GET",
-    })
-      .then((res) => {
-        return res.json() as Promise<CloudflareUser>;
-      })
-      .then((res) => {
-        console.log(res);
-        const roles = res?.custom["urn:zitadel:iam:org:project:roles"];
-        res.custom.isAdmin = roles && roles["org-admin"] !== undefined;
-        res.custom.org = getOrgFromRoles(
-          roles as Record<string, Record<string, string>>
-        );
-        console.log(res.custom.org);
-        setUser(res);
-      });
+    getIdentity().then((res) => {
+      console.log(res);
+      const roles = res?.custom["urn:zitadel:iam:org:project:roles"];
+      res.custom.isAdmin = roles && roles["org-admin"] !== undefined;
+      res.custom.org = getOrgFromRoles(
+        roles as Record<string, Record<string, string>>
+      );
+      console.log(res.custom.org);
+      setUser(res);
+    });
 
-    fetch("/api/v1/user/sync", {
-      method: "GET"
-    }).then((res) => {
-      console.log(res)
-    })
+    syncUser().then((res) => {
+      if ("token" in res) {
+        setToken(res.token);
+      }
+    });
   }, []); //removed router from dependency array - put back if needed
 
   return (
-    <UserContext.Provider value={{ user }}>{children}</UserContext.Provider>
+    <UserContext.Provider value={{ user, token }}>
+      {children}
+    </UserContext.Provider>
   );
 };
 

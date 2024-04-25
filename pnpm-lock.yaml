@@ -444,7 +444,7 @@ importers:
         specifier: ^3.51.0
         version: 3.51.2(@cloudflare/workers-types@4.20240423.0)
 
-  apps/user-credentials-cache:
+  apps/user_credentials_cache:
     devDependencies:
       '@cloudflare/workers-types':
         specifier: ^4.20240423.0

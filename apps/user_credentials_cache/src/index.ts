@@ -1,5 +1,4 @@
-import { DurableObject, WorkerEntrypoint } from "cloudflare:workers";
-
+import { DurableObject, WorkerEntrypoint } from 'cloudflare:workers';
 
 /**
  * Welcome to Cloudflare Workers! This is your first Durable Objects application.
@@ -13,7 +12,6 @@ import { DurableObject, WorkerEntrypoint } from "cloudflare:workers";
  *
  * Learn more at https://developers.cloudflare.com/durable-objects
  */
-
 
 /**
  * Associate bindings declared in wrangler.toml with the TypeScript type system
@@ -69,20 +67,20 @@ export class UserCredsCache extends DurableObject<Env> {
 
 		if (user) {
 			// cleanup
-			this.ctx.waitUntil(this.purge(token, user))
-			return user
+			this.ctx.waitUntil(this.purge(token, user));
+			return user;
 		}
 
 		// cache MISS
-		user = await this.validateUser(token)
+		user = await this.validateUser(token);
 		if (user) {
-			await this.ctx.storage.put(token, user)
+			await this.ctx.storage.put(token, user);
 			//cleanup
-			this.ctx.waitUntil(this.purge(token, user))
-			return user
+			this.ctx.waitUntil(this.purge(token, user));
+			return user;
 		}
 
-		return user
+		return user;
 	}
 
 	async validateUser(token: string) {
@@ -97,44 +95,43 @@ export class UserCredsCache extends DurableObject<Env> {
 		)
 
 		try {
-			const cfUser = await resp.json() as {
-				email: string,
-				custom: Record<string, Record<string, Record<string, string>>>
-			}
-			const user: string = cfUser.email
-			const org: string | undefined = getOrgFromRoles(cfUser.custom['urn:zitadel:iam:org:project:roles'])
+			const cfUser = (await resp.json()) as {
+				email: string;
+				custom: Record<string, Record<string, Record<string, string>>>;
+			};
+			const user: string = cfUser.email;
+			const org: string | undefined = getOrgFromRoles(cfUser.custom['urn:zitadel:iam:org:project:roles']);
 
-			console.log("verified user attribs", user, org)
+			console.log('verified user attribs', user, org);
 
 			if (user && org) {
 				return {
 					userId: user,
-					orgId: org
-				} as User
+					orgId: org,
+				} as User;
 			} else {
-				console.error("user or org is undefined and unable to validate user")
-				return undefined
+				console.error('user or org is undefined and unable to validate user');
+				return undefined;
 			}
 		} catch (e) {
-			console.error(e)
-			console.error("unable to validate user")
-			return undefined
+			console.error(e);
+			console.error('unable to validate user');
+			return undefined;
 		}
 	}
 
-	async purge(token: string, user:User) {
-		for (const [oToken, oUser] of (await this.ctx.storage.list<User>())) {
-			if (user.userId == oUser.userId
-				&& user.orgId == oUser.orgId
-				&& token != oToken) {
+	async purge(token: string, user: User) {
+		const users = await this.ctx.storage.list<User>();
+		for (const [oToken, oUser] of Array.from(users.entries())) {
+			if (user.userId == oUser.userId && user.orgId == oUser.orgId && token != oToken) {
 				// purge entries where user is the same but token is old/diff
-				await this.ctx.storage.delete(oToken)
+				await this.ctx.storage.delete(oToken);
 			}
 		}
 	}
 }
 
-export default class UserCredsCacheWorker extends WorkerEntrypoint<Env>{
+export default class UserCredsCacheWorker extends WorkerEntrypoint<Env> {
 	/**
 	 * This is the standard fetch handler for a Cloudflare Worker
 	 *
