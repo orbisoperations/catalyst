@@ -3,107 +3,173 @@
 import path from "path";
 import fs from "fs/promises";
 import { exec } from "child_process";
-import { Miniflare, Response } from "miniflare";
-import {fileURLToPath} from "node:url";
+import { Miniflare } from "miniflare";
+import { fileURLToPath } from "node:url";
+import { readWranglerConfig } from "./utils.js";
+import { Logger } from "tslog";
+
+const log = new Logger({ minLevel: "info" });
 
 async function main() {
-    console.log("Starting main function");
+    log.info("Starting...");
     const build = await buildWorkers();
-    console.log("Workers built:", build);
     await runMiniflare(build);
-    console.log("Miniflare run completed");
+    log.info("Miniflare run completed");
 }
 
 async function buildWorkers() {
-    console.log("Building workers");
-    const __dirname = path.dirname(fileURLToPath(import.meta.url))
-
-    // Replace with your directory path
-    const dirPath = path.resolve( __dirname, '../');
-
-    console.log("Directory path:", dirPath);
+    const __dirname = path.dirname(fileURLToPath(import.meta.url));
+    const dirPath = path.resolve(__dirname, '../');
 
     try {
         const files = await fs.readdir(dirPath, { withFileTypes: true });
-        console.log("Files:", files);
-
         const built = [];
 
         for (const file of files) {
             if (file.isDirectory()) {
                 const buildDir = `${dirPath}/${file.name}`;
 
-                console.log("Processing directory:", buildDir);
-
-                if (buildDir.includes('ui') || buildDir.includes('cli') || buildDir.includes('orchestrator')) {
-                    console.log("Skipping build for directory:", buildDir);
-                    continue;
-                } else {
-                    console.log("Adding directory to build queue:", buildDir);
+                if (!(buildDir.includes('ui') || buildDir.includes('cli') || buildDir.includes('orchestrator'))) {
                     built.push(buildDir);
-                }
-
-                await new Promise((resolve, reject) => {
-                    exec(`(cd ${buildDir} && pnpm wrangler build)`, (err, stdout, stderr) => {
-                        if (err) {
-                            console.error("Error executing command:", err);
-                            reject(err);
-                            return;
-                        }
-
-                        if (stdout) {
-                            console.log("Command output:", stdout);
-                        }
-                        if (stderr) {
-                            console.error("Command errors:", stderr);
-                        }
-                        resolve();
+                    await new Promise((resolve, reject) => {
+                        exec(`(cd ${buildDir} && pnpm wrangler build)`, (err, stdout, stderr) => {
+                            if (err) {
+                                log.error(`Error building worker in ${buildDir}:`, err);
+                                reject(err);
+                                return;
+                            }
+                            resolve();
+                        });
                     });
-                });
+                }
             }
         }
 
-        console.log("Built workers:", built);
+        log.info(`Built ${built.length} workers`);
         return built;
     } catch (err) {
-        console.error("Error reading directory:", err);
+        log.error("Error reading directory:", err);
         return [];
     }
 }
 
-// builtWorkers is an array of string like Paths to the compiled workers
 async function runMiniflare(builtWorkers) {
-    console.log("Running Miniflare");
-    const message = "The count is ";
-    const workers = [];
-
-    let count = 0;
-    // Iterate over the buildQueue to create worker configurations dynamically
+    let miniflareInstances = [];
     for (const dir of builtWorkers) {
         const scriptPath = path.join(dir, "dist/index.js");
-        console.log("Script path:", );
-        // const script = await fs.readFile(scriptPath, "utf8");
+        const workspaceRoot = path.resolve(scriptPath, "../../");
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
-        // Construct worker configuration
-        // const workerConfig = {
-        //     name: "worker_" + path.basename(dir), // Use directory name as part of worker name
-        //     modules: true,
-        //     script,
-        // };
-        const port = 8787 + count;
-        const mf = new Miniflare({
-            scriptPath,
-            host: "0.0.0.0",
-            port: port,
+        const { wranglerConfig } = readWranglerConfig(path.join(workspaceRoot, "wrangler.toml"));
+
+
+
+        const remappedDurableObjects = [];
+
+        if(wranglerConfig.durable_objects?.bindings?.length) {
+            remappedDurableObjects.concat(
+                wranglerConfig.durable_objects.bindings.map((doBinding) => ({ class_name: doBinding.class_name, name: doBinding.name }))
+            )
+        }
+        const sec = {};
+        wranglerConfig.services?.map((service) => {
+            console.log({service});
+            sec[service.binding] = {
+                name: service.service,
+                entrypoint: service.entrypoint
+            };
+        })
+
+        const miniflareOptions = {
             modules: true,
-            compatibilityFlags: ['nodejs_compat']
+            verbose: false,
+            scriptPath: scriptPath,
+            modulesRoot: workspaceRoot,
+            port: wranglerConfig.dev.port,
+            serviceBindings: sec,
+            kvNamespaces: wranglerConfig.kv_namespaces,
+            durableObjects: remappedDurableObjects.length > 0 ? {
+                bindings: remappedDurableObjects,
+            } : undefined,
+            migrations: wranglerConfig.migrations,
+            compatibilityDate: wranglerConfig.compatibility_date,
+            compatibilityFlags: wranglerConfig.compatibility_flags,
+        };
+
+        console.log({
+            miniflareOptions: JSON.stringify(miniflareOptions)
         });
-        console.log("Miniflare configuration:", mf);
 
-        count++;
+        miniflareInstances.push({
+            mfInstance: new Miniflare({...miniflareOptions,
+                workers: [
+                    {
+                        name: wranglerConfig.name,
+                        modules: true,
+                        modulesRoot: workspaceRoot,
+                        scriptPath: scriptPath,
+                        compatibilityDate: wranglerConfig.compatibility_date,
+                        compatibilityFlags: wranglerConfig.compatibility_flags,
+                        bindings: wranglerConfig.bindings,
+                        entrypoint: wranglerConfig.entrypoint,
+                        unsafeEphemeralDurableObjects: true,
+                        durableObjects: remappedDurableObjects.length > 0 ? {
+                            bindings: remappedDurableObjects,
+                        } : undefined,
+                    }
+                ]
+            }),
+            wranglerConfig: wranglerConfig,
+            workspaceRoot: workspaceRoot
+        });
+    }
+
+    log.info(`Running ${miniflareInstances.length} Miniflare instances`);
+
+    // Print useful statistics about each service
+    log.info("Service Statistics:");
+    log.info("-------------------");
+    for (const { mfInstance, wranglerConfig } of miniflareInstances) {
+        const { name, dev: { port } } = wranglerConfig;
+
+        log.info(`Service: ${name}`);
+        log.info(`  Port: ${port}`);
+
+        // Check if the service has durable objects
+        const durableObjects = wranglerConfig.durable_objects || [];
+        log.info(`  Durable Objects: ${durableObjects.bindings?.at(0)?.name}`);
+
+        // Check if the service has KV namespaces
+        const kvNamespaces = wranglerConfig.kv_namespaces || [];
+        log.info(`  KV Namespaces: ${kvNamespaces.length}`);
+
+        // Check if the service has environment variables
+        const envVariables = wranglerConfig.env || {};
+        log.info(`  Environment Variables: ${Object.keys(envVariables).length}`);
 
 
-        console.log("Worker configured:", {scriptPath: scriptPath, port: port});
+        log.info("-------------------");
+    }
+
+    process.on('SIGINT', function () {
+        log.info('Received SIGINT, exiting...');
+        process.exit();
+    });
+
+    log.info('Running...Press CTRL+C to exit.');
+
+    process.on('exit', () => {
+        log.info('Disposing Miniflare instances...');
+        miniflareInstances.forEach(mfInstance => {
+            if (typeof mfInstance.dispose === "function") {
+                mfInstance.dispose();
+            }
+        });
+        log.info('Miniflare instances disposed successfully');
+    });
+
+    while (true) {
+        await new Promise(r => setTimeout(r, 1000));
     }
 }
 

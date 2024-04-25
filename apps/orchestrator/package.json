@@ -9,9 +9,16 @@
     "start": "./run.js"
   },
   "devDependencies": {
-    "miniflare": "latest"
+    "miniflare": "latest",
+    "workerd": "latest",
+    "wrangler": "latest"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "gray-matter": "^4.0.3",
+    "toml": "^3.0.0",
+    "tslog": "^4.9.2"
+  }
 }
