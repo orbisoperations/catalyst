@@ -8,6 +8,8 @@ import {grabTokenInHeader} from "@catalyst/jwt"
 import { print } from 'graphql'
 import { AsyncExecutor } from '@graphql-tools/utils'
 import {Env} from "./env"
+import { DataChannel, DataChannelActionResponse, DataChannelId, Token } from '@catalyst/schema_zod';
+import { toError } from 'graphql/jsutils/toError';
 // // https://github.com/ardatan/schema-stitching/blob/master/examples/stitching-directives-sdl/src/gateway.ts
 export async function fetchRemoteSchema(executor: Executor) {
   // throw new Error();
@@ -75,6 +77,7 @@ async function makeGatewaySchema(endpoints: { endpoint: string }[], token?: stri
 
 type Variables = {
   claims: string[]
+  "catalyst-token": string
 };
 
 
@@ -82,7 +85,10 @@ const app = new Hono<{ Bindings: Env & Record<string, any>, Variables: Variables
 app.use(async (c, next) => {
   console.log('in da gtwy');
 
+
   const [token, error] =  grabTokenInHeader(c.req.header("Authorization"));
+  if(!token) console.error({tokenError: token, error: "invalid token before createYoga"})
+  else console.error('token should be working', token)
 
   if (error) {
     return c.json({
@@ -101,6 +107,7 @@ app.use(async (c, next) => {
     return c.json({message: 'Token validation failed'}, 403)
   }
   c.set('claims', claims);
+  c.set('catalyst-token', token)
   // we good
   await next()
 
@@ -109,19 +116,28 @@ app.use(async (c, next) => {
 app.use("/graphql", async (ctx) => {
   console.log({context: ctx})
 
-  const recievedClaims = ctx.get('claims');
+  const token = Token.safeParse({
+    catalystToken: ctx.get("catalyst-token")
+  })
 
-  console.error({recievedClaims});
+  if (!token.success) {
+    console.error(token.error)
+    return ctx.text("invalid token", 403)
+  }
   // default is used here get the default registrar
-  const allDataChannels = await ctx.env.DATA_CHANNEL_REGISTRAR.list("default", ctx.get('claims') ?? [])
+  const allDataChannels = await ctx.env.DATA_CHANNEL_REGISTRAR.list("default", token.data)
 
+  if (!allDataChannels.success) {
+    console.error(allDataChannels.error)
+    return ctx.text("no resources found", 403)
+  }
+
+  const dataChannels = DataChannel.safeParse(allDataChannels.data).success
+    ? [DataChannel.parse(allDataChannels.data)]
+    : DataChannel.array().parse(allDataChannels.data)
   console.log({allDataChannels});
-  const token =  ctx.req.header('Authorization');
-  if(!token) console.error({tokenError: token, error: "invalid token before createYoga"})
-  else console.error('token should be working', token)
-  console.log({tokenInReq: ctx.req.header('Authorization')});
   const yoga = createYoga({
-    schema: await makeGatewaySchema(allDataChannels,  token),
+    schema: await makeGatewaySchema(dataChannels,  token.data.catalystToken),
   });
 
   return yoga(ctx.req.raw, ctx.env);
