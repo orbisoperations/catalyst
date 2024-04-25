@@ -23,7 +23,6 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
     const doId = this.env.DO.idFromName(doNamespace);
     const stub = this.env.DO.get(doId);
     const channel = await stub.get(dataChannelId);
-    console.log(channel);
     return channel;
   }
   async list(doNamespace: string, filterClaims?: string[]) {
