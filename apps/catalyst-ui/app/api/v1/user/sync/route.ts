@@ -40,9 +40,6 @@ export async function GET(request: NextRequest) {
     } else {
       console.error("user or org is undefined")
     }
-
-  } else {
-    console.error("no token provided and cannot sync user")
   }
 
   return Response.json({endpoint: "user-sync"})
