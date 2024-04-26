@@ -41,7 +41,12 @@ export default function CreateChannelForm({
               fd.set("organization", user?.custom.org);
               fd.set("name", user?.custom.org + "/" + fd.get("name"));
               const newChannel = await createDataChannel(fd, token ?? "");
-              router.push("/channels/" + newChannel.id);
+              if (newChannel.success)
+                router.push("/channels/" + newChannel.data.id);
+              else {
+                console.error(newChannel.error);
+                alert("Failed to create channel");
+              }
             }}
           >
             <Grid gap={5}>
