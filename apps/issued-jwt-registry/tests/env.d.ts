@@ -1,12 +1,11 @@
-declare module "cloudflare:test" {
-	// Controls the type of `import("cloudflare:test").env`
-	import IJ_Registry from '@catalyst/issued-jwt-registry/src/index';
-	// import AuthzedWorker from "@catalyst/authx_authzed_api/src";
-	// import JWTWorker from "@catalyst/authx_token_api";
+declare module 'cloudflare:test' {
+
+import IssuedJWTRegistryWorker, { I_JWT_Registry } from '@catalyst/issued-jwt-registry/src/index';
+
+	// Controls the type of `import("cloudflare:test").env
 
 	interface ProvidedEnv extends Env {
-		ISSUED_JWT_REGISTRY: DurableObjectNamespace<IJ_Registry>;
-		// AUTHX_AUTHZED_API: Service<AuthzedWorker>
-		// AUTHX_TOKEN_API: Service<JWTWorker>
+		ISSUED_JWT_WORKER: Service<IssuedJWTRegistryWorker>
 	}
+
 }
