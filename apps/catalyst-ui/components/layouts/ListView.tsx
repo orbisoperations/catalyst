@@ -6,7 +6,7 @@ import { Footer, ListedHeader, TopBar } from "./components";
 export type ListViewProps = PropsOf<typeof Box> & {
   headerTitle?: { text: string; adjacent?: JSX.Element };
   subtitle?: string;
-  showSpinner?: boolean
+  showspinner?: boolean;
   actions?: JSX.Element;
   topbartitle?: string;
   topbaractions?: { display: string; path: string }[];
@@ -31,25 +31,29 @@ export const ListView = (props: ListViewProps) => {
       height={"100vh"}
     >
       <TopBar
-        title={props.topbartitle} 
+        title={props.topbartitle}
         actions={props.topbaractions}
         zIndex={10}
       />
       <Box height={"85%"} overflowY={"auto"} {...boxProps}>
-        {!props.showSpinner ? 
+        {!props.showspinner ? (
           <Container maxW="container.xl" p={2}>
             <Box position={"relative"} p={5}>
-              <ListedHeader title={title} actions={actions} subtitle={subtitle} />
+              <ListedHeader
+                title={title}
+                actions={actions}
+                subtitle={subtitle}
+              />
               {positionChildren === "top" && <Box>{children}</Box>}
               <Box>{props.table}</Box>
               {positionChildren === "bottom" && <Box>{children}</Box>}
             </Box>
-          </Container> 
-          : 
-          <Flex height={'100%'}>
-            <Spinner size='xl' m={'auto'} />
+          </Container>
+        ) : (
+          <Flex height={"100%"}>
+            <Spinner size="xl" m={"auto"} />
           </Flex>
-        }
+        )}
       </Box>
       <Footer>
         <Flex justify={"space-between"} w="100%" align={"center"}>
