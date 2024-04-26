@@ -1,5 +1,5 @@
 import { DurableObject, WorkerEntrypoint } from 'cloudflare:workers';
-import {User} from "../../../packages/schema_zod"
+import { User } from '../../../packages/schema_zod';
 /**
  * Welcome to Cloudflare Workers! This is your first Durable Objects application.
  *
@@ -56,12 +56,10 @@ function getOrgFromRoles(roles: Record<string, Record<string, string>>): [string
 	}
 }
 
-
 export class UserCredsCache extends DurableObject<Env> {
 	async getUser(token: string) {
 		let user: User | undefined = undefined;
 		user = await this.ctx.storage.get<User>(token);
-
 		if (user) {
 			// cleanup
 			this.ctx.waitUntil(this.purge(token, user));
@@ -105,11 +103,11 @@ export class UserCredsCache extends DurableObject<Env> {
 					userId: user,
 					orgId: org,
 					zitadelRoles: roles,
-				})
+				});
 				if (!parseUser.success) {
-					return undefined
+					return undefined;
 				}
-				return  parseUser.data;
+				return parseUser.data;
 			} else {
 				console.error('user or org is undefined and unable to validate user');
 				return undefined;
@@ -144,6 +142,7 @@ export default class UserCredsCacheWorker extends WorkerEntrypoint<Env> {
 	async getUser(token: string, cacheNamespace: string = 'default') {
 		const id = this.env.CACHE.idFromName(cacheNamespace);
 		const stub: DurableObjectStub<UserCredsCache> = this.env.CACHE.get(id);
-		return stub.getUser(token)
+		const user = await stub.getUser(token);
+		return user;
 	}
 }

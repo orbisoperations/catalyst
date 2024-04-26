@@ -41,9 +41,13 @@ import { useEffect, useState } from "react";
 import { useUser } from "../contexts/User/UserContext";
 type DataChannelDetailsProps = {
   channelDetails: (id: string, token: string) => Promise<any | undefined>;
-  updateChannel: (data: FormData) => Promise<void>;
-  deleteChannel: (id: string) => Promise<void>;
-  handleSwitch: (channelId: string, accessSwitch: boolean) => Promise<void>;
+  updateChannel: (data: FormData, token: string) => Promise<void>;
+  deleteChannel: (id: string, token: string) => Promise<void>;
+  handleSwitch: (
+    channelId: string,
+    accessSwitch: boolean,
+    token: string
+  ) => Promise<void>;
 };
 export default function DataChannelDetailsComponent({
   channelDetails,
@@ -80,16 +84,16 @@ export default function DataChannelDetailsComponent({
   function fetchChannelDetails() {
     if (id && typeof id === "string" && token)
       channelDetails(id, token).then((data) => {
-        setChannel(data);
-        setEditChannel(data);
+        setChannel(data.data);
+        setEditChannel(data.data);
         editDisclosure.onClose();
       });
   }
-  useEffect(fetchChannelDetails, []);
+  useEffect(fetchChannelDetails, [token]);
 
   return (
     <DetailedView
-      showSpinner={false}
+      showspinner={!token}
       actions={
         <Flex gap={10}>
           <Flex gap={2} align={"center"}>
@@ -102,7 +106,8 @@ export default function DataChannelDetailsComponent({
                     if (editChannel) {
                       handleSwitch(
                         editChannel.id,
-                        e.target.checked ? true : false
+                        e.target.checked ? true : false,
+                        token ?? ""
                       ).then(fetchChannelDetails);
                     }
                   }}
@@ -154,8 +159,8 @@ export default function DataChannelDetailsComponent({
                   <OrbisButton
                     colorScheme="red"
                     onClick={() => {
-                      if (id && typeof id === "string")
-                        deleteChannel(id).then(() => {
+                      if (id && typeof id === "string" && token)
+                        deleteChannel(id, token).then(() => {
                           onClose();
                           router.push("/channels");
                         });
@@ -181,14 +186,14 @@ export default function DataChannelDetailsComponent({
                   onSubmit={(e) => {
                     e.preventDefault();
                     const formData = new FormData(e.currentTarget);
-                    if (editChannel) {
+                    if (editChannel && token) {
                       formData.append("id", editChannel.id);
                       formData.append("organization", user?.custom.org);
                       formData.set(
                         "name",
                         user?.custom.org + "/" + editChannel.name
                       );
-                      updateChannel(formData).then(fetchChannelDetails);
+                      updateChannel(formData, token).then(fetchChannelDetails);
                     }
                     // todo update data channel here
                   }}
@@ -202,7 +207,7 @@ export default function DataChannelDetailsComponent({
                           rounded="md"
                           name="name"
                           required={true}
-                          defaultValue={editChannel?.name.split("/")[1]}
+                          defaultValue={editChannel?.name?.split("/")[1]}
                           onChange={(e) => {
                             editChannel &&
                               setEditChannel({

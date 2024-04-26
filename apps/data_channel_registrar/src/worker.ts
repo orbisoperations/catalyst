@@ -12,10 +12,10 @@ import JWTWorker from '../../authx_token_api/src';
 import UserCredsCacheWorker from '../../user_credentials_cache/src';
 
 export type Env = Record<string, string> & {
-  DO: DurableObjectNamespace<Registrar>
-  AUTHZED: Service<AuthzedWorker>
-  JWTTOKEN: Service<JWTWorker>
-  USERCACHE: Service<UserCredsCacheWorker>
+  DO: DurableObjectNamespace<Registrar>;
+  AUTHZED: Service<AuthzedWorker>;
+  JWTTOKEN: Service<JWTWorker>;
+  USERCACHE: Service<UserCredsCacheWorker>;
 };
 
 export default class RegistrarWorker extends WorkerEntrypoint<Env> {
@@ -24,178 +24,188 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
   }
 
   async CUDPerms(token: Token) {
-
     if (!token.cfToken && token.catalystToken) {
       return PermissionCheckResponse.parse({
         success: false,
-        error: "catalyst tokens are not permitted to create, update, or delete channels"
-      })
+        error: 'catalyst tokens are not permitted to create, update, or delete channels',
+      });
     }
-
     if (!token.cfToken) {
       return PermissionCheckResponse.parse({
         success: false,
-        error: "catalyst did not recieve a user token"
-      })
+        error: 'catalyst did not recieve a user token',
+      });
     }
 
-    const user: User | undefined = await this.env.USERCACHE.getUser(token.cfToken)
-    const parsedUser = User.safeParse(user)
+    const user: User | undefined = await this.env.USERCACHE.getUser(token.cfToken);
+    const parsedUser = User.safeParse(user);
     if (!parsedUser.success) {
       return PermissionCheckResponse.parse({
         success: false,
-        error: "catalyst unable to validate user token"
-      })
+        error: 'catalyst unable to validate user token',
+      });
     }
 
-    const canCreate = await this.env.AUTHZED.canCreateUpdateDeleteDataChannel(parsedUser.data.orgId, parsedUser.data.userId)
+    const canCreate = await this.env.AUTHZED.canCreateUpdateDeleteDataChannel(
+      parsedUser.data.orgId,
+      parsedUser.data.userId,
+    );
     if (!canCreate) {
       return PermissionCheckResponse.parse({
         success: false,
-        error: "catalyst asserts user does not have permission to create, update, or delete data channels"
-      })
+        error:
+          'catalyst asserts user does not have permission to create, update, or delete data channels',
+      });
     }
 
     return PermissionCheckResponse.parse({
-      success: true
-    })
+      success: true,
+    });
   }
   async RPerms(token: Token, dataChannelId: string) {
     if (token.cfToken) {
-      const user: User | undefined = await this.env.USERCACHE.getUser(token.cfToken)
-      const parsedUser = User.safeParse(user)
+      const user: User | undefined = await this.env.USERCACHE.getUser(token.cfToken);
+      const parsedUser = User.safeParse(user);
       if (!parsedUser.success) {
         return PermissionCheckResponse.parse({
           success: false,
-          error: "catalyst unable to validate user token"
-        })
+          error: 'catalyst unable to validate user token',
+        });
       }
 
-      const canRead = await this.env.AUTHZED.canReadFromDataChannel(dataChannelId, parsedUser.data.userId)
+      const canRead = await this.env.AUTHZED.canReadFromDataChannel(
+        dataChannelId,
+        parsedUser.data.userId,
+      );
       if (!canRead) {
         return PermissionCheckResponse.parse({
           success: false,
-          error: "catalyst asserts user does not have permission to read data channel"
-        })
+          error: 'catalyst asserts user does not have permission to read data channel',
+        });
       }
 
       return PermissionCheckResponse.parse({
-        success: true
-      })
+        success: true,
+      });
     } else if (token.catalystToken) {
       // validate JWT here
-      const jwtEntity: JWTParsingResponse = await this.env.JWTTOKEN.validateToken(token.catalystToken)
-      const parsedJWTEntity = JWTParsingResponse.safeParse(jwtEntity)
+      const jwtEntity: JWTParsingResponse = await this.env.JWTTOKEN.validateToken(
+        token.catalystToken,
+      );
+      const parsedJWTEntity = JWTParsingResponse.safeParse(jwtEntity);
       if (!parsedJWTEntity.success) {
         return PermissionCheckResponse.parse({
           success: false,
-          error: parsedJWTEntity.error
-        })
+          error: parsedJWTEntity.error,
+        });
       }
 
       if (parsedJWTEntity.success && !parsedJWTEntity.data.valid) {
         return PermissionCheckResponse.parse({
           success: false,
-          error: parsedJWTEntity.data.error
-        })
+          error: parsedJWTEntity.data.error,
+        });
       }
 
-      const userId = parsedJWTEntity.data.entity!.split("/")[1]
-      const canRead = await this.env.AUTHZED.canReadFromDataChannel(dataChannelId, userId)
+      const userId = parsedJWTEntity.data.entity!.split('/')[1];
+      const canRead = await this.env.AUTHZED.canReadFromDataChannel(dataChannelId, userId);
       if (!canRead) {
         return PermissionCheckResponse.parse({
           success: false,
-          error: "catalyst asserts user does not have permission to read data channel"
-        })
+          error: 'catalyst asserts user does not have permission to read data channel',
+        });
       }
 
       return PermissionCheckResponse.parse({
-        success: true
-      })
+        success: true,
+      });
     }
 
     return PermissionCheckResponse.parse({
       success: false,
-      error: "catalyst did not recieve a token"
-    })
+      error: 'catalyst did not recieve a token',
+    });
   }
   async create(doNamespace: string, dataChannel: Omit<DataChannel, 'id'>, token: Token) {
-    const checkResp = await this.CUDPerms(token)
+    const checkResp = await this.CUDPerms(token);
     if (!checkResp.success) {
       return DataChannelActionResponse.parse({
         success: false,
-        error: checkResp.error
-      })
+        error: checkResp.error,
+      });
     }
     const doId = this.env.DO.idFromName(doNamespace);
     const stub = this.env.DO.get(doId);
-    const create =  await stub.create(dataChannel);
+    const create = await stub.create(dataChannel);
+    await this.env.AUTHZED.addDataChannelToOrg(dataChannel.creatorOrganization, create.id);
+    await this.env.AUTHZED.addOrgToDataChannel(create.id, dataChannel.creatorOrganization);
     return DataChannelActionResponse.parse({
       success: true,
-      data: create
-    })
+      data: create,
+    });
   }
   async update(doNamespace: string, dataChannel: DataChannel, token: Token) {
-    const checkResp = await this.CUDPerms(token)
+    const checkResp = await this.CUDPerms(token);
     if (!checkResp.success) {
       return DataChannelActionResponse.parse({
         success: false,
-        error: checkResp.error
-      })
+        error: checkResp.error,
+      });
     }
     const doId = this.env.DO.idFromName(doNamespace);
     const stub = this.env.DO.get(doId);
-    const update =  stub.update(dataChannel);
+    const update = stub.update(dataChannel);
     return DataChannelActionResponse.parse({
       success: true,
-      data: update
-    })
+      data: update,
+    });
   }
-  async get(doNamespace: string, dataChannelId: string, token: Token){
-    const canRead = await this.RPerms(token, dataChannelId)
+  async get(doNamespace: string, dataChannelId: string, token: Token) {
+    const canRead = await this.RPerms(token, dataChannelId);
     if (!canRead.success) {
       return DataChannelActionResponse.parse({
         success: false,
-        error: canRead.error
-      })
+        error: canRead.error,
+      });
     }
     const doId = this.env.DO.idFromName(doNamespace);
     const stub = this.env.DO.get(doId);
     const channel = await stub.get(dataChannelId);
     return DataChannelActionResponse.parse({
       success: true,
-      data: channel
-    })
+      data: channel,
+    });
   }
   async list(doNamespace: string, token: Token) {
     const { DO } = this.env;
     const doId = DO.idFromName(doNamespace);
     const stub = DO.get(doId);
     const list = await stub.list();
-    const listWithPerms = (await Promise.all(
-      list.map(async (dc) => {
-        return {canRead: await this.RPerms(token, dc.id), dataChannel: dc}
+    const listWithPerms = (
+      await Promise.all(
+        list.map(async dc => {
+          return { canRead: await this.RPerms(token, dc.id), dataChannel: dc };
+        }),
+      )
+    )
+      .filter(({ canRead }) => {
+        return canRead.success;
       })
-    )).filter(({canRead}) => {
-      if (!canRead.success) {
-        console.error(canRead.error)
-      }
-      return canRead.success
-    }).map(({dataChannel}) => {
-      return dataChannel
-    })
+      .map(({ dataChannel }) => {
+        return dataChannel;
+      });
     return DataChannelActionResponse.parse({
       success: true,
-      data: listWithPerms
+      data: listWithPerms,
     });
   }
   async delete(doNamespace: string, dataChannelID: string, token: Token) {
-    const checkResp = await this.CUDPerms(token)
+    const checkResp = await this.CUDPerms(token);
     if (!checkResp.success) {
       return DataChannelActionResponse.parse({
         success: false,
-        error: checkResp.error
-      })
+        error: checkResp.error,
+      });
     }
     const doId = this.env.DO.idFromName(doNamespace);
     const stub = this.env.DO.get(doId);
@@ -203,13 +213,13 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
     if (!d) {
       return DataChannelActionResponse.parse({
         success: false,
-        error: "catalyst unable to delete data channel"
-      })
+        error: 'catalyst unable to delete data channel',
+      });
     }
     return DataChannelActionResponse.parse({
       success: true,
-      data: []
-    })
+      data: [],
+    });
   }
 }
 
