@@ -39,7 +39,7 @@ export default function DataChannelListComponents({
   // TODO: Update to use the dynamic organization id
   return (
     <ListView
-      showspinner={false}
+      //$showspinner={false ? true : undefined}
       actions={
         <Flex gap={5}>
           <CreateButton
