@@ -63,7 +63,7 @@ interface User {
 	orgId: string
 }
 export class UserCredsCache extends DurableObject<Env> {
-	async getUser(token: string) {
+	async getUser(token: string): Promise<User | undefined> {
 		let user: User | undefined = undefined
 		user = await this.ctx.storage.get<User>(token)
 
@@ -143,7 +143,7 @@ export default class UserCredsCacheWorker extends WorkerEntrypoint<Env>{
 	 * @param ctx - The execution context of the Worker
 	 * @returns The response to be sent back to the client
 	 */
-	async getUser(token: string, cacheNamespace:string = "default") {
+	async getUser(token: string, cacheNamespace:string = "default"): Promise<User | undefined> {
 		const id = this.env.CACHE.idFromName(cacheNamespace)
 		const stub = this.env.CACHE.get(id)
 		return stub.getUser(token)
