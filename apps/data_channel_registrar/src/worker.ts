@@ -145,6 +145,7 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
     });
   }
   async update(doNamespace: string, dataChannel: DataChannel, token: Token) {
+    console.log("updating data channel", dataChannel)
     const checkResp = await this.CUDPerms(token);
     if (!checkResp.success) {
       return DataChannelActionResponse.parse({
@@ -152,9 +153,11 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
         error: checkResp.error,
       });
     }
+    console.log("user can update data channel")
     const doId = this.env.DO.idFromName(doNamespace);
     const stub = this.env.DO.get(doId);
-    const update = stub.update(dataChannel);
+    const update = await stub.update(dataChannel);
+    console.log("updated data channel", update)
     return DataChannelActionResponse.parse({
       success: true,
       data: update,
