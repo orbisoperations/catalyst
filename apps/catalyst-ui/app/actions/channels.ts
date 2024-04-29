@@ -115,5 +115,5 @@ export async function deleteChannel(channelID: string, token: string) {
   const tokenObject = {
     cfToken: token,
   };
-  return await api.delete("default", channelID, tokenObject);
+  return await api.remove("default", channelID, tokenObject);
 }
