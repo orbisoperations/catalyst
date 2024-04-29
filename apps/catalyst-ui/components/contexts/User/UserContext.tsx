@@ -89,6 +89,12 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         console.log(res.custom.org);
         setUser(res);
       });
+
+    fetch("/api/v1/user/sync", {
+      method: "GET"
+    }).then((res) => {
+      console.log(res)
+    })
   }, []); //removed router from dependency array - put back if needed
 
   return (
