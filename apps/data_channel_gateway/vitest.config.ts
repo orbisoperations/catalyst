@@ -89,7 +89,7 @@ export default defineWorkersProject(async () => {
                 compatibilityFlags: ["nodejs_compat"],
                 unsafeEphemeralDurableObjects: true,
                 durableObjects: {
-                  "HSM": "HSM"
+                  "KEY_PROVIDER": "JWTKeyProvider"
                 },
                 // kvNamespaces: ["KV_NAMESPACE"],
               },

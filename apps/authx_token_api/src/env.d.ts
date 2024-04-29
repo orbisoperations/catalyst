@@ -1,4 +1,4 @@
-import {HSM} from "./do_hsm"
+import {JWTKeyProvider} from "./durable_object_security_module"
 interface Env {
-	HSM: DurableObjectNamespace<HSM>;
+	KEY_PROVIDER: DurableObjectNamespace<JWTKeyProvider>;
 }

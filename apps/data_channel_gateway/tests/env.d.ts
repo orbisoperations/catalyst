@@ -3,8 +3,9 @@ declare module "cloudflare:test" {
 
   import RegistrarWorker, {Registrar} from '@catalyst/data_channel_registrar/src/worker';
   import AuthzedWorker from "@catalyst/authx_authzed_api/src";
-  import JWTWorker from "@catalyst/authx_token_api/src/index";
+  import JWTWorker from "@catalyst/authx_token_api/src";
 
+// @ts-expect-error Env is extended (but not exported) as a part of the vitest integration
   interface ProvidedEnv extends Env {
     APP_MIGRATIONS: D1Migration[];
     TEST_SEED_MIGRATIONS: D1Migration[];

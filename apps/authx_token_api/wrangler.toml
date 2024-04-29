@@ -9,8 +9,8 @@ port = 5052
 
 # https://developers.cloudflare.com/durable-objects/
 [durable_objects]
-bindings = [{name = "HSM", class_name = "HSM"}]
+bindings = [{name = "KEY_PROVIDER", class_name = "JWTKeyProvider"}]
 
 [[migrations]]
 tag = "v1" # Should be unique for each entry
-new_classes = ["HSM"]
+new_classes = ["JWTKeyProvider"]
