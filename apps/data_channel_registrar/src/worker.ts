@@ -160,7 +160,8 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
       data: update,
     });
   }
-  async get(doNamespace: string, dataChannelId: string, token: Token) {
+  async read(doNamespace: string, dataChannelId: string, token: Token) {
+    console.log("getting dc for user")
     const canRead = await this.RPerms(token, dataChannelId);
     if (!canRead.success) {
       return DataChannelActionResponse.parse({
@@ -171,6 +172,7 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
     const doId = this.env.DO.idFromName(doNamespace);
     const stub = this.env.DO.get(doId);
     const channel = await stub.get(dataChannelId);
+    console.log("found dc: ", channel)
     return DataChannelActionResponse.parse({
       success: true,
       data: channel,
