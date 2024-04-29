@@ -61,6 +61,10 @@ export default defineWorkersProject(async () => {
               DATA_CHANNEL_REGISTRAR_DO: {
                 className: "Registrar",
                 scriptName: "data_channel_registrar"
+              },
+              JWT_TOKEN_DO: {
+                className: "JWTKeyProvider",
+                scriptName: "authx_token_api"
               }
             },
             /*d1Databases: {
