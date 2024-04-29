@@ -4,6 +4,10 @@ main = "src/index.ts"
 compatibility_date = "2024-04-19"
 compatibility_flags = [ "nodejs_compat" ]
 
+[dev]
+ip = "localhost"
+port = 5053
+
 # Automatically place your workloads in an optimal location to minimize latency.
 # If you are running back-end logic in a Worker, running it closer to your back-end infrastructure
 # rather than the end user may result in better performance.
@@ -48,17 +52,17 @@ compatibility_flags = [ "nodejs_compat" ]
 # namespace = "my-namespace"
 
 # Bind a Durable Object. Durable objects are a scale-to-zero compute primitive based on the actor model.
-# Durable Objects can live for as long as needed. Use these when you need a long-running "server", such as in realtime apps.
+# Durable Objects can live for as long as neede d. Use these when you need a long-running "server", such as in realtime apps.
 # Docs: https://developers.cloudflare.com/workers/runtime-apis/durable-objects
 [[durable_objects.bindings]]
-name = "ISSUED_JWT_REGISTRY"
-class_name = "IJ_Registry"
+name = "ISSUED_JWT_REGISTRY_DO"
+class_name = "I_JWT_Registry_DO"
 
 # Durable Object migrations.
 # Docs: https://developers.cloudflare.com/workers/learning/using-durable-objects#configure-durable-object-classes-with-migrations
 [[migrations]]
 tag = "v1"
-new_classes = ["IJ_Registry"]
+new_classes = ["I_JWT_Registry_DO"]
 
 # Bind a Hyperdrive configuration. Use to accelerate access to your existing databases from Cloudflare Workers.
 # Docs: https://developers.cloudflare.com/workers/wrangler/configuration/#hyperdrive
