@@ -233,7 +233,8 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
 export class Registrar extends DurableObject {
   async list(filterByAS: boolean = false) {
     const allChannels = await this.ctx.storage.list<DataChannel>();
-    return Array.from(allChannels.values()).filter(dc => !filterByAS || dc.accessSwitch);
+    // if filterByAS is set we passthrough access switch, else return all
+    return Array.from(allChannels.values()).filter(dc => filterByAS ? dc.accessSwitch : true);
   }
 
   async get(id: string, filterByAS: boolean = false) {
