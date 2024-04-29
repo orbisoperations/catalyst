@@ -51,12 +51,14 @@ export async function listChannels(token: string) {
 export async function getChannel(channelId: string, token: string) {
   const { CATALYST_DATA_CHANNEL_REGISTRAR_API: api } = getRequestContext()
     .env as CloudflareEnv;
+
   const tokenObject = {
     cfToken: token,
   };
 
   const channelResp: DataChannelActionResponse = await api.read("default", channelId, tokenObject);
   if (channelResp.success) {
+    console.log("found data channels: ", channelResp.data)
     return channelResp.data as DataChannel
   }
   console.error(channelResp.error)
@@ -78,7 +80,7 @@ export async function updateChannel(formData: FormData, token: string) {
     accessSwitch: formData.get("accessSwitch") === "on" ? true : false,
     id: formData.get("id") as string,
   };
-  const parsed = zDataChannel.safeParse(dataChannel);
+  const parsed = DataChannel.safeParse(dataChannel);
   if (!parsed.success) {
     console.error(parsed.error);
     throw new Error("Invalid data channel");
@@ -97,8 +99,11 @@ export async function handleSwitch(
   const tokenObject = {
     cfToken: token,
   };
-  const channel = await api.get("default", channelId, tokenObject);
-  if (!channel) return channel;
+  const channelResp = await api.read("default", channelId, tokenObject);
+  if (!channelResp.success) {
+    throw new Error("unable to toggle datachannel")
+  }
+  let channel = channelResp.data as DataChannel
   channel.accessSwitch = accessSwitch;
   return await api.update("default", channel, tokenObject);
 }
