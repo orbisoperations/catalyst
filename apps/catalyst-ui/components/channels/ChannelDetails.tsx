@@ -87,11 +87,11 @@ export default function DataChannelDetailsComponent({
               <>
                 <Switch
                   colorScheme="green"
-                  defaultChecked={editChannel?.accessSwitch ?? false}
+                  defaultChecked={channel?.accessSwitch ?? false}
                   onChange={(e) => {
-                    if (editChannel) {
+                    if (channel) {
                       handleSwitch(
-                        editChannel.id,
+                        channel.id,
                         e.target.checked ? true : false,
                         token ?? ""
                       ).then(fetchChannelDetails);
