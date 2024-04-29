@@ -206,7 +206,7 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
       data: listWithPerms,
     });
   }
-  async delete(doNamespace: string, dataChannelID: string, token: Token) {
+  async remove(doNamespace: string, dataChannelID: string, token: Token) {
     const checkResp = await this.CUDPerms(token);
     if (!checkResp.success) {
       return DataChannelActionResponse.parse({
