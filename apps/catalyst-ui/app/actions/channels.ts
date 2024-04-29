@@ -1,6 +1,9 @@
 "use server";
 import { getRequestContext } from "@cloudflare/next-on-pages";
-import z from "zod";
+import UserCredsCacheWorker from "../../../user_credentials_cache/src"
+import AuthzedWorker from "../../../authx_authzed_api/src";
+
+/*import z from "zod";
 const zDataChannel = z.object({
   name: z.string(),
   description: z.string(),
@@ -8,7 +11,8 @@ const zDataChannel = z.object({
   creatorOrganization: z.string(),
   accessSwitch: z.boolean(),
   id: z.string(),
-});
+});*/
+import {DataChannel} from "../../../../packages/schema_zod"
 export async function createDataChannel(formData: FormData) {
   // @ts-ignore
   const { CATALYST_DATA_CHANNEL_REGISTRAR_API: api } = getRequestContext()
@@ -20,7 +24,7 @@ export async function createDataChannel(formData: FormData) {
     creatorOrganization: formData.get("organization") as string,
     accessSwitch: true,
   };
-  const parsed = zDataChannel.omit({ id: true }).safeParse(data);
+  const parsed = DataChannel.omit({ id: true }).safeParse(data);
   if (!parsed.success) {
     console.error(parsed.error);
     throw new Error("Invalid data channel");
@@ -29,11 +33,22 @@ export async function createDataChannel(formData: FormData) {
   return await api.create("default", parsed.data);
 }
 
-export async function listChannels() {
-  // @ts-ignore
-  const { CATALYST_DATA_CHANNEL_REGISTRAR_API: api } = getRequestContext()
+export async function listChannels(token: string) {
+  const user_cache: Service<UserCredsCacheWorker> = getRequestContext().env.USER_CREDS_CACHE
+  const authx: Service<AuthzedWorker> = getRequestContext().env.AUTHX_AUTHZED_API
+  const { 
+    CATALYST_DATA_CHANNEL_REGISTRAR_API: api,
+  } = getRequestContext()
     .env as CloudflareEnv;
-  return await api.list("default");
+
+  const user = await user_cache.getUser(token)
+  const allChannels = await api.list("default");
+  const filteredChannels = await Promise.all(Array.from<DataChannel>(allChannels).map(async (channel) => {
+    return [channel, authx.canReadDataChannel(user.orgId, user.userId)]
+  })).then(permsArr => {
+    return permsArr.filter(([,allowed]) => allowed).map(([dataChannel]) => dataChannel)
+  })
+  return filteredChannels
 }
 
 export async function getChannel(channelId: string) {
