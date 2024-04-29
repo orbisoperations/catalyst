@@ -3,6 +3,11 @@ compatibility_date = "2024-04-05"
 compatibility_flags = [ "nodejs_compat" ]
 main = "src/index.ts"
 
+services = [
+	{ binding = "AUTHZED", service = "authx_authzed_api"},
+	{ binding = "USERCACHE", service = "user_credentials_cache"}
+]
+
 [dev]
 ip = "localhost"
 port = 5052

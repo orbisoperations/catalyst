@@ -95,3 +95,21 @@ export const JWTSigningRequest = z.object({
 })
 
 export type JWTSigningRequest = z.infer<typeof JWTSigningRequest>
+
+export const JWTSigningSuccess = z.object({
+  success: z.literal(true),
+  token: z.string()
+})
+
+export const JWTSigningError = z.object({
+  success: z.literal(false),
+  error: z.string()
+})
+
+export const JWTSigningResponse = z.discriminatedUnion("success",
+  [
+    JWTSigningSuccess,
+    JWTSigningError
+  ])
+
+export type JWTSigningResponse = z.infer<typeof JWTSigningResponse>
