@@ -29,16 +29,18 @@ describe("jwt integration tests", () => {
       entity: "testuser",
       claims: ["testclaim"],
     }
-    const tokenResp = await env.AUTHX_TOKEN_API.signJWT(jwtRequest)
-    console.log(tokenResp)
-    const validateResp = await env.AUTHX_TOKEN_API.validateToken(tokenResp.token)
+    const jwtDoId = env.JWT_TOKEN_DO.idFromName("default")
+    const jwtStub = env.JWT_TOKEN_DO.get(jwtDoId)
+    const jwtToken = await jwtStub.signJWT(jwtRequest, 1000000000)
+    console.log(jwtToken)
+    const validateResp = await env.AUTHX_TOKEN_API.validateToken(jwtToken.token)
     delete validateResp["Symbol(dispose)"]
     console.log(validateResp)
     expect(validateResp.claims[0]).toBe( 'testclaim' )
     expect(validateResp.valid).toBeTruthy()
     expect(validateResp.entity).toBe("testuser")
 
-    const invalid = await env.AUTHX_TOKEN_API.validateToken(tokenResp.token + "makebad")
+    const invalid = await env.AUTHX_TOKEN_API.validateToken(jwtToken.token + "makebad")
     expect(invalid.valid).toBeFalsy()
   })
 })
