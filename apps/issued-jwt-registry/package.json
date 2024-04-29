@@ -1,7 +1,8 @@
 {
-  "name": "issued-jwt-registry",
-  "version": "0.0.0",
-  "private": true,
+  "name": "@catalyst/issued-jwt-registry",
+  "version": "0.0.1",
+	"main": "index.ts",
+	"type": "module",
   "scripts": {
     "deploy": "wrangler deploy",
     "dev": "wrangler dev",

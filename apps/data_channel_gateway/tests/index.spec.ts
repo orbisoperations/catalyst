@@ -45,7 +45,6 @@ const teardown = async (env: ProvidedEnv) => {
   expect((await env.DATA_CHANNEL_REGISTRAR.list("default"))).toHaveLength(0)
 }
 
-// testing in module doesnt seem to work now but works fine through miniflare
 describe("registrar integration tests", () => {
   it("create data channel", async () => {
     const newDC = {
