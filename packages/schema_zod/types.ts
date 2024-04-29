@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { string, z } from 'zod';
 
 export const DataChannel = z.object({
   id: z.string(),
@@ -87,3 +87,11 @@ export const zIssuedJWTRegistry = z.object({
 })
 
 export type IssuedJWTRegistry = z.infer<typeof zIssuedJWTRegistry>
+
+export const JWTSigningRequest = z.object({
+  entity: z.string(),
+  claims: z.string().array(),
+  expiresIn: z.number().optional()
+})
+
+export type JWTSigningRequest = z.infer<typeof JWTSigningRequest>

@@ -94,9 +94,3 @@ export class JWT implements DSSJWT{
         return jwt
     }
 }
-
-export interface JWTSigningRequest {
-    entity: string
-    claims: string[]
-    expiresIn?: number
-}
