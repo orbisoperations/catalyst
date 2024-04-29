@@ -1,6 +1,6 @@
 import {z} from "zod"
 
-export const DataChannel = z.object({
+export const zDataChannel = z.object({
   id: z.string(),
   accessSwitch: z.boolean(),
   name: z.string(),
@@ -9,13 +9,24 @@ export const DataChannel = z.object({
   creatorOrganization: z.string(),
 })
 
-export type DataChannel = z.infer<typeof DataChannel>
+export type DataChannel = z.infer<typeof zDataChannel>
 
-export const OrgId = z.string()
-export type OrgId = z.infer<typeof OrgId>
+export const zOrgId = z.string()
+export type OrgId = z.infer<typeof zOrgId>
 
-export const UserId = z.string()
-export type UserId = z.infer<typeof UserId>
+export const zUserId = z.string()
+export type UserId = z.infer<typeof zUserId>
 
-export const DataChannelId = z.string()
-export type DataChannelId = z.infer<typeof DataChannelId>
+export const zDataChannelId = z.string()
+export type DataChannelId = z.infer<typeof zDataChannelId>
+
+export const zIssuedJWTRegistry = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  claims: z.array(z.string()),
+  expiry: z.date(),
+  hash: z.string(),
+})
+
+export type IssuedJWTRegistry = z.infer<typeof zIssuedJWTRegistry>
