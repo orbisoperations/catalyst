@@ -38,7 +38,7 @@ npm install @catalyst/tak-server
 1. Import the package in your Node.js script:
 
 ```javascript
-const { createTakServer } = require('@catalyst/experimental-tak-server');
+const { createTakServer } = require('@catalyst/experimental-datachannel-tak-server');
 ```
 
 2. Call the `createTakServer` function to create and start the goatak_server Docker container:
