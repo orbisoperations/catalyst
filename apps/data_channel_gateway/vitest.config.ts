@@ -57,6 +57,12 @@ export default defineWorkersProject(async () => {
           wrangler: {configPath: "./wrangler.toml"},
           miniflare: {
             unsafeEphemeralDurableObjects: true,
+            durableObjects: {
+              DATA_CHANNEL_REGISTRAR_DO: {
+                className: "Registrar",
+                scriptName: "data_channel_registrar"
+              }
+            },
             /*d1Databases: {
               "APP_DB": "catalyst"
             },
