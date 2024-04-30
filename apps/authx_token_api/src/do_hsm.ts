@@ -3,7 +3,7 @@ import { generateKeyPair, jwtVerify, KeyLike, exportSPKI, importSPKI, SignJWT, e
 import { v4 as uuidv4 } from 'uuid';
 import { JWT, JWTSigningRequest } from './jwt';
 import { DurableObject } from 'cloudflare:workers';
-import {JWTParsingResponse} from "../../../packages/schema_zod"
+import { JWTParsingResponse } from '../../../packages/schema_zod';
 
 interface KeyStateSerialized {
 	private: JWK;
@@ -50,7 +50,6 @@ export class KeyState {
 	}
 
 	async sign(jwt: JWT, expiry: number = 60 * 60 * 24 * 7) {
-		console.log({ expiry });
 		const payload = jwt.payloadRaw(expiry);
 
 		return new SignJWT(payload).setProtectedHeader({ alg: 'ES384' }).sign(this.privateKey);
@@ -135,14 +134,14 @@ export class HSM extends DurableObject {
 				valid: true,
 				entity: payload.sub,
 				claims: payload.claims,
-			})
+			});
 		} catch (e: any) {
 			return JWTParsingResponse.parse({
 				valid: false,
 				entity: undefined,
 				claims: [],
 				error: e.message as string,
-			})
+			});
 		}
 	}
 }

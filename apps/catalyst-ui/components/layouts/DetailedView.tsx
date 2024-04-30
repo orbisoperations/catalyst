@@ -6,7 +6,7 @@ import { HelpModal } from "../elements";
 type DetailedViewProps = PropsOf<typeof Box> & {
   headerTitle?: { text?: string; adjacent?: JSX.Element };
   actions?: JSX.Element | undefined;
-  showSpinner?: boolean;
+  showspinner?: boolean;
   topbaractions?: { display: string; path: string }[];
   topbartitle?: string;
   subtitle?: string;
@@ -32,7 +32,7 @@ export const DetailedView = (props: DetailedViewProps) => {
         zIndex={10}
       />
       <Box height={"85%"} overflowY={"auto"} {...boxProps}>
-        {!props.showSpinner ? 
+        {!props.showspinner ? (
           <Container maxW="container.xl" p={2}>
             <Box position={"relative"} p={5}>
               <DetailedHeader
@@ -43,11 +43,11 @@ export const DetailedView = (props: DetailedViewProps) => {
               <Box>{children}</Box>
             </Box>
           </Container>
-          : 
-          <Flex height={'100%'}>
-            <Spinner size="xl" m={'auto'}/>
+        ) : (
+          <Flex height={"100%"}>
+            <Spinner size="xl" m={"auto"} />
           </Flex>
-        }
+        )}
       </Box>
       <Footer>
         <Flex justify={"space-between"} w="100%" align={"center"}>

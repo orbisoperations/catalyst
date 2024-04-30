@@ -50,7 +50,6 @@ export default function CreateTokensForm({
   useEffect(() => {
     if (cfToken)
       listChannels(cfToken).then((resp) => {
-        console.log(resp);
         setChannels(resp.map((channel) => [channel.name, channel.description]));
       });
   }, [cfToken]);

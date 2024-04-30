@@ -14,7 +14,11 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useUser } from "../contexts/User/UserContext";
 type ListChannelsProps = {
-  listChannels: (token: string) => Promise<any[]>;
+  listChannels: (
+    token: string
+  ) => Promise<
+    { success: true; data: any[] } | { success: false; error: string }
+  >;
 };
 
 export default function DataChannelListComponents({
@@ -24,16 +28,18 @@ export default function DataChannelListComponents({
   const [channels, setChannels] = useState<any[]>([]);
   const { token } = useUser();
   useEffect(() => {
-    if (token === undefined) return;
-    listChannels(token).then((data) => {
-      setChannels(data);
-    });
+    if (token) {
+      listChannels(token).then((data) => {
+        if (!data.success) return console.error(data.error);
+        setChannels(data.data);
+      });
+    }
   }, [token]);
 
   // TODO: Update to use the dynamic organization id
   return (
     <ListView
-      showSpinner={false}
+      showspinner={false}
       actions={
         <Flex gap={5}>
           <CreateButton
