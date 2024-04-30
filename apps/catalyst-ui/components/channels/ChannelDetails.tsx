@@ -255,21 +255,12 @@ export default function DataChannelDetailsComponent({
                       />
                     </FormControl>
                     <FormControl display={"none"}>
-                      <label htmlFor="organization"></label>
-                      <Input
-                        rounded="md"
-                        name="organization"
-                        required={true}
-                        value={"org1"}
-                      />
-                    </FormControl>
-                    <FormControl display={"none"}>
                       <label htmlFor="accessSwitch"></label>
                       <Input
                         rounded="md"
                         name="accessSwitch"
                         required={true}
-                        value={editChannel?.accessSwitch ? "on" : "off"}
+                        defaultValue={editChannel?.accessSwitch ? "on" : "off"}
                       />
                     </FormControl>
                     <Flex justifyContent={"space-between"}>
