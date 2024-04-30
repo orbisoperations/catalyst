@@ -21,6 +21,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useUser } from "../contexts/User/UserContext";
+import { DataChannel, DataChannelActionResponse } from "@catalyst/schema_zod";
 
 type CreateTokensFormProps = {
   signToken: (
@@ -30,7 +31,7 @@ type CreateTokensFormProps = {
       unit: "days" | "weeks";
     }
   ) => Promise<{ token: string }>;
-  listChannels: (token: string) => Promise<any[]>;
+  listChannels: (token: string) => Promise<DataChannelActionResponse>;
 };
 
 export default function CreateTokensForm({
@@ -50,7 +51,14 @@ export default function CreateTokensForm({
   useEffect(() => {
     if (cfToken)
       listChannels(cfToken).then((resp) => {
-        setChannels(resp.map((channel) => [channel.name, channel.description]));
+        if (resp.success) {
+          setChannels(
+            (resp.data as DataChannel[]).map((channel) => [
+              channel.name,
+              channel.description,
+            ])
+          );
+        }
       });
   }, [cfToken]);
 

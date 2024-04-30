@@ -3,6 +3,7 @@ import { useUser } from "@/components/contexts/User/UserContext";
 import { OrbisButton } from "@/components/elements";
 import { DetailedView } from "@/components/layouts";
 import { navigationItems } from "@/utils/nav.utils";
+import { DataChannel, DataChannelActionResponse } from "@catalyst/schema_zod";
 import { Flex, Grid } from "@chakra-ui/layout";
 import {
   Card,
@@ -15,7 +16,10 @@ import {
 import { useRouter } from "next/navigation";
 
 type DataChannelFormProps = {
-  createDataChannel: (fd: FormData, token: string) => Promise<any>;
+  createDataChannel: (
+    fd: FormData,
+    token: string
+  ) => Promise<DataChannelActionResponse>;
 };
 
 export default function CreateChannelForm({
@@ -42,7 +46,7 @@ export default function CreateChannelForm({
               fd.set("name", user?.custom.org + "/" + fd.get("name"));
               const newChannel = await createDataChannel(fd, token ?? "");
               if (newChannel.success)
-                router.push("/channels/" + newChannel.data.id);
+                router.push("/channels/" + (newChannel.data as DataChannel).id);
               else {
                 console.error(newChannel.error);
                 alert("Failed to create channel");

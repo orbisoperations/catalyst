@@ -1,15 +1,21 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 "use client";
-import { DataChannel } from '../../../../packages/schema_zod';
+import {
+  DataChannel,
+  DataChannelActionResponse,
+} from "../../../../packages/schema_zod";
 
 export const runtime = "edge";
 import {
-  APIKeyText, CopyButton, DisplayButton, GenerateButton,
+  APIKeyText,
+  CopyButton,
+  DisplayButton,
+  GenerateButton,
   OrbisBadge,
   OrbisButton,
   ShareButton,
   TrashButton,
-} from '@/components/elements';
+} from "@/components/elements";
 import { DetailedView } from "@/components/layouts";
 import { navigationItems } from "@/utils/nav.utils";
 import { Card, CardBody, CardHeader } from "@chakra-ui/card";
@@ -42,14 +48,23 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useUser } from "../contexts/User/UserContext";
 type DataChannelDetailsProps = {
-  channelDetails: (id: string, token: string) => Promise<any | undefined>;
-  updateChannel: (data: FormData, token: string) => Promise<void>;
-  deleteChannel: (id: string, token: string) => Promise<void>;
+  channelDetails: (
+    id: string,
+    token: string
+  ) => Promise<DataChannel | undefined>;
+  updateChannel: (
+    data: FormData,
+    token: string
+  ) => Promise<DataChannelActionResponse>;
+  deleteChannel: (
+    id: string,
+    token: string
+  ) => Promise<DataChannelActionResponse>;
   handleSwitch: (
     channelId: string,
     accessSwitch: boolean,
     token: string
-  ) => Promise<void>;
+  ) => Promise<DataChannelActionResponse>;
 };
 export default function DataChannelDetailsComponent({
   channelDetails,
@@ -68,7 +83,7 @@ export default function DataChannelDetailsComponent({
   function fetchChannelDetails() {
     if (id && typeof id === "string" && token)
       channelDetails(id, token).then((data) => {
-        console.log("data channel in ui:", data)
+        console.log("data channel in ui:", data);
         setChannel(data);
         setEditChannel(data);
         editDisclosure.onClose();
@@ -283,7 +298,7 @@ export default function DataChannelDetailsComponent({
                 w={"fit-content"}
                 className="border"
                 align={"center"}
-                justify={'space-between'}
+                justify={"space-between"}
                 gap={5}
                 paddingX={".5em"}
                 paddingY={".25em"}
@@ -291,7 +306,11 @@ export default function DataChannelDetailsComponent({
               >
                 <Text>{channel?.endpoint}</Text>
                 <Flex gap={2}>
-                  <CopyButton copytext={channel?.endpoint} variant={"ghost"} colorScheme="blue" />
+                  <CopyButton
+                    copytext={channel?.endpoint}
+                    variant={"ghost"}
+                    colorScheme="blue"
+                  />
                 </Flex>
               </Flex>
             </FormControl>
