@@ -177,6 +177,7 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
     });
   }
   async list(doNamespace: string, token: Token) {
+    console.log("running list operation")
     const { DO } = this.env;
     const doId = DO.idFromName(doNamespace);
     const stub = DO.get(doId);
@@ -194,6 +195,7 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
       .map(({ dataChannel }) => {
         return dataChannel;
       });
+    console.log("found datachannels for user", listWithPerms)
     return DataChannelActionResponse.parse({
       success: true,
       data: listWithPerms,
