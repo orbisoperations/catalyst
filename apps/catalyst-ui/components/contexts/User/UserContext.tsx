@@ -78,6 +78,7 @@ function getIdentity() {
 function syncUser() {
   return fetch("/api/v1/user/sync", {
     method: "GET",
+    credentials: "include"
   }).then((res) => {
     return res.json() as Promise<{ token: string } | { error: string }>;
   });

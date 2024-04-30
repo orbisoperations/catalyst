@@ -13,8 +13,13 @@ export async function signJWT(
   expiration: { value: number; unit: "days" | "weeks" } = {
     value: 7,
     unit: "days",
-  }
+  },
+  cfToken: string
 ) {
+
+  const tokenObject = {
+    cfToken: cfToken,
+  };
   // @ts-ignore
   const tokens = getRequestContext().env.AUTHX_TOKEN_API;
   if (expiration.unit === "days" && expiration.value > 365) {
@@ -29,5 +34,5 @@ export async function signJWT(
     24 *
     (expiration.unit === "days" ? expiration.value : expiration.value * 7);
 
-  return await tokens.signJWT(jwtRequest, exp);
+  return await tokens.signJWT(jwtRequest, exp, tokenObject);
 }

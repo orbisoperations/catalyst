@@ -35,7 +35,7 @@ Catalyst is a stack of tightly coupled technologies that can be deployed on any 
 * providing technology anyone can deploy
 
 
-Catalyst is an Organization based platform. Organizations own and share data and user, data custodian, and org admins are roles users within an org can have.
+Catalyst is an OrganizationWithRoles based platform. Organizations own and share data and user, data custodian, and org admins are roles users within an org can have.
 
 Users can create API keys which are given to applications (UI or server-side) to access data within Catalyst.
 

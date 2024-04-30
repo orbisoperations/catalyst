@@ -33,26 +33,31 @@ export interface Env {
 	// MY_QUEUE: Queue;
 }
 
-function getOrgFromRoles(roles: Record<string, Record<string, string>>): [string, string[]] | undefined {
+type Roles = Record<string, Record<string, string>>;
+
+type OrganizationWithRoles = {
+	org: string
+	roles: string[]
+}
+
+function getOrgFromRoles(roles: Roles): OrganizationWithRoles | undefined {
+	const adminRoles = ['platform-admin', 'org-admin', 'org-user'];
 	const roleKeys = Object.keys(roles);
-	let rolesList = roleKeys.filter((key) => key === 'platform-admin' || key === 'org-admin' || key === 'org-user');
-	const key = roleKeys.find((key) => key === 'platform-admin' || key === 'org-admin' || key === 'org-user') as
-		| 'platform-admin'
-		| 'org-admin'
-		| 'org-user'
-		| undefined;
+	let rolesList = roleKeys.filter((key) => adminRoles.includes(key));
+	const adminRoleKey = roleKeys.find((key) => adminRoles.includes(key));
 
-	if (!key) return undefined;
+	if (!adminRoleKey) return undefined;
 
-	if (roleKeys.includes(key)) {
-		const role = roles[key];
-		const orgKeys = Object.keys(role);
-		if (orgKeys.length > 0) {
-			const org = orgKeys[0];
-			return [role[org].split('.')[0], rolesList];
-		} else {
-			return undefined;
-		}
+	const role = roles[adminRoleKey];
+	const orgKeys = Object.keys(role);
+
+	if (orgKeys.length === 0) return undefined;
+
+	const org = orgKeys[0];
+
+	return {
+		org: role[org].split('.')[0],
+		roles: rolesList
 	}
 }
 
@@ -92,9 +97,9 @@ export class UserCredsCache extends DurableObject<Env> {
 				custom: Record<string, Record<string, Record<string, string>>>;
 			};
 			const user: string = cfUser.email;
-			const result = getOrgFromRoles(cfUser.custom['urn:zitadel:iam:org:project:roles']);
-			if (!result) return undefined;
-			const [org, roles] = result;
+			const orgFromRoles = getOrgFromRoles(cfUser.custom['urn:zitadel:iam:org:project:roles']);
+			if (!orgFromRoles) return undefined;
+			const {org, roles} = orgFromRoles;
 
 			console.log('verified user attribs', user, org);
 
