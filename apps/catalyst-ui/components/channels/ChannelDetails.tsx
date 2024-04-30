@@ -40,7 +40,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useUser } from "../contexts/User/UserContext";
 type DataChannelDetailsProps = {
-  channelDetails: (id: string) => Promise<any | undefined>;
+  channelDetails: (id: string, token: string) => Promise<any | undefined>;
   updateChannel: (data: FormData) => Promise<void>;
   deleteChannel: (id: string) => Promise<void>;
   handleSwitch: (channelId: string, accessSwitch: boolean) => Promise<void>;
@@ -54,7 +54,7 @@ export default function DataChannelDetailsComponent({
   const { isOpen, onOpen, onClose } = useDisclosure();
   const editDisclosure = useDisclosure();
   const router = useRouter();
-  const { user } = useUser();
+  const { user, token } = useUser();
   const { id } = useParams();
   const [channel, setChannel] = useState<any>();
   const [editChannel, setEditChannel] = useState<any>();
@@ -78,8 +78,8 @@ export default function DataChannelDetailsComponent({
   ];
 
   function fetchChannelDetails() {
-    if (id && typeof id === "string")
-      channelDetails(id).then((data) => {
+    if (id && typeof id === "string" && token)
+      channelDetails(id, token).then((data) => {
         setChannel(data);
         setEditChannel(data);
         editDisclosure.onClose();

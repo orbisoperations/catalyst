@@ -11,24 +11,79 @@ const zDataChannel = z.object({
   accessSwitch: z.boolean(),
   id: z.string(),
 });
-export async function createDataChannel(formData: FormData) {
-  // @ts-ignore
-  const { CATALYST_DATA_CHANNEL_REGISTRAR_API: api } = getRequestContext()
-    .env as CloudflareEnv;
+
+type User = {
+  orgId: string;
+  userId: string;
+  zitadelRoles: string[];
+};
+
+async function getUser(token: string) {
+  const {
+    // @ts-ignore
+    USER_CREDS_CACHE: user_cache,
+    // @ts-ignore
+    AUTHX_AUTHZED_API: authx,
+    // @ts-ignore
+    CATALYST_DATA_CHANNEL_REGISTRAR_API: api,
+  } = getRequestContext().env as CloudflareEnv;
+
+  return user_cache.getUser(token) as unknown as User | undefined;
+}
+
+export async function createDataChannel(formData: FormData, token: string) {
+  const {
+    // @ts-ignore
+    CATALYST_DATA_CHANNEL_REGISTRAR_API: api,
+    // @ts-ignore
+    USER_CREDS_CACHE: user_cache,
+    // @ts-ignore
+    AUTHX_AUTHZED_API: authx,
+  } = getRequestContext().env as CloudflareEnv;
+  const user = await getUser(token);
+  // zitadel roles muust inclide org-admin or data-custodian
+  const userParsed = z
+    .object({
+      orgId: z.string(),
+      userId: z.string(),
+      zitadelRoles: z.array(z.string(z.enum(["org-admin", "data-custodian"]))),
+    })
+    .safeParse(user);
+
+  if (!userParsed.success) {
+    throw new Error(`Invalid user: ${userParsed.error}`);
+  }
+
+  const canCreate = await authx.canCreateUpdateDeleteDataChannel(
+    userParsed.data.orgId,
+    userParsed.data.userId
+  );
+
+  if (!canCreate) {
+    throw new Error("User does not have permission to create data channel");
+  }
+
+  console.log("should create channel");
+
   const data = {
     name: formData.get("name") as string,
     description: formData.get("description") as string,
     endpoint: formData.get("endpoint") as string,
-    creatorOrganization: formData.get("organization") as string,
+    creatorOrganization: userParsed.data.orgId,
     accessSwitch: true,
   };
+
   const parsed = DataChannel.omit({ id: true }).safeParse(data);
+
   if (!parsed.success) {
     console.error(parsed.error);
     throw new Error("Invalid data channel");
   }
 
-  return await api.create("default", parsed.data);
+  const newChannel = await api.create("default", parsed.data);
+  await authx.addDataChannelToOrg(userParsed.data.orgId, newChannel.id);
+  await authx.addOrgToDataChannel(newChannel.id, userParsed.data.orgId);
+  return newChannel;
 }
 
 export async function listChannels(token: string) {
@@ -41,36 +96,46 @@ export async function listChannels(token: string) {
     CATALYST_DATA_CHANNEL_REGISTRAR_API: api,
   } = getRequestContext().env as CloudflareEnv;
 
-  const user = (await user_cache.getUser(token)) as unknown as {
-    orgId: string;
-    userId: string;
-  };
-  console.log("user", { user });
+  const user = await getUser(token);
+
   if (!user) return [];
+
   const allChannels = await api.list("default");
+
   const filteredChannels = await Promise.all(
     Array.from<DataChannel>(allChannels).map(async (channel) => {
-      return [channel, authx.canReadDataChannel(user.orgId, user.userId)];
+      return [
+        channel,
+        await authx.canReadFromDataChannel(channel.id, user.userId),
+      ];
     })
   ).then((permsArr) => {
     return permsArr
-      .filter(([, allowed]) => allowed)
+      .filter(([channel, allowed]) => {
+        console.log("allowed", allowed, channel.id);
+        return allowed;
+      })
       .map(([dataChannel]) => dataChannel);
   });
   return filteredChannels;
 }
 
-export async function getChannel(channelId: string) {
+export async function getChannel(channelId: string, token: string) {
   // @ts-ignore
-  const { CATALYST_DATA_CHANNEL_REGISTRAR_API: api } = getRequestContext()
-    .env as CloudflareEnv;
+  const { CATALYST_DATA_CHANNEL_REGISTRAR_API: api, AUTHX_AUTHZED_API: authx } =
+    getRequestContext().env as CloudflareEnv;
+  const user = await getUser(token);
+  if (!user) return undefined;
+  const canRead = authx.canReadDataChannel(user.orgId, user.userId);
+  if (!canRead) return undefined;
+
   return await api.get("default", channelId);
 }
 
 export async function updateChannel(formData: FormData) {
   // @ts-ignore
-  const { CATALYST_DATA_CHANNEL_REGISTRAR_API: api } = getRequestContext()
-    .env as CloudflareEnv;
+  const { CATALYST_DATA_CHANNEL_REGISTRAR_API: api, AUTHX_AUTHZED_API: authx } =
+    getRequestContext().env as CloudflareEnv;
   const dataChannel = {
     name: formData.get("name") as string,
     description: formData.get("description") as string,
