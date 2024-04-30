@@ -1,0 +1,6 @@
+name = "datachannel-adsb"
+compatibility_date = "2024-04-15"
+main = "index.ts"
+
+[dev]
+port = 4008

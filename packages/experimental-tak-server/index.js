@@ -42,6 +42,7 @@ function createAndStartContainer() {
         Tty: false,
         OpenStdin: false,
         StdinOnce: false,
+        Args: ["--debug"],
         HostConfig: {
             PortBindings: {
                 '8080/tcp': [{ HostPort: '8080' }],
