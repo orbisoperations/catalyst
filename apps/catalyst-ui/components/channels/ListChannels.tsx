@@ -12,8 +12,9 @@ import { Flex } from "@chakra-ui/layout";
 import { Card, CardBody } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useUser } from "../contexts/User/UserContext";
 type ListChannelsProps = {
-  listChannels: () => Promise<any[]>;
+  listChannels: (token: string) => Promise<any[]>;
 };
 
 export default function DataChannelListComponents({
@@ -21,11 +22,13 @@ export default function DataChannelListComponents({
 }: ListChannelsProps) {
   const router = useRouter();
   const [channels, setChannels] = useState<any[]>([]);
+  const { token } = useUser();
   useEffect(() => {
-    listChannels().then((data) => {
+    if (token === undefined) return;
+    listChannels(token).then((data) => {
       setChannels(data);
     });
-  }, []);
+  }, [token]);
 
   // TODO: Update to use the dynamic organization id
   return (

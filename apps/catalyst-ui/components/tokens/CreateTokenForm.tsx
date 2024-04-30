@@ -30,7 +30,7 @@ type CreateTokensFormProps = {
       unit: "days" | "weeks";
     }
   ) => Promise<{ token: string }>;
-  listChannels: () => Promise<any[]>;
+  listChannels: (token: string) => Promise<any[]>;
 };
 
 export default function CreateTokensForm({
@@ -38,7 +38,7 @@ export default function CreateTokensForm({
   listChannels,
 }: CreateTokensFormProps) {
   const router = useRouter();
-  const { user } = useUser();
+  const { user, token: cfToken } = useUser();
   const [channels, setChannels] = useState<any[]>([]);
   const [selectedChannels, setSelectedChannels] = useState<number[]>([]);
   const [token, setToken] = useState<string>("");
@@ -48,11 +48,12 @@ export default function CreateTokensForm({
     unit: "days" | "weeks";
   }>({ value: 7, unit: "days" });
   useEffect(() => {
-    listChannels().then((resp) => {
-      console.log(resp);
-      setChannels(resp.map((channel) => [channel.name, channel.description]));
-    });
-  }, []);
+    if (cfToken)
+      listChannels(cfToken).then((resp) => {
+        console.log(resp);
+        setChannels(resp.map((channel) => [channel.name, channel.description]));
+      });
+  }, [cfToken]);
 
   function createToken() {
     const jwtRequest: JWTRequest = {
