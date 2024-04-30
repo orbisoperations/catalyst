@@ -2,16 +2,9 @@
 import { getRequestContext } from "@cloudflare/next-on-pages";
 
 import z from "zod";
-import { DataChannel } from "../../../../packages/schema_zod";
+import { DataChannel, DataChannelActionResponse } from "../../../../packages/schema_zod";
 import { CloudflareEnv } from "@/env";
-const zDataChannel = z.object({
-  name: z.string(),
-  description: z.string(),
-  endpoint: z.string(),
-  creatorOrganization: z.string(),
-  accessSwitch: z.boolean(),
-  id: z.string(),
-});
+
 
 export async function createDataChannel(formData: FormData, token: string) {
   const {
@@ -56,14 +49,19 @@ export async function listChannels(token: string) {
 }
 
 export async function getChannel(channelId: string, token: string) {
-  // @ts-ignore
   const { CATALYST_DATA_CHANNEL_REGISTRAR_API: api } = getRequestContext()
     .env as CloudflareEnv;
   const tokenObject = {
     cfToken: token,
   };
-  return await api.get("default", channelId, tokenObject);
-}
+
+  const channelResp: DataChannelActionResponse = await api.read("default", channelId, tokenObject);
+  if (channelResp.success) {
+    return channelResp.data as DataChannel
+  }
+  console.error(channelResp.error)
+  throw new Error("unable to find data channel")
+} 
 
 export async function updateChannel(formData: FormData, token: string) {
   // @ts-ignore
