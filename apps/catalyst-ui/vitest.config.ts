@@ -1,4 +1,5 @@
 
+// @ts-ignore - this import is not actually broken...
 import { defineWorkersProject } from '@cloudflare/vitest-pool-workers/config';
 import path from 'node:path';
 import { Logger } from 'tslog';
