@@ -1,0 +1,9 @@
+## License
+
+This project uses goatak, which is licensed under the GNU Affero General Public License (GNU AGPL) version 3. The GNU AGPL is a free, copyleft license for software and other kinds of works, specifically designed to ensure cooperation with the community in the case of network server software.
+
+Under this license, if you modify goatak and make it available over a network, you must provide the complete source code of your modified version and license it under the same GNU AGPL v3.
+
+As a user of goatak, this project inherits the terms of the GNU AGPL v3. The source code for this project, along with any modifications made to goatak, is available at [link to your project's source code repository].
+
+For more details about the GNU AGPL v3, please refer to the [LICENSE](./LICENSE) file or visit the [GNU AGPL v3 web page](https://www.gnu.org/licenses/agpl-3.0.en.html).
