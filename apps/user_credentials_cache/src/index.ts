@@ -1,5 +1,5 @@
 import { DurableObject, WorkerEntrypoint } from 'cloudflare:workers';
-
+import {User} from "../../../packages/schema_zod"
 /**
  * Welcome to Cloudflare Workers! This is your first Durable Objects application.
  *
@@ -56,15 +56,11 @@ function getOrgFromRoles(roles: Record<string, Record<string, string>>): [string
 	}
 }
 
-interface User {
-	userId: string;
-	orgId: string;
-	zitadelRoles: string[];
-}
+
 export class UserCredsCache extends DurableObject<Env> {
 	async getUser(token: string) {
-		let user: User | undefined = undefined
-		user = await this.ctx.storage.get<User>(token)
+		let user: User | undefined = undefined;
+		user = await this.ctx.storage.get<User>(token);
 
 		if (user) {
 			// cleanup
@@ -105,11 +101,15 @@ export class UserCredsCache extends DurableObject<Env> {
 			console.log('verified user attribs', user, org);
 
 			if (user && org) {
-				return {
+				const parseUser = User.safeParse({
 					userId: user,
 					orgId: org,
 					zitadelRoles: roles,
-				} as User;
+				})
+				if (!parseUser.success) {
+					return undefined
+				}
+				return  parseUser.data;
 			} else {
 				console.error('user or org is undefined and unable to validate user');
 				return undefined;
@@ -141,9 +141,9 @@ export default class UserCredsCacheWorker extends WorkerEntrypoint<Env> {
 	 * @param ctx - The execution context of the Worker
 	 * @returns The response to be sent back to the client
 	 */
-	async getUser(token: string, cacheNamespace:string = "default") {
-		const id = this.env.CACHE.idFromName(cacheNamespace)
-		const stub = this.env.CACHE.get(id)
+	async getUser(token: string, cacheNamespace: string = 'default') {
+		const id = this.env.CACHE.idFromName(cacheNamespace);
+		const stub: DurableObjectStub<UserCredsCache> = this.env.CACHE.get(id);
 		return stub.getUser(token)
 	}
-};
+}
