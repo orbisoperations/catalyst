@@ -21,7 +21,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useUser } from "../contexts/User/UserContext";
-import { DataChannel, DataChannelActionResponse } from "@catalyst/schema_zod";
+import {DataChannel, DataChannelActionResponse, JWTSigningResponse} from "@catalyst/schema_zod";
 
 type CreateTokensFormProps = {
   signToken: (
@@ -29,8 +29,9 @@ type CreateTokensFormProps = {
     expiration: {
       value: number;
       unit: "days" | "weeks";
-    }
-  ) => Promise<{ token: string }>;
+    },
+    cfToken: string
+  ) => Promise<JWTSigningResponse>;
   listChannels: (token: string) => Promise<DataChannelActionResponse>;
 };
 
@@ -71,10 +72,15 @@ export default function CreateTokensForm({
         (user && user.custom.org && `${user?.custom.org}/${user?.email}`) ||
         "default",
     };
-    signToken(jwtRequest, expiration)
+    if(!cfToken) {
+      throw "No cf token";
+    }
+    signToken(jwtRequest, expiration, cfToken!)
       .then((resp) => {
-        setToken(resp.token);
-        tokenConfirmation.onOpen();
+        if(resp.success) {
+          setToken(resp.token);
+          tokenConfirmation.onOpen();
+        }
       })
       .catch((err) => {
         console.error(err);
