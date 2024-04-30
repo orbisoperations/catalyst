@@ -85,16 +85,6 @@ export default function CreateChannelForm({
                   placeholder="Endpoint URL"
                 />
               </FormControl>
-              <FormControl display={"none"}>
-                <label htmlFor="organization"></label>
-                {/*TODO: Get organization from user context*/}
-                <Input
-                  rounded="md"
-                  name="organization"
-                  required={true}
-                  value={"org1"}
-                />
-              </FormControl>
               <Flex justifyContent={"space-between"}>
                 <OrbisButton colorScheme="gray" onClick={router.back}>
                   Cancel
