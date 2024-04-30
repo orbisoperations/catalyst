@@ -13,12 +13,9 @@ import { Card, CardBody } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useUser } from "../contexts/User/UserContext";
+import { DataChannel, DataChannelActionResponse } from "@catalyst/schema_zod";
 type ListChannelsProps = {
-  listChannels: (
-    token: string
-  ) => Promise<
-    { success: true; data: any[] } | { success: false; error: string }
-  >;
+  listChannels: (token: string) => Promise<DataChannelActionResponse>;
 };
 
 export default function DataChannelListComponents({
@@ -31,7 +28,7 @@ export default function DataChannelListComponents({
     if (token) {
       listChannels(token).then((data) => {
         if (!data.success) return console.error(data.error);
-        setChannels(data.data);
+        setChannels(data.data as DataChannel[]);
       });
     }
   }, [token]);
