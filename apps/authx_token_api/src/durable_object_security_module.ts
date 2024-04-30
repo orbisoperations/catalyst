@@ -1,9 +1,9 @@
 import { generateKeyPair, jwtVerify, KeyLike, exportSPKI, importSPKI, SignJWT, exportJWK, importJWK, JWK } from 'jose';
 // @ts-ignore
 import { v4 as uuidv4 } from 'uuid';
-import { JWT, JWTSigningRequest } from './jwt';
+import { JWT } from './jwt';
 import { DurableObject } from 'cloudflare:workers';
-import { JWTParsingResponse } from '../../../packages/schema_zod';
+import { JWTParsingResponse, JWTSigningRequest } from '../../../packages/schema_zod';
 
 interface KeyStateSerialized {
 	private: JWK;
@@ -83,7 +83,7 @@ export class KeyState {
 	}
 }
 
-export class HSM extends DurableObject {
+export class JWTKeyProvider extends DurableObject {
 	currentKey: KeyState | undefined;
 
 	async key() {
