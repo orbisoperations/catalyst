@@ -14,7 +14,6 @@ export async function GET(request: NextRequest) {
     const user:
       | { userId: string; orgId: string; zitadelRoles: string[] }
       | undefined = await user_cache.getUser(cfToken);
-
     if (user) {
       const writeResp =
         // @ts-ignore
@@ -29,7 +28,6 @@ export async function GET(request: NextRequest) {
           user.userId
         );
       }
-      console.log("completed user sync", writeResp);
     } else {
       return Response.json({ error: "no user found" });
     }
