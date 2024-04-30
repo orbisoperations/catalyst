@@ -1,13 +1,15 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 "use client";
+import { DataChannel } from '../../../../packages/schema_zod';
+
 export const runtime = "edge";
 import {
-  APIKeyText,
+  APIKeyText, CopyButton, DisplayButton, GenerateButton,
   OrbisBadge,
   OrbisButton,
   ShareButton,
   TrashButton,
-} from "@/components/elements";
+} from '@/components/elements';
 import { DetailedView } from "@/components/layouts";
 import { navigationItems } from "@/utils/nav.utils";
 import { Card, CardBody, CardHeader } from "@chakra-ui/card";
@@ -60,40 +62,24 @@ export default function DataChannelDetailsComponent({
   const router = useRouter();
   const { user, token } = useUser();
   const { id } = useParams();
-  const [channel, setChannel] = useState<any>();
-  const [editChannel, setEditChannel] = useState<any>();
-  const organizations = [
-    {
-      name: "Organization 1",
-      id: "org1",
-    },
-    {
-      name: "Organization 2",
-      id: "org2",
-    },
-    {
-      name: "Organization 3",
-      id: "org3",
-    },
-    {
-      name: "Organization 4",
-      id: "org4",
-    },
-  ];
+  const [channel, setChannel] = useState<DataChannel>();
+  const [editChannel, setEditChannel] = useState<DataChannel>();
 
   function fetchChannelDetails() {
     if (id && typeof id === "string" && token)
       channelDetails(id, token).then((data) => {
-        setChannel(data.data);
-        setEditChannel(data.data);
+        console.log("data channel in ui:", data)
+        setChannel(data);
+        setEditChannel(data);
         editDisclosure.onClose();
       });
   }
+
   useEffect(fetchChannelDetails, [token]);
 
   return (
     <DetailedView
-      showspinner={!token}
+      showspinner={!token ? true : undefined}
       actions={
         <Flex gap={10}>
           <Flex gap={2} align={"center"}>
@@ -293,9 +279,21 @@ export default function DataChannelDetailsComponent({
           <Grid gap={5}>
             <FormControl display={"grid"} gap={2}>
               <label htmlFor="endpoint">Endpoint URL</label>
-              <APIKeyText w={"100%"} showAsClearText allowCopy>
-                {channel?.endpoint}
-              </APIKeyText>
+              <Flex
+                w={"fit-content"}
+                className="border"
+                align={"center"}
+                justify={'space-between'}
+                gap={5}
+                paddingX={".5em"}
+                paddingY={".25em"}
+                borderRadius={"md"}
+              >
+                <Text>{channel?.endpoint}</Text>
+                <Flex gap={2}>
+                  <CopyButton copytext={channel?.endpoint} variant={"ghost"} colorScheme="blue" />
+                </Flex>
+              </Flex>
             </FormControl>
 
             <Flex direction={"column"} gap={5}>
@@ -308,25 +306,17 @@ export default function DataChannelDetailsComponent({
                   <Stack divider={<StackDivider />} spacing="4">
                     <Box>
                       <Heading size="xs" textTransform="uppercase">
-                        Summary
+                        No Metadata Available
                       </Heading>
                       <Text pt="2" fontSize="sm">
-                        View a summary of all your clients over the last month.
-                      </Text>
-                    </Box>
-                    <Box>
-                      <Heading size="xs" textTransform="uppercase">
-                        JSON
-                      </Heading>
-                      <Text pt="2" fontSize="sm">
-                        {`{"name":"John", "age":30, "car":null}`}
+                        Intentionally Left Blank
                       </Text>
                     </Box>
                   </Stack>
                 </CardBody>
               </Card>
               {/* TODO: enable sharing view on the UI */}
-              {channel?.creatorOrganization === "org2" && (
+              {/* channel?.creatorOrganization === "org2" && (
                 <Card>
                   <CardHeader>
                     <Flex justify={"space-between"} gap={5} align={"center"}>
@@ -356,7 +346,7 @@ export default function DataChannelDetailsComponent({
                     </Stack>
                   </CardBody>
                 </Card>
-              )}
+              ) */}
             </Flex>
           </Grid>
         </form>
