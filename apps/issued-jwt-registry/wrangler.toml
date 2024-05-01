@@ -115,8 +115,15 @@ new_classes = ["I_JWT_Registry_DO"]
 # STAGING VALUES
 [env.staging]
 durable_objects.bindings = [{name = "ISSUED_JWT_REGISTRY_DO", class_name = "I_JWT_Registry_DO"}]
-
+# Docs: https://developers.cloudflare.com/workers/learning/using-durable-objects#configure-durable-object-classes-with-migrations
+[[migrations]]
+tag = "v1"
+new_classes = ["I_JWT_Registry_DO"]
 
 # PRODUCTION VALUES
 [env.production]
 durable_objects.bindings = [{name = "ISSUED_JWT_REGISTRY_DO", class_name = "I_JWT_Registry_DO"}]
+# Docs: https://developers.cloudflare.com/workers/learning/using-durable-objects#configure-durable-object-classes-with-migrations
+[[migrations]]
+tag = "v1"
+new_classes = ["I_JWT_Registry_DO"]
