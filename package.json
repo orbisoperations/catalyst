@@ -7,7 +7,8 @@
     "test": "pnpm run -r test",
     "sim": "pnpm run -r sim",
     "ls": "pnpm ls -r --json --long --depth 6 --prod >> ./pnpmls.json",
-    "dev": "turbo dev"
+    "dev": "turbo dev",
+    "deploymentPreview": "pnpm run -r deploymentPreview"
   },
   "keywords": [],
   "author": "",

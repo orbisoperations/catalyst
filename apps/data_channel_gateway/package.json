@@ -3,7 +3,8 @@
   "type": "module",
   "scripts": {
     "dev": "wrangler dev src/index.ts",
-    "deploy": "wrangler deploy --minify src/index.ts",
+    "deployment": "yes | wrangler deploy --minify --env production",
+    "deploymentPreview": "yes | wrangler deploy --env staging",
     "test": "vitest"
   },
   "dependencies": {
