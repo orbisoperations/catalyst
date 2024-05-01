@@ -1,7 +1,6 @@
 import {DurableObject, WorkerEntrypoint, RpcTarget} from "cloudflare:workers"
 import { Env } from "../worker-configuration"
-import {OrgId } from "../../../packages/schema_zod"
-import Protocol from 'wrangler';
+import {OrgId, OrgInvite, OrgInviteStatus, OrgInviteResponse } from "../../../packages/schema_zod"
 /**
  * Welcome to Cloudflare Workers! This is your first worker.
  *
@@ -28,132 +27,111 @@ import Protocol from 'wrangler';
 
  */
 
-type status = "pending" | "accepted" | "declined"
-
-class Mailbox extends RpcTarget {
-	invites: Invite[]
-
-	constructor() {
-		super();
-		this.invites = new Array<Invite>()
-	}
-
-	removeById(id: string) {
-		this.invites = this.invites.filter(invite => invite.id != id)
-	}
-
-	setStatus(id: string, status: status) {
-		this.invites = this.invites.map(invite => {
-			if (invite.id == id) {
-				return Object.assign(invite, {status: status})
-			}
-			return invite
-		})
-	}
-}
-class Invite extends RpcTarget {
-	id: string
-	status: status
-	sender: OrgId
-	receiver: OrgId
-	createdAt: number
-	updatedAt: number
-
-	constructor(sender: OrgId, receiver: OrgId) {
-		super();
-		this.id = crypto.randomUUID()
-		this.sender = sender
-		this.receiver = receiver
-		this.status = "pending"
-		this.createdAt = Date.now()
-		this.updatedAt =  Date.now()
-	}
-}
 
 export class OrganizationMatchmakingDO extends DurableObject {
-	async send(sender: string, receiver: string) {
-		// add token auth here (can user send invite to parnter)
-		const newInvite = new Invite(sender, receiver)
-
+	async send(sender: OrgId, receiver: OrgId) {
+		const newInvite = OrgInvite.parse({
+			id: crypto.randomUUID(),
+			sender: sender,
+			receiver: receiver,
+			status: OrgInviteStatus.enum.pending,
+			createdAt: Date.now(),
+			updatedAt: Date.now()
+		})
 		await this.ctx.blockConcurrencyWhile(async () => {
-			const senderMailbox = await this.ctx.storage.get<Mailbox>(sender) ?? new Mailbox()
-			const receiverMailbox = await this.ctx.storage.get<Mailbox>(sender) ?? new Mailbox()
-			senderMailbox.invites.push(newInvite)
-			receiverMailbox.invites.push(newInvite)
+			const senderMailbox = await this.ctx.storage.get<OrgInvite[]>(sender) ?? new Array<OrgInvite>()
+			const receiverMailbox = await this.ctx.storage.get<OrgInvite[]>(sender) ?? new Array<OrgInvite>()
+			senderMailbox.push(newInvite)
+			receiverMailbox.push(newInvite)
 			await this.ctx.storage.put(sender, senderMailbox)
 			await this.ctx.storage.put(receiver, receiverMailbox)
 		})
+
+		return OrgInviteResponse.parse({
+			success: true,
+			invite: newInvite
+		})
 	}
-	async list(orgId: string) {
-		// add token auth here (can user look at invites)
-		const listMailbox = await this.ctx.storage.get<Mailbox>(orgId) ?? new Mailbox()
-		return {
-			pendingInvites: listMailbox.invites.filter(invite => invite.status == "pending"),
-			acceptedInvites: listMailbox.invites.filter(invite => invite.status == "accepted"),
-		}
+	async list(orgId: OrgId) {
+		const listMailbox = await this.ctx.storage.get<OrgInvite[]>(orgId) ?? new Array<OrgInvite>()
+		return OrgInviteResponse.parse({
+			success: true,
+			invite: listMailbox
+		})
 	}
-	async respond(orgId: OrgId, inviteId: string, status: status) {
-		const responder = await this.ctx.storage.get<Mailbox>(orgId) ?? new Mailbox()
-		const filteredInvites = responder.invites.filter(invite => invite.id == inviteId)
+	async respond(orgId: OrgId, inviteId: string, status: OrgInviteStatus) {
+		const responder = await this.ctx.storage.get<OrgInvite[]>(orgId) ?? new Array<OrgInvite>()
+		const filteredInvites = responder.filter(invite => invite.id == inviteId)
 		if (filteredInvites.length != 1) {
-			return {
+			return OrgInviteResponse.parse({
 				success: false,
 				error: "catalyst cannot find the invite"
-			}
+			})
 		}
 
 		const invite = filteredInvites[0]
 		const otherOrg = invite.sender == orgId ? invite.receiver : invite.sender
-		const otherMailbox = await this.ctx.storage.get<Mailbox>(otherOrg) ?? new Mailbox()
+		const otherMailbox = await this.ctx.storage.get<OrgInvite[]>(otherOrg) ?? new Array<OrgInvite>()
 
-		if (otherMailbox.invites.filter(invite => invite.id == inviteId).length != 1) {
-			return {
+		if (otherMailbox.filter(invite => invite.id == inviteId).length != 1) {
+			return OrgInviteResponse.parse({
 				success: false,
 				error: "catalyst cannot find the other invite"
-			}
+			})
 		}
 
 		// from this point on we have both mailboxes and both have the invite
 
 		// everyone can decline
-		if (status == "declined") {
+		if (status == OrgInviteStatus.enum.declined) {
 			await this.ctx.blockConcurrencyWhile(async () => {
-				otherMailbox.removeById(inviteId)
-				responder.removeById(inviteId)
-				await this.ctx.storage.put(orgId, responder)
-				await this.ctx.storage.put(otherOrg, otherMailbox)
+				await this.ctx.storage.put(orgId, responder.filter(inviteF => {
+					return inviteF.id != inviteId
+				}))
+				await this.ctx.storage.put(otherOrg, otherMailbox.filter(inviteF => {
+					return inviteF.id != inviteId
+				}))
 			})
-
-			return {
-				success: true
-			}
-
-		} else if (status == "accepted") {
+			return OrgInviteResponse.parse({
+				success: true,
+				invite: invite
+			})
+		} else if (status == OrgInviteStatus.enum.accepted) {
 			// only the receiver can accept
 			if (invite.sender == orgId) {
-				return {
+				return OrgInviteResponse.parse({
 					success: false,
 					error: "sender cannot accept their own invite"
-				}
+				})
 			}
 
 			await this.ctx.blockConcurrencyWhile(async () => {
-				otherMailbox.setStatus(inviteId, status)
-				responder.setStatus(inviteId, status)
-				await this.ctx.storage.put(orgId, responder)
-				await this.ctx.storage.put(otherOrg, otherMailbox)
+				await this.ctx.storage.put(orgId, responder.map(inviteF => {
+					if (inviteF.id == inviteId) {
+						return Object.assign(inviteF, {status: status})
+					} else {
+						return inviteF
+					}
+				}))
+				await this.ctx.storage.put(otherOrg, otherMailbox.map(inviteF => {
+					if (inviteF.id == inviteId) {
+						return Object.assign(inviteF, {status: status})
+					} else {
+						return inviteF
+					}
+				}))
 			})
 
-			return {
-				success: true
-			}
+			return OrgInviteResponse.parse({
+				success: true,
+				invite: Object.assign(invite, {status: status})
+			})
 
 		} else {
-			// status does not go back to pending so remove
-			return {
+			return OrgInviteResponse.parse({
 				success: false,
 				error: "cannot change back to pending"
-			}
+			})
 		}
 
 	}

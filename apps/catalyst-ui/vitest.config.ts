@@ -29,6 +29,12 @@ export default defineWorkersProject(async () =>{
 					//singleWorker: true,
 					wrangler: { configPath: './wrangler.toml' },
 					miniflare: {
+						durableObjects: {
+							"ORG_MATCHMAKING": {
+								scriptName: "organization-matchmaking",
+								className: "OrganizationMatchmakingDO"
+							}
+						},
 						compatibilityFlags: ['nodejs_compat'],
 						workers: [
 							{
@@ -98,23 +104,8 @@ export default defineWorkersProject(async () =>{
 								durableObjects: {
 									"CACHE": "UserCredsCache"
 								}
-							  }
-						]
-					}
-				}
-			}
-		}
-	}
-});
-
-/*\
-durableObjects: {
-							"ORG_MATCHMAKING": {
-								scriptName: "organization-matchmaking",
-								className: "OrganizationMatchmakingDO"
-							}
-						},
-,{
+							},
+							{
 								name: "organization-matchmaking",
 								modules: true,
 								compatibilityDate: "2024-04-05",
@@ -125,4 +116,15 @@ durableObjects: {
 									"ORG_MATCHMAKING": "OrganizationMatchmakingDO"
 								}
 							}
+						]
+					}
+				}
+			}
+		}
+	}
+});
+
+/*\
+
+,
 */
