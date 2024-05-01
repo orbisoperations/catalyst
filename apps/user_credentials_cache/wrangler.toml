@@ -13,9 +13,9 @@ new_classes = ["UserCredsCache"]
 
 # STAGING VALUES
 [env.staging]
-durable_objects.bindings = [ {name = "ISSUED_JWT_REGISTRY_DO", class_name = "I_JWT_Registry_DO"} ]
+durable_objects.bindings = [{name = "CACHE", class_name = "UserCredsCache"}]
 
 
 # PRODUCTION VALUES
 [env.production]
-durable_objects.bindings = [ {name = "ISSUED_JWT_REGISTRY_DO", class_name = "I_JWT_Registry_DO"} ]
+durable_objects.bindings = [{name = "CACHE", class_name = "UserCredsCache"}]
