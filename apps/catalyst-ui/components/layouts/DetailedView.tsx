@@ -6,7 +6,7 @@ import { HelpModal } from "../elements";
 type DetailedViewProps = PropsOf<typeof Box> & {
   headerTitle?: { text?: string; adjacent?: JSX.Element };
   actions?: JSX.Element | undefined;
-  showspinner?: boolean;
+  showspinner: boolean;
   topbaractions?: { display: string; path: string }[];
   topbartitle?: string;
   subtitle?: string;

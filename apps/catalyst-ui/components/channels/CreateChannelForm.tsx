@@ -36,6 +36,7 @@ export default function CreateChannelForm({
         text: "Create Data Channel",
       }}
       topbaractions={navigationItems}
+      showspinner={false}
       topbartitle="Catalyst"
     >
       <Card>

@@ -27,18 +27,20 @@ import { OrgId, OrgInvite, OrgInviteStatus, OrgInviteResponse, Token, User } fro
  */
 
 export class OrganizationMatchmakingDO extends DurableObject {
-	async send(sender: OrgId, receiver: OrgId) {
+	async send(sender: OrgId, receiver: OrgId, message: string = '') {
 		const newInvite = OrgInvite.parse({
 			id: crypto.randomUUID(),
 			sender: sender,
 			receiver: receiver,
 			status: OrgInviteStatus.enum.pending,
+			message,
+			isActive: true,
 			createdAt: Date.now(),
 			updatedAt: Date.now(),
 		});
 		await this.ctx.blockConcurrencyWhile(async () => {
 			const senderMailbox = (await this.ctx.storage.get<OrgInvite[]>(sender)) ?? new Array<OrgInvite>();
-			const receiverMailbox = (await this.ctx.storage.get<OrgInvite[]>(sender)) ?? new Array<OrgInvite>();
+			const receiverMailbox = (await this.ctx.storage.get<OrgInvite[]>(receiver)) ?? new Array<OrgInvite>();
 			senderMailbox.push(newInvite);
 			receiverMailbox.push(newInvite);
 			await this.ctx.storage.put(sender, senderMailbox);
@@ -50,6 +52,7 @@ export class OrganizationMatchmakingDO extends DurableObject {
 			invite: newInvite,
 		});
 	}
+
 	async list(orgId: OrgId) {
 		const listMailbox = (await this.ctx.storage.get<OrgInvite[]>(orgId)) ?? new Array<OrgInvite>();
 		return OrgInviteResponse.parse({
@@ -57,6 +60,23 @@ export class OrganizationMatchmakingDO extends DurableObject {
 			invite: listMailbox,
 		});
 	}
+
+	async read(orgId: OrgId, inviteId: string) {
+		const listMailbox = (await this.ctx.storage.get<OrgInvite[]>(orgId)) ?? new Array<OrgInvite>();
+		const filteredInvites = listMailbox.filter((invite) => invite.id == inviteId);
+		if (filteredInvites.length != 1) {
+			return OrgInviteResponse.parse({
+				success: false,
+				error: 'catalyst cannot find the invite',
+			});
+		}
+
+		return OrgInviteResponse.parse({
+			success: true,
+			invite: filteredInvites[0],
+		});
+	}
+
 	async respond(orgId: OrgId, inviteId: string, status: OrgInviteStatus) {
 		const responder = (await this.ctx.storage.get<OrgInvite[]>(orgId)) ?? new Array<OrgInvite>();
 		const filteredInvites = responder.filter((invite) => invite.id == inviteId);
@@ -146,13 +166,14 @@ export class OrganizationMatchmakingDO extends DurableObject {
 }
 
 export default class OrganizationMatchmakingWorker extends WorkerEntrypoint<Env> {
-	async sendInvite(receivingOrg: OrgId, token: Token, doNamespace: string = 'default') {
+	async readInvite(inviteId: string, token: Token, doNamespace: string = 'default') {
 		if (!token.cfToken) {
 			return OrgInviteResponse.parse({
 				success: false,
 				error: 'catalyst did not find a verifiable credential',
 			});
 		}
+
 		const user = (await this.env.USERCACHE.getUser(token.cfToken)) as User | undefined;
 		if (!user) {
 			return OrgInviteResponse.parse({
@@ -160,6 +181,34 @@ export default class OrganizationMatchmakingWorker extends WorkerEntrypoint<Env>
 				error: 'catalyst did not find a valid user',
 			});
 		}
+
+		const permCheck = await this.env.AUTHZED.canUpdateOrgPartnersInOrg(user.orgId, user.userId);
+		if (!permCheck) {
+			return OrgInviteResponse.parse({
+				success: false,
+				error: 'catalyst rejects users abiltiy to add an org partner',
+			});
+		}
+		const id = this.env.ORG_MATCHMAKING.idFromName(doNamespace);
+		const stub = this.env.ORG_MATCHMAKING.get(id);
+		return await stub.read(user.orgId, inviteId);
+	}
+	async sendInvite(receivingOrg: OrgId, token: Token, message: string, doNamespace: string = 'default') {
+		if (!token.cfToken) {
+			return OrgInviteResponse.parse({
+				success: false,
+				error: 'catalyst did not find a verifiable credential',
+			});
+		}
+
+		const user = (await this.env.USERCACHE.getUser(token.cfToken)) as User | undefined;
+		if (!user) {
+			return OrgInviteResponse.parse({
+				success: false,
+				error: 'catalyst did not find a valid user',
+			});
+		}
+
 		// check token for permission
 		const permCheck = await this.env.AUTHZED.canUpdateOrgPartnersInOrg(user.orgId, user.userId);
 		if (!permCheck) {
@@ -171,7 +220,10 @@ export default class OrganizationMatchmakingWorker extends WorkerEntrypoint<Env>
 
 		const id = this.env.ORG_MATCHMAKING.idFromName(doNamespace);
 		const stub = this.env.ORG_MATCHMAKING.get(id);
-		return await stub.send(user.orgId, receivingOrg);
+		// Im using this to mock incoming invitations
+		return await stub.send(receivingOrg, user.orgId, message);
+		// this is the right one
+		// return await stub.send(user.orgId, receivingOrg, message);
 	}
 	async acceptInvite(inviteId: string, token: Token, doNamespace: string = 'default') {
 		// check token for perms
