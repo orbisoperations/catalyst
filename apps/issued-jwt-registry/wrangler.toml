@@ -110,3 +110,13 @@ new_classes = ["I_JWT_Registry_DO"]
 # [[vectorize]]
 # binding = "MY_INDEX"
 # index_name = "my-index"
+
+
+# STAGING VALUES
+[env.staging]
+durable_objects.bindings = [{name = "ISSUED_JWT_REGISTRY_DO", class_name = "I_JWT_Registry_DO"}]
+
+
+# PRODUCTION VALUES
+[env.production]
+durable_objects.bindings = [{name = "ISSUED_JWT_REGISTRY_DO", class_name = "I_JWT_Registry_DO"}]

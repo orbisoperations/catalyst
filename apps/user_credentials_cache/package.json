@@ -3,7 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "deploy": "wrangler deploy",
+	  "deployment": "yes | wrangler deploy --minify --env production",
+	  "deploymentPreview": "yes | wrangler deploy --env staging",
     "dev": "wrangler dev",
     "start": "wrangler dev",
     "cf-typegen": "wrangler types"
