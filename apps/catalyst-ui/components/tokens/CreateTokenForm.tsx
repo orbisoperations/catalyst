@@ -46,6 +46,7 @@ export default function CreateTokensForm({
   const router = useRouter();
   const { user, token: cfToken } = useUser();
   const [channels, setChannels] = useState<any[]>([]);
+  const [channelsResponse, setChannelsResponse] = useState<DataChannel[]>([]);
   const [selectedChannels, setSelectedChannels] = useState<number[]>([]);
   const [token, setToken] = useState<string>("");
   const tokenConfirmation = useDisclosure();
@@ -63,15 +64,19 @@ export default function CreateTokensForm({
               channel.description,
             ])
           );
+          setChannelsResponse(resp.data as DataChannel[]);
         }
       });
   }, [cfToken]);
 
   function createToken() {
     const jwtRequest: JWTRequest = {
-      claims: channels
+      claims: channelsResponse
         .filter((_, i) => selectedChannels.includes(i))
-        .map((channel) => channel[0]),
+        .map((channel) => {
+          console.log(channel);
+          return channel.id;
+        }),
       entity:
         (user && user.custom.org && `${user?.custom.org}/${user?.email}`) ||
         "default",

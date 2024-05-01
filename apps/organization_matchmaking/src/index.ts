@@ -77,6 +77,39 @@ export class OrganizationMatchmakingDO extends DurableObject {
 		});
 	}
 
+	async togglePartnership(orgId: OrgId, inviteId: string) {
+		// get invite from org mailbox
+		const orgMailbox = (await this.ctx.storage.get<OrgInvite[]>(orgId)) ?? new Array<OrgInvite>();
+		const filteredInvites = orgMailbox.filter((invite) => invite.id == inviteId);
+		if (filteredInvites.length != 1) {
+			return OrgInviteResponse.parse({
+				success: false,
+				error: 'catalyst cannot find the invite',
+			});
+		}
+		// toggle invite value
+		const invite = filteredInvites[0];
+		invite.isActive = !invite.isActive;
+		await this.ctx.blockConcurrencyWhile(async () => {
+			// update org mailbox
+			await this.ctx.storage.put(
+				orgId,
+				orgMailbox.map((inviteF) => {
+					if (inviteF.id == inviteId) {
+						return invite;
+					} else {
+						return inviteF;
+					}
+				}),
+			);
+		});
+
+		return OrgInviteResponse.parse({
+			success: true,
+			invite,
+		});
+	}
+
 	async respond(orgId: OrgId, inviteId: string, status: OrgInviteStatus) {
 		const responder = (await this.ctx.storage.get<OrgInvite[]>(orgId)) ?? new Array<OrgInvite>();
 		const filteredInvites = responder.filter((invite) => invite.id == inviteId);
@@ -193,6 +226,43 @@ export default class OrganizationMatchmakingWorker extends WorkerEntrypoint<Env>
 		const stub = this.env.ORG_MATCHMAKING.get(id);
 		return await stub.read(user.orgId, inviteId);
 	}
+	async togglePartnership(inviteId: string, token: Token, doNamespace: string = 'default') {
+		if (!token.cfToken) {
+			return OrgInviteResponse.parse({
+				success: false,
+				error: 'catalyst did not find a verifiable credential',
+			});
+		}
+
+		const user = (await this.env.USERCACHE.getUser(token.cfToken)) as User | undefined;
+		if (!user) {
+			return OrgInviteResponse.parse({
+				success: false,
+				error: 'catalyst did not find a valid user',
+			});
+		}
+
+		const permCheck = await this.env.AUTHZED.canUpdateOrgPartnersInOrg(user.orgId, user.userId);
+		if (!permCheck) {
+			return OrgInviteResponse.parse({
+				success: false,
+				error: 'catalyst rejects users abiltiy to add an org partner',
+			});
+		}
+		const id = this.env.ORG_MATCHMAKING.idFromName(doNamespace);
+		const stub = this.env.ORG_MATCHMAKING.get(id);
+		const inviteOperation = await stub.togglePartnership(user.orgId, inviteId);
+		if (inviteOperation.success) {
+			const invite = OrgInvite.parse(inviteOperation.invite);
+			console.log({ invite });
+			const partner = user.orgId === invite.sender ? invite.receiver : invite.sender;
+			const resp = invite.isActive
+				? await this.env.AUTHZED.addPartnerToOrg(user.orgId, partner)
+				: await this.env.AUTHZED.deletePartnerInOrg(user.orgId, partner);
+			console.log({ resp });
+		}
+		return inviteOperation;
+	}
 	async sendInvite(receivingOrg: OrgId, token: Token, message: string, doNamespace: string = 'default') {
 		if (!token.cfToken) {
 			return OrgInviteResponse.parse({
@@ -221,9 +291,9 @@ export default class OrganizationMatchmakingWorker extends WorkerEntrypoint<Env>
 		const id = this.env.ORG_MATCHMAKING.idFromName(doNamespace);
 		const stub = this.env.ORG_MATCHMAKING.get(id);
 		// Im using this to mock incoming invitations
-		return await stub.send(receivingOrg, user.orgId, message);
+		// return await stub.send(receivingOrg, user.orgId, message);
 		// this is the right one
-		// return await stub.send(user.orgId, receivingOrg, message);
+		return await stub.send(user.orgId, receivingOrg, message);
 	}
 	async acceptInvite(inviteId: string, token: Token, doNamespace: string = 'default') {
 		// check token for perms
