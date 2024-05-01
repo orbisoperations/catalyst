@@ -1,6 +1,6 @@
 import {DurableObject, WorkerEntrypoint, RpcTarget} from "cloudflare:workers"
 import { Env } from "../worker-configuration"
-import {OrgId, OrgInvite, OrgInviteStatus, OrgInviteResponse } from "../../../packages/schema_zod"
+import {OrgId, OrgInvite, OrgInviteStatus, OrgInviteResponse, Token } from "../../../packages/schema_zod"
 /**
  * Welcome to Cloudflare Workers! This is your first worker.
  *
@@ -139,25 +139,25 @@ export class OrganizationMatchmakingDO extends DurableObject {
 
 
 export default class OrganizationMatchmakingWorker extends WorkerEntrypoint<Env> {
-	async sendInvite(receivingOrg: OrgId, token: string, doNamespace: string = "default") {
+	async sendInvite(receivingOrg: OrgId, token: Token, doNamespace: string = "default") {
 		// check token for permission
 		const id = this.env.ORG_MATCHMAKING.idFromName(doNamespace)
 		const stub = this.env.ORG_MATCHMAKING.get(id)
 		return await stub.send("stuborg", receivingOrg)
 	}
-	async acceptInvite(inviteId: string, token: string, doNamespace: string = "default"){
+	async acceptInvite(inviteId: string, token: Token, doNamespace: string = "default"){
 		// check token for perms
 		const id = this.env.ORG_MATCHMAKING.idFromName(doNamespace)
 		const stub = this.env.ORG_MATCHMAKING.get(id)
 		return await stub.respond("stuborg", inviteId, "accepted")
 	}
-	async declineInvite(inviteId: string,token: string, doNamespace: string = "default"){
+	async declineInvite(inviteId: string,token: Token, doNamespace: string = "default"){
 		// check token for perms
 		const id = this.env.ORG_MATCHMAKING.idFromName(doNamespace)
 		const stub = this.env.ORG_MATCHMAKING.get(id)
 		return await stub.respond("stuborg", inviteId, "declined")
 	}
-	async listInvites(token: string, doNamespace: string = "default"){
+	async listInvites(token: Token, doNamespace: string = "default"){
 		const id = this.env.ORG_MATCHMAKING.idFromName(doNamespace)
 		const stub = this.env.ORG_MATCHMAKING.get(id)
 		return await stub.list("stuborg")
