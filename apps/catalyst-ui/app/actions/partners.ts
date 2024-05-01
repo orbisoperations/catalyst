@@ -16,13 +16,31 @@ export async function listInvites(token: string) {
   return [];
 }
 
-export async function sendInvite(receivingOrg: string, token: string) {
+export async function sendInvite(
+  receivingOrg: string,
+  token: string,
+  message: string
+) {
   const matcher = getMatcher();
-  const result = await matcher.sendInvite(receivingOrg, { cfToken: token });
+  const result = await matcher.sendInvite(
+    receivingOrg,
+    { cfToken: token },
+    message
+  );
   if (result.success) {
     return result.invite;
   }
   console.error("Send Invite Error:", result.error);
+  return undefined;
+}
+
+export async function readInvite(inviteId: string, token: string) {
+  const matcher = getMatcher();
+  const result = await matcher.readInvite(inviteId, { cfToken: token });
+  if (result.success) {
+    return result.invite;
+  }
+  console.error("Read Invite Error:", result.error);
   return undefined;
 }
 

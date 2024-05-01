@@ -11,6 +11,7 @@ export default function Layouts() {
           text: "Data Channels",
           adjacent: <OrbisBadge>Click me</OrbisBadge>,
         }}
+        showspinner={false}
         topbartitle="Data Channels"
         subtitle="Subtitle here"
         actions={

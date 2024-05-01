@@ -10,7 +10,14 @@ import {
 } from "@/components/elements";
 import { ListView } from "@/components/layouts";
 import { navigationItems } from "@/utils/nav.utils";
-import { Box, Flex, Stack, StackDivider, StackItem } from "@chakra-ui/layout";
+import {
+  Box,
+  Flex,
+  Stack,
+  StackDivider,
+  StackItem,
+  Text,
+} from "@chakra-ui/layout";
 import {
   Modal,
   ModalBody,
@@ -28,17 +35,25 @@ import { useUser } from "../contexts/User/UserContext";
 import { OrgInvite } from "../../../../packages/schema_zod";
 type PartnersListComponentProps = {
   listInvites: (token: string) => Promise<OrgInvite[] | undefined>;
+  declineInvite: (
+    inviteId: string,
+    token: string
+  ) => Promise<OrgInvite | undefined>;
 };
 export default function PartnersListComponent({
   listInvites,
+  declineInvite,
 }: PartnersListComponentProps) {
   const router = useRouter();
   const [partners, setPartners] = useState<OrgInvite[]>([]);
   const [invitations, setInvitations] = useState<OrgInvite[]>([]);
+  const [selectedPartner, setSelectedPartner] = useState<OrgInvite | null>(
+    null
+  );
   const { token, user } = useUser();
-  useEffect(() => {
+  function fetchInvites() {
     if (token)
-      listInvites(token).then((invites) => {
+      return listInvites(token).then((invites) => {
         const partners: OrgInvite[] = [];
         const invitations: OrgInvite[] = [];
         if (invites) {
@@ -54,6 +69,14 @@ export default function PartnersListComponent({
           setInvitations(invitations);
         }
       });
+    return Promise.resolve();
+  }
+
+  function deletePartner(inviteID: string) {
+    return declineInvite(inviteID, token ?? "").then(fetchInvites);
+  }
+  useEffect(() => {
+    fetchInvites();
   }, [token]);
 
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -86,11 +109,18 @@ export default function PartnersListComponent({
                     <OpenButton
                       onClick={() => router.push("/partners/" + partner.id)}
                     >
-                      {partner.sender} - {partner.receiver}
+                      {partner.sender === user?.custom.org
+                        ? partner.receiver
+                        : partner.sender}
                     </OpenButton>
                     <Flex gap={10} align={"center"}>
                       <Switch colorScheme="green" defaultChecked />
-                      <TrashButton onClick={onOpen} />
+                      <TrashButton
+                        onClick={() => {
+                          setSelectedPartner(partner);
+                          onOpen();
+                        }}
+                      />
                     </Flex>
                   </Flex>
                 </Box>,
@@ -111,8 +141,10 @@ export default function PartnersListComponent({
                       router.push(`/partners/invite/accept/${invitation.id}`)
                     }
                   >
-                    {invitation.sender} {invitation.receiver} wants to partner
-                    with your organization. {invitation.status}
+                    <OrgInviteMessage
+                      org={user?.custom.org}
+                      invite={invitation}
+                    />
                   </OpenButton>
                 </StackItem>
               ))}
@@ -138,11 +170,11 @@ export default function PartnersListComponent({
               <OrbisButton
                 colorScheme="red"
                 onClick={() => {
+                  deletePartner(selectedPartner?.id ?? "");
                   onClose();
-                  router.back();
                 }}
               >
-                Reject
+                Cancel Partnership
               </OrbisButton>
               <OrbisButton colorScheme="gray" onClick={onClose}>
                 Cancel
@@ -154,3 +186,25 @@ export default function PartnersListComponent({
     </ListView>
   );
 }
+
+const OrgInviteMessage = ({
+  invite,
+  org,
+}: {
+  invite: OrgInvite;
+  org: string;
+}) => {
+  const [message, setMessage] = useState<string>();
+  useEffect(() => {
+    if (invite.sender === org) {
+      setMessage(
+        `You invited ${invite.receiver} to partner with your organization.`
+      );
+    } else {
+      setMessage(
+        `${invite.sender} invited your organization to partner with them.`
+      );
+    }
+  }, [invite, org]);
+  return <Text>{message}</Text>;
+};
