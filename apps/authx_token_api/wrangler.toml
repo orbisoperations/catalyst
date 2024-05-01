@@ -19,3 +19,19 @@ bindings = [{name = "KEY_PROVIDER", class_name = "JWTKeyProvider"}]
 [[migrations]]
 tag = "v1" # Should be unique for each entry
 new_classes = ["JWTKeyProvider"]
+
+# STAGING VALUES
+[env.staging]
+services = [
+	{ binding = "AUTHZED", service = "authx_authzed_api-staging"},
+	{ binding = "USERCACHE", service = "user_credentials_cache-staging"}
+]
+durable_objects.bindings = [{name = "KEY_PROVIDER", class_name = "JWTKeyProvider"}]
+
+# PRODUCTION VALUES
+[env.production]
+services = [
+	{ binding = "AUTHZED", service = "authx_authzed_api-production"},
+	{ binding = "USERCACHE", service = "user_credentials_cache-production"}
+]
+durable_objects.bindings = [{name = "KEY_PROVIDER", class_name = "JWTKeyProvider"}]

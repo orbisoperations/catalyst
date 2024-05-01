@@ -21,3 +21,21 @@ bindings = [{name = "DO", class_name = "Registrar"}]
 [[migrations]]
 tag = "v1" # Should be unique for each entry
 new_classes = ["Registrar"]
+# STAGING VALUES
+[env.staging]
+services = [
+  { binding = "AUTHX_TOKEN_API", service = "authx_token_api-staging" },
+  { binding = "AUTHZED", service = "authx_authzed_api-staging" },
+  { binding = "USERCACHE", service = "user_credentials_cache-staging" }
+]
+durable_objects.bindings = [{name = "DO", class_name = "Registrar"}]
+
+
+# PRODUCTION VALUES
+[env.production]
+services = [
+  { binding = "AUTHX_TOKEN_API", service = "authx_token_api-production" },
+  { binding = "AUTHZED", service = "authx_authzed_api-production" },
+  { binding = "USERCACHE", service = "user_credentials_cache-production" }
+]
+durable_objects.bindings = [{name = "DO", class_name = "Registrar"}]
