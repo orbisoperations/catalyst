@@ -2,17 +2,18 @@ name = "data_channel_registrar"
 compatibility_date = "2024-04-05"
 compatibility_flags = ["nodejs_compat"]
 main = "./src/worker.ts"
-
 workers_dev = false
+
+[dev]
+ip = "localhost"
+port = 5050
+
+
 services = [
   { binding = "AUTHX_TOKEN_API", service = "authx_token_api" },
   { binding = "AUTHZED", service = "authx_authzed_api"},
   { binding = "USERCACHE", service = "user_credentials_cache"}
 ]
-
-[dev]
-ip = "localhost"
-port = 5050
 
 
 [durable_objects]
@@ -21,6 +22,10 @@ bindings = [{name = "DO", class_name = "Registrar"}]
 [[migrations]]
 tag = "v1" # Should be unique for each entry
 new_classes = ["Registrar"]
+
+
+
+
 # STAGING VALUES
 [env.staging]
 services = [
@@ -29,6 +34,11 @@ services = [
   { binding = "USERCACHE", service = "user_credentials_cache-staging" }
 ]
 durable_objects.bindings = [{name = "DO", class_name = "Registrar"}]
+[[migrations]]
+tag = "v1" # Should be unique for each entry
+new_classes = ["Registrar"]
+
+
 
 
 # PRODUCTION VALUES
@@ -39,3 +49,6 @@ services = [
   { binding = "USERCACHE", service = "user_credentials_cache-production" }
 ]
 durable_objects.bindings = [{name = "DO", class_name = "Registrar"}]
+[[migrations]]
+tag = "v1" # Should be unique for each entry
+new_classes = ["Registrar"]
