@@ -2,7 +2,14 @@ import { Catalyst, Authzed, OrgId, UserId, DataChannelId } from '@catalyst/schem
 
 export type SearchInfoBody = {
 	consistency?: {
-		minimizeLatency: boolean;
+		minimizeLatency?: boolean;
+		atLeastAsFresh?: {
+			token: string;
+		};
+		atExactSnapshot?: {
+			token: string;
+		};
+		fullyConsistent?: boolean;
 	};
 	relationshipFilter: {
 		resourceType: string;
@@ -17,7 +24,14 @@ export type SearchInfoBody = {
 
 export type LookupBody = {
 	consistency?: {
-		minimizeLatency: boolean;
+		minimizeLatency?: boolean;
+		atLeastAsFresh?: {
+			token: string;
+		};
+		atExactSnapshot?: {
+			token: string;
+		};
+		fullyConsistent?: boolean;
 	};
 	subjectObjectType: string;
 	permission: string;
@@ -29,7 +43,7 @@ export type LookupBody = {
 
 export interface PermissionCheckRequest {
 	consistency: {
-		minimizeLatency: boolean;
+		minimizeLatency?: boolean;
 		atLeastAsFresh?: {
 			token: string;
 		};
@@ -539,7 +553,7 @@ export class AuthzedUtils {
 			: optionalSubjectFilter;
 		return {
 			consistency: {
-				minimizeLatency: true,
+				fullyConsistent: true,
 			},
 			relationshipFilter: {
 				resourceType: this.schemaPrefix + resourceType,
@@ -553,7 +567,7 @@ export class AuthzedUtils {
 	checkOrgPermission(orgId: OrgId, userId: UserId, permission: Catalyst.Org.PermissionsEnum): PermissionCheckRequest {
 		return {
 			consistency: {
-				minimizeLatency: true,
+				fullyConsistent: true,
 			},
 			resource: {
 				objectType: this.schemaPrefix + Catalyst.EntityEnum.enum.organization,
@@ -576,7 +590,7 @@ export class AuthzedUtils {
 	): PermissionCheckRequest {
 		return {
 			consistency: {
-				minimizeLatency: true,
+				fullyConsistent: true,
 			},
 			resource: {
 				objectType: this.schemaPrefix + Catalyst.EntityEnum.enum.data_channel,
