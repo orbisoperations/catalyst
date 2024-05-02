@@ -27,6 +27,13 @@ export async function GET(request: NextRequest) {
           user.orgId,
           user.userId
         );
+        const custResp =
+          // @ts-ignore
+          await getRequestContext().env.AUTHX_AUTHZED_API.addDataCustodianToOrg(
+            user.orgId,
+            user.userId
+          );
+        console.log({ custResp });
       }
     } else {
       return Response.json({ error: "no user found" });
