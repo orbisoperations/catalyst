@@ -3,7 +3,7 @@
 	"version": "0.0.0",
 	"private": true,
 	"scripts": {
-		"deploymentPreview": "yes | wrangler deploy --env staging",
+		"deploymentPreview": "yes | wrangler deploy --keep-vars --env staging",
 		"dev": "wrangler dev --test-scheduled",
 		"start": "wrangler dev",
 		"triggerScheduled": "curl http://localhost:4005/__scheduled",

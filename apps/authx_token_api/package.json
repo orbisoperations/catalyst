@@ -5,7 +5,7 @@
 	"type": "module",
 	"scripts": {
 		"deployment": "yes | wrangler deploy --minify --env production",
-		"deploymentPreview": "yes | wrangler deploy --env staging",
+		"deploymentPreview": "yes | wrangler deploy --keep-vars --env staging",
 		"dev": "wrangler dev",
 		"start": "wrangler dev",
 		"test": "vitest",

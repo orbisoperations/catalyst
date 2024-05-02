@@ -2,7 +2,7 @@ import { AuthzedClient } from './authzed';
 import { WorkerEntrypoint, RpcTarget } from 'cloudflare:workers';
 import { Catalyst, DataChannelId, OrgId, UserId } from '@catalyst/schema_zod';
 
-type ENV = {
+type Env = {
 	AUTHZED_ENDPOINT: string;
 	AUTHZED_KEY: string;
 	AUTHZED_PREFIX: string;
@@ -12,7 +12,12 @@ const emailTob64 = (email: string) => {
 	return btoa(email);
 };
 
-export default class AuthzedWorker extends WorkerEntrypoint<ENV> {
+export default class AuthzedWorker extends WorkerEntrypoint<Env> {
+
+	async fetch(req: Request) {
+		return Response.json({message: "placeholder"})
+	}
+
 	async schema() {
 		const client = new AuthzedClient(this.env.AUTHZED_ENDPOINT, this.env.AUTHZED_KEY, this.env.AUTHZED_PREFIX);
 		const resp = await client.getSchema();
@@ -167,5 +172,3 @@ export default class AuthzedWorker extends WorkerEntrypoint<ENV> {
 		return owningResp || parterResp;
 	}
 }
-
-export async function fetch(){}

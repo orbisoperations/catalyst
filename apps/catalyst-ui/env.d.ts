@@ -1,4 +1,3 @@
-import { DataChannel } from "../../packages/schema_zod";
 import JWTWorker from "../authx_token_api/src";
 import RegistrarWorker from "../data_channel_registrar/src/worker";
 import AuthzedWorker from "../authx_authzed_api/src";

@@ -1,20 +1,60 @@
 import { connect } from 'cloudflare:sockets';
-import {generateLineCoordinates} from "./geoGen";
 import convert from "xml-js";
 
-export async function runTask(event: any, env: any, ctx: any) {
 
-		// TODO: Replace this exact function with a call to catalyst to retrieve data
-		function getTestData() {
-			return [...generateTestEntities(100)]
+// TODO: Replace this exact function with a call to catalyst to retrieve data
+function getData() {
+	const apiUrl = 'https://datachannel-adsb.devintelops.io/graphql';
+
+	async function getAircraftWithinDistance() {
+		const query = `
+    query {
+      aircraftWithinDistance(lat: 25.15090749876091, lon: 121.37875727934632, dist: 200) {
+        hex
+				flight
+				lat
+				lon
+				alt_geom
+				track
+				gs
+				t
+      }
+    }
+  `;
+
+		const response = await fetch(apiUrl, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({ query }),
+		});
+
+		const { data, errors } = await response.json() as any;
+
+		if (errors) {
+			console.error('GraphQL Errors: ', JSON.stringify(errors));
+		} else {
+			console.log('Aircraft within distance:');
+			console.log(JSON.stringify(data, null, 2));
+			return data.aircraftWithinDistance;
 		}
+	}
+	return getAircraftWithinDistance();
+}
 
-		const sendStuffToTak = async () => {
-			const data = await getTestData();
+
+export async function runTask(event: any, env: any, ctx: any) {
+		const sendStuffToTak = async (env: any) => {
+			const data = await getData();
 
 			console.log({data});
 
-			const takAddr = { hostname: "localhost", port: 8999 };
+			const takHostname = env.TAK_HOST.replace('https://', '').replace('http://', '');
+			const takPort = env.TAK_PORT;
+
+			const takAddr = { hostname: takHostname, port: takPort };
+
 			const socket = connect(takAddr);
 			const writer = socket.writable.getWriter()
 			const encoder = new TextEncoder();
@@ -27,46 +67,43 @@ export async function runTask(event: any, env: any, ctx: any) {
 
 			// TODO: Evaluate values in the CoT XML for something more accurate. ce="45.3" hae="1-42.6" 1e="99.5"
 			// Documentation: https://www.mitre.org/sites/default/files/pdf/09_4937.pdf
-			const cotEvents = data.map(item => {
-				console.log(item);
+			const cotEvents = data.map((item: any) => {
 
 				const now: string = new Date().toISOString();
 
-				console.log({now});
 
 				let stale = new Date(now);
-				stale.setSeconds(stale.getSeconds() + 5);
-
+				stale.setSeconds(stale.getSeconds() + 60);
+				console.log(item.alt_geom);
 				const cotEvent = {
-
 					event: {
 						_attributes: {
 							version: '2.0',
-							uid: item.id,
-							type: 'a-f-G-U-C',
+							uid: item.hex,
 							time: now,
 							start: now,
+							type: 'b-m-p-s-m',
+							how: 'h-g-i-g-o',
+
 							stale: stale.toISOString()
 						},
 						point: {
 							_attributes: {
 								lat: item.lat,
 								lon: item.lon,
-								hae: '0',
+								hae: item.alt_geom,
 								ce: '9999999',
-								le: '9999999'
+								le: '9999999',
+								type: 'a-.-A',
 							}
 						},
-						// detail: {
-						// 	contact: {
-						// 		_attributes: {
-						// 			callsign: 'Unit1'
-						// 		}
-						// 	},
-						// 	remarks: {
-						// 		_text: 'Example CoT event'
-						// 	}
-						// }
+						detail: {
+							contact: {
+								_attributes: {
+									callsign: item.flight
+								}
+							},
+						}
 					}
 				};
 
@@ -79,7 +116,7 @@ export async function runTask(event: any, env: any, ctx: any) {
 				return xml;
 			})
 
-			const futureTx = cotEvents.map(async (e) => {
+			const futureTx = cotEvents.map(async (e: any) => {
 				const encoded = encoder.encode(e);
 				await writer.write(encoded);
 			})
@@ -89,23 +126,5 @@ export async function runTask(event: any, env: any, ctx: any) {
 			await socket.close();
 		};
 
-		await ctx.waitUntil(sendStuffToTak());
-}
-
-function generateTestEntities(n: number) {
-	const testEntities = [];
-
-	const track = generateLineCoordinates("New York City", "Houston", n)
-
-	console.log({track});
-
-	for (let i = 0; i < n; i++) {
-		testEntities.push({
-			id: i + 1,
-			name: `Entity ${i + 1}`,
-			lat: track[i].lat,
-			lon: track[i].lng,
-		});
-	}
-	return testEntities;
+		await ctx.waitUntil(sendStuffToTak(env));
 }

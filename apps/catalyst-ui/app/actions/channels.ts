@@ -10,7 +10,6 @@ import { CloudflareEnv } from "@/env";
 
 export async function createDataChannel(formData: FormData, token: string) {
   const {
-    // @ts-ignore
     CATALYST_DATA_CHANNEL_REGISTRAR_API: api,
   } = getRequestContext().env as CloudflareEnv;
   // zitadel roles muust inclide org-admin or data-custodian
