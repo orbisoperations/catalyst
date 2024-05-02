@@ -1,7 +1,8 @@
 schema: |-
     definition orbisops_catalyst_dev/data_channel {
         relation organization: orbisops_catalyst_dev/organization
-        permission read = organization->data_channel_read
+        permission read_by_owning_org = organization->data_channel_read
+        permission read_by_partner_org = organization->data_channel_read_partner
     }
 
     definition orbisops_catalyst_dev/organization {
@@ -16,7 +17,8 @@ schema: |-
         permission data_channel_create = data_custodian
         permission data_channel_update = data_custodian
         permission data_channel_delete = data_custodian
-        permission data_channel_read = admin + data_custodian + user + partner_organization->data_channel_read
+        permission data_channel_read = admin + data_custodian + user
+        permission data_channel_read_partner= partner_organization->data_channel_read
     }
 
     definition orbisops_catalyst_dev/user {}
