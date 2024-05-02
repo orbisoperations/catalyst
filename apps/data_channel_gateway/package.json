@@ -4,7 +4,7 @@
   "scripts": {
     "dev": "wrangler dev src/index.ts",
     "deployment": "yes | wrangler deploy --minify --env production",
-    "deploymentPreview": "yes | wrangler deploy --env staging",
+    "deploymentPreview": "yes | wrangler deploy --keep-vars --env staging",
     "test": "vitest"
   },
   "dependencies": {

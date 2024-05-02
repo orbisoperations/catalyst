@@ -1,3 +1,4 @@
+account_id = "3be6f7bb0cc73869d555e1156586c1f2"
 name = "authx_authzed_api"
 main = "src/index.ts"
 compatibility_date = "2024-04-05"

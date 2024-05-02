@@ -2,7 +2,7 @@ name = "authx_token_api"
 compatibility_date = "2024-04-05"
 compatibility_flags = [ "nodejs_compat" ]
 main = "src/index.ts"
-
+account_id = "3be6f7bb0cc73869d555e1156586c1f2"
 
 services = [
 	{ binding = "AUTHZED", service = "authx_authzed_api"},
@@ -40,10 +40,6 @@ services = [
 	{ binding = "USERCACHE", service = "user_credentials_cache-staging"}
 ]
 durable_objects.bindings = [{name = "KEY_PROVIDER", class_name = "JWTKeyProvider"}]
-[[migrations]]
-tag = "v1" # Should be unique for each entry
-new_classes = ["JWTKeyProvider"]
-
 
 
 
@@ -58,6 +54,3 @@ services = [
 	{ binding = "USERCACHE", service = "user_credentials_cache-production"}
 ]
 durable_objects.bindings = [{name = "KEY_PROVIDER", class_name = "JWTKeyProvider"}]
-[[migrations]]
-tag = "v1" # Should be unique for each entry
-new_classes = ["JWTKeyProvider"]
