@@ -7,10 +7,10 @@ export async function GET(request: NextRequest) {
   // get CF token
   const cfToken = request.cookies.get("CF_Authorization")?.value;
   if (cfToken) {
+
     // validate CF token
     // @ts-ignore
-    const { USER_CREDS_CACHE: user_cache } = getRequestContext()
-      .env as CloudflareEnv;
+    const { USER_CREDS_CACHE: user_cache } = getRequestContext().env as CloudflareEnv;
     const user:
       | { userId: string; orgId: string; zitadelRoles: string[] }
       | undefined = await user_cache.getUser(cfToken);

@@ -3,6 +3,12 @@ name = "datachannel_tak"
 main = "src/index.ts"
 compatibility_date = "2024-04-05"
 compatibility_flags = [ "nodejs_compat" ]
+account_id = "3be6f7bb0cc73869d555e1156586c1f2"
+
+[vars]
+TAK_HOST = "https://goatak-empty-violet-5442.fly.dev"
+#TAK_HOST = "http://localhost"
+TAK_PORT = 8999
 
 [dev]
 port = 4005
@@ -11,6 +17,11 @@ port = 4005
 # Configuration: https://developers.cloudflare.com/workers/wrangler/configuration/#triggers
 [triggers]
 crons = ["* * * * *"] # * * * * * = run every minute
+
+
+[env.staging.vars]
+TAK_HOST = "https://goatak-empty-violet-5442.fly.dev"
+TAK_PORT = 8999
 
 # Variable bindings. These are arbitrary, plaintext strings (similar to environment variables)
 # Note: Use secrets to store sensitive data.
@@ -49,15 +60,9 @@ crons = ["* * * * *"] # * * * * * = run every minute
 # Bind a Durable Object. Durable objects are a scale-to-zero compute primitive based on the actor model.
 # Durable Objects can live for as long as needed. Use these when you need a long-running "server", such as in realtime apps.
 # Docs: https://developers.cloudflare.com/workers/wrangler/configuration/#durable-objects
-# [[durable_objects.bindings]]
-# name = "MY_DURABLE_OBJECT"
-# class_name = "MyDurableObject"
-
 # Durable Object migrations.
 # Docs: https://developers.cloudflare.com/workers/wrangler/configuration/#migrations
-# [[migrations]]
-# tag = "v1"
-# new_classes = ["MyDurableObject"]
+
 
 # Bind a Hyperdrive configuration. Use to accelerate access to your existing databases from Cloudflare Workers.
 # Docs: https://developers.cloudflare.com/workers/wrangler/configuration/#hyperdrive

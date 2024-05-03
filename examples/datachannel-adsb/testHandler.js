@@ -1,4 +1,4 @@
-const apiUrl = 'http://localhost:4008/graphql';
+const apiUrl = 'https://datachannel-adsb-staging.securedatadistro.workers.dev/graphql';
 
 async function testAircraftWithinDistance() {
     const query = `
