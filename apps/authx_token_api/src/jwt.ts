@@ -31,7 +31,7 @@ export class JWT implements DSSJWT{
         this.sub = entity;
         this.claims = claims;
         this.iss = iss;
-        this.aud = `sdd:hub:network:gateway`;
+        this.aud = `catalyst:system:datachannels`;
         this.jti = uuidv4();
         //this.nbf = new Date().getTime();
         //this.iat = new Date().getTime();

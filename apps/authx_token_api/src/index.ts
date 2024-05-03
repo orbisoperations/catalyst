@@ -16,6 +16,12 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 		return stub.getPublicKey();
 	}
 
+	async getPublicKeyJWK(keyNamespace: string = 'default') {
+		const id = this.env.KEY_PROVIDER.idFromName(keyNamespace);
+		const stub = this.env.KEY_PROVIDER.get(id);
+		return stub.getPublickKeyJWK();
+	}
+
 	// rotate requires a token to ensure this is only done by platform admins
 	async rotateKey(keyNamespace: string = 'default', token: Token) {
 		const id = this.env.KEY_PROVIDER.idFromName(keyNamespace);
