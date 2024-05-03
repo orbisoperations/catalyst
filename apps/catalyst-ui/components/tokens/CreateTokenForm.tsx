@@ -21,7 +21,11 @@ import {
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useUser } from "../contexts/User/UserContext";
-import {DataChannel, DataChannelActionResponse, JWTSigningResponse} from "@catalyst/schema_zod";
+import {
+  DataChannel,
+  DataChannelActionResponse,
+  JWTSigningResponse,
+} from "@catalyst/schema_zod";
 
 type CreateTokensFormProps = {
   signToken: (
@@ -72,12 +76,12 @@ export default function CreateTokensForm({
         (user && user.custom.org && `${user?.custom.org}/${user?.email}`) ||
         "default",
     };
-    if(!cfToken) {
+    if (!cfToken) {
       throw "No cf token";
     }
     signToken(jwtRequest, expiration, cfToken!)
       .then((resp) => {
-        if(resp.success) {
+        if (resp.success) {
           setToken(resp.token);
           tokenConfirmation.onOpen();
         }
@@ -96,6 +100,7 @@ export default function CreateTokensForm({
     <DetailedView
       topbaractions={navigationItems}
       topbartitle="API Keys"
+      showspinner={false}
       headerTitle={{ text: "Create API Key" }}
       subtitle="Create a new API Key"
       actions={<OrbisButton onClick={createToken}>Create</OrbisButton>}

@@ -32,6 +32,7 @@ export default function APIKeysDetails() {
     <DetailedView
       topbaractions={navigationItems}
       topbartitle="API Keys"
+      showspinner={false}
       headerTitle={{ text: "Create API Key" }}
       subtitle="Create a new API Key"
       actions={

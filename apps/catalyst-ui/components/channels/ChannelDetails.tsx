@@ -94,7 +94,7 @@ export default function DataChannelDetailsComponent({
 
   return (
     <DetailedView
-      showspinner={!token ? true : undefined}
+      showspinner={!channel}
       actions={
         <Flex gap={10}>
           <Flex gap={2} align={"center"}>
