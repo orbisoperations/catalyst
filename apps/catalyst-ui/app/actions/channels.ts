@@ -2,9 +2,11 @@
 import { getRequestContext } from "@cloudflare/next-on-pages";
 
 import z from "zod";
-import { DataChannel, DataChannelActionResponse } from "../../../../packages/schema_zod";
+import {
+  DataChannel,
+  DataChannelActionResponse,
+} from "../../../../packages/schema_zod";
 import { CloudflareEnv } from "@/env";
-
 
 export async function createDataChannel(formData: FormData, token: string) {
   const {
@@ -48,6 +50,15 @@ export async function listChannels(token: string) {
   return channels;
 }
 
+export async function listPartnersChannels(token: string, partnerId: string) {
+  const channelsResponse = await listChannels(token);
+  if (!channelsResponse.success) return undefined;
+  const allChannels = channelsResponse.data as DataChannel[];
+  return allChannels.filter(
+    (channel) => channel.creatorOrganization === partnerId
+  );
+}
+
 export async function getChannel(channelId: string, token: string) {
   const { CATALYST_DATA_CHANNEL_REGISTRAR_API: api } = getRequestContext()
     .env as CloudflareEnv;
@@ -56,14 +67,18 @@ export async function getChannel(channelId: string, token: string) {
     cfToken: token,
   };
 
-  const channelResp: DataChannelActionResponse = await api.read("default", channelId, tokenObject);
+  const channelResp: DataChannelActionResponse = await api.read(
+    "default",
+    channelId,
+    tokenObject
+  );
   if (channelResp.success) {
-    console.log("found data channels: ", channelResp.data)
-    return channelResp.data as DataChannel
+    console.log("found data channels: ", channelResp.data);
+    return channelResp.data as DataChannel;
   }
-  console.error(channelResp.error)
-  throw new Error("unable to find data channel")
-} 
+  console.error(channelResp.error);
+  throw new Error("unable to find data channel");
+}
 
 export async function updateChannel(formData: FormData, token: string) {
   // @ts-ignore
@@ -101,9 +116,9 @@ export async function handleSwitch(
   };
   const channelResp = await api.read("default", channelId, tokenObject);
   if (!channelResp.success) {
-    throw new Error("unable to toggle datachannel")
+    throw new Error("unable to toggle datachannel");
   }
-  let channel = channelResp.data as DataChannel
+  let channel = channelResp.data as DataChannel;
   channel.accessSwitch = accessSwitch;
   return await api.update("default", channel, tokenObject);
 }
