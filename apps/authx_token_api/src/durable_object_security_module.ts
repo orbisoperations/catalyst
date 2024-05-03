@@ -59,6 +59,11 @@ export class KeyState {
 		return this.publicKeyPEM;
 	}
 
+	async pubJWK() {
+		const jwk = await exportJWK(this.publicKey)
+		return Object.assign(jwk, {alg: "EdDSA"})
+	}
+
 	async serialize(): Promise<KeyStateSerialized> {
 		return {
 			private: await exportJWK(this.privateKey),
@@ -107,6 +112,10 @@ export class JWTKeyProvider extends DurableObject {
 		return {
 			pem: (await this.key()).pub(),
 		};
+	}
+
+	async getPublickKeyJWK() {
+		return (await this.key()).pubJWK()
 	}
 
 	async rotateKey() {

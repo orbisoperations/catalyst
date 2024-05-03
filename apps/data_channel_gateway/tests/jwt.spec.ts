@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { env } from 'cloudflare:test';
-
+import {importJWK, jwtVerify} from "jose"
 describe("jwt integration tests", () => {
   it("can get the public key", async () =>{
     console.log(env)
@@ -48,4 +48,27 @@ describe("jwt integration tests", () => {
     const invalid = await jwtStub.validateToken(jwtToken.token + "makebad")
     expect(invalid.valid).toBeFalsy()
   })
+
+  it("can use jwks", async () => {
+    const jwtDoId = env.JWT_TOKEN_DO.idFromName("default")
+    const jwtStub = env.JWT_TOKEN_DO.get(jwtDoId)
+    const jwk = await jwtStub.getPublickKeyJWK()
+    console.log(jwk)
+    expect(jwk).toBeDefined()
+    const publicKey = await importJWK(jwk)
+    const jwtRequest = {
+      entity: "testuser",
+      claims: ["testclaim"],
+    }
+    const jwtToken = await jwtStub.signJWT(jwtRequest, 1000000000)
+
+  const { payload, protectedHeader } = await jwtVerify(jwtToken.token, publicKey, {
+    issuer: 'catalyst:system:jwt:latest',
+    audience: 'catalyst:system:datachannels',
+  })
+
+  console.log(protectedHeader)
+  console.log(payload)
+  })
 })
+
