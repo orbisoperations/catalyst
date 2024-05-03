@@ -102,7 +102,7 @@ app.use(async (c, next) => {
   }
 
   const { valid, entity, claims, error:ValidError } = await c.env.AUTHX_TOKEN_API.validateToken(token)
-
+  console.log(valid, entity, claims, error)
   if (!valid || ValidError) {
     return c.json({message: 'Token validation failed'}, 403)
   }
