@@ -161,7 +161,9 @@ export default class AuthzedWorker extends WorkerEntrypoint<ENV> {
 
 	async canReadFromDataChannel(dataChannelId: DataChannelId, userId: UserId) {
 		const client = new AuthzedClient(this.env.AUTHZED_ENDPOINT, this.env.AUTHZED_KEY, this.env.AUTHZED_PREFIX);
-		const res = await client.dataChannelPermissionsCheck(dataChannelId, emailTob64(userId), Catalyst.DataChannel.PermissionsEnum.enum.read);
-		return res;
+		const owningResp = await client.dataChannelPermissionsCheck(dataChannelId, emailTob64(userId), Catalyst.DataChannel.PermissionsEnum.enum.read_by_owning_org);
+		const parterResp = await client.dataChannelPermissionsCheck(dataChannelId, emailTob64(userId), Catalyst.DataChannel.PermissionsEnum.enum.read_by_partner_org);
+		console.log(`data channel permission check asserts local(${owningResp}) and partner(${parterResp}) paths`)
+		return owningResp || parterResp;
 	}
 }
