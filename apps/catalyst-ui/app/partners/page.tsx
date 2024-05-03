@@ -1,5 +1,9 @@
 import PartnersListComponent from "@/components/partners/PartnersListComponent";
-import { listInvites, declineInvite } from "../actions/partners";
+import {
+  listInvites,
+  declineInvite,
+  togglePartnership,
+} from "../actions/partners";
 export const runtime = "edge";
 
 export default function PartnersPage() {
@@ -7,6 +11,7 @@ export default function PartnersPage() {
     <PartnersListComponent
       listInvites={listInvites}
       declineInvite={declineInvite}
+      togglePartnership={togglePartnership}
     />
   );
 }

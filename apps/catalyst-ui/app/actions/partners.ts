@@ -65,3 +65,13 @@ export async function acceptInvite(inviteId: string, token: string) {
   console.error("Accept Invite Error:", result.error);
   return undefined;
 }
+
+export async function togglePartnership(orgId: string, token: string) {
+  const matcher = getMatcher();
+  const result = await matcher.togglePartnership(orgId, { cfToken: token });
+  if (result.success) {
+    return result.invite;
+  }
+  console.error("Toggle Partner Status Error:", result.error);
+  return undefined;
+}
