@@ -15,12 +15,21 @@ export async function GET(request: NextRequest) {
       | { userId: string; orgId: string; zitadelRoles: string[] }
       | undefined = await user_cache.getUser(cfToken);
     if (user) {
-      const writeResp =
+      // user role
+      // @ts-ignore
+      await getRequestContext().env.AUTHX_AUTHZED_API.addUserToOrg(
+        user.orgId,
+        user.userId
+      );
+      // data custodian role
+      if (user.zitadelRoles.includes("data-custodian")) {
         // @ts-ignore
-        await getRequestContext().env.AUTHX_AUTHZED_API.addUserToOrg(
+        await getRequestContext().env.AUTHX_AUTHZED_API.addDataCustodianToOrg(
           user.orgId,
           user.userId
         );
+      }
+      // admin role
       if (user.zitadelRoles.includes("org-admin")) {
         // @ts-ignore
         await getRequestContext().env.AUTHX_AUTHZED_API.addAdminToOrg(
