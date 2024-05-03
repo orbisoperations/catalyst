@@ -24,8 +24,7 @@ export async function retrieveADSB(params: {lat: number, lon: number, dist: numb
     const response = await fetch(url, reqOptions);
 
     const responseBody = await response.text();
-
-    return JSON.parse(responseBody);
+    return JSON.parse(responseBody)
   } catch (error) {
     console.error(error);
     throw new Error('Failed to retrieve ADSB data');

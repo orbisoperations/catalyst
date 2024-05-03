@@ -14,14 +14,14 @@ export default {
           schema: createSchema({
               typeDefs: /* GraphQL */ `
                   type Aircraft {
-                      icao: String
-                      call: String
+                      hex: String
+                      flight: String
                       lat: Float
                       lon: Float
-                      altitude: Float
-                      trak: Float
-                      speed: Float
-                      type: String
+                      alt_geom: Int
+                      track: Float
+                      gs: Float
+                      t: String
                   }
 
                   type Query {
