@@ -112,7 +112,14 @@ export default function PartnersListComponent({
                 <Box key={partner.id}>
                   <Flex justifyContent={"space-between"}>
                     <OpenButton
-                      onClick={() => router.push("/partners/" + partner.id)}
+                      onClick={() =>
+                        router.push(
+                          "/partners/" +
+                            (partner.sender === user?.custom.org
+                              ? partner.receiver
+                              : partner.sender)
+                        )
+                      }
                     >
                       {partner.sender === user?.custom.org
                         ? partner.receiver
