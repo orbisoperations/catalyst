@@ -167,3 +167,5 @@ export default class AuthzedWorker extends WorkerEntrypoint<ENV> {
 		return owningResp || parterResp;
 	}
 }
+
+export async function fetch(){}

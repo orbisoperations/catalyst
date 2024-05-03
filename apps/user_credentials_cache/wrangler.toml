@@ -2,6 +2,7 @@
 name = "user_credentials_cache"
 main = "src/index.ts"
 compatibility_date = "2024-04-19"
+account_id = "3be6f7bb0cc73869d555e1156586c1f2"
 
 # https://developers.cloudflare.com/durable-objects/
 [durable_objects]
@@ -14,14 +15,14 @@ new_classes = ["UserCredsCache"]
 # STAGING VALUES
 [env.staging]
 durable_objects.bindings = [{name = "CACHE", class_name = "UserCredsCache"}]
-[[migrations]]
-tag = "v1" # Should be unique for each entry
-new_classes = ["UserCredsCache"]
+#[[migrations]]
+#tag = "v1" # Should be unique for each entry
+#new_classes = ["UserCredsCache"]
 
 
 # PRODUCTION VALUES
 [env.production]
 durable_objects.bindings = [{name = "CACHE", class_name = "UserCredsCache"}]
-[[migrations]]
-tag = "v1" # Should be unique for each entry
-new_classes = ["UserCredsCache"]
+#[[migrations]]
+#tag = "v1" # Should be unique for each entry
+#new_classes = ["UserCredsCache"]

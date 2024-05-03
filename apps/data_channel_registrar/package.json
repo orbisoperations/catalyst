@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "deployment": "yes | wrangler deploy --minify --env production",
-    "deploymentPreview": "yes | wrangler deploy --env staging",
+    "deploymentPreview": "yes | wrangler deploy --keep-vars --env staging",
     "test": "vitest --config vitest.config.ts --reporter basic",
     "dev": "pnpm wrangler dev",
     "deploy": "wrangler deploy --minify src/worker.ts",
