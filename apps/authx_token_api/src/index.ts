@@ -13,20 +13,20 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 	async getPublicKey(keyNamespace: string = 'default') {
 		const id = this.env.KEY_PROVIDER.idFromName(keyNamespace);
 		const stub = this.env.KEY_PROVIDER.get(id);
-		return stub.getPublicKey();
+		return await stub.getPublicKey();
 	}
 
 	async getPublicKeyJWK(keyNamespace: string = 'default') {
 		const id = this.env.KEY_PROVIDER.idFromName(keyNamespace);
 		const stub = this.env.KEY_PROVIDER.get(id);
-		return stub.getPublickKeyJWK();
+		return await stub.getPublickKeyJWK();
 	}
 
 	// rotate requires a token to ensure this is only done by platform admins
 	async rotateKey(keyNamespace: string = 'default', token: Token) {
 		const id = this.env.KEY_PROVIDER.idFromName(keyNamespace);
 		const stub = this.env.KEY_PROVIDER.get(id);
-		return stub.rotateKey();
+		return await stub.rotateKey();
 	}
 
 	// ensure all claims in the request are valid before signing
@@ -74,6 +74,6 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 	async validateToken(token: string, keyNamespace: string = 'default') {
 		const id = this.env.KEY_PROVIDER.idFromName(keyNamespace);
 		const stub = this.env.KEY_PROVIDER.get(id);
-		return stub.validateToken(token);
+		return await stub.validateToken(token);
 	}
 }
