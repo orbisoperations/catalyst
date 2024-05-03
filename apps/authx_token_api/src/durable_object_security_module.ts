@@ -1,4 +1,4 @@
-import { generateKeyPair, jwtVerify, KeyLike, exportSPKI, importSPKI, SignJWT, exportJWK, importJWK, JWK } from 'jose';
+import { generateKeyPair, jwtVerify, KeyLike, exportSPKI, importSPKI, SignJWT, exportJWK, importJWK, JWK, createLocalJWKSet } from 'jose';
 // @ts-ignore
 import { v4 as uuidv4 } from 'uuid';
 import { JWT } from './jwt';
@@ -138,8 +138,13 @@ export class JWTKeyProvider extends DurableObject {
 	async validateToken(token: string) {
 		const key = await this.key();
 		try {
-			console.log(token)
-			const { payload, protectedHeader } = await jwtVerify(token, key.publicKey);
+			console.log(token, await key.pubJWK())
+			const jwkPub = createLocalJWKSet({
+				keys: [
+					await key.pubJWK()
+				]
+			})
+			const { payload, protectedHeader } = await jwtVerify(token, jwkPub);
 			console.log(payload, protectedHeader)
 			return JWTParsingResponse.parse({
 				valid: true,
