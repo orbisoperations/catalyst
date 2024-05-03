@@ -39,10 +39,15 @@ type PartnersListComponentProps = {
     inviteId: string,
     token: string
   ) => Promise<OrgInvite | undefined>;
+  togglePartnership(
+    orgId: string,
+    token: string
+  ): Promise<OrgInvite | undefined>;
 };
 export default function PartnersListComponent({
   listInvites,
   declineInvite,
+  togglePartnership,
 }: PartnersListComponentProps) {
   const router = useRouter();
   const [partners, setPartners] = useState<OrgInvite[]>([]);
@@ -114,7 +119,15 @@ export default function PartnersListComponent({
                         : partner.sender}
                     </OpenButton>
                     <Flex gap={10} align={"center"}>
-                      <Switch colorScheme="green" defaultChecked />
+                      <Switch
+                        colorScheme="green"
+                        defaultChecked={partner.isActive}
+                        onChange={() => {
+                          togglePartnership(partner.id, token ?? "").then(
+                            fetchInvites
+                          );
+                        }}
+                      />
                       <TrashButton
                         onClick={() => {
                           setSelectedPartner(partner);

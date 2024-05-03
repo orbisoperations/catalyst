@@ -349,7 +349,12 @@ export class AuthzedClient {
 		const req = this.utils.checkDataChannelPermission(dataChannelId, userId, permission);
 		const { data } = await this.utils.permissionFetcher(req);
 
-		const permissionResp = Authzed.Permissions.Response.parse(data);
+		const resp = Authzed.Permissions.CheckReponse.safeParse(data);
+		if (!resp.success) {
+			console.error(resp.error, 'data channel permission check failed', dataChannelId, userId, permission);
+			return false;
+		}
+		const permissionResp = resp.data;
 		if (typeof permissionResp === typeof Authzed.Permissions.CheckReponse) {
 			const success = Authzed.Permissions.CheckReponse.parse(permissionResp);
 			return success.permissionship === Authzed.Permissions.PermissionValues.enum.PERMISSIONSHIP_HAS_PERMISSION;
