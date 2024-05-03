@@ -1,6 +1,6 @@
 import {DurableObject, WorkerEntrypoint, RpcTarget} from "cloudflare:workers"
 import { Env } from "../worker-configuration"
-import {OrgId, OrgInvite, OrgInviteStatus, OrgInviteResponse, Token } from "../../../packages/schema_zod"
+import { OrgId, OrgInvite, OrgInviteStatus, OrgInviteResponse, Token, User } from '../../../packages/schema_zod';
 /**
  * Welcome to Cloudflare Workers! This is your first worker.
  *
@@ -140,24 +140,131 @@ export class OrganizationMatchmakingDO extends DurableObject {
 
 export default class OrganizationMatchmakingWorker extends WorkerEntrypoint<Env> {
 	async sendInvite(receivingOrg: OrgId, token: Token, doNamespace: string = "default") {
+		if (!token.cfToken) {
+			return OrgInviteResponse.parse({
+				success: false,
+				error: "catalyst did not find a verifiable credential"
+			})
+		}
+		const user = await this.env.USERCACHE.getUser(token.cfToken) as User | undefined
+		if (!user) {
+			return OrgInviteResponse.parse({
+				success: false,
+				error: "catalyst did not find a valid user"
+			})
+		}
 		// check token for permission
+		const permCheck = await this.env.AUTHZED.canUpdateOrgPartnersInOrg(user.orgId, user.userId)
+		if (!permCheck) {
+			return OrgInviteResponse.parse({
+				success: false,
+				error: "catalyst rejects users abiltiy to add an org partner"
+			})
+		}
+
 		const id = this.env.ORG_MATCHMAKING.idFromName(doNamespace)
 		const stub = this.env.ORG_MATCHMAKING.get(id)
 		return await stub.send("stuborg", receivingOrg)
 	}
 	async acceptInvite(inviteId: string, token: Token, doNamespace: string = "default"){
 		// check token for perms
+		if (!token.cfToken) {
+			return OrgInviteResponse.parse({
+				success: false,
+				error: "catalyst did not find a verifiable credential"
+			})
+		}
+		const user = await this.env.USERCACHE.getUser(token.cfToken) as User | undefined
+		if (!user) {
+			return OrgInviteResponse.parse({
+				success: false,
+				error: "catalyst did not find a valid user"
+			})
+		}
+		// check token for permission
+		const permCheck = await this.env.AUTHZED.canUpdateOrgPartnersInOrg(user.orgId, user.userId)
+		if (!permCheck) {
+			return OrgInviteResponse.parse({
+				success: false,
+				error: "catalyst rejects users abiltiy to add an org partner"
+			})
+		}
+
 		const id = this.env.ORG_MATCHMAKING.idFromName(doNamespace)
 		const stub = this.env.ORG_MATCHMAKING.get(id)
-		return await stub.respond("stuborg", inviteId, "accepted")
+		const inviteResp =  await stub.respond(user.orgId, inviteId, "accepted")
+		if (inviteResp.success) {
+			const invite = OrgInvite.parse(inviteResp.invite)
+			const partnerWrites = await Promise.all([
+				 	await this.env.AUTHZED.addPartnerToOrg(invite.sender, invite.receiver),
+					await this.env.AUTHZED.addPartnerToOrg(invite.receiver, invite.sender)
+				])
+			console.log(partnerWrites)
+			return inviteResp
+		} else {
+			return inviteResp
+		}
 	}
 	async declineInvite(inviteId: string,token: Token, doNamespace: string = "default"){
+		if (!token.cfToken) {
+			return OrgInviteResponse.parse({
+				success: false,
+				error: "catalyst did not find a verifiable credential"
+			})
+		}
+		const user = await this.env.USERCACHE.getUser(token.cfToken) as User | undefined
+		if (!user) {
+			return OrgInviteResponse.parse({
+				success: false,
+				error: "catalyst did not find a valid user"
+			})
+		}
+		// check token for permission
+		const permCheck = await this.env.AUTHZED.canUpdateOrgPartnersInOrg(user.orgId, user.userId)
+		if (!permCheck) {
+			return OrgInviteResponse.parse({
+				success: false,
+				error: "catalyst rejects users abiltiy to add an org partner"
+			})
+		}
 		// check token for perms
 		const id = this.env.ORG_MATCHMAKING.idFromName(doNamespace)
 		const stub = this.env.ORG_MATCHMAKING.get(id)
-		return await stub.respond("stuborg", inviteId, "declined")
+		const inviteResp =  await stub.respond(user.orgId, inviteId, "declined")
+		if (inviteResp.success) {
+			const invite = OrgInvite.parse(inviteResp.invite)
+			const partnerWrites = await Promise.all([
+				await this.env.AUTHZED.deletePartnerInOrg(invite.sender, invite.receiver),
+				await this.env.AUTHZED.deletePartnerInOrg(invite.receiver, invite.sender)
+			])
+			console.log(partnerWrites)
+			return inviteResp
+		} else {
+			return inviteResp
+		}
 	}
 	async listInvites(token: Token, doNamespace: string = "default"){
+		if (!token.cfToken) {
+			return OrgInviteResponse.parse({
+				success: false,
+				error: "catalyst did not find a verifiable credential"
+			})
+		}
+		const user = await this.env.USERCACHE.getUser(token.cfToken) as User | undefined
+		if (!user) {
+			return OrgInviteResponse.parse({
+				success: false,
+				error: "catalyst did not find a valid user"
+			})
+		}
+		// check token for permission
+		const permCheck = await this.env.AUTHZED.canUpdateOrgPartnersInOrg(user.orgId, user.userId)
+		if (!permCheck) {
+			return OrgInviteResponse.parse({
+				success: false,
+				error: "catalyst rejects users abiltiy to add an org partner"
+			})
+		}
 		const id = this.env.ORG_MATCHMAKING.idFromName(doNamespace)
 		const stub = this.env.ORG_MATCHMAKING.get(id)
 		return await stub.list("stuborg")

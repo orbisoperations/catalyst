@@ -120,6 +120,11 @@ export default class AuthzedWorker extends WorkerEntrypoint<ENV> {
 		return client.organizationPermissionsCheck(orgId, emailTob64(userId), Catalyst.Org.PermissionsEnum.enum.member);
 	}
 
+	async canUpdateOrgPartnersInOrg(orgId: OrgId, userId: UserId) {
+		const client = new AuthzedClient(this.env.AUTHZED_ENDPOINT, this.env.AUTHZED_KEY, this.env.AUTHZED_PREFIX);
+		return client.organizationPermissionsCheck(orgId, emailTob64(userId), Catalyst.Org.PermissionsEnum.enum.partner_update);
+	}
+
 	async canAssignRolesInOrg(orgId: OrgId, userId: UserId) {
 		const client = new AuthzedClient(this.env.AUTHZED_ENDPOINT, this.env.AUTHZED_KEY, this.env.AUTHZED_PREFIX);
 		return client.organizationPermissionsCheck(orgId, emailTob64(userId), Catalyst.Org.PermissionsEnum.enum.role_assign);
