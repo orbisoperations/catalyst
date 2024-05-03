@@ -138,7 +138,9 @@ export class JWTKeyProvider extends DurableObject {
 	async validateToken(token: string) {
 		const key = await this.key();
 		try {
+			console.log(token)
 			const { payload, protectedHeader } = await jwtVerify(token, key.publicKey);
+			console.log(payload, protectedHeader)
 			return JWTParsingResponse.parse({
 				valid: true,
 				entity: payload.sub,
@@ -149,7 +151,7 @@ export class JWTKeyProvider extends DurableObject {
 				valid: false,
 				entity: undefined,
 				claims: [],
-				error: e.message as string,
+				error: `${e}`,
 			});
 		}
 	}
