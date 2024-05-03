@@ -31,7 +31,7 @@ export class KeyState {
 	}
 
 	async init() {
-		const { publicKey, privateKey } = await generateKeyPair('ES384', {
+		const { publicKey, privateKey } = await generateKeyPair('EdDSA', {
 			extractable: true,
 		});
 		this.publicKey = publicKey;
@@ -52,7 +52,7 @@ export class KeyState {
 	async sign(jwt: JWT, expiry: number = 60 * 60 * 24 * 7) {
 		const payload = jwt.payloadRaw(expiry);
 
-		return new SignJWT(payload).setProtectedHeader({ alg: 'ES384' }).sign(this.privateKey);
+		return new SignJWT(payload).setProtectedHeader({ alg: 'EdDSA' }).sign(this.privateKey);
 	}
 
 	pub() {
