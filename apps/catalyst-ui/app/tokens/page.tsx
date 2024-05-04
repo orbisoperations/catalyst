@@ -109,7 +109,14 @@ export default function APIKeys() {
       title="JWT Admin Pannel"
     >
       <Text>JWT Admin Actions</Text>
-      <OrbisButton onClick={() => {console.log("rotating jwt material")}}>Rotate JWT Signing Material</OrbisButton>
+      <OrbisButton onClick={async () => {
+        console.log("rotating jwt material")
+        rotateJWTKeyMaterial().then(res => {
+          console.log(res)
+        }).catch(e => {
+          console.error("error rotating keys: ", e)
+        }) 
+      }}>Rotate JWT Signing Material</OrbisButton>
     </OrbisCard>
     </ListView>
     </>
