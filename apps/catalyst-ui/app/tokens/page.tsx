@@ -15,13 +15,23 @@ import { useRouter } from "next/navigation";
 import { Text } from "@chakra-ui/react";
 import { rotateJWTKeyMaterial } from "@/app/actions/tokens";
 import { useUser } from "../../components/contexts/User/UserContext";
+import { useEffect, useState } from "react";
 
 export const runtime = "edge";
 
 
 export default function APIKeys() {
   const router = useRouter();
-  const { user } = useUser();
+  const { user, token } = useUser();
+  const [adminFlag, setAdminFlag] = useState<boolean>(false) 
+  useEffect(() => {
+    console.log(user, token)
+    if (user !== undefined && token !== undefined) {
+      setAdminFlag(true)
+    } else {
+      setAdminFlag(false)
+    }
+  }, [user, token])
   const apiKeys = [
     [
       <Flex justify={"space-between"} key={0} align={"center"}>
@@ -107,13 +117,13 @@ export default function APIKeys() {
       }
       topbaractions={navigationItems}
     >
-      {user && user.custom.isPlatformAdmin 
+      {adminFlag && user?.custom.isPlatformAdmin 
       ? <>
         <OrbisCard title="JWT Admin Pannel">
           <Text>JWT Admin Actions</Text>
           <OrbisButton onClick={async () => {
             console.log("rotating jwt material")
-            rotateJWTKeyMaterial().then(res => {
+            rotateJWTKeyMaterial(token!).then(res => {
               console.log(res)
             }).catch(e => {
               console.error("error rotating keys: ", e)
