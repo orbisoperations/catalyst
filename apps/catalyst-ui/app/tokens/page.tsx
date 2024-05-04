@@ -14,12 +14,14 @@ import { Flex } from "@chakra-ui/layout";
 import { useRouter } from "next/navigation";
 import { Text } from "@chakra-ui/react";
 import { rotateJWTKeyMaterial } from "@/app/actions/tokens";
+import { useUser } from "../../components/contexts/User/UserContext";
 
 export const runtime = "edge";
 
 
 export default function APIKeys() {
   const router = useRouter();
+  const { user } = useUser();
   const apiKeys = [
     [
       <Flex justify={"space-between"} key={0} align={"center"}>
@@ -105,19 +107,22 @@ export default function APIKeys() {
       }
       topbaractions={navigationItems}
     >
-      <OrbisCard
-      title="JWT Admin Pannel"
-    >
-      <Text>JWT Admin Actions</Text>
-      <OrbisButton onClick={async () => {
-        console.log("rotating jwt material")
-        rotateJWTKeyMaterial().then(res => {
-          console.log(res)
-        }).catch(e => {
-          console.error("error rotating keys: ", e)
-        }) 
-      }}>Rotate JWT Signing Material</OrbisButton>
-    </OrbisCard>
+      {user && user.custom.isPlatformAdmin 
+      ? <>
+        <OrbisCard title="JWT Admin Pannel">
+          <Text>JWT Admin Actions</Text>
+          <OrbisButton onClick={async () => {
+            console.log("rotating jwt material")
+            rotateJWTKeyMaterial().then(res => {
+              console.log(res)
+            }).catch(e => {
+              console.error("error rotating keys: ", e)
+            }) 
+          }}
+          >Rotate JWT Signing Material</OrbisButton>
+        </OrbisCard>
+      </> 
+      : <></>}
     </ListView>
     </>
   );
