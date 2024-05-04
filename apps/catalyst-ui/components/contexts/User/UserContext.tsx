@@ -94,6 +94,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     getIdentity().then((res) => {
       const roles = res?.custom["urn:zitadel:iam:org:project:roles"];
       res.custom.isAdmin = roles && roles["org-admin"] !== undefined;
+      res.custom.isPlatformAdmin = roles && roles["platform-admin"] !== undefined;
       res.custom.org = getOrgFromRoles(
         roles as Record<string, Record<string, string>>
       );
