@@ -11,11 +11,14 @@ export async function getPublicKey() {
 /*
 * WARNING - this an admin function  and will invalidate all active tokens
 */
-export async function rotateJWTKeyMaterial() {
+export async function rotateJWTKeyMaterial(cfToken: string) {
+  const tokenObject = {
+    cfToken: cfToken,
+  };
   // @ts-ignore
   const tokens = getRequestContext().env.AUTHX_TOKEN_API;
 
-  return await tokens.rotateKey()
+  return await tokens.rotateKey(tokenObject)
 }
 
 export async function signJWT(

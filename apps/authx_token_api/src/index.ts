@@ -23,7 +23,7 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 	}
 
 	// rotate requires a token to ensure this is only done by platform admins
-	async rotateKey(keyNamespace: string = 'default', token: Token) {
+	async rotateKey(token: Token, keyNamespace: string = 'default') {
 		if (!token.cfToken) {
 			return JWTRotateResponse.parse({
 				success: false,
