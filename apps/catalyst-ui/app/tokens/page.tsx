@@ -117,13 +117,13 @@ export default function APIKeys() {
       }
       topbaractions={navigationItems}
     >
-      {adminFlag && user?.custom.isPlatformAdmin 
+      {user && token && user?.custom.isPlatformAdmin 
       ? <>
         <OrbisCard title="JWT Admin Pannel">
           <Text>JWT Admin Actions</Text>
           <OrbisButton onClick={async () => {
             console.log("rotating jwt material")
-            rotateJWTKeyMaterial(token!).then(res => {
+            rotateJWTKeyMaterial(token).then(res => {
               console.log(res)
             }).catch(e => {
               console.error("error rotating keys: ", e)
