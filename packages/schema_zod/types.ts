@@ -113,6 +113,18 @@ export const JWTSigningResponse = z.discriminatedUnion("success", [
 
 export type JWTSigningResponse = z.infer<typeof JWTSigningResponse>;
 
+export const JWTRotateResponse = z.discriminatedUnion("success", [
+  z.object({
+    success: z.literal(true)
+  }),
+  z.object({
+    success: z.literal(false),
+    error: z.string()
+  })
+])
+
+export type JWTRotateResponse = z.infer<typeof JWTRotateResponse>
+
 export const OrgInviteStatus = z.enum(["pending", "accepted", "declined"]);
 export type OrgInviteStatus = z.infer<typeof OrgInviteStatus>;
 export const OrgInvite = z.object({
