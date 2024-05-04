@@ -4,6 +4,7 @@ import {
   CreateButton,
   OpenButton,
   OrbisBadge,
+  OrbisButton,
   OrbisCard,
   OrbisTable,
 } from "@/components/elements";
@@ -12,6 +13,10 @@ import { navigationItems } from "@/utils/nav.utils";
 import { Flex } from "@chakra-ui/layout";
 import { useRouter } from "next/navigation";
 import { Text } from "@chakra-ui/react";
+import { rotateJWTKeyMaterial } from "@/app/actions/tokens";
+
+export const runtime = "edge";
+
 
 export default function APIKeys() {
   const router = useRouter();
@@ -69,6 +74,7 @@ export default function APIKeys() {
     ],
   ];
   return (
+    <>
     <ListView
       actions={
         <Flex gap={5}>
@@ -98,6 +104,14 @@ export default function APIKeys() {
         </OrbisCard>
       }
       topbaractions={navigationItems}
-    />
+    >
+      <OrbisCard
+      title="JWT Admin Pannel"
+    >
+      <Text>JWT Admin Actions</Text>
+      <OrbisButton onClick={() => {console.log("rotating jwt material")}}>Rotate JWT Signing Material</OrbisButton>
+    </OrbisCard>
+    </ListView>
+    </>
   );
 }
