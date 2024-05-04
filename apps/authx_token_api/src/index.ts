@@ -3,7 +3,7 @@ import { JWTKeyProvider } from './durable_object_security_module';
 import { WorkerEntrypoint } from 'cloudflare:workers';
 import { Env } from './env';
 export { JWTKeyProvider } from './durable_object_security_module';
-import { JWTSigningRequest, JWTSigningResponse, Token, User } from '../../../packages/schema_zod';
+import { JWTSigningRequest, JWTSigningResponse, Token, User, JWTRotateResponse } from '../../../packages/schema_zod';
 type Bindings = {
 	// @ts-ignore
 	KEY_PROVIDER: DurableObjectNamespace<JWTKeyProvider>;
@@ -24,9 +24,20 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 
 	// rotate requires a token to ensure this is only done by platform admins
 	async rotateKey(keyNamespace: string = 'default', token: Token) {
+		if (!token.cfToken) {
+			return JWTRotateResponse.parse({
+				success: false,
+				error: "catalyst did not receive a user credential"
+			})
+		}
 		const id = this.env.KEY_PROVIDER.idFromName(keyNamespace);
 		const stub = this.env.KEY_PROVIDER.get(id);
-		return await stub.rotateKey();
+		const success = await stub.rotateKey();
+		if (success) {
+			return JWTRotateResponse.parse({success: success})
+		} else {
+			return JWTRotateResponse.parse({success: success, error: "catalyst experienced and error rotating the key"})
+		}
 	}
 
 	// ensure all claims in the request are valid before signing
