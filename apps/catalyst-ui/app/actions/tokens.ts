@@ -8,6 +8,16 @@ export async function getPublicKey() {
   return await tokens.getPublicKey();
 }
 
+/*
+* WARNING - this an admin function  and will invalidate all active tokens
+*/
+export async function rotateJWTKeyMaterial() {
+  // @ts-ignore
+  const tokens = getRequestContext().env.AUTHX_TOKEN_API;
+
+  return await tokens.rotateKey()
+}
+
 export async function signJWT(
   jwtRequest: JWTRequest,
   expiration: { value: number; unit: "days" | "weeks" } = {
