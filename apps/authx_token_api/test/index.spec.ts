@@ -1,75 +1,27 @@
-// test/index.spec.ts
-import { env, createExecutionContext, waitOnExecutionContext, SELF } from "cloudflare:test";
-import { describe, it, expect } from "vitest";
+import {describe, it, expect, beforeAll, afterAll} from "vitest";
+import {KeyState} from "../src/keystate"
+import {JWT} from "../src/jwt"
+import { generateKeyPair, jwtVerify, KeyLike, exportSPKI, importSPKI, SignJWT, exportJWK, importJWK, JWK, createLocalJWKSet } from 'jose';
+const KEY_ALG = 'EdDSA'
 
-// For now, you'll need to do something like this to get a correctly-typed
-// `Request` to pass to `worker.fetch()`.
-// @ts-ignore
-const IncomingRequest = Request<unknown, IncomingRequestCfProperties>;
+describe("testing key state class", () => {
+	it("serialize and deserialize", async () => {
+		const key = new KeyState()
+		await key.init()
+		expect(key.publicKey).toBeDefined()
+		const jwtReq = new JWT("test", [], "testissuer")
+		const token = await (new SignJWT(jwtReq.payloadRaw(1000000)).setProtectedHeader({ alg: KEY_ALG }).sign(key.privateKey));
+		expect(token).toBeDefined()
 
-// EXMAPLE
-// describe("Hello World worker", () => {
-//   it("responds with Hello World! (unit style)", async () => {
-//     const request = new IncomingRequest("http://example.com");
-//     // Create an empty context to pass to `worker.fetch()`.
-//     const ctx = createExecutionContext();
-//     const response = await worker.fetch(request, env, ctx);
-//     // Wait for all `Promise`s passed to `ctx.waitUntil()` to settle before running test assertions
-//     await waitOnExecutionContext(ctx);
-//     expect(await response.text()).toMatchInlineSnapshot(`"Hello World!"`);
-//   });
-//
-//   it("responds with Hello World! (integration style)", async () => {
-//    const response = await SELF.fetch("https://example.com");
-//    expect(await response.text()).toMatchInlineSnapshot(`"Hello World!"`);
-//  });
-// });
-
-describe("authx service", () => {
+		const dKey = await key.serialize()
 
 
+		const jwkPub = await createLocalJWKSet({
+			keys: [dKey.public],
+		});
 
-  // it("validates a jwt", async () => {
-  //   const request = new IncomingRequest("http://example.com");
-  //   // Create an empty context to pass to `worker.fetch()`.
-  //   const ctx = createExecutionContext();
-  //   const response = await worker.fetch(request, env, ctx);
-  //   // Wait for all `Promise`s passed to `ctx.waitUntil()` to settle before running test assertions
-  //   await waitOnExecutionContext(ctx);
-  //   expect(await response.text()).toMatchInlineSnapshot(`"Hello World!"`);
-  // });
-//
-  it("validates a jwt", async () => {
-	  // const client = new Client({
-		//   url: `https://authx_api/graphql`,
-		//   exchanges: [fetchExchange],
-		//   preferGetMethod: "within-url-limit",
-		//   fetch: SELF.fetch as any
-	  // });
-	  //
-	  // const fakeToken = 'this-token-is-fake';
-
-	  // const query = gql`
-		//   query {
-		// 	  test
-		//   }
-	  // `;
-
-	  const response = await SELF.fetch('https://authx_token_api/graphql', {
-		  	method: 'POST',
-		  body: JSON.stringify({
-			  query: {
-				  test: ''
-			  }
-		  })
-	  });
-
-	  const resolved = await response.text();
-
-
-
-	  // const response = await client.query(query, {}).toPromise();
-	  // console.log(response);
-	  expect(await response.text()).toMatchInlineSnapshot('ok');
- });
-});
+		const { payload, protectedHeader } = await jwtVerify(token, jwkPub);
+		expect(payload.iss).toBe("testissuer")
+		expect(payload.sub).toBe("test")
+	})
+})
