@@ -14,7 +14,7 @@ import UserCredsCacheWorker from '../../user_credentials_cache/src';
 export type Env = Record<string, string> & {
   DO: DurableObjectNamespace<Registrar>;
   AUTHZED: Service<AuthzedWorker>;
-  JWTTOKEN: Service<JWTWorker>;
+  AUTHX_TOKEN_API: Service<JWTWorker>;
   USERCACHE: Service<UserCredsCacheWorker>;
 };
 
@@ -89,7 +89,7 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
       });
     } else if (token.catalystToken) {
       // validate JWT here
-      const jwtEntity: JWTParsingResponse = await this.env.JWTTOKEN.validateToken(
+      const jwtEntity: JWTParsingResponse = await this.env.AUTHX_TOKEN_API.validateToken(
         token.catalystToken,
       );
       const parsedJWTEntity = JWTParsingResponse.safeParse(jwtEntity);
@@ -145,7 +145,7 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
     });
   }
   async update(doNamespace: string, dataChannel: DataChannel, token: Token) {
-    console.log("updating data channel", dataChannel)
+    console.log('updating data channel', dataChannel);
     const checkResp = await this.CUDPerms(token);
     if (!checkResp.success) {
       return DataChannelActionResponse.parse({
@@ -153,18 +153,18 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
         error: checkResp.error,
       });
     }
-    console.log("user can update data channel")
+    console.log('user can update data channel');
     const doId = this.env.DO.idFromName(doNamespace);
     const stub = this.env.DO.get(doId);
     const update = await stub.update(dataChannel);
-    console.log("updated data channel", update)
+    console.log('updated data channel', update);
     return DataChannelActionResponse.parse({
       success: true,
       data: update,
     });
   }
   async read(doNamespace: string, dataChannelId: string, token: Token) {
-    console.log("getting dc for user")
+    console.log('getting dc for user');
     const canRead = await this.RPerms(token, dataChannelId);
     if (!canRead.success) {
       return DataChannelActionResponse.parse({
@@ -175,14 +175,14 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
     const doId = this.env.DO.idFromName(doNamespace);
     const stub = this.env.DO.get(doId);
     const channel = await stub.get(dataChannelId);
-    console.log("found dc: ", channel)
+    console.log('found dc: ', channel);
     return DataChannelActionResponse.parse({
       success: true,
       data: channel,
     });
   }
   async list(doNamespace: string, token: Token) {
-    console.log("running list operation")
+    console.log('running list operation');
     const { DO } = this.env;
     const doId = DO.idFromName(doNamespace);
     const stub = DO.get(doId);
@@ -200,7 +200,7 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
       .map(({ dataChannel }) => {
         return dataChannel;
       });
-    console.log("found datachannels for user", listWithPerms)
+    console.log('found datachannels for user', listWithPerms);
     return DataChannelActionResponse.parse({
       success: true,
       data: listWithPerms,
@@ -234,7 +234,9 @@ export class Registrar extends DurableObject {
   async list(filterByAccessSwitch: boolean = false) {
     const allChannels = await this.ctx.storage.list<DataChannel>();
     // if filterByAccessSwitch is set we passthrough access switch, else return all
-    return Array.from(allChannels.values()).filter(dc => filterByAccessSwitch ? dc.accessSwitch : true);
+    return Array.from(allChannels.values()).filter(dc =>
+      filterByAccessSwitch ? dc.accessSwitch : true,
+    );
   }
 
   async get(id: string, filterByAccessSwitch: boolean = false) {

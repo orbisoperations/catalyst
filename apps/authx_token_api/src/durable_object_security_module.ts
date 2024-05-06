@@ -60,8 +60,8 @@ export class KeyState {
 	}
 
 	async pubJWK() {
-		const jwk = await exportJWK(this.publicKey)
-		return Object.assign(jwk, {alg: "EdDSA"})
+		const jwk = await exportJWK(this.publicKey);
+		return Object.assign(jwk, { alg: 'EdDSA' });
 	}
 
 	async serialize(): Promise<KeyStateSerialized> {
@@ -77,20 +77,19 @@ export class KeyState {
 
 	static async deserialize(keySerialized: KeyStateSerialized) {
 		const key = new KeyState();
-		key.privateKey = (await importJWK<KeyLike>(keySerialized.private, 'ES384')) as KeyLike;
-		key.publicKey = (await importJWK<KeyLike>(keySerialized.public, 'ES384')) as KeyLike;
+		key.privateKey = (await importJWK<KeyLike>(keySerialized.private, 'EdDSA')) as KeyLike;
+		key.publicKey = (await importJWK<KeyLike>(keySerialized.public, 'EdDSA')) as KeyLike;
 		key.uuid = keySerialized.uuid;
 		key.expiry = keySerialized.expiry;
 		key.expired = keySerialized.expired;
 		key.publicKeyPEM = keySerialized.publicPEM;
-
 		return key;
 	}
 }
 
 export class JWTKeyProvider extends DurableObject {
 	currentKey: KeyState | undefined;
-
+	currentSerializedKey: KeyStateSerialized | undefined;
 	async key() {
 		if (this.currentKey === undefined) {
 			if ((await this.ctx.storage.get<KeyStateSerialized>('default')) === undefined) {
@@ -98,10 +97,12 @@ export class JWTKeyProvider extends DurableObject {
 					const newKey = new KeyState();
 					await newKey.init();
 					this.currentKey = newKey;
-					await this.ctx.storage.put('latest', await newKey.serialize());
+					const serialized = (this.currentSerializedKey = await newKey.serialize());
+					await this.ctx.storage.put('latest', serialized);
 				});
 			} else {
-				this.currentKey = await KeyState.deserialize((await this.ctx.storage.get<KeyStateSerialized>('default'))!);
+				const serialized = (this.currentSerializedKey = await this.ctx.storage.get<KeyStateSerialized>('default')!);
+				this.currentKey = await KeyState.deserialize(serialized!);
 			}
 		}
 
@@ -115,7 +116,7 @@ export class JWTKeyProvider extends DurableObject {
 	}
 
 	async getPublickKeyJWK() {
-		return (await this.key()).pubJWK()
+		return (await this.key()).pubJWK();
 	}
 
 	async rotateKey() {
@@ -138,20 +139,30 @@ export class JWTKeyProvider extends DurableObject {
 	async validateToken(token: string) {
 		const key = await this.key();
 		try {
-			console.log(token, await key.pubJWK())
+			const pub = this.currentSerializedKey?.public;
+			if (!pub) {
+				const resp = JWTParsingResponse.parse({
+					valid: false,
+					entity: undefined,
+					claims: [],
+					error: 'no public key found',
+				});
+				console.error('no public key found', resp);
+				return resp;
+			}
 			const jwkPub = createLocalJWKSet({
-				keys: [
-					await key.pubJWK()
-				]
-			})
+				keys: [pub],
+			});
 			const { payload, protectedHeader } = await jwtVerify(token, jwkPub);
-			console.log(payload, protectedHeader)
-			return JWTParsingResponse.parse({
+			const resp = JWTParsingResponse.parse({
 				valid: true,
 				entity: payload.sub,
 				claims: payload.claims,
 			});
+			console.log({ resp });
+			return resp;
 		} catch (e: any) {
+			console.log('error validating token', e);
 			return JWTParsingResponse.parse({
 				valid: false,
 				entity: undefined,
