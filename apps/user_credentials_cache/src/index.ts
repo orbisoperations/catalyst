@@ -36,9 +36,9 @@ export interface Env {
 type Roles = Record<string, Record<string, string>>;
 
 type OrganizationWithRoles = {
-	org: string
-	roles: string[]
-}
+	org: string;
+	roles: string[];
+};
 
 function getOrgFromRoles(roles: Roles): OrganizationWithRoles | undefined {
 	const adminRoles = ['platform-admin', 'org-admin', 'org-user'];
@@ -57,8 +57,8 @@ function getOrgFromRoles(roles: Roles): OrganizationWithRoles | undefined {
 
 	return {
 		org: role[org].split('.')[0],
-		roles: rolesList
-	}
+		roles: rolesList,
+	};
 }
 
 export class UserCredsCache extends DurableObject<Env> {
@@ -67,7 +67,9 @@ export class UserCredsCache extends DurableObject<Env> {
 		user = await this.ctx.storage.get<User>(token);
 		if (user) {
 			// cleanup
-			this.ctx.waitUntil(this.purge(token, user));
+			await this.ctx.blockConcurrencyWhile(async () => {
+				await this.purge(token, user);
+			});
 			return user;
 		}
 
@@ -76,7 +78,9 @@ export class UserCredsCache extends DurableObject<Env> {
 		if (user) {
 			await this.ctx.storage.put(token, user);
 			//cleanup
-			this.ctx.waitUntil(this.purge(token, user));
+			await this.ctx.blockConcurrencyWhile(async () => {
+				await this.purge(token, user);
+			});
 			return user;
 		}
 
@@ -99,7 +103,7 @@ export class UserCredsCache extends DurableObject<Env> {
 			const user: string = cfUser.email;
 			const orgFromRoles = getOrgFromRoles(cfUser.custom['urn:zitadel:iam:org:project:roles']);
 			if (!orgFromRoles) return undefined;
-			const {org, roles} = orgFromRoles;
+			const { org, roles } = orgFromRoles;
 
 			console.log('verified user attribs', user, org);
 
@@ -124,7 +128,8 @@ export class UserCredsCache extends DurableObject<Env> {
 		}
 	}
 
-	async purge(token: string, user: User) {
+	async purge(token: string, user: User | undefined) {
+		if (!user) return;
 		const users = await this.ctx.storage.list<User>();
 		for (const [oToken, oUser] of Array.from(users.entries())) {
 			if (user.userId == oUser.userId && user.orgId == oUser.orgId && token != oToken) {
