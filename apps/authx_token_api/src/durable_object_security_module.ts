@@ -1,91 +1,11 @@
-import { generateKeyPair, jwtVerify, KeyLike, exportSPKI, importSPKI, SignJWT, exportJWK, importJWK, JWK, createLocalJWKSet } from 'jose';
+import { generateKeyPair, jwtVerify, KeyLike, exportSPKI, importSPKI, SignJWT, exportJWK, importJWK, JWK, createLocalJWKSet, JSONWebKeySet } from 'jose';
 // @ts-ignore
 import { v4 as uuidv4 } from 'uuid';
 import { JWT } from './jwt';
 import { DurableObject } from 'cloudflare:workers';
 import { JWTParsingResponse, JWTSigningRequest } from '../../../packages/schema_zod';
+import { KeyState, KeyStateSerialized, KEY_ALG } from './keystate';
 
-interface KeyStateSerialized {
-	private: JWK;
-	public: JWK;
-	publicPEM: string;
-	uuid: string;
-	expiry: number;
-	expired: boolean;
-}
-export class KeyState {
-	private expired: boolean = false;
-	publicKey: KeyLike;
-	publicKeyPEM: string;
-	private privateKey: KeyLike;
-	uuid;
-	lastKey: string | undefined;
-	expiry;
-	constructor() {
-		this.uuid = uuidv4();
-		this.expiry = 60 * 60 * 24 * 7; // 1 week in millis
-		this.publicKey = {} as KeyLike;
-		this.privateKey = {} as KeyLike;
-		this.publicKeyPEM = '';
-		this.lastKey = undefined;
-	}
-
-	async init() {
-		const { publicKey, privateKey } = await generateKeyPair('EdDSA', {
-			extractable: true,
-		});
-		this.publicKey = publicKey;
-		this.privateKey = privateKey;
-		this.publicKeyPEM = await exportSPKI(publicKey);
-	}
-
-	expire() {
-		this.expired = true;
-		this.publicKey = {} as KeyLike;
-		this.privateKey = {} as KeyLike;
-	}
-
-	isExpired(): boolean {
-		return this.expired;
-	}
-
-	async sign(jwt: JWT, expiry: number = 60 * 60 * 24 * 7) {
-		const payload = jwt.payloadRaw(expiry);
-
-		return new SignJWT(payload).setProtectedHeader({ alg: 'EdDSA' }).sign(this.privateKey);
-	}
-
-	pub() {
-		return this.publicKeyPEM;
-	}
-
-	async pubJWK() {
-		const jwk = await exportJWK(this.publicKey);
-		return Object.assign(jwk, { alg: 'EdDSA' });
-	}
-
-	async serialize(): Promise<KeyStateSerialized> {
-		return {
-			private: await exportJWK(this.privateKey),
-			public: await exportJWK(this.publicKey),
-			uuid: this.uuid,
-			expiry: this.expiry,
-			expired: this.expired,
-			publicPEM: this.publicKeyPEM,
-		};
-	}
-
-	static async deserialize(keySerialized: KeyStateSerialized) {
-		const key = new KeyState();
-		key.privateKey = (await importJWK<KeyLike>(keySerialized.private, 'EdDSA')) as KeyLike;
-		key.publicKey = (await importJWK<KeyLike>(keySerialized.public, 'EdDSA')) as KeyLike;
-		key.uuid = keySerialized.uuid;
-		key.expiry = keySerialized.expiry;
-		key.expired = keySerialized.expired;
-		key.publicKeyPEM = keySerialized.publicPEM;
-		return key;
-	}
-}
 
 export class JWTKeyProvider extends DurableObject {
 	currentKey: KeyState | undefined;
@@ -98,10 +18,12 @@ export class JWTKeyProvider extends DurableObject {
 					await newKey.init();
 					this.currentKey = newKey;
 					const serialized = (this.currentSerializedKey = await newKey.serialize());
+					this.currentSerializedKey = serialized
 					await this.ctx.storage.put('latest', serialized);
 				});
 			} else {
 				const serialized = (this.currentSerializedKey = await this.ctx.storage.get<KeyStateSerialized>('default')!);
+				this.currentSerializedKey = serialized
 				this.currentKey = await KeyState.deserialize(serialized!);
 			}
 		}
@@ -115,8 +37,13 @@ export class JWTKeyProvider extends DurableObject {
 		};
 	}
 
-	async getPublickKeyJWK() {
-		return (await this.key()).pubJWK();
+	async getJWKS(): Promise<JSONWebKeySet> {
+		await (this.key())
+		return {
+			keys: [
+				Object.assign(this.currentSerializedKey!.public)
+			]
+		}
 	}
 
 	async rotateKey() {
@@ -124,7 +51,9 @@ export class JWTKeyProvider extends DurableObject {
 			const newKey = new KeyState();
 			await newKey.init();
 			this.currentKey = newKey;
-			await this.ctx.storage.put('default', await newKey.serialize());
+			const serialize = await newKey.serialize()
+			this.currentSerializedKey = serialize
+			await this.ctx.storage.put('default', serialize);
 		});
 		return true;
 	}
@@ -137,7 +66,7 @@ export class JWTKeyProvider extends DurableObject {
 	}
 
 	async validateToken(token: string) {
-		const key = await this.key();
+		await this.key();
 		try {
 			const pub = this.currentSerializedKey?.public;
 			if (!pub) {
@@ -150,9 +79,7 @@ export class JWTKeyProvider extends DurableObject {
 				console.error('no public key found', resp);
 				return resp;
 			}
-			const jwkPub = createLocalJWKSet({
-				keys: [pub],
-			});
+			const jwkPub = createLocalJWKSet(await this.getJWKS());
 			const { payload, protectedHeader } = await jwtVerify(token, jwkPub);
 			const resp = JWTParsingResponse.parse({
 				valid: true,
