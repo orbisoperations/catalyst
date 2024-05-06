@@ -25,7 +25,6 @@ export default function APIKeys() {
   const { user, token } = useUser();
   const [adminFlag, setAdminFlag] = useState<boolean>(false) 
   useEffect(() => {
-    console.log(user, token)
     if (user !== undefined && token !== undefined) {
       setAdminFlag(true)
     } else {
