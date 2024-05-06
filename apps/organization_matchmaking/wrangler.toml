@@ -18,6 +18,8 @@ services = [
 tag = "v1"
 new_classes = ["OrganizationMatchmakingDO"]
 
+[[migrations]]
+tag = "v2"
 
 
 
@@ -32,12 +34,6 @@ services = [
 	{ binding = "USERCACHE", service = "user_credentials_cache-staging"}
 ]
 
-[[migrations]]
-tag = "v1"
-new_classes = ["OrganizationMatchmakingDO"]
-
-
-
 
 
 
@@ -50,8 +46,4 @@ services = [
 	{ binding = "AUTHZED", service = "authx_authzed_api-staging"},
 	{ binding = "USERCACHE", service = "user_credentials_cache-staging"}
 ]
-
-[[migrations]]
-tag = "v1"
-new_classes = ["OrganizationMatchmakingDO"]
 
