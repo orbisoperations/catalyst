@@ -481,6 +481,10 @@ importers:
         version: 3.53.0(@cloudflare/workers-types@4.20240423.0)
 
   examples/datachannel-adsb:
+    dependencies:
+      jose:
+        specifier: ^5.2.4
+        version: 5.2.4
     devDependencies:
       '@cloudflare/workers-types':
         specifier: ^4.20240405.0
@@ -12348,7 +12352,6 @@ packages:
 
   /jose@5.2.4:
     resolution: {integrity: sha512-6ScbIk2WWCeXkmzF6bRPmEuaqy1m8SbsRFMa/FLrSCkGIhj8OLVG/IH+XHVmNMx/KUo8cVWEE6oKR4dJ+S0Rkg==}
-    dev: true
 
   /js-tokens@4.0.0:
     resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}

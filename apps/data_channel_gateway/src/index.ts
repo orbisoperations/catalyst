@@ -143,4 +143,9 @@ app.use("/graphql", async (ctx) => {
   return yoga(ctx.req.raw, ctx.env);
 });
 
+app.use("/.well-known/jwks.json", async (c) => {
+  const jwks = await c.env.AUTHX_TOKEN_API.getPublicKeyJWK()
+  return c.json(jwks, 200)
+})
+
 export default app
