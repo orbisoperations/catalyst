@@ -41,7 +41,7 @@ async function makeGatewaySchema(endpoints: { endpoint: string }[], token: strin
         headers: {
           'Content-Type': 'application/json',
           Accept: 'application/json',
-          "Authorization": token
+          "Authorization": `Bearer ${token}`
           //  Authorization: executorRequest?.context?.authHeader,
         },
         body: JSON.stringify({ query, variables, operationName, extensions })
@@ -91,7 +91,7 @@ app.use(async (c, next) => {
 
   const [token, error] =  grabTokenInHeader(c.req.header("Authorization"));
   if(!token) console.error({tokenError: token, error: "invalid token before createYoga"})
-  else console.error('token should be working', token)
+  else console.error('token should be working')
 
   if (error) {
     return c.json({
@@ -117,7 +117,7 @@ app.use(async (c, next) => {
   // we can add claims but do not need to enforce them here
 })
 app.use("/graphql", async (ctx) => {
-  console.log({context: ctx})
+  //console.log({context: ctx})
 
   const token = Token.safeParse({
     catalystToken: ctx.get("catalyst-token")
@@ -139,7 +139,7 @@ app.use("/graphql", async (ctx) => {
     ? [DataChannel.parse(allDataChannels.data)]
     : DataChannel.array().parse(allDataChannels.data)
   console.log({allDataChannels});
-  if (!token.data.catalystToken) console.error("catalys token is undefined when building gateway")
+  if (!token.data.catalystToken) console.error("catalyst token is undefined when building gateway")
   const yoga = createYoga({
     schema: await makeGatewaySchema(dataChannels,  token.data.catalystToken!),
   });
