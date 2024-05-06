@@ -58,22 +58,27 @@ export default function PartnersListComponent({
   const { token, user } = useUser();
   function fetchInvites() {
     if (token)
-      return listInvites(token).then((invites) => {
-        const partners: OrgInvite[] = [];
-        const invitations: OrgInvite[] = [];
-        if (invites) {
-          invites.forEach((invite) => {
-            if (invite.status === "accepted") {
-              partners.push(invite);
-            }
-            if (invite.status === "pending") {
-              invitations.push(invite);
-            }
-          });
-          setPartners(partners);
-          setInvitations(invitations);
-        }
-      });
+      return listInvites(token)
+        .then((invites) => {
+          const partners: OrgInvite[] = [];
+          const invitations: OrgInvite[] = [];
+          if (invites) {
+            invites.forEach((invite) => {
+              if (invite.status === "accepted") {
+                partners.push(invite);
+              }
+              if (invite.status === "pending") {
+                invitations.push(invite);
+              }
+            });
+            setPartners(partners);
+            setInvitations(invitations);
+          }
+        })
+        .catch((e) => {
+          alert("Failed to fetch invites " + e);
+          console.error(e);
+        });
     return Promise.resolve();
   }
 
