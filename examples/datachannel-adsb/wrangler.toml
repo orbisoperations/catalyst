@@ -9,7 +9,11 @@ workers_dev = true
 port = 4008
 
 [env.staging.vars]
-CATALYST_JWKS_URL = "https://data_channel_gateway-staging.securedatadistro.workers.dev/.well-known/jwks.json"
+CATALYST_JWKS_URL = "https://gateway.catalyst.devintelops.io/.well-known/jwks.json"
+
+[env.staging.route]
+pattern = "datachannel-adsb.devintelops.io"
+custom_domain = true
 
 
 
