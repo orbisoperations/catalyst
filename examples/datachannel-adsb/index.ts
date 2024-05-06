@@ -8,26 +8,28 @@ interface Environment {
 
 export default {
   async fetch(req: Request, env: Environment, ctx: ExecutionContext) {
+      const typeDefs = /* GraphQL */ `
+      type Aircraft {
+          hex: String
+          flight: String
+          lat: Float
+          lon: Float
+          alt_geom: Int
+          track: Float
+          gs: Float
+          t: String
+      }
+
+      type Query {
+          aircraftWithinDistance(lat: Float!, lon: Float!, dist: Float!): [Aircraft!]!
+          _sdl: String!
+      }
+  `
       const yoga = createYoga<{
         env: Environment;
       }>({
           schema: createSchema({
-              typeDefs: /* GraphQL */ `
-                  type Aircraft {
-                      hex: String
-                      flight: String
-                      lat: Float
-                      lon: Float
-                      alt_geom: Int
-                      track: Float
-                      gs: Float
-                      t: String
-                  }
-
-                  type Query {
-                      aircraftWithinDistance(lat: Float!, lon: Float!, dist: Float!): [Aircraft!]!
-                  }
-              `,
+              typeDefs: typeDefs,
             resolvers: {
               Query: {
                 aircraftWithinDistance: async (_parent, args, context) => {
@@ -40,7 +42,8 @@ export default {
                   );
 
                   return data.ac || [];
-                }
+                },
+                _sdl: () => typeDefs
               }
             }
           }),
