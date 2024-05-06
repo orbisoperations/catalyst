@@ -1,7 +1,7 @@
 import {createSchema, createYoga} from 'graphql-yoga';
 import {Request, ExecutionContext} from "@cloudflare/workers-types";
 import {retrieveADSB} from './lib';
-import {createRemoteJWKSet, jwtVerify} from "jose";
+import { calculateJwkThumbprint, createRemoteJWKSet, jwtVerify } from 'jose';
 
 interface Environment {
   RAPID_API_KEY: string;
@@ -39,9 +39,13 @@ export default {
       if (!token) {
         console.log("token is undefined")
       } else {
-        const { payload, protectedHeader } = await jwtVerify(token, JWKS)
-        jwtPayload = payload
-        jwtHeader = protectedHeader
+        try {
+          const { payload, protectedHeader } = await jwtVerify(token, JWKS)
+          jwtPayload = payload
+          jwtHeader = protectedHeader
+        } catch (e) {
+          console.error(e)
+        }
       }
       
       console.log(jwtHeader)
