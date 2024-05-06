@@ -22,6 +22,10 @@ services = [
     { binding = "AUTHX_AUTHZED_API", service = "authx_authzed_api-staging" }
 ]
 
+routes = [
+    { pattern = "gateway.catalyst.devintelops.io", custom_domain = true }
+]
+
 # PRODUCTION VALUES
 [env.production]
 services = [
