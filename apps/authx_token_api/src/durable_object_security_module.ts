@@ -18,7 +18,6 @@ export class JWTKeyProvider extends DurableObject {
 					await newKey.init();
 					this.currentKey = newKey;
 					const serialized = (this.currentSerializedKey = await newKey.serialize());
-					this.currentSerializedKey = serialized
 					await this.ctx.storage.put('latest', serialized);
 				});
 			} else {
@@ -41,7 +40,7 @@ export class JWTKeyProvider extends DurableObject {
 		await (this.key())
 		return {
 			keys: [
-				Object.assign(this.currentSerializedKey!.public)
+				this.currentSerializedKey!.public
 			]
 		}
 	}
@@ -59,9 +58,11 @@ export class JWTKeyProvider extends DurableObject {
 	}
 
 	async signJWT(req: JWTSigningRequest, expiresIn: number) {
+		await this.key()
 		const jwt = new JWT(req.entity, req.claims, 'catalyst:system:jwt:latest');
+		console.log(this.currentSerializedKey)
 		return {
-			token: await (await this.key()).sign(jwt, expiresIn),
+			token: await this.currentKey!.sign(jwt, expiresIn),
 		};
 	}
 
