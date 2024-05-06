@@ -17,6 +17,7 @@
 		"@cloudflare/workers-types": "^4.20240405.0",
 		"@types/uuid": "^9.0.8",
 		"base64url": "^3.0.1",
+		"bun": "^1.1.7",
 		"jose": "^5.2.4",
 		"typescript": "^5.4.5",
 		"uuid": "^9.0.1",
