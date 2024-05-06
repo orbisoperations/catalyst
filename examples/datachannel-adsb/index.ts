@@ -1,9 +1,11 @@
 import {createSchema, createYoga} from 'graphql-yoga';
 import {Request, ExecutionContext} from "@cloudflare/workers-types";
 import {retrieveADSB} from './lib';
+import {createRemoteJWKSet, jwtVerify} from "jose";
 
 interface Environment {
   RAPID_API_KEY: string;
+  CATALYST_JWKS_URL: string;
 }
 
 export default {
@@ -25,6 +27,25 @@ export default {
           _sdl: String!
       }
   `
+
+      // JWT Validation
+      const {CATALYST_JWKS_URL} = env;
+      const JWKS = createRemoteJWKSet(new URL(CATALYST_JWKS_URL))
+      const authHeader = req.headers.get("Authorization")
+      const token = authHeader != null ? authHeader.split(" ")[1] : undefined
+      let jwtPayload;
+      let jwtHeader;
+      if (!token) {
+        console.log("token is undefined")
+      } else {
+        const { payload, protectedHeader } = await jwtVerify(token, JWKS)
+        jwtPayload = payload
+        jwtHeader = protectedHeader
+      }
+      
+      console.log(jwtHeader)
+      console.log(jwtPayload)
+
       const yoga = createYoga<{
         env: Environment;
       }>({

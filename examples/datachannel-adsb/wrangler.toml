@@ -7,3 +7,9 @@ workers_dev = true
 
 [dev]
 port = 4008
+
+[env.staging.vars]
+CATALYST_JWKS_URL = "https://data_channel_gateway-staging.securedatadistro.workers.dev/.well-known/jwks.json"
+
+
+
