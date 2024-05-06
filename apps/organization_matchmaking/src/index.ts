@@ -38,6 +38,7 @@ export class OrganizationMatchmakingDO extends DurableObject {
 			createdAt: Date.now(),
 			updatedAt: Date.now(),
 		});
+
 		await this.ctx.blockConcurrencyWhile(async () => {
 			const senderMailbox = (await this.ctx.storage.get<OrgInvite[]>(sender)) ?? new Array<OrgInvite>();
 			const receiverMailbox = (await this.ctx.storage.get<OrgInvite[]>(receiver)) ?? new Array<OrgInvite>();
@@ -373,29 +374,37 @@ export default class OrganizationMatchmakingWorker extends WorkerEntrypoint<Env>
 		}
 	}
 	async listInvites(token: Token, doNamespace: string = 'default') {
-		if (!token.cfToken) {
+		try {
+			if (!token.cfToken) {
+				return OrgInviteResponse.parse({
+					success: false,
+					error: 'catalyst did not find a verifiable credential',
+				});
+			}
+			const user = (await this.env.USERCACHE.getUser(token.cfToken)) as User | undefined;
+			if (!user) {
+				return OrgInviteResponse.parse({
+					success: false,
+					error: 'catalyst did not find a valid user',
+				});
+			}
+			// check token for permission
+			const permCheck = await this.env.AUTHZED.canUpdateOrgPartnersInOrg(user.orgId, user.userId);
+			if (!permCheck) {
+				return OrgInviteResponse.parse({
+					success: false,
+					error: 'catalyst rejects users abiltiy to add an org partner',
+				});
+			}
+			const id = this.env.ORG_MATCHMAKING.idFromName(doNamespace);
+			const stub = this.env.ORG_MATCHMAKING.get(id);
+			return await stub.list(user.orgId);
+		} catch (e) {
+			console.error(e);
 			return OrgInviteResponse.parse({
 				success: false,
-				error: 'catalyst did not find a verifiable credential',
+				error: `Failed to list invites: ${e}`,
 			});
 		}
-		const user = (await this.env.USERCACHE.getUser(token.cfToken)) as User | undefined;
-		if (!user) {
-			return OrgInviteResponse.parse({
-				success: false,
-				error: 'catalyst did not find a valid user',
-			});
-		}
-		// check token for permission
-		const permCheck = await this.env.AUTHZED.canUpdateOrgPartnersInOrg(user.orgId, user.userId);
-		if (!permCheck) {
-			return OrgInviteResponse.parse({
-				success: false,
-				error: 'catalyst rejects users abiltiy to add an org partner',
-			});
-		}
-		const id = this.env.ORG_MATCHMAKING.idFromName(doNamespace);
-		const stub = this.env.ORG_MATCHMAKING.get(id);
-		return await stub.list(user.orgId);
 	}
 }

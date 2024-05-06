@@ -13,6 +13,7 @@ export async function listInvites(token: string) {
     return result.invite;
   }
   console.error("List Invite Error:", result.error);
+  throw new Error(result.error);
   return [];
 }
 
