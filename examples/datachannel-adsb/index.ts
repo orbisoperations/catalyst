@@ -31,6 +31,7 @@ export default {
       // JWT Validation
       const {CATALYST_JWKS_URL} = env;
       const JWKS = createRemoteJWKSet(new URL(CATALYST_JWKS_URL))
+      console.log(`${Array.from(req.headers.entries())}`)
       const authHeader = req.headers.get("Authorization")
       const token = authHeader != null ? authHeader.split(" ")[1] : undefined
       let jwtPayload;
