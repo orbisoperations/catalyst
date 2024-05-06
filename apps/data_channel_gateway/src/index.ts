@@ -28,14 +28,11 @@ export async function fetchRemoteSchema(executor: Executor) {
 }
 //
 // https://github.com/ardatan/schema-stitching/blob/master/examples/combining-local-and-remote-schemas/src/gateway.ts
-async function makeGatewaySchema(endpoints: { endpoint: string }[], token?: string) {
+async function makeGatewaySchema(endpoints: { endpoint: string }[], token: string) {
   console.log('makeGatewaySchema')
   const { stitchingDirectivesTransformer } = stitchingDirectives();
   // Make remote executors:
   // these are simple functions that query a remote GraphQL API for JSON.
-
-
-
   const remoteExecutors = endpoints.map(({endpoint}) => {
     const executor: AsyncExecutor = async ({ document, variables, operationName, extensions }) => {
       const query = print(document)
@@ -44,7 +41,7 @@ async function makeGatewaySchema(endpoints: { endpoint: string }[], token?: stri
         headers: {
           'Content-Type': 'application/json',
           Accept: 'application/json',
-          "Authorization": token ?? ""
+          "Authorization": token
           //  Authorization: executorRequest?.context?.authHeader,
         },
         body: JSON.stringify({ query, variables, operationName, extensions })
@@ -142,8 +139,9 @@ app.use("/graphql", async (ctx) => {
     ? [DataChannel.parse(allDataChannels.data)]
     : DataChannel.array().parse(allDataChannels.data)
   console.log({allDataChannels});
+  if (!token.data.catalystToken) console.error("catalys token is undefined when building gateway")
   const yoga = createYoga({
-    schema: await makeGatewaySchema(dataChannels,  token.data.catalystToken),
+    schema: await makeGatewaySchema(dataChannels,  token.data.catalystToken!),
   });
 
   return yoga(ctx.req.raw, ctx.env);
