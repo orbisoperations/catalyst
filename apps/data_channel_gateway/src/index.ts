@@ -82,6 +82,7 @@ const app = new Hono<{ Bindings: Env & Record<string, any>, Variables: Variables
 // this should be public
 app.use("/.well-known/jwks.json", async (c) => {
   const jwks = await c.env.AUTHX_TOKEN_API.getPublicKeyJWK()
+  console.log(jwks)
   return c.json(jwks, 200)
 })
 
