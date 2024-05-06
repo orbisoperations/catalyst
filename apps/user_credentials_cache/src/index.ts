@@ -67,9 +67,7 @@ export class UserCredsCache extends DurableObject<Env> {
 		user = await this.ctx.storage.get<User>(token);
 		if (user) {
 			// cleanup
-			await this.ctx.blockConcurrencyWhile(async () => {
-				await this.purge(token, user);
-			});
+			await this.ctx.waitUntil(this.purge(token, user));
 			return user;
 		}
 
@@ -78,9 +76,7 @@ export class UserCredsCache extends DurableObject<Env> {
 		if (user) {
 			await this.ctx.storage.put(token, user);
 			//cleanup
-			await this.ctx.blockConcurrencyWhile(async () => {
-				await this.purge(token, user);
-			});
+			await this.ctx.waitUntil(this.purge(token, user));
 			return user;
 		}
 
@@ -128,8 +124,7 @@ export class UserCredsCache extends DurableObject<Env> {
 		}
 	}
 
-	async purge(token: string, user: User | undefined) {
-		if (!user) return;
+	async purge(token: string, user: User) {
 		const users = await this.ctx.storage.list<User>();
 		for (const [oToken, oUser] of Array.from(users.entries())) {
 			if (user.userId == oUser.userId && user.orgId == oUser.orgId && token != oToken) {
