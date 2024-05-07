@@ -1,0 +1,4 @@
+schema:
+  - https://gateway.catalyst.devintelops.io/graphql:
+      headers:
+        Authorization: "Bearer "

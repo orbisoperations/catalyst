@@ -4,10 +4,11 @@ main = "src/index.ts"
 compatibility_date = "2024-04-05"
 compatibility_flags = [ "nodejs_compat" ]
 account_id = "3be6f7bb0cc73869d555e1156586c1f2"
+workers_dev = false
 
 [vars]
-TAK_HOST = "https://goatak-empty-violet-5442.fly.dev"
-#TAK_HOST = "http://localhost"
+#TAK_HOST = "https://tak-server-2-broken-haze-8097"
+TAK_HOST = "https://tak-server-2-broken-haze-8097.fly.dev"
 TAK_PORT = 8999
 
 [dev]
@@ -20,9 +21,8 @@ crons = ["* * * * *"] # * * * * * = run every minute
 
 
 [env.staging.vars]
-TAK_HOST = "https://goatak-empty-violet-5442.fly.dev"
+TAK_HOST = "https://tak-server-2-broken-haze-8097.fly.dev"
 TAK_PORT = 8999
-
 # Variable bindings. These are arbitrary, plaintext strings (similar to environment variables)
 # Note: Use secrets to store sensitive data.
 # Docs: https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables

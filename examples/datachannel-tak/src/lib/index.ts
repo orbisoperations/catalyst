@@ -1,52 +1,16 @@
 import { connect } from 'cloudflare:sockets';
 import convert from "xml-js";
+import {CatalystGatewayClient} from "./catalyst-gateway-client";
 
 
 // TODO: Replace this exact function with a call to catalyst to retrieve data
-function getData() {
-	const apiUrl = 'https://datachannel-adsb.devintelops.io/graphql';
-
-	async function getAircraftWithinDistance() {
-		const query = `
-    query {
-      aircraftWithinDistance(lat: 25.15090749876091, lon: 121.37875727934632, dist: 200) {
-        hex
-				flight
-				lat
-				lon
-				alt_geom
-				track
-				gs
-				t
-      }
-    }
-  `;
-
-		const response = await fetch(apiUrl, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-			},
-			body: JSON.stringify({ query }),
-		});
-
-		const { data, errors } = await response.json() as any;
-
-		if (errors) {
-			console.error('GraphQL Errors: ', JSON.stringify(errors));
-		} else {
-			console.log('Aircraft within distance:');
-			console.log(JSON.stringify(data, null, 2));
-			return data.aircraftWithinDistance;
-		}
-	}
-	return getAircraftWithinDistance();
-}
-
 
 export async function runTask(event: any, env: any, ctx: any) {
+
+	const gatewayClient = new CatalystGatewayClient(env);
+
 		const sendStuffToTak = async (env: any) => {
-			const data = await getData();
+			const data = await gatewayClient.useADSBData();
 
 			console.log({data});
 
@@ -75,6 +39,17 @@ export async function runTask(event: any, env: any, ctx: any) {
 				let stale = new Date(now);
 				stale.setSeconds(stale.getSeconds() + 60);
 				console.log(item.alt_geom);
+
+				// ADSB data returns altitude in feet and tak reads it in meters
+				function feetToMeters(feet?: number): number {
+					if(!feet) {
+						return 0;
+					}
+					const metersPerFoot = 0.3048;
+					const meters = feet * metersPerFoot;
+					return Math.round(meters);
+				}
+
 				const cotEvent = {
 					event: {
 						_attributes: {
@@ -82,19 +57,18 @@ export async function runTask(event: any, env: any, ctx: any) {
 							uid: item.hex,
 							time: now,
 							start: now,
-							type: 'b-m-p-s-m',
-							how: 'h-g-i-g-o',
-
+							type: 'a-f-A',
+							how: 'm-g',
 							stale: stale.toISOString()
+
 						},
 						point: {
 							_attributes: {
 								lat: item.lat,
 								lon: item.lon,
-								hae: item.alt_geom,
+								hae: feetToMeters(item.alt_geom),
 								ce: '9999999',
 								le: '9999999',
-								type: 'a-.-A',
 							}
 						},
 						detail: {

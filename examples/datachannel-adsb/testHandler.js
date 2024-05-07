@@ -4,14 +4,14 @@ async function testAircraftWithinDistance() {
     const query = `
     query {
       aircraftWithinDistance(lat: 51.46888, lon: 0.45536, dist: 200) {
-        icao
-        call
+        hex
+        flight
         lat
         lon
-        altitude
-        trak
-        speed
-        type
+        alt_geom
+        track
+        gs
+        t
       }
     }
   `;
