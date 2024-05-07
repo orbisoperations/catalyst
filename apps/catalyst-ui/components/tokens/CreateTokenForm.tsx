@@ -48,6 +48,8 @@ export default function CreateTokensForm({
   const [channels, setChannels] = useState<any[]>([]);
   const [channelsResponse, setChannelsResponse] = useState<DataChannel[]>([]);
   const [selectedChannels, setSelectedChannels] = useState<number[]>([]);
+  const [apiKeyName, setApiKeyName] = useState<string>("");
+  const [apiKeyDescription, setApiKeyDescription] = useState<string>("");
   const [token, setToken] = useState<string>("");
   const tokenConfirmation = useDisclosure();
   const [issuedJWTs, setIssuedJWTs] = useState<any[]>([]);
@@ -85,6 +87,9 @@ export default function CreateTokensForm({
     if (!cfToken) {
       throw "No cf token";
     }
+    if (!user) {
+      throw "No user";
+    }
     signToken(jwtRequest, expiration, cfToken!)
       .then(async (resp) => {
         if (resp.success) {
@@ -94,10 +99,9 @@ export default function CreateTokensForm({
             name: apiKeyName,
             description: apiKeyDescription,
             claims: jwtRequest.claims,
-            expiry: expiration ,
-            organization: user.custom.org
-          }
-          const iJWTRegistryEntry = await this.env.ISSUED_JWT_REGISTRY_WORKER.create(issuedJWTRegistryEntry)
+            expiry: expiration,
+            organization: user.custom.org,
+          };
         }
       })
       .catch((err) => {
@@ -122,11 +126,21 @@ export default function CreateTokensForm({
       <Flex gap={2} mb={5}>
         <FormControl>
           <label htmlFor="apiKeyName">API Key Name</label>
-          <Input rounded={"md"} name="apiKeyName" />
+          <Input
+            rounded={"md"}
+            name="apiKeyName"
+            value={apiKeyName}
+            onChange={(e) => setApiKeyName(e.target.value)}
+          />
         </FormControl>
         <FormControl>
           <label htmlFor="apiKeyDescription">Description</label>
-          <Input rounded={"md"} name="description" />
+          <Input
+            rounded={"md"}
+            name="description"
+            value={apiKeyDescription}
+            onChange={(e) => setApiKeyDescription(e.target.value)}
+          />
         </FormControl>
       </Flex>
       <Box gap={2} mb={5}>
