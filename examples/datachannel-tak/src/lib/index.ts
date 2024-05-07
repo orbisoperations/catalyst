@@ -39,6 +39,17 @@ export async function runTask(event: any, env: any, ctx: any) {
 				let stale = new Date(now);
 				stale.setSeconds(stale.getSeconds() + 60);
 				console.log(item.alt_geom);
+
+				// ADSB data returns altitude in feet and tak reads it in meters
+				function feetToMeters(feet?: number): number {
+					if(!feet) {
+						return 0;
+					}
+					const metersPerFoot = 0.3048;
+					const meters = feet * metersPerFoot;
+					return Math.round(meters);
+				}
+
 				const cotEvent = {
 					event: {
 						_attributes: {
@@ -46,19 +57,18 @@ export async function runTask(event: any, env: any, ctx: any) {
 							uid: item.hex,
 							time: now,
 							start: now,
-							type: 'b-m-p-s-m',
-							how: 'h-g-i-g-o',
-
+							type: 'a-f-A',
+							how: 'm-g',
 							stale: stale.toISOString()
+
 						},
 						point: {
 							_attributes: {
 								lat: item.lat,
 								lon: item.lon,
-								hae: item.alt_geom,
+								hae: feetToMeters(item.alt_geom),
 								ce: '9999999',
 								le: '9999999',
-								type: 'a-.-A',
 							}
 						},
 						detail: {
