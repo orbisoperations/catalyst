@@ -27,30 +27,30 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 		if (!token.cfToken) {
 			return JWTRotateResponse.parse({
 				success: false,
-				error: "catalyst did not receive a user credential"
-			})
+				error: 'catalyst did not receive a user credential',
+			});
 		}
-		const userResp = await this.env.USERCACHE.getUser(token.cfToken)
+		const userResp = await this.env.USERCACHE.getUser(token.cfToken);
 		if (!userResp) {
 			return JWTRotateResponse.parse({
 				success: false,
-				error: "catalyst did not find a user for the given credential"
-			})
+				error: 'catalyst did not find a user for the given credential',
+			});
 		}
-		const userParse = User.safeParse(userResp)
+		const userParse = User.safeParse(userResp);
 		if (!userParse.success) {
-			console.error(userParse.error)
+			console.error(userParse.error);
 			return JWTRotateResponse.parse({
 				success: false,
-				error: "catalyst was not able to access user for the given credential"
-			})
+				error: 'catalyst was not able to access user for the given credential',
+			});
 		}
 		// add authzed here when available
-		if (!userParse.data.zitadelRoles.includes("platform-admin")) {
+		if (!userParse.data.zitadelRoles.includes('platform-admin')) {
 			return JWTRotateResponse.parse({
 				success: false,
-				error: "catalyst asserts user does not have access jwt admin functions"
-			})
+				error: 'catalyst asserts user does not have access jwt admin functions',
+			});
 		}
 
 		const id = this.env.KEY_PROVIDER.idFromName(keyNamespace);
@@ -58,52 +58,57 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 		const success = await stub.rotateKey();
 
 		if (success) {
-			return JWTRotateResponse.parse({success: success})
+			return JWTRotateResponse.parse({ success: success });
 		} else {
-			return JWTRotateResponse.parse({success: success, error: "catalyst experienced and error rotating the key"})
+			return JWTRotateResponse.parse({ success: success, error: 'catalyst experienced and error rotating the key' });
 		}
 	}
 
 	// ensure all claims in the request are valid before signing
 	async signJWT(jwtRequest: JWTSigningRequest, expiresIn: number, token: Token, keyNamespace: string = 'default') {
 		if (!token.cfToken) {
-			console.error("need a cf token to sign a JWT")
+			console.error('need a cf token to sign a JWT');
 			return JWTSigningResponse.parse({
 				success: false,
-				error: "catalyst did not recieve a user-based token"
-			})
+				error: 'catalyst did not recieve a user-based token',
+			});
 		}
 
-		const userParse = User.safeParse(await this.env.USERCACHE.getUser(token.cfToken))
+		const userParse = User.safeParse(await this.env.USERCACHE.getUser(token.cfToken));
 		if (!userParse.success) {
-			console.log(userParse.error)
+			console.log(userParse.error);
 			return JWTSigningResponse.parse({
 				success: false,
-				error: "catalyst is unable to verify user"
-			})
+				error: 'catalyst is unable to verify user',
+			});
 		}
-		const failedClaimsChecks = (await Promise.all(jwtRequest.claims.map(async (claim) => {
-			return {
-				claim: claim,
-				check: await this.env.AUTHZED.canReadFromDataChannel(claim, userParse.data.userId)
-			}
-		}))).filter(check => {
-			return !check.check
-		})
+		const failedClaimsChecks = (
+			await Promise.all(
+				jwtRequest.claims.map(async (claim) => {
+					return {
+						claim: claim,
+						check: await this.env.AUTHZED.canReadFromDataChannel(claim, userParse.data.userId),
+					};
+				}),
+			)
+		).filter((check) => {
+			return !check.check;
+		});
 		if (failedClaimsChecks.length > 0) {
-			console.log("user is not authorized for all claims")
+			console.log('user is not authorized for all claims');
 			return JWTSigningResponse.parse({
 				success: false,
-				error: "catalyst is unable to validate user to all claims"
-			})
+				error: 'catalyst is unable to validate user to all claims',
+			});
 		}
 		const id = this.env.KEY_PROVIDER.idFromName(keyNamespace);
 		const stub = this.env.KEY_PROVIDER.get(id);
 		const jwt = await stub.signJWT(jwtRequest, expiresIn);
 		return JWTSigningResponse.parse({
 			success: true,
-			token: jwt.token
-		})
+			token: jwt.token,
+			expiration: jwt.expiration,
+		});
 	}
 
 	async validateToken(token: string, keyNamespace: string = 'default') {

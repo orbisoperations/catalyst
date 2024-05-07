@@ -1,6 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 import {
+  APIKeyText,
   CreateButton,
   OpenButton,
   OrbisBadge,
@@ -48,7 +49,6 @@ export default function DataChannelListComponents({
       }
       topbaractions={navigationItems}
       headerTitle={{
-        adjacent: <OrbisBadge>Hello</OrbisBadge>,
         text: "Data Channels",
       }}
       positionChildren="bottom"
@@ -57,14 +57,22 @@ export default function DataChannelListComponents({
         channels.length > 0 ? (
           <Card variant={"outline"} shadow={"md"}>
             <OrbisTable
-              headers={["Data Channel", "Description", "Endpoint"]}
+              headers={[
+                "Data Channel",
+                "Description",
+                "Endpoint",
+                "Channel ID",
+              ]}
               rows={channels.map(
-                (channel: {
-                  id: string;
-                  name: string;
-                  description: string;
-                  endpoint: string;
-                }) => {
+                (
+                  channel: {
+                    id: string;
+                    name: string;
+                    description: string;
+                    endpoint: string;
+                  },
+                  index
+                ) => {
                   return [
                     <Flex key={"1"} justifyContent={"space-between"}>
                       <OpenButton
@@ -76,6 +84,13 @@ export default function DataChannelListComponents({
                     </Flex>,
                     channel.description,
                     channel.endpoint,
+                    <APIKeyText
+                      allowCopy
+                      showAsClearText
+                      key={index + "-channel-id"}
+                    >
+                      {channel.id}
+                    </APIKeyText>,
                   ];
                 }
               )}
