@@ -24,6 +24,19 @@ export class CatalystGatewayClient {
 					gs
 					t
       	}
+      	pings {
+					UID
+					title
+					city
+					lat
+					lon
+					expiry
+				}
+				earthquakes {
+					EpicenterLatitude
+					EpicenterLongitude
+					LocalMagnitude
+				}
     	}
   `;
 
@@ -47,7 +60,7 @@ export class CatalystGatewayClient {
 
 		console.log('Aircraft within distance:');
 		console.log(JSON.stringify(data, null, 2));
-		return data.aircraftWithinDistance;
+		return data;
 	}
 }
 

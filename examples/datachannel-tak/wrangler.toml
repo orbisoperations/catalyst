@@ -2,7 +2,7 @@
 name = "datachannel_tak"
 main = "src/index.ts"
 compatibility_date = "2024-04-05"
-compatibility_flags = [ "nodejs_compat" ]
+node_compat = true
 account_id = "3be6f7bb0cc73869d555e1156586c1f2"
 workers_dev = false
 
@@ -10,19 +10,33 @@ workers_dev = false
 #TAK_HOST = "https://tak-server-2-broken-haze-8097"
 TAK_HOST = "https://tak-server-2-broken-haze-8097.fly.dev"
 TAK_PORT = 8999
+ENABLED = "true"
 
 [dev]
 port = 4005
 # Cron Triggers
 # Docs: https://developers.cloudflare.com/workers/platform/triggers/cron-triggers/
 # Configuration: https://developers.cloudflare.com/workers/wrangler/configuration/#triggers
-[triggers]
-crons = ["* * * * *"] # * * * * * = run every minute
+#[triggers]
+#crons = ["* * * * *"] # * * * * * = run every minute
+[[durable_objects.bindings]]
+name = "TAK_MANAGER"
+class_name = "TAKDataManager"
+
+# Durable Object migrations.
+# Docs: https://developers.cloudflare.com/workers/learning/using-durable-objects#configure-durable-object-classes-with-migrations
+[[migrations]]
+tag = "v1"
+new_classes = ["TAKDataManager"]
 
 
 [env.staging.vars]
 TAK_HOST = "https://tak-server-2-broken-haze-8097.fly.dev"
 TAK_PORT = 8999
+ENABLED = "true"
+NAMESPACE =  "broken-haze"
+
+
 # Variable bindings. These are arbitrary, plaintext strings (similar to environment variables)
 # Note: Use secrets to store sensitive data.
 # Docs: https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
