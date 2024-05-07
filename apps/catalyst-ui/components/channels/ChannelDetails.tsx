@@ -66,6 +66,7 @@ type DataChannelDetailsProps = {
     token: string
   ) => Promise<DataChannelActionResponse>;
 };
+
 export default function DataChannelDetailsComponent({
   channelDetails,
   updateChannel,

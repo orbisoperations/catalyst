@@ -1,5 +1,10 @@
 import { DurableObject, WorkerEntrypoint } from 'cloudflare:workers';
-import { IssuedJWTRegistry, PermissionCheckResponse, Token, User } from '@catalyst/schema_zod';
+import {
+	IssuedJWTRegistry,
+	Token,
+	User,
+	UserCheckActionResponse
+} from '@catalyst/schema_zod';
 import UserCredsCacheWorker from '../../user_credentials_cache/src';
 import { Logger } from 'tslog';
 
@@ -16,13 +21,15 @@ export default class IssuedJWTRegistryWorker extends WorkerEntrypoint<Env> {
 		if (token.cfToken) {
 			const user: User | undefined = await this.env.USERCACHE.getUser(token.cfToken);
 			const parsedUser = User.safeParse(user);
+
 			if (parsedUser.success) {
-				return PermissionCheckResponse.parse({
-					success: true
+				return UserCheckActionResponse.parse({
+					success: true,
+					data: parsedUser.data,
 				});
 			}
 		}
-		return PermissionCheckResponse.parse({
+		return UserCheckActionResponse.parse({
 			success: false,
 			error: 'catalyst unable to validate user token',
 		});
@@ -54,7 +61,7 @@ export default class IssuedJWTRegistryWorker extends WorkerEntrypoint<Env> {
 		}
 		const doId = this.env.ISSUED_JWT_REGISTRY_DO.idFromName(doNamespace)
 		const stub =  this.env.ISSUED_JWT_REGISTRY_DO.get(doId)
-		return stub.list();
+		return stub.list(permCheck.data.orgId);
 	}
 
 	async update(  token: Token, issuedJWTRegistry: IssuedJWTRegistry,	doNamespace: string = 'default'): Promise<IssuedJWTRegistry> {
@@ -93,9 +100,9 @@ async get(issuedJWTRegId: string) {
 	return await this.ctx.storage.get<IssuedJWTRegistry>(issuedJWTRegId);
 }
 
-async list() {
+async list(orgId: string){
 		const allIJR = await this.ctx.storage.list<IssuedJWTRegistry>()
-		return Array.from(allIJR.entries())
+		return Array.from(allIJR.entries()).filter(([_, ijr]) => ijr.organization === orgId).map(([_, ijr]) => ijr)
 	}
 
 	async update(issuedJWTRegistry: IssuedJWTRegistry) {

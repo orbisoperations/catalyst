@@ -45,14 +45,14 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 				error: "catalyst was not able to access user for the given credential"
 			})
 		}
-		// add authzed here when available 
+		// add authzed here when available
 		if (!userParse.data.zitadelRoles.includes("platform-admin")) {
 			return JWTRotateResponse.parse({
 				success: false,
 				error: "catalyst asserts user does not have access jwt admin functions"
 			})
 		}
-		
+
 		const id = this.env.KEY_PROVIDER.idFromName(keyNamespace);
 		const stub = this.env.KEY_PROVIDER.get(id);
 		const success = await stub.rotateKey();
