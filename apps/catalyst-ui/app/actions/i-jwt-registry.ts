@@ -16,3 +16,55 @@ export async function listIJWTRegistry(token: string) {
     return [];
   }
 }
+
+export async function getIJWTRegistry(token: string, id: string) {
+  const matcher = getMatcher();
+  try {
+    return (await matcher.get({ cfToken: token }, id)) as IssuedJWTRegistry;
+  } catch (error) {
+    console.error("Get IssuedJWTRegistry Error:", error);
+    return undefined;
+  }
+}
+
+export async function createIJWTRegistry(
+  token: string,
+  data: Omit<IssuedJWTRegistry, "id">
+) {
+  const matcher = getMatcher();
+  try {
+    return (await matcher.create(
+      { cfToken: token },
+      data
+    )) as IssuedJWTRegistry;
+  } catch (error) {
+    console.error("Create IssuedJWTRegistry Error:", error);
+    return undefined;
+  }
+}
+
+export async function updateIJWTRegistry(
+  token: string,
+  data: IssuedJWTRegistry
+) {
+  const matcher = getMatcher();
+  try {
+    return (await matcher.update(
+      { cfToken: token },
+      data
+    )) as IssuedJWTRegistry;
+  } catch (error) {
+    console.error("Update IssuedJWTRegistry Error:", error);
+    return undefined;
+  }
+}
+
+export async function deleteIJWTRegistry(token: string, id: string) {
+  const matcher = getMatcher();
+  try {
+    return (await matcher.delete({ cfToken: token }, id)) as IssuedJWTRegistry;
+  } catch (error) {
+    console.error("Delete IssuedJWTRegistry Error:", error);
+    return undefined;
+  }
+}

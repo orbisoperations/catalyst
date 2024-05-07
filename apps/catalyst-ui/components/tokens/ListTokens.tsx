@@ -14,12 +14,12 @@ import { Flex } from "@chakra-ui/layout";
 import { useRouter } from "next/navigation";
 import { Card, CardBody, Text } from "@chakra-ui/react";
 import { rotateJWTKeyMaterial } from "@/app/actions/tokens";
-import { useUser } from "../../components/contexts/User/UserContext";
+import { useUser } from "../contexts/User/UserContext";
 import { useEffect, useState } from "react";
 import {
   IssuedJWTRegistry,
   IssuedJWTRegistryActionResponse,
-} from "../../../../packages/schema_zod";
+} from "@catalyst/schema_zod";
 
 type ListIssuedJWTRegistryProps = {
   listIJWTRegistry: (token: string) => Promise<IssuedJWTRegistry[]>;
@@ -71,14 +71,7 @@ export default function APIKeysComponent({
         issuedJWTRegistry.length > 0 ? (
           <Card variant={"outline"} shadow={"md"}>
             <OrbisTable
-              headers={[
-                "Id",
-                "Name",
-                "Description",
-                "Claims",
-                "Expiration",
-                "Owner",
-              ]}
+              headers={["Name", "Description", "Expiration", "Owner"]}
               rows={issuedJWTRegistry.map(
                 (jwt: {
                   id: string;
@@ -89,19 +82,16 @@ export default function APIKeysComponent({
                   organization: string;
                 }) => {
                   return [
-                    jwt.id,
                     <Flex key={jwt.id} justifyContent={"space-between"}>
                       <OpenButton
                         onClick={() => router.push("/tokens/" + jwt.id)}
                       >
                         {jwt.name}
                       </OpenButton>
-                      <OrbisBadge>Shared</OrbisBadge>
                     </Flex>,
                     jwt.description,
-                    jwt.organization,
-                    jwt.claims.join(", "),
                     new Date(jwt.expiry).toLocaleDateString(),
+                    jwt.organization,
                   ];
                 }
               )}
