@@ -1,5 +1,7 @@
-import { BackButton, OrbisButton } from "../../elements";
+import { useUser } from "@/components/contexts/User/UserContext";
 import { Box, Flex, Grid, PropsOf, Text } from "@chakra-ui/react";
+import { BackButton, OrbisButton } from "../../elements";
+import { useEffect, useState } from "react";
 
 type TopBarProps = PropsOf<typeof Box> & {
   title?: string;
@@ -9,9 +11,19 @@ type TopBarProps = PropsOf<typeof Box> & {
 };
 
 export const TopBar = (props: TopBarProps) => {
-  const { title, actions, 
-    customActions,
-    ...boxProps } = props;
+  "use client";
+  const { title, actions, customActions, ...boxProps } = props;
+  const { user } = useUser();
+  const [orgName, setOrgName] = useState<string>(
+    localStorage.getItem("org") ?? ""
+  );
+  useEffect(() => {
+    "use client";
+    if (user) {
+      window.localStorage.setItem("org", user.custom.org);
+      setOrgName(user.custom.org);
+    }
+  }, [user?.custom.org]);
   return (
     <Box position={"sticky"} top={0} bg={"white"}>
       <Flex
@@ -22,16 +34,27 @@ export const TopBar = (props: TopBarProps) => {
         alignItems={"center"}
         zIndex={10}
       >
-        {title && <div>{title}</div>}
-        {(actions || customActions) && <Flex gap={5} alignItems={"center"}>
-          {actions && actions.map((action, index) => (
-            <a href={action.path} key={index} className="">
-              <OrbisButton variant={"ghost"}>{action.display}</OrbisButton>
-            </a>
-          ))}
-          {customActions}
-        </Flex>
-        }
+        {orgName === "" ? <div>Loading...</div> : <div>{orgName}</div>}
+        {(actions || customActions) && (
+          <Flex gap={5} alignItems={"center"}>
+            {actions &&
+              actions.map((action, index) => (
+                <a href={action.path} key={index} className="">
+                  <OrbisButton variant={"ghost"}>{action.display}</OrbisButton>
+                </a>
+              ))}
+            {customActions}
+            <Box>
+              <OrbisButton
+                onClick={() => {
+                  window.location.href = "/cdn-cgi/auth/logout";
+                }}
+              >
+                Logout
+              </OrbisButton>
+            </Box>
+          </Flex>
+        )}
       </Flex>
     </Box>
   );
@@ -84,29 +107,31 @@ export const DetailedHeader = ({
               <Box>
                 <BackButton />
               </Box>
-              {title && 
-              <Box>
-              {title.text && 
-                <Text
-                  fontSize={"2xl"}
-                  fontWeight={"bold"}
-                  color={"gray.800"}
-                  textTransform={"uppercase"}
-                >
-                  {title.text}
-                </Text>
-              }
-              {title.adjacent && <Box>{title.adjacent}</Box>}
-              </Box>
-              }
+              {title && (
+                <Box>
+                  {title.text && (
+                    <Text
+                      fontSize={"2xl"}
+                      fontWeight={"bold"}
+                      color={"gray.800"}
+                      textTransform={"uppercase"}
+                    >
+                      {title.text}
+                    </Text>
+                  )}
+                  {title.adjacent && <Box>{title.adjacent}</Box>}
+                </Box>
+              )}
             </Flex>
           </Box>
         </Flex>
         {actions && <Box>{actions}</Box>}
       </Flex>
-      {subtitle && <Text fontSize={"lg"} color={"gray.400"}>
-        {subtitle}
-      </Text>}
+      {subtitle && (
+        <Text fontSize={"lg"} color={"gray.400"}>
+          {subtitle}
+        </Text>
+      )}
     </Grid>
   );
 };
@@ -136,27 +161,31 @@ export const ListedHeader = ({
           justifyContent={"flex-start"}
           flex={1}
         >
-          {title && <Box>
-            <Flex gap={5} align={"center"}>
-              {title.text && <Text
-                fontSize={"2xl"}
-                fontWeight={"bold"}
-                color={"gray.800"}
-                textTransform={"uppercase"}
-              >
-                {title.text}
-              </Text>}
-              {title.adjacent && <Box>{title.adjacent}</Box>}
-            </Flex>
-          </Box>}
+          {title && (
+            <Box>
+              <Flex gap={5} align={"center"}>
+                {title.text && (
+                  <Text
+                    fontSize={"2xl"}
+                    fontWeight={"bold"}
+                    color={"gray.800"}
+                    textTransform={"uppercase"}
+                  >
+                    {title.text}
+                  </Text>
+                )}
+                {title.adjacent && <Box>{title.adjacent}</Box>}
+              </Flex>
+            </Box>
+          )}
         </Flex>
         {actions && <Box>{actions}</Box>}
       </Flex>
-     {subtitle && 
+      {subtitle && (
         <Text fontSize={"lg"} color={"gray.400"}>
           {subtitle}
         </Text>
-      }
+      )}
     </Grid>
   );
 };
