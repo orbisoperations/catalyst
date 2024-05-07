@@ -15,7 +15,7 @@ describe("issued-jwt-registry unit tests", () => {
 		description: "the first one we have ever tested",
 		claims: ["claim1", "claim2"],
 		expiry:  new Date(Date.now() + (1000 * 60 * 60 * 24)), //tomorrow
-		hash: "alsdfanlkweopivnweoiwe"
+		organization: "orbis_operations",
 	}
 
 	const savedIJR =   await env.ISSUED_JWT_WORKER.create("orbis_operations", newIJR);
@@ -32,7 +32,7 @@ describe("issued-jwt-registry unit tests", () => {
 			description: "the first one we have ever tested",
 			claims: ["claim1", "claim2", "claim3"],
 			expiry:  new Date(Date.now() + (1000 * 60 * 60 * 48)), //2 days from now
-			hash: "alsdfanlkweopivnweoiwe"
+			organization: "orbis_operations",
 		}
 
 		const savedChangedIJR =   await env.ISSUED_JWT_WORKER.update("orbis_operations", changedIJR);
@@ -50,10 +50,10 @@ describe("issued-jwt-registry unit tests", () => {
 			description: "the third one we have ever tested",
 			claims: ["claim1", "claim2", "claim3"],
 			expiry:  new Date(Date.now() + (1000 * 60 * 60 * 92)), //days away
-			hash: "alsdopivnweoiwe"
+			organization: "orbis_operations",
 		}
 		const madeIJR =   await env.ISSUED_JWT_WORKER.create("orbis_operations", anotherIJR);
-		const retrievedIJR:IssuedJWTRegistry =   await env.ISSUED_JWT_WORKER.get("orbis_operations", madeIJR.id);
+		const retrievedIJR:IssuedJWTRegistry | undefined =   await env.ISSUED_JWT_WORKER.get("orbis_operations", madeIJR.id);
 		if (retrievedIJR) {
 			expect(retrievedIJR.id).toBeDefined();
 			expect(retrievedIJR.name).toStrictEqual(anotherIJR.name);
@@ -75,7 +75,7 @@ describe("issued-jwt-registry unit tests", () => {
 			description: "the first one we have ever tested",
 			claims: ["claimA", "claimX"],
 			expiry:  new Date(Date.now() + (1000 * 60 * 60 * 24)), //tomorrow
-			hash: "alsdfanlkweopivnweoiwe"
+			organization: "orbis_operations",
 		}
 
 		const newIJR2 =	{
@@ -84,7 +84,7 @@ describe("issued-jwt-registry unit tests", () => {
 			description: "the second one we have ever tested",
 			claims: ["claimA", "claimB"],
 			expiry:  new Date(Date.now() + (1000 * 60 * 60 * 24)), //tomorrow
-			hash: "alsdfanlkweopivnweoiwe"
+			organization: "orbis_operations",
 		}
 
 		const madeIJR1 =   await env.ISSUED_JWT_WORKER.create("orbis_operations", newIJR1);
