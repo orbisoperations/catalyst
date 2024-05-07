@@ -9,7 +9,7 @@ export async function getPublicKey() {
 }
 
 /*
-* WARNING - this an admin function  and will invalidate all active tokens
+* WARNING - below is an admin function and will invalidate all active tokens
 */
 export async function rotateJWTKeyMaterial(cfToken: string) {
   const tokenObject = {
@@ -20,6 +20,9 @@ export async function rotateJWTKeyMaterial(cfToken: string) {
 
   return await tokens.rotateKey(tokenObject)
 }
+/*
+* WARNING - above is an admin function and will invalidate all active tokens
+*/
 
 export async function signJWT(
   jwtRequest: JWTRequest,

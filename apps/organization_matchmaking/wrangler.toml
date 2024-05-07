@@ -43,7 +43,6 @@ services = [
 durable_objects.bindings = [{name = "ORG_MATCHMAKING", class_name = "OrganizationMatchmakingDO"}]
 
 services = [
-	{ binding = "AUTHZED", service = "authx_authzed_api-staging"},
-	{ binding = "USERCACHE", service = "user_credentials_cache-staging"}
+	{ binding = "AUTHZED", service = "authx_authzed_api-production"},
+	{ binding = "USERCACHE", service = "user_credentials_cache-production"}
 ]
-

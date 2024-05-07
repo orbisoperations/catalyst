@@ -50,6 +50,7 @@ export default function CreateTokensForm({
   const [selectedChannels, setSelectedChannels] = useState<number[]>([]);
   const [token, setToken] = useState<string>("");
   const tokenConfirmation = useDisclosure();
+  const [issuedJWTs, setIssuedJWTs] = useState<any[]>([]);
   const [expiration, setExpiration] = useState<{
     value: number;
     unit: "days" | "weeks";
@@ -85,10 +86,18 @@ export default function CreateTokensForm({
       throw "No cf token";
     }
     signToken(jwtRequest, expiration, cfToken!)
-      .then((resp) => {
+      .then(async (resp) => {
         if (resp.success) {
           setToken(resp.token);
           tokenConfirmation.onOpen();
+          const issuedJWTRegistryEntry = {
+            name: apiKeyName,
+            description: apiKeyDescription,
+            claims: jwtRequest.claims,
+            expiry: expiration ,
+            organization: user.custom.org
+          }
+          const iJWTRegistryEntry = await this.env.ISSUED_JWT_REGISTRY_WORKER.create(issuedJWTRegistryEntry)
         }
       })
       .catch((err) => {

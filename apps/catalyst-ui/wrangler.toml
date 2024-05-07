@@ -4,7 +4,7 @@ compatibility_flags = [ "nodejs_compat" ]
 pages_build_output_dir = "./.vercel/output/static"
 
 services = [
-    { binding = "ISSUED_JWT_WORKER", service = "issued_jwt_registry", entrypoint = "IssuedJWTRegistryWorker" },
+    { binding = "ISSUED_JWT_WORKER", service = "issued_jwt_registry" },
   { binding = "CATALYST_DATA_CHANNEL_REGISTRAR_API", service = "data_channel_registrar" },
   { binding = "AUTHX_TOKEN_API", service = "authx_token_api" },
   { binding = "AUTHX_AUTHZED_API", service = "authx_authzed_api"},
@@ -13,25 +13,27 @@ services = [
 ]
 
 
-## STAGING VALUES
-[env.preview]
+## STAGING VALUES - per cloudflare documenation
+#'Unlike Workers Environments, production and preview are the only two options available via [env.<ENVIRONMENT>].'
+[env.preview] #leave this value as 'preview'
 services = [
-    { binding = "ISSUED_JWT_WORKER", service = "issued-jwt-registry-staging", environment = "production" },
-    { binding = "CATALYST_DATA_CHANNEL_REGISTRAR_API", service = "data_channel_registrar-staging", environment = "production" },
-    { binding = "AUTHX_TOKEN_API", service = "authx_token_api-staging", environment = "production" },
-    { binding = "AUTHX_AUTHZED_API", service = "authx_authzed_api-staging", environment = "production" },
-    { binding = "USER_CREDS_CACHE", service = "user_credentials_cache-staging", environment = "production" },
-    { binding = "ORGANIZATION_MATCHMAKING", service = "organization-matchmaking-staging", environment = "production" }
+    { binding = "ISSUED_JWT_WORKER", service = "issued-jwt-registry-staging" },
+    { binding = "CATALYST_DATA_CHANNEL_REGISTRAR_API", service = "data_channel_registrar-staging" },
+    { binding = "AUTHX_TOKEN_API", service = "authx_token_api-staging" },
+    { binding = "AUTHX_AUTHZED_API", service = "authx_authzed_api-staging" },
+    { binding = "USER_CREDS_CACHE", service = "user_credentials_cache-staging" },
+    { binding = "ORGANIZATION_MATCHMAKING", service = "organization-matchmaking-staging" }
 ]
 
 
+
 # PRODUCTION VALUES
-#[env.production]
-#services = [
-#    { binding = "ISSUED_JWT_WORKER", service = "issued_jwt_registry-production", entrypoint = "IssuedJWTRegistryWorker" },
-#    { binding = "CATALYST_DATA_CHANNEL_REGISTRAR_API", service = "data_channel_registrar-production", entrypoint = "RegistrarWorker" },
-#    { binding = "AUTHX_TOKEN_API", service = "authx_token_api-production", entrypoint = "JWTWorker" },
-#    { binding = "AUTHX_AUTHZED_API", service = "authx_authzed_api-production", entrypoint = "AuthzedWorker"},
-#    { binding = "USER_CREDS_CACHE", service = "user_credentials_cache-production", entrypoint = "UserCredsCacheWorker"},
-#    { binding = "ORGANIZATION_MATCHMAKING", service = "organization-matchmaking" }
-#]
+[env.production]
+services = [
+    { binding = "ISSUED_JWT_WORKER", service = "issued_jwt_registry-production" },
+    { binding = "CATALYST_DATA_CHANNEL_REGISTRAR_API", service = "data_channel_registrar-production" },
+    { binding = "AUTHX_TOKEN_API", service = "authx_token_api-production" },
+    { binding = "AUTHX_AUTHZED_API", service = "authx_authzed_api-production" },
+    { binding = "USER_CREDS_CACHE", service = "user_credentials_cache-production" },
+    { binding = "ORGANIZATION_MATCHMAKING", service = "organization-matchmaking-production" }
+]
