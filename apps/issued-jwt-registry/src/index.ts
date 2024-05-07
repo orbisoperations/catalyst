@@ -1,39 +1,77 @@
 import { DurableObject, WorkerEntrypoint } from 'cloudflare:workers';
-import { IssuedJWTRegistry } from '@catalyst/schema_zod';
+import { IssuedJWTRegistry, PermissionCheckResponse, Token, User } from '@catalyst/schema_zod';
+import UserCredsCacheWorker from '../../user_credentials_cache/src';
 import { Logger } from 'tslog';
 
 const logger = new Logger({});
 
 export type Env =  {
 	ISSUED_JWT_REGISTRY_DO: DurableObjectNamespace<I_JWT_Registry_DO>;
+	USERCACHE: Service<UserCredsCacheWorker>;
 }
 
 export default class IssuedJWTRegistryWorker extends WorkerEntrypoint<Env> {
 
-	async create(doNamespace: string, issuedJWTRegistry: Omit<IssuedJWTRegistry, "id">): Promise<IssuedJWTRegistry> {
+	async RPerms(token: Token) {
+		if (token.cfToken) {
+			const user: User | undefined = await this.env.USERCACHE.getUser(token.cfToken);
+			const parsedUser = User.safeParse(user);
+			if (parsedUser.success) {
+				return PermissionCheckResponse.parse({
+					success: true
+				});
+			}
+		}
+		return PermissionCheckResponse.parse({
+			success: false,
+			error: 'catalyst unable to validate user token',
+		});
+	}
+
+	async create( token: Token, issuedJWTRegistry: Omit<IssuedJWTRegistry, "id">, 	doNamespace: string = 'default'): Promise<IssuedJWTRegistry> {
+		const permCheck = await this.RPerms(token)
+		if (!permCheck.success) {
+			throw new Error(permCheck.error);
+		}
 		const doId = this.env.ISSUED_JWT_REGISTRY_DO.idFromName(doNamespace)
 		const stub =  this.env.ISSUED_JWT_REGISTRY_DO.get(doId)
 		return stub.create(issuedJWTRegistry);
 	}
-	async get(doNamespace: string, issuedJWTRegId: string) {
+	async get(  token: Token, issuedJWTRegId: string, 	doNamespace: string = 'default') {
+		const permCheck = await this.RPerms(token)
+		if (!permCheck.success) {
+			throw new Error(permCheck.error);
+		}
 		const doId = this.env.ISSUED_JWT_REGISTRY_DO.idFromName(doNamespace)
 		const stub =  this.env.ISSUED_JWT_REGISTRY_DO.get(doId)
 		return stub.get(issuedJWTRegId);
 	}
 
-	async list(doNamespace: string) {
+	async list(	 token: Token, doNamespace: string = 'default') {
+		const permCheck = await this.RPerms(token)
+		if (!permCheck.success) {
+			throw new Error(permCheck.error);
+		}
 		const doId = this.env.ISSUED_JWT_REGISTRY_DO.idFromName(doNamespace)
 		const stub =  this.env.ISSUED_JWT_REGISTRY_DO.get(doId)
 		return stub.list();
 	}
 
-	async update(doNamespace: string, issuedJWTRegistry: IssuedJWTRegistry): Promise<IssuedJWTRegistry> {
+	async update(  token: Token, issuedJWTRegistry: IssuedJWTRegistry,	doNamespace: string = 'default'): Promise<IssuedJWTRegistry> {
+		const permCheck = await this.RPerms(token)
+		if (!permCheck.success) {
+			throw new Error(permCheck.error);
+		}
 		const doId = this.env.ISSUED_JWT_REGISTRY_DO.idFromName(doNamespace)
 		const stub =  this.env.ISSUED_JWT_REGISTRY_DO.get(doId)
 		return stub.update(issuedJWTRegistry);
 	}
 
-	async delete(doNamespace: string, issuedJWTRegId: string) {
+	async delete(  token: Token, issuedJWTRegId: string, doNamespace: string = 'default') {
+		const permCheck = await this.RPerms(token)
+		if (!permCheck.success) {
+			throw new Error(permCheck.error);
+		}
 		const doId = this.env.ISSUED_JWT_REGISTRY_DO.idFromName(doNamespace)
 		const stub =  this.env.ISSUED_JWT_REGISTRY_DO.get(doId)
 		return stub.delete(issuedJWTRegId);
