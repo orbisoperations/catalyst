@@ -128,7 +128,7 @@ export default function DataChannelDetailsComponent({
       }
       headerTitle={{
         adjacent:
-          channel?.creatorOrganization === "org2" ? (
+          !channel?.creatorOrganization === (user?.custom.org || "") ? (
             // TODO: Enable Shared with you badge
             <OrbisBadge> Shared with you </OrbisBadge>
           ) : (
@@ -282,12 +282,13 @@ export default function DataChannelDetailsComponent({
             </ModalContent>
           </Modal>
         </div>
+
         <form>
-          <Grid gap={5}>
+          <Grid gap={5} gridTemplateColumns={"1fr 1fr"}>
             <FormControl display={"grid"} gap={2}>
               <label htmlFor="endpoint">Endpoint URL</label>
               <Flex
-                w={"fit-content"}
+                w={"100%"}
                 className="border"
                 align={"center"}
                 justify={"space-between"}
@@ -306,8 +307,19 @@ export default function DataChannelDetailsComponent({
                 </Flex>
               </Flex>
             </FormControl>
+            <FormControl display={"grid"} gap={2}>
+              <label htmlFor="description">Channel ID</label>
+              <APIKeyText allowCopy showAsClearText>
+                {channel?.id}
+              </APIKeyText>
+            </FormControl>
 
-            <Flex direction={"column"} gap={5}>
+            <Flex
+              direction={"column"}
+              gap={5}
+              gridColumnStart={1}
+              gridColumnEnd={3}
+            >
               <Card>
                 <CardHeader>
                   <Heading size="md">Available Metadata</Heading>

@@ -1,7 +1,6 @@
 "use client";
-import APIKeysComponent from "@/components/tokens/list-tokens";
+import APIKeysComponent from "@/components/tokens/ListTokens";
 import { listIJWTRegistry } from "@/app/actions/i-jwt-registry";
-
 
 export const runtime = "edge";
 

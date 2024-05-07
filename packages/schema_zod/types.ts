@@ -78,7 +78,6 @@ export const JWTParsingResponse = z.discriminatedUnion("valid", [
 ]);
 export type JWTParsingResponse = z.infer<typeof JWTParsingResponse>;
 
-
 export const zIssuedJWTRegistry = z.object({
   id: z.string(),
   name: z.string(),
@@ -99,16 +98,14 @@ const zIssuedJWTRegistryActionError = z.object({
   success: z.literal(false),
   error: z.string(),
 });
-export const zIssuedJWTRegistryActionResponse = z.discriminatedUnion("success", [
-  zIssuedJWTRegistryActionError,
-  zIssuedJWTRegistryActionSuccess,
-]);
+export const zIssuedJWTRegistryActionResponse = z.discriminatedUnion(
+  "success",
+  [zIssuedJWTRegistryActionError, zIssuedJWTRegistryActionSuccess]
+);
 
 export type IssuedJWTRegistryActionResponse = z.infer<
   typeof zIssuedJWTRegistryActionResponse
 >;
-
-
 
 export const JWTSigningRequest = z.object({
   entity: z.string(),
@@ -121,6 +118,7 @@ export type JWTSigningRequest = z.infer<typeof JWTSigningRequest>;
 export const JWTSigningSuccess = z.object({
   success: z.literal(true),
   token: z.string(),
+  expiration: z.number(),
 });
 
 export const JWTSigningError = z.object({
@@ -137,15 +135,15 @@ export type JWTSigningResponse = z.infer<typeof JWTSigningResponse>;
 
 export const JWTRotateResponse = z.discriminatedUnion("success", [
   z.object({
-    success: z.literal(true)
+    success: z.literal(true),
   }),
   z.object({
     success: z.literal(false),
-    error: z.string()
-  })
-])
+    error: z.string(),
+  }),
+]);
 
-export type JWTRotateResponse = z.infer<typeof JWTRotateResponse>
+export type JWTRotateResponse = z.infer<typeof JWTRotateResponse>;
 
 export const OrgInviteStatus = z.enum(["pending", "accepted", "declined"]);
 export type OrgInviteStatus = z.infer<typeof OrgInviteStatus>;
@@ -181,7 +179,7 @@ export type OrgInviteResponse = z.infer<typeof OrgInviteResponse>;
 
 const zUserCheckActionSuccess = z.object({
   success: z.literal(true),
-  data:User
+  data: User,
 });
 
 const zUserCheckActionError = z.object({

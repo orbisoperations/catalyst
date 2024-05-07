@@ -24,6 +24,7 @@ import { useUser } from "../contexts/User/UserContext";
 import {
   DataChannel,
   DataChannelActionResponse,
+  IssuedJWTRegistry,
   JWTSigningResponse,
 } from "@catalyst/schema_zod";
 
@@ -37,11 +38,16 @@ type CreateTokensFormProps = {
     cfToken: string
   ) => Promise<JWTSigningResponse>;
   listChannels: (token: string) => Promise<DataChannelActionResponse>;
+  createIJWTRegistry: (
+    token: string,
+    data: Omit<IssuedJWTRegistry, "id">
+  ) => Promise<IssuedJWTRegistry | undefined>;
 };
 
 export default function CreateTokensForm({
   signToken,
   listChannels,
+  createIJWTRegistry,
 }: CreateTokensFormProps) {
   const router = useRouter();
   const { user, token: cfToken } = useUser();
@@ -95,13 +101,23 @@ export default function CreateTokensForm({
         if (resp.success) {
           setToken(resp.token);
           tokenConfirmation.onOpen();
+          console.log("token", resp.token);
+          console.log("expiration", resp.expiration);
           const issuedJWTRegistryEntry = {
             name: apiKeyName,
             description: apiKeyDescription,
             claims: jwtRequest.claims,
-            expiry: expiration,
+            expiry: new Date(resp.expiration * 1000),
             organization: user.custom.org,
-          };
+          } as Omit<IssuedJWTRegistry, "id">;
+          console.log("before create", { issuedJWTRegistryEntry });
+          const iJWTRegistryEntry = await createIJWTRegistry(
+            cfToken,
+            issuedJWTRegistryEntry
+          );
+          if (iJWTRegistryEntry) {
+            console.log("created iJWTRegistryEntry", iJWTRegistryEntry);
+          }
         }
       })
       .catch((err) => {
