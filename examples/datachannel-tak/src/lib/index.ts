@@ -134,7 +134,64 @@ export async function runTask(env: any, ctx: any) {
 						detail: {
 							__group: {
 								_attributes: {
-									name: item.LocalMagnitude
+									name: `Earthquake Magnitude: ${item.LocalMagnitude}`
+								}
+							},
+						}
+					}
+				};
+
+
+				const options = {compact: true, ignoreComment: true, spaces: 4};
+
+				const xml = convert.js2xml(cotEvent, options);
+
+				console.log({xml});
+				return xml;
+			})
+			const lineCOTEvents = data.pings.map((item: any) => {
+
+				const now: string = new Date().toISOString();
+
+
+				let stale = new Date(now);
+				stale.setSeconds(stale.getSeconds() + TTL_S);
+				//console.log(item.alt_geom);
+
+				// ADSB data returns altitude in feet and tak reads it in meters
+				function feetToMeters(feet?: number): number {
+					if(!feet) {
+						return 0;
+					}
+					const metersPerFoot = 0.3048;
+					const meters = feet * metersPerFoot;
+					return Math.round(meters);
+				}
+
+				const cotEvent = {
+					event: {
+						_attributes: {
+							version: '2.0',
+							uid: item.UID,
+							time: now,
+							start: now,
+							how: 'h-t',
+							stale: stale.toISOString(),
+							type: 'a-f-G-U-C'//'f-d-p',//'a-u-G',
+						},
+						point: {
+							_attributes: {
+								lat: item.lat,
+								lon: item.lon,
+								hae: 0,
+								ce: '9999999',
+								le: '9999999',
+							}
+						},
+						detail: {
+							contact: {
+								_attributes: {
+									callsign: item.title
 								}
 							},
 						}
@@ -164,9 +221,14 @@ export async function runTask(env: any, ctx: any) {
 				...earthquakeCOTEvents.map(async (e: any) => {
 					const encoded = encoder.encode(e);
 					return await writer.write(encoded);
-				})
+				}),
+				...lineCOTEvents.map(async (e: any) => {
+					const encoded = encoder.encode(e);
+					return await writer.write(encoded);
+				}),
 			]);
 			console.log("sent airplane, earthquake txn")
+			console.log(lineCOTEvents)
 
 			await socket.close();
 		};
