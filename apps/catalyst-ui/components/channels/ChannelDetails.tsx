@@ -1,19 +1,11 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 import {
-  DataChannel,
-  DataChannelActionResponse,
-} from "../../../../packages/schema_zod";
-
-export const runtime = "edge";
-import {
   APIKeyText,
   CopyButton,
-  DisplayButton,
-  GenerateButton,
+  EditButton,
   OrbisBadge,
   OrbisButton,
-  ShareButton,
   TrashButton,
 } from "@/components/elements";
 import { DetailedView } from "@/components/layouts";
@@ -43,10 +35,15 @@ import {
   Textarea,
   useDisclosure,
 } from "@chakra-ui/react";
-import { PencilSquareIcon } from "@heroicons/react/20/solid";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import {
+  DataChannel,
+  DataChannelActionResponse,
+} from "../../../../packages/schema_zod";
 import { useUser } from "../contexts/User/UserContext";
+
+export const runtime = "edge";
 type DataChannelDetailsProps = {
   channelDetails: (
     id: string,
@@ -119,9 +116,7 @@ export default function DataChannelDetailsComponent({
             )}
           </Flex>
           <Flex gap={5} align={"center"}>
-            <OrbisButton p={2} rounded={"full"} onClick={editDisclosure.onOpen}>
-              <PencilSquareIcon />
-            </OrbisButton>
+            <EditButton onClick={editDisclosure.onOpen} />
             <TrashButton onClick={onOpen} />
           </Flex>
         </Flex>
