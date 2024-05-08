@@ -30,7 +30,6 @@ export class CatalystGatewayClient {
 					city
 					lat
 					lon
-					expiry
 				}
 				earthquakes {
 					EpicenterLatitude
