@@ -87,7 +87,7 @@ export default function DataChannelListComponents({
                       >
                         {channel.name}
                       </OpenButton>
-                      {channel.creatorOrganization === user?.custom.org && (
+                      {channel.creatorOrganization !== user?.custom.org && (
                         <OrbisBadge>Shared</OrbisBadge>
                       )}
                     </Flex>,
