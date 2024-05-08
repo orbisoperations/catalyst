@@ -8,30 +8,30 @@ import {
 } from "@/components/elements";
 import { DetailedView } from "@/components/layouts";
 import { navigationItems } from "@/utils/nav.utils";
-import { Box, Flex } from "@chakra-ui/layout";
-import {
-  FormControl,
-  Text,
-  Input,
-  Modal,
-  ModalBody,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  useDisclosure,
-  Select,
-  InputGroup,
-} from "@chakra-ui/react";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { useUser } from "../contexts/User/UserContext";
 import {
   DataChannel,
   DataChannelActionResponse,
   IssuedJWTRegistry,
   JWTSigningResponse,
 } from "@catalyst/schema_zod";
+import { Box, Flex } from "@chakra-ui/layout";
+import {
+  FormControl,
+  Input,
+  InputGroup,
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
+  Select,
+  Text,
+  useDisclosure,
+} from "@chakra-ui/react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useUser } from "../contexts/User/UserContext";
 
 type CreateTokensFormProps = {
   signToken: (
@@ -55,6 +55,7 @@ export default function CreateTokensForm({
   createIJWTRegistry,
 }: CreateTokensFormProps) {
   const router = useRouter();
+  const tokenConfirmation = useDisclosure();
   const { user, token: cfToken } = useUser();
   const [channels, setChannels] = useState<any[]>([]);
   const [channelsResponse, setChannelsResponse] = useState<DataChannel[]>([]);
@@ -62,8 +63,6 @@ export default function CreateTokensForm({
   const [apiKeyName, setApiKeyName] = useState<string>("");
   const [apiKeyDescription, setApiKeyDescription] = useState<string>("");
   const [token, setToken] = useState<string>("");
-  const tokenConfirmation = useDisclosure();
-  const [issuedJWTs, setIssuedJWTs] = useState<any[]>([]);
   const [expiration, setExpiration] = useState<{
     value: number;
     unit: "days" | "weeks";
@@ -207,33 +206,54 @@ export default function CreateTokensForm({
           }}
         />
       </OrbisCard>
-      {/* create a modal to display the new token */}
-      <Modal isOpen={tokenConfirmation.isOpen} onClose={closeModal}>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Access Token Created</ModalHeader>
-          <ModalBody>
-            <Text color={"green"}>
-              Your new Access Token has been created. Please save it securely.
-            </Text>
-            <Text mt={5}>
-              <b>Token:</b>
-              <APIKeyText showAsClearText>
-                {`********${token.slice(-15)}`}
-              </APIKeyText>
-            </Text>
-            <OrbisButton
-              onClick={() => navigator.clipboard.writeText(token)}
-              mt={5}
-            >
-              Copy Token
-            </OrbisButton>
-          </ModalBody>
-          <ModalFooter>
-            <OrbisButton onClick={closeModal}>Close</OrbisButton>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+      <TokenCreatedModal
+        token={token}
+        tokenConfirmation={tokenConfirmation}
+        onClose={closeModal}
+      />
     </DetailedView>
+  );
+}
+
+interface TokenCreatedModalProps {
+  token: string;
+  tokenConfirmation: ReturnType<typeof useDisclosure>;
+  onClose: () => void;
+}
+
+function TokenCreatedModal(props: TokenCreatedModalProps) {
+  "use client";
+  const { token, tokenConfirmation, onClose } = props;
+  const [copyButtonMessage, setCopyButtonMessage] =
+    useState<string>("Copy Token");
+  const copyToken = () => {
+    navigator.clipboard.writeText(token);
+    setCopyButtonMessage("Copied");
+    setTimeout(() => setCopyButtonMessage("Copy Token"), 1000);
+  };
+  return (
+    <Modal isOpen={tokenConfirmation.isOpen} onClose={onClose}>
+      <ModalOverlay />
+      <ModalContent>
+        <ModalHeader>Access Token Created</ModalHeader>
+        <ModalBody>
+          <Text color={"green"}>
+            Your new Access Token has been created. Please save it securely.
+          </Text>
+          <Text mt={5}>
+            <b>Token:</b>
+            <APIKeyText showAsClearText>
+              {`********${token.slice(-15)}`}
+            </APIKeyText>
+          </Text>
+          <OrbisButton onClick={copyToken} mt={5}>
+            {copyButtonMessage}
+          </OrbisButton>
+        </ModalBody>
+        <ModalFooter>
+          <OrbisButton onClick={onClose}>Close</OrbisButton>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
   );
 }

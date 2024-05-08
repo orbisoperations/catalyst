@@ -94,11 +94,11 @@ export const ProfileButton = (props: ProfileButtonProps) => {
   return (
     <Flex>
       {props.userInfo && (
-        <Flex flexDirection="column" pr="8px">
+        <Flex flexDirection="column" pr="8px" textAlign={"right"}>
           <Text fontSize="sm" fontWeight="bold">
             {props.userInfo.organization}
           </Text>
-          <Text fontSize="sm">{props.userInfo.userEmail}</Text>
+          <Text fontSize="sm">{props.userInfo.userEmail.split("@")[0]}</Text>
         </Flex>
       )}
       <Menu>
@@ -117,15 +117,16 @@ export const ProfileButton = (props: ProfileButtonProps) => {
             </MenuItem>
           ))}
           <MenuItem>
-          <OrbisButton w="100%"
-                onClick={() => {
-                  window.location.href = "/cdn-cgi/auth/logout";
-                }}
-              >
-                Logout
-              </OrbisButton></MenuItem>
+            <OrbisButton
+              w="100%"
+              onClick={() => {
+                window.location.href = "/cdn-cgi/auth/logout";
+              }}
+            >
+              Logout
+            </OrbisButton>
+          </MenuItem>
         </MenuList>
-        
       </Menu>
     </Flex>
   );

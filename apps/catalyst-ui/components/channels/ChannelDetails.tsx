@@ -73,6 +73,9 @@ export default function DataChannelDetailsComponent({
   const { isOpen, onOpen, onClose } = useDisclosure();
   const editDisclosure = useDisclosure();
   const router = useRouter();
+  const [gatewayUrl, setGatewayUrl] = useState<string>(
+    "https://gateway.catalyst.intelops.io/graphql"
+  );
   const { user, token } = useUser();
   const { id } = useParams();
   const [channel, setChannel] = useState<DataChannel>();
@@ -87,6 +90,15 @@ export default function DataChannelDetailsComponent({
       });
   }
 
+  useEffect(() => {
+    "use client";
+    if (window.location.origin) {
+      const url = window.location.origin.includes("catalyst")
+        ? window.location.origin
+        : "https://catalyst.devintelops.io";
+      setGatewayUrl(url.replace("catalyst", "gateway") + "/graphql");
+    }
+  });
   useEffect(fetchChannelDetails, [token]);
 
   return (
@@ -283,46 +295,33 @@ export default function DataChannelDetailsComponent({
           </div>
         </div>
 
-        <Grid gap={5} gridTemplateColumns={"1fr 1fr"}>
-          {channel?.creatorOrganization === user?.custom.org ? (
+        <Grid gap={5}>
+          <Grid gap={5} gridTemplateColumns={"1fr 1fr"}>
             <FormControl display={"grid"} gap={2}>
-              <label htmlFor="endpoint">Endpoint URL</label>
-              <Flex
-                w={"100%"}
-                className="border"
-                align={"center"}
-                justify={"space-between"}
-                gap={5}
-                paddingX={".5em"}
-                paddingY={".25em"}
-                borderRadius={"md"}
-              >
-                <Text>{channel?.endpoint}</Text>
-                <Flex gap={2}>
-                  <CopyButton
-                    copytext={channel?.endpoint}
-                    variant={"ghost"}
-                    colorScheme="blue"
-                  />
-                </Flex>
-              </Flex>
+              <label htmlFor="gatewayUrl">Access URL</label>
+              <APIKeyText width={"100%"} allowCopy showAsClearText>
+                {gatewayUrl}
+              </APIKeyText>
             </FormControl>
-          ) : (
-            <></>
-          )}
-          <FormControl display={"grid"} gap={2}>
-            <label htmlFor="description">Channel ID</label>
-            <APIKeyText allowCopy showAsClearText>
-              {channel?.id}
-            </APIKeyText>
-          </FormControl>
+            {channel?.creatorOrganization === user?.custom.org ? (
+              <FormControl display={"grid"} gap={2}>
+                <label htmlFor="endpoint">Source URL</label>
+                <APIKeyText width={"100%"} allowCopy showAsClearText>
+                  {channel?.endpoint}
+                </APIKeyText>
+              </FormControl>
+            ) : (
+              <></>
+            )}
+            <FormControl display={"grid"} gap={2}>
+              <label htmlFor="description">Channel ID</label>
+              <APIKeyText width={"100%"} allowCopy showAsClearText>
+                {channel?.id}
+              </APIKeyText>
+            </FormControl>
+          </Grid>
 
-          <Flex
-            direction={"column"}
-            gap={5}
-            gridColumnStart={1}
-            gridColumnEnd={3}
-          >
+          <Flex direction={"column"} gap={5}>
             <Card>
               <CardHeader>
                 <Heading size="md">Available Metadata</Heading>

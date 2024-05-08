@@ -1,9 +1,9 @@
-import { Flex, Text, TextProps } from "@chakra-ui/react";
+import { Flex, FlexProps, PropsOf, Text, TextProps } from "@chakra-ui/react";
 import { CopyButton, DisplayButton, GenerateButton } from ".";
 import { MouseEventHandler, useEffect, useState } from "react";
 
 export const APIKeyText = (
-  props: TextProps & {
+  props: FlexProps & {
     children?: string;
     allowGenerate?: boolean;
     allowDisplay?: boolean;
