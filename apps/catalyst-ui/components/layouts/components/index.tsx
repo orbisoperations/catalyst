@@ -1,7 +1,8 @@
 import { useUser } from "@/components/contexts/User/UserContext";
-import { Box, Flex, Grid, PropsOf, Text } from "@chakra-ui/react";
-import { BackButton, OrbisButton } from "../../elements";
+import { Box, Flex, Grid, PropsOf, Text, Image } from "@chakra-ui/react";
+import { BackButton, OrbisButton, ProfileButton } from "../../elements";
 import { useEffect, useState } from "react";
+import logo from 'next/image';
 
 type TopBarProps = PropsOf<typeof Box> & {
   title?: string;
@@ -17,6 +18,7 @@ export const TopBar = (props: TopBarProps) => {
   const [orgName, setOrgName] = useState<string>(
     localStorage.getItem("org") ?? ""
   );
+
   useEffect(() => {
     "use client";
     if (user) {
@@ -24,19 +26,21 @@ export const TopBar = (props: TopBarProps) => {
       setOrgName(user.custom.org);
     }
   }, [user?.custom.org]);
+
   return (
     <Box position={"sticky"} top={0} bg={"white"}>
+      
       <Flex
         {...boxProps}
         shadow={"md"}
         padding={"1em"}
-        justifyContent={"space-between"}
+        justifyContent={"end"}
         alignItems={"center"}
         zIndex={10}
       >
-        {orgName === "" ? <div>Loading...</div> : <div>{orgName}</div>}
+        <Image src="/C-logo.png" w="120px" mr="auto"></Image>
         {(actions || customActions) && (
-          <Flex gap={5} alignItems={"center"}>
+          <Flex gap={5} alignItems={"center"} pr="2%">
             {actions &&
               actions.map((action, index) => (
                 <a href={action.path} key={index} className="">
@@ -44,17 +48,12 @@ export const TopBar = (props: TopBarProps) => {
                 </a>
               ))}
             {customActions}
-            <Box>
-              <OrbisButton
-                onClick={() => {
-                  window.location.href = "/cdn-cgi/auth/logout";
-                }}
-              >
-                Logout
-              </OrbisButton>
-            </Box>
           </Flex>
         )}
+         <ProfileButton
+            avatarProps= {{ name: user?.email ? user.email : "User email"}}
+            userInfo = {{userEmail: "user email", organization: "organization"}}
+          ></ProfileButton>
       </Flex>
     </Box>
   );

@@ -10,6 +10,7 @@ import {
   MenuItem,
   MenuList,
   Tooltip,
+  Text,
 } from "@chakra-ui/react";
 import {
   ArrowLeftIcon,
@@ -79,31 +80,54 @@ export const HelpButton = (props: ButtonProps) => {
 
 export type ProfileButtonProps = {
   avatarProps?: AvatarProps;
-  actions: {
+  actions?: {
     displayName: string;
     action: MouseEventHandler<HTMLButtonElement>;
   }[];
+  userInfo?: {
+    userEmail: string;
+    organization: string;
+  };
 };
 
 export const ProfileButton = (props: ProfileButtonProps) => {
   return (
-    <Menu>
-      <MenuButton>
-        <Avatar
-          {...props.avatarProps}
-          as={Button}
-          colorScheme="blue"
-          textColor={"white"}
-        />
-      </MenuButton>
-      <MenuList px={2}>
-        {props.actions.map((action, index) => (
-          <MenuItem key={index} onClick={action.action}>
-            {action.displayName}
-          </MenuItem>
-        ))}
-      </MenuList>
-    </Menu>
+    <Flex>
+      {props.userInfo && (
+        <Flex flexDirection="column" pr="8px">
+          <Text fontSize="sm" fontWeight="bold">
+            {props.userInfo.organization}
+          </Text>
+          <Text fontSize="sm">{props.userInfo.userEmail}</Text>
+        </Flex>
+      )}
+      <Menu>
+        <MenuButton>
+          <Avatar
+            {...props.avatarProps}
+            as={Button}
+            bg="gray.700"
+            textColor={"white"}
+          />
+        </MenuButton>
+        <MenuList px={2}>
+          {props.actions?.map((action, index) => (
+            <MenuItem key={index} onClick={action.action}>
+              {action.displayName}
+            </MenuItem>
+          ))}
+          <MenuItem>
+          <OrbisButton w="100%"
+                onClick={() => {
+                  window.location.href = "/cdn-cgi/auth/logout";
+                }}
+              >
+                Logout
+              </OrbisButton></MenuItem>
+        </MenuList>
+        
+      </Menu>
+    </Flex>
   );
 };
 export const SaveButton = (props: ButtonProps) => {
