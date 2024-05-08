@@ -1,10 +1,8 @@
 import {
-  ButtonProps,
-  ComponentWithAs,
-  Flex,
   FormControl,
   FormLabel,
   Grid,
+  Icon,
   Input,
   Modal,
   ModalBody,
@@ -16,11 +14,12 @@ import {
   Textarea,
   useDisclosure,
 } from "@chakra-ui/react";
-import { HelpButton, OrbisButton } from ".";
+import { QuestionMarkCircleIcon } from "@heroicons/react/20/solid";
 import { FormEvent } from "react";
+import { HelpButton, OrbisButton } from ".";
 
 export type ModalProps = {
-  iconButton?: ComponentWithAs<"button", ButtonProps>;
+  iconButton?: JSX.Element;
   button?: JSX.Element;
   title: string;
   body: JSX.Element;
@@ -32,7 +31,11 @@ export const GeneralModal = (props: ModalProps) => {
   const { isOpen, onOpen, onClose } = props.disclosure;
   return (
     <>
-      {props.iconButton && <props.iconButton onClick={onOpen} />}
+      {props.iconButton && (
+        <OrbisButton variant={"ghost"} colorScheme="blue" onClick={onOpen}>
+          {props.iconButton}
+        </OrbisButton>
+      )}
       {props.button}
 
       <Modal isOpen={isOpen} onClose={onClose}>
@@ -59,7 +62,7 @@ export const HelpModal = () => {
 
   return (
     <GeneralModal
-      iconButton={HelpButton}
+      button={<HelpButton onClick={disclosure.onOpen} />}
       title="Feel free to reach out"
       body={
         <form
