@@ -119,8 +119,10 @@ export async function runTask(env: any, ctx: any) {
 							start: now,
 							how: 'm-g',
 							stale: stale.toISOString(),
-							type: 'u-d-p',//'a-u-G',
-							weapon: 'd'
+							type: "b-m-p-a",//'u-d-p',//'a-u-G',
+							//category: "point",
+							//color: "yellow",
+							//weapon: 'd'
 						},
 						point: {
 							_attributes: {
@@ -177,7 +179,7 @@ export async function runTask(env: any, ctx: any) {
 							start: now,
 							how: 'h-t',
 							stale: stale.toISOString(),
-							type: 'a-f-G-U-C'//'f-d-p',//'a-u-G',
+							type: "b-m-p-w-GOTO",//'f-d-p',//'a-u-G',
 						},
 						point: {
 							_attributes: {
