@@ -40,7 +40,7 @@ export interface Env {
 	TAK_MANAGER: DurableObjectNamespace<TAKDataManager>
 }
 
-const ALARM_MS = 30 * 1000 // 10s
+const ALARM_MS = 28 * 1000 // 10s
 export class TAKDataManager extends DurableObject<Env> {
 	async alarmInit(enable: boolean) {
 		if (enable) {
