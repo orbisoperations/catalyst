@@ -57,12 +57,7 @@ export default function DataChannelListComponents({
         channels.length > 0 ? (
           <Card variant={"outline"} shadow={"md"}>
             <OrbisTable
-              headers={[
-                "Data Channel",
-                "Description",
-                "Endpoint",
-                "Channel ID",
-              ]}
+              headers={["Data Channel", "Description", "Channel ID"]}
               rows={channels.map(
                 (
                   channel: {
@@ -92,7 +87,6 @@ export default function DataChannelListComponents({
                       )}
                     </Flex>,
                     channel.description,
-                    channel.endpoint,
                     <APIKeyText
                       allowCopy
                       showAsClearText

@@ -8,28 +8,38 @@ export const APIKeyText = (
     allowGenerate?: boolean;
     allowDisplay?: boolean;
     allowCopy?: boolean;
-    showAsClearText?:boolean;
-    generateFunction?:  MouseEventHandler<HTMLButtonElement>
+    showAsClearText?: boolean;
+    generateFunction?: MouseEventHandler<HTMLButtonElement>;
   }
 ) => {
-  const { children, allowGenerate, allowCopy, showAsClearText, allowDisplay, ...rest } = props;
-  const obscured = children ? (
-    children.slice(0, 5) +
-    children.slice(5, children.length).replace(/./g, "*")) : "";
-  const [displayText, setDisplayText] = useState(props.showAsClearText ? children : obscured );
+  const {
+    children,
+    allowGenerate,
+    allowCopy,
+    showAsClearText,
+    allowDisplay,
+    ...rest
+  } = props;
+  const obscured = children
+    ? children.slice(0, 5) +
+      children.slice(5, children.length).replace(/./g, "*")
+    : "";
+  const [displayText, setDisplayText] = useState(
+    props.showAsClearText ? children : obscured
+  );
   const toggleText = () => {
-    setDisplayText(displayText === obscured ? (children ?? "") : obscured);
+    setDisplayText(displayText === obscured ? children ?? "" : obscured);
   };
   useEffect(() => {
-    setDisplayText(props.showAsClearText ? children : obscured)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [children])
+    setDisplayText(props.showAsClearText ? children : obscured);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [children]);
   return (
     <Flex
       w={"fit-content"}
       className="border"
       align={"center"}
-      justify={'space-between'}
+      justify={"space-between"}
       gap={5}
       paddingX={".5em"}
       paddingY={".25em"}
@@ -39,7 +49,11 @@ export const APIKeyText = (
       <Text>{displayText}</Text>
       <Flex gap={2}>
         {allowCopy && (
-          <CopyButton copytext={children} variant={"ghost"} colorScheme="blue" />
+          <CopyButton
+            copytext={children}
+            variant={"ghost"}
+            colorScheme="blue"
+          />
         )}
         {allowDisplay && (
           <DisplayButton
@@ -49,7 +63,13 @@ export const APIKeyText = (
             toggletext={() => toggleText()}
           />
         )}
-        {allowGenerate && <GenerateButton variant={"ghost"} colorScheme="blue" onClick={props.generateFunction} />}
+        {allowGenerate && (
+          <GenerateButton
+            variant={"ghost"}
+            colorScheme="blue"
+            onClick={props.generateFunction}
+          />
+        )}
       </Flex>
     </Flex>
   );

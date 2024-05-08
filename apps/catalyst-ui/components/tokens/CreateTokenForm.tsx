@@ -1,6 +1,11 @@
 "use client";
 import { JWTRequest } from "@/app/types";
-import { OrbisButton, OrbisCard, SelectableTable } from "@/components/elements";
+import {
+  APIKeyText,
+  OrbisButton,
+  OrbisCard,
+  SelectableTable,
+} from "@/components/elements";
 import { DetailedView } from "@/components/layouts";
 import { navigationItems } from "@/utils/nav.utils";
 import { Box, Flex } from "@chakra-ui/layout";
@@ -212,8 +217,17 @@ export default function CreateTokensForm({
               Your new Access Token has been created. Please save it securely.
             </Text>
             <Text mt={5}>
-              <b>Token:</b> {token}
+              <b>Token:</b>
+              <APIKeyText showAsClearText>
+                {`********${token.slice(-15)}`}
+              </APIKeyText>
             </Text>
+            <OrbisButton
+              onClick={() => navigator.clipboard.writeText(token)}
+              mt={5}
+            >
+              Copy Token
+            </OrbisButton>
           </ModalBody>
           <ModalFooter>
             <OrbisButton onClick={closeModal}>Close</OrbisButton>

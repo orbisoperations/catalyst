@@ -16,7 +16,7 @@ export const TopBar = (props: TopBarProps) => {
   const { title, actions, customActions, ...boxProps } = props;
   const { user } = useUser();
   const [orgName, setOrgName] = useState<string>(
-    localStorage.getItem("org") ?? ""
+    window.localStorage.getItem("org") ?? ""
   );
 
   useEffect(() => {
