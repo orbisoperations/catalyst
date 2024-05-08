@@ -3,8 +3,16 @@
 import { OrbisButton } from "@/components/elements";
 import { DetailedView } from "@/components/layouts";
 import { navigationItems } from "@/utils/nav.utils";
-import { Flex, FormControl, Grid, Input, Textarea } from "@chakra-ui/react";
+import {
+  Flex,
+  FormControl,
+  Grid,
+  Input,
+  Text,
+  Textarea,
+} from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { useUser } from "../contexts/User/UserContext";
 type CreateInviteProps = {
   sendInvite: (
@@ -17,7 +25,8 @@ export default function CreateInviteComponent({
   sendInvite,
 }: CreateInviteProps) {
   const router = useRouter();
-  const { token } = useUser();
+  const { token, user } = useUser();
+  const [displayError, setDisplayError] = useState<boolean>(false);
   return (
     <DetailedView
       topbartitle="Invite Partner"
@@ -31,8 +40,18 @@ export default function CreateInviteComponent({
         action={(formData) => {
           const org = formData.get("orgId");
           const message = formData.get("message");
+          if (org === user?.custom.org) {
+            setDisplayError(true);
+            return;
+          }
           if (typeof org === "string" && typeof message === "string") {
-            sendInvite(org, token ?? "", message).then((res) => {
+            sendInvite(
+              org,
+              token ?? "",
+              message.trim() === ""
+                ? user?.custom.org + " invited you to partner with them"
+                : message
+            ).then((res) => {
               router.back();
             });
           } else {
@@ -41,9 +60,25 @@ export default function CreateInviteComponent({
         }}
       >
         <Grid gap={5}>
-          <FormControl>
+          <FormControl isRequired>
             <label htmlFor="orgId">Organization ID</label>
-            <Input rounded={"md"} name="orgId" type="text" />
+            <Input
+              rounded={"md"}
+              name="orgId"
+              type="text"
+              onChange={() => setDisplayError(false)}
+            />
+            {displayError && (
+              <Text
+                color={"red"}
+                fontSize={"sm"}
+                mt={"1em"}
+                fontWeight={"semibold"}
+                textAlign={"center"}
+              >
+                You cannot invite your own organization
+              </Text>
+            )}
           </FormControl>
           <FormControl>
             <label htmlFor="message">Invite Message</label>
