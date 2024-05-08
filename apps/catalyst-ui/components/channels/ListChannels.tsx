@@ -24,7 +24,7 @@ export default function DataChannelListComponents({
 }: ListChannelsProps) {
   const router = useRouter();
   const [channels, setChannels] = useState<any[]>([]);
-  const { token } = useUser();
+  const { token, user } = useUser();
   useEffect(() => {
     if (token) {
       listChannels(token).then((data) => {
@@ -70,17 +70,26 @@ export default function DataChannelListComponents({
                     name: string;
                     description: string;
                     endpoint: string;
+                    creatorOrganization: string;
                   },
                   index
                 ) => {
                   return [
-                    <Flex key={"1"} justifyContent={"space-between"}>
+                    <Flex
+                      key={"1"}
+                      justifyContent={"space-between"}
+                      alignItems={"center"}
+                      gap={2}
+                      justifyItems={"center"}
+                    >
                       <OpenButton
                         onClick={() => router.push("/channels/" + channel.id)}
                       >
                         {channel.name}
                       </OpenButton>
-                      <OrbisBadge>Shared</OrbisBadge>
+                      {channel.creatorOrganization === user?.custom.org && (
+                        <OrbisBadge>Shared</OrbisBadge>
+                      )}
                     </Flex>,
                     channel.description,
                     channel.endpoint,

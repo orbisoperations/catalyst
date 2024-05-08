@@ -4,6 +4,7 @@ import { Badge, Flex } from "@chakra-ui/layout";
 import {
   Avatar,
   AvatarProps,
+  Icon,
   Menu,
   MenuButton,
   MenuItem,
@@ -18,6 +19,7 @@ import {
   DocumentDuplicateIcon,
   EyeIcon,
   EyeSlashIcon,
+  PencilSquareIcon,
   PlusIcon,
   QuestionMarkCircleIcon,
   ShareIcon,
@@ -51,7 +53,7 @@ export const BackButton = (props: ButtonProps) => {
       {...props}
       padding={".5em"}
     >
-      <ArrowLeftIcon />
+      <Icon as={ArrowLeftIcon} />
     </Button>
   );
 };
@@ -66,7 +68,11 @@ export const HelpButton = (props: ButtonProps) => {
       {...props}
       padding={".1em"}
     >
-      <QuestionMarkCircleIcon />
+      <Icon
+        w={"20px !important"}
+        h={"20px !important"}
+        as={QuestionMarkCircleIcon}
+      />
     </Button>
   );
 };
@@ -131,7 +137,7 @@ export const TrashButton = (props: ButtonProps) => {
       {...props}
       padding={".5em"}
     >
-      <TrashIcon />
+      <Icon as={TrashIcon} />
     </Button>
   );
 };
@@ -145,7 +151,7 @@ export const CreateButton = (props: ButtonProps) => {
       {...props}
       padding={".5em"}
     >
-      <PlusIcon />
+      <Icon as={PlusIcon} />
     </Button>
   );
 };
@@ -169,9 +175,9 @@ export const CopyButton = (props: ButtonProps & { copytext?: string }) => {
         padding={".5em"}
       >
         {!copied ? (
-          <DocumentDuplicateIcon />
+          <Icon as={DocumentDuplicateIcon} />
         ) : (
-          <CheckCircleIcon display={copied ? "block" : "none"} />
+          <Icon as={CheckCircleIcon} display={copied ? "block" : "none"} />
         )}
       </Button>
     </Tooltip>
@@ -187,7 +193,7 @@ export const GenerateButton = (props: ButtonProps) => {
       {...props}
       padding={".5em"}
     >
-      <ArrowPathIcon />
+      <Icon as={ArrowPathIcon} />
     </Button>
   );
 };
@@ -197,6 +203,10 @@ export const DisplayButton = (
 ) => {
   const { visible, toggletext, ...rest } = props;
   const [visibleStatus, setVisible] = useState(visible);
+  function onCLick() {
+    setVisible((prev) => !prev);
+    toggletext();
+  }
   return (
     <Button
       colorScheme="blue"
@@ -206,19 +216,9 @@ export const DisplayButton = (
       padding={".5em"}
     >
       {visibleStatus ? (
-        <EyeSlashIcon
-          onClick={() => {
-            setVisible((prev) => !prev);
-            toggletext();
-          }}
-        />
+        <Icon as={EyeIcon} onClick={onCLick} />
       ) : (
-        <EyeIcon
-          onClick={() => {
-            setVisible((prev) => !prev);
-            toggletext();
-          }}
-        />
+        <Icon as={EyeSlashIcon} onClick={onCLick} />
       )}
     </Button>
   );
@@ -233,7 +233,7 @@ export const ShareButton = (props: ButtonProps) => {
       {...props}
       padding={".5em"}
     >
-      <ShareIcon />
+      <Icon as={ShareIcon} />
     </Button>
   );
 };
@@ -248,26 +248,42 @@ export const CloseButton = (props: ButtonProps) => {
       {...props}
       padding={".5em"}
     >
-      <XMarkIcon />
+      <Icon as={XMarkIcon} />
+    </Button>
+  );
+};
+
+export const EditButton = (props: ButtonProps) => {
+  return (
+    <Button
+      colorScheme="blue"
+      borderRadius={"100%"}
+      size={"sm"}
+      {...props}
+      padding={".5em"}
+    >
+      <Icon as={PencilSquareIcon} />
     </Button>
   );
 };
 
 export const OpenButton = (props: ButtonProps) => {
   return (
-    <Flex align={"center"} gap={1}>
-      <Button
-        borderRadius={"100%"}
-        variant={"ghost"}
-        colorScheme="blue"
-        {...props}
-        padding={".5em"}
-        size={"sm"}
-      >
-        <ArrowTopRightOnSquareIcon />
-      </Button>
+    <Button
+      rounded={"none"}
+      variant={"ghost"}
+      colorScheme="blue"
+      {...props}
+      padding={".5em"}
+      size={"sm"}
+      display={"flex"}
+      alignItems={"center"}
+      justifyContent={"center"}
+      gap={2}
+    >
+      <Icon as={ArrowTopRightOnSquareIcon} />
       {props.children}
-    </Flex>
+    </Button>
   );
 };
 
