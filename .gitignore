@@ -183,3 +183,4 @@ packages/schema/flatten_migrations/
 **/**/generated
 
 .turbo
+.vscode/settings.json
