@@ -43,7 +43,6 @@ export default function PartnerDetailedComponent({
       showspinner={!token}
       actions={<></>}
       headerTitle={{
-        adjacent: <OrbisBadge>Hello</OrbisBadge>,
         text: (params.id as string) ?? "",
       }}
       positionChildren="bottom"
@@ -52,26 +51,30 @@ export default function PartnerDetailedComponent({
     >
       <Flex gap={10}>
         <OrbisCard pb={0} header={"Shared Channels"} flex={2}>
-          <OrbisTable
-            headers={["Channel"]}
-            rows={channels.map((channel, index) => [
-              <Flex
-                key={index}
-                justifyContent={"space-between"}
-                alignItems={"center"}
-              >
-                <OpenButton
-                  onClick={() => router.push(`/channels/${channel.id}`)}
+          {channels.length > 0 ? (
+            <OrbisTable
+              headers={["Channel"]}
+              rows={channels.map((channel, index) => [
+                <Flex
+                  key={index}
+                  justifyContent={"space-between"}
+                  alignItems={"center"}
                 >
-                  {channel.name}
-                </OpenButton>
-                <Text>{channel.description}</Text>
-                <APIKeyText allowCopy showAsClearText>
-                  {channel.id}
-                </APIKeyText>
-              </Flex>,
-            ])}
-          />
+                  <OpenButton
+                    onClick={() => router.push(`/channels/${channel.id}`)}
+                  >
+                    {channel.name}
+                  </OpenButton>
+                  <Text>{channel.description}</Text>
+                  <APIKeyText allowCopy showAsClearText>
+                    {channel.id}
+                  </APIKeyText>
+                </Flex>,
+              ])}
+            />
+          ) : (
+            <Text my={5}>{params.id} is not sharing any channels with you</Text>
+          )}
         </OrbisCard>
       </Flex>
     </DetailedView>

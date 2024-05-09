@@ -103,7 +103,6 @@ export default function PartnersListComponent({
         </Flex>
       }
       headerTitle={{
-        adjacent: <OrbisBadge>Hello</OrbisBadge>,
         text: "Partners",
       }}
       positionChildren="bottom"
@@ -111,69 +110,77 @@ export default function PartnersListComponent({
       table={
         <Flex gap={5}>
           <OrbisCard header={"Partners"} pb={0} flex={3} h="min-content">
-            <OrbisTable
-              headers={["Partner"]}
-              rows={partners.map((partner) => [
-                <Box key={partner.id}>
-                  <Flex justifyContent={"space-between"}>
-                    <OpenButton
-                      onClick={() =>
-                        router.push(
-                          "/partners/" +
-                            (partner.sender === user?.custom.org
-                              ? partner.receiver
-                              : partner.sender)
-                        )
-                      }
-                    >
-                      {partner.sender === user?.custom.org
-                        ? partner.receiver
-                        : partner.sender}
-                    </OpenButton>
-                    <Flex gap={10} align={"center"}>
-                      <Switch
-                        colorScheme="green"
-                        defaultChecked={partner.isActive}
-                        onChange={() => {
-                          togglePartnership(partner.id, token ?? "").then(
-                            fetchInvites
-                          );
-                        }}
-                      />
-                      <TrashButton
-                        onClick={() => {
-                          setSelectedPartner(partner);
-                          onOpen();
-                        }}
-                      />
+            {partners.length > 0 ? (
+              <OrbisTable
+                headers={["Partner"]}
+                rows={partners.map((partner) => [
+                  <Box key={partner.id}>
+                    <Flex justifyContent={"space-between"}>
+                      <OpenButton
+                        onClick={() =>
+                          router.push(
+                            "/partners/" +
+                              (partner.sender === user?.custom.org
+                                ? partner.receiver
+                                : partner.sender)
+                          )
+                        }
+                      >
+                        {partner.sender === user?.custom.org
+                          ? partner.receiver
+                          : partner.sender}
+                      </OpenButton>
+                      <Flex gap={10} align={"center"}>
+                        <Switch
+                          colorScheme="green"
+                          defaultChecked={partner.isActive}
+                          onChange={() => {
+                            togglePartnership(partner.id, token ?? "").then(
+                              fetchInvites
+                            );
+                          }}
+                        />
+                        <TrashButton
+                          onClick={() => {
+                            setSelectedPartner(partner);
+                            onOpen();
+                          }}
+                        />
+                      </Flex>
                     </Flex>
-                  </Flex>
-                </Box>,
-              ])}
-              tableProps={{}}
-            />
+                  </Box>,
+                ])}
+                tableProps={{}}
+              />
+            ) : (
+              <Text my={5}>No Partners</Text>
+            )}
           </OrbisCard>
           <OrbisCard
             header={`Invitations (${invitations.length})`}
             h={"min-content"}
             flex={2}
           >
-            <Stack divider={<StackDivider />}>
-              {invitations.map((invitation) => (
-                <StackItem key={invitation.id}>
-                  <OpenButton
-                    onClick={() =>
-                      router.push(`/partners/invite/accept/${invitation.id}`)
-                    }
-                  >
-                    <OrgInviteMessage
-                      org={user?.custom.org}
-                      invite={invitation}
-                    />
-                  </OpenButton>
-                </StackItem>
-              ))}
-            </Stack>
+            {invitations.length > 0 ? (
+              <Stack divider={<StackDivider />}>
+                {invitations.map((invitation) => (
+                  <StackItem key={invitation.id}>
+                    <OpenButton
+                      onClick={() =>
+                        router.push(`/partners/invite/accept/${invitation.id}`)
+                      }
+                    >
+                      <OrgInviteMessage
+                        org={user?.custom.org}
+                        invite={invitation}
+                      />
+                    </OpenButton>
+                  </StackItem>
+                ))}
+              </Stack>
+            ) : (
+              <Text mt={5}>No Invitations</Text>
+            )}
           </OrbisCard>
         </Flex>
       }

@@ -1,6 +1,6 @@
 "use client";
+import { rotateJWTKeyMaterial } from "@/app/actions/tokens";
 import {
-  APIKeyText,
   CreateButton,
   OpenButton,
   OrbisBadge,
@@ -10,16 +10,12 @@ import {
 } from "@/components/elements";
 import { ListView } from "@/components/layouts";
 import { navigationItems } from "@/utils/nav.utils";
+import { IssuedJWTRegistry } from "@catalyst/schema_zod";
 import { Flex } from "@chakra-ui/layout";
-import { useRouter } from "next/navigation";
 import { Card, CardBody, Text } from "@chakra-ui/react";
-import { rotateJWTKeyMaterial } from "@/app/actions/tokens";
-import { useUser } from "../contexts/User/UserContext";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import {
-  IssuedJWTRegistry,
-  IssuedJWTRegistryActionResponse,
-} from "@catalyst/schema_zod";
+import { useUser } from "../contexts/User/UserContext";
 
 type ListIssuedJWTRegistryProps = {
   listIJWTRegistry: (token: string) => Promise<IssuedJWTRegistry[]>;
@@ -61,7 +57,6 @@ export default function APIKeysComponent({
       }
       topbaractions={navigationItems}
       headerTitle={{
-        adjacent: <OrbisBadge>Hello</OrbisBadge>,
         text: "API Keys",
       }}
       positionChildren="top"
