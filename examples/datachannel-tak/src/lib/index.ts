@@ -9,7 +9,8 @@ export async function runTask(env: any, ctx: any) {
 
 	const gatewayClient = new CatalystGatewayClient(env);
 
-		const sendStuffToTak = async (env: any) => {
+		const sendStuffToTak = async (env: any, client: CatalystGatewayClient) => {
+			const pointUUIDs = new Map<string, number>()
 			const data = await gatewayClient.useADSBData();
 
 			//console.log({data});
@@ -52,6 +53,7 @@ export async function runTask(env: any, ctx: any) {
 					return Math.round(meters);
 				}
 
+				pointUUIDs.set(item.hex, stale.getTime())
 				const cotEvent = {
 					event: {
 						_attributes: {
@@ -92,29 +94,14 @@ export async function runTask(env: any, ctx: any) {
 				return xml;
 			})
 			const earthquakeCOTEvents = data.earthquakes.map((item: any) => {
+				let stale = new Date(item.expiry);
 
-				const now: string = new Date().toISOString();
-
-
-				let stale = new Date(now);
-				stale.setSeconds(stale.getSeconds() + TTL_S);
-				//console.log(item.alt_geom);
-
-				// ADSB data returns altitude in feet and tak reads it in meters
-				function feetToMeters(feet?: number): number {
-					if(!feet) {
-						return 0;
-					}
-					const metersPerFoot = 0.3048;
-					const meters = feet * metersPerFoot;
-					return Math.round(meters);
-				}
-
+				pointUUIDs.set(item.UUID, stale.getTime())
 				const cotEvent = {
 					event: {
 						_attributes: {
 							version: '2.0',
-							uid: crypto.randomUUID(),
+							uid: item.UUID,
 							time: now,
 							start: now,
 							how: 'm-g',
@@ -134,9 +121,9 @@ export async function runTask(env: any, ctx: any) {
 							}
 						},
 						detail: {
-							__group: {
+							contact: {
 								_attributes: {
-									name: `Earthquake Magnitude: ${item.LocalMagnitude}`
+									callsign: `Earthquake Magnitude: ${item.LocalMagnitude}`
 								}
 							},
 						}
@@ -148,28 +135,14 @@ export async function runTask(env: any, ctx: any) {
 
 				const xml = convert.js2xml(cotEvent, options);
 
-				console.log({xml});
+				//console.log({xml});
 				return xml;
 			})
 			const lineCOTEvents = data.pings.map((item: any) => {
 
-				const now: string = new Date().toISOString();
+				let stale = new Date(item.expiry);
 
-
-				let stale = new Date(now);
-				stale.setSeconds(stale.getSeconds() + TTL_S);
-				//console.log(item.alt_geom);
-
-				// ADSB data returns altitude in feet and tak reads it in meters
-				function feetToMeters(feet?: number): number {
-					if(!feet) {
-						return 0;
-					}
-					const metersPerFoot = 0.3048;
-					const meters = feet * metersPerFoot;
-					return Math.round(meters);
-				}
-
+				pointUUIDs.set(item.UID, stale.getTime())
 				const cotEvent = {
 					event: {
 						_attributes: {
@@ -205,7 +178,7 @@ export async function runTask(env: any, ctx: any) {
 
 				const xml = convert.js2xml(cotEvent, options);
 
-				console.log({xml});
+				//console.log({xml});
 				return xml;
 			})
 
@@ -230,10 +203,12 @@ export async function runTask(env: any, ctx: any) {
 				}),
 			]);
 			console.log("sent airplane, earthquake txn")
-			console.log(lineCOTEvents)
+			//console.log(lineCOTEvents)
 
 			await socket.close();
+			console.log("sent points to tak: ", pointUUIDs.size)
+			return pointUUIDs
 		};
 
-		await ctx.waitUntil(sendStuffToTak(env));
+		return await sendStuffToTak(env, gatewayClient);
 }

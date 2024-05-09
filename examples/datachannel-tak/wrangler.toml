@@ -4,14 +4,16 @@ main = "src/index.ts"
 compatibility_date = "2024-04-05"
 node_compat = true
 account_id = "3be6f7bb0cc73869d555e1156586c1f2"
-workers_dev = true
+workers_dev = false
 
 [vars]
 #TAK_HOST = "https://tak-server-2-broken-haze-8097"
 CATALYST_GATEWAY_URL = "https://gateway.catalyst.devintelops.io/graphql"
 TAK_HOST = "https://tak-server-2-broken-haze-8097.fly.dev"
+TAK_UI ="https://tak-server-2-auth-proxy.fly.dev/"
 TAK_PORT = 8999
 ENABLED = "true"
+NAMESPACE =  "broken-haze"
 
 [dev]
 port = 4005
@@ -27,16 +29,25 @@ class_name = "TAKDataManager"
 # Durable Object migrations.
 # Docs: https://developers.cloudflare.com/workers/learning/using-durable-objects#configure-durable-object-classes-with-migrations
 [[migrations]]
-tag = "v1"
-new_classes = ["TAKDataManager"]
+tag = "v2"
 
 
 [env.staging.vars]
 TAK_HOST = "https://tak-server-2-broken-haze-8097.fly.dev"
 TAK_PORT = 8999
+TAK_UI ="https://tak-server-2-auth-proxy.fly.dev/"
+#TAK_USER
+#TAK_PASSWORD
 ENABLED = "true"
 NAMESPACE =  "broken-haze"
 CATALYST_GATEWAY_URL = "https://gateway.catalyst.devintelops.io/graphql"
+#CATALYST_GATEWAY_TOKEN
+
+[[env.staging.routes]]
+pattern = "datachannel-tak-broken-haze.catalyst.devintelops.io"
+custom_domain = true
+
+
 
 [[env.staging.durable_objects.bindings]]
 name = "TAK_MANAGER"

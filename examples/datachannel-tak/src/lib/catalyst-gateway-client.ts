@@ -35,6 +35,8 @@ export class CatalystGatewayClient {
 					EpicenterLatitude
 					EpicenterLongitude
 					LocalMagnitude
+					expiry
+					UUID
 				}
     	}
   `;
@@ -50,15 +52,15 @@ export class CatalystGatewayClient {
 
 		const {data, errors} = await response.json() as any;
 
-		console.log({data});
+		//console.log({data});
 
 		if (errors) {
 			console.error('GraphQL Errors: ', JSON.stringify(errors));
 			return;
 		}
 
-		console.log('Aircraft within distance:');
-		console.log(JSON.stringify(data, null, 2));
+		//console.log('Aircraft within distance:');
+		//console.log(JSON.stringify(data, null, 2));
 		return data;
 	}
 }
