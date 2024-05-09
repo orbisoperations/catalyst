@@ -30,7 +30,9 @@ export type Token = z.infer<typeof Token>;
 export const User = z.object({
   userId: UserId,
   orgId: OrgId,
-  zitadelRoles: z.enum(["platform-admin", "org-admin", "org-user"]).array(),
+  zitadelRoles: z
+    .enum(["platform-admin", "org-admin", "org-user", "data-custodian"])
+    .array(),
 });
 
 export type User = z.infer<typeof User>;
