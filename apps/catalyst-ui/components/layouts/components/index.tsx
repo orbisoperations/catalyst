@@ -28,7 +28,7 @@ export const TopBar = (props: TopBarProps) => {
   }, [user?.custom.org]);
 
   return (
-    <Box position={"sticky"} top={0} bg={"white"}>
+    <Box position={"sticky"} top={0} bg={"white"} zIndex={10}>
       <Flex
         {...boxProps}
         shadow={"md"}
@@ -49,11 +49,13 @@ export const TopBar = (props: TopBarProps) => {
             {customActions}
           </Flex>
         )}
-         <ProfileButton
-            avatarProps= {{ name: user?.email ? user.email : "User email"}}
-            userInfo = {{userEmail: user?.email ? user.email : "", organization: orgName ? orgName : ""}}
-          >
-        </ProfileButton>
+        <ProfileButton
+          avatarProps={{ name: user?.email ? user.email : "User email" }}
+          userInfo={{
+            userEmail: user?.email ? user.email : "",
+            organization: orgName ? orgName : "",
+          }}
+        ></ProfileButton>
       </Flex>
     </Box>
   );
