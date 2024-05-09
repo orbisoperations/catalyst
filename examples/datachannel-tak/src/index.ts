@@ -16,7 +16,8 @@ import {DurableObject, WorkerEntrypoint} from "cloudflare:workers"
 import { createSchema, createYoga } from "graphql-yoga";
 import { Context, Hono } from "hono";
 import {createRemoteJWKSet, jwtVerify} from "jose"
-
+import { stitchingDirectives } from '@graphql-tools/stitching-directives';
+const { stitchingDirectivesTypeDefs, stitchingDirectivesValidator } = stitchingDirectives();
 
 
 export interface Env {
@@ -80,7 +81,6 @@ export class TAKDataManager extends DurableObject<Env> {
 
 
 			// get all points on taK
-			console.log(this.env.TAK_UI, this.env.TAK_USER, this.env.TAK_PASSWORD)
 			const unitResp = await fetch(this.env.TAK_UI + "unit", {
 				method: "GET",
 				headers: {
@@ -151,45 +151,6 @@ type bindings = {
 
 const app: Hono<{Bindings: bindings, Variables: Variables}> = new Hono()
 
-const typeDefs = `
-type TAKMarkers {
-    uid: String!
-    callsign: String!
-    lat: Float!
-    lon: Float!
-    expiry: Float!
-    namespace: String!
-}
-
-type Query {
-    TAKMarkers: [TAKMarkers!]!
-    _sdl: String!
-}`
-
-const schema = createSchema({
-	typeDefs: typeDefs,
-	resolvers: {
-		Query: {
-			_sdl: () => typeDefs,
-			TAKMarkers: async(_,{},c: Context) => {
-				console.log("makrers handler", c.env.ENABLED)
-				const enabled = c.env.ENABLED === "true"
-				if (!enabled || !Boolean(c.get('valid'))) return []
-
-				const id = c.env.TAK_MANAGER.idFromName(c.env.NAMESPACE!)
-				const stub: DurableObjectStub<TAKDataManager> = c.env.TAK_MANAGER.get(id)
-				console.log(await stub.getTAKPoints())
-				return (await stub.getTAKPoints()).map(point => {
-					return {
-						namespace: c.env.NAMESPACE!,
-						...point
-					}
-				})
-			}
-		}
-	}
-})
-
 app.use("*", async (c, next) => {
 	const id = c.env.TAK_MANAGER.idFromName(c.env.NAMESPACE!)
 	const stub = c.env.TAK_MANAGER.get(id)
@@ -208,6 +169,68 @@ app.use("*", async (c, next) => {
 	await next()
 })
 app.use("/graphql", async (c) => {
+	const typeDefs = c.env.NAMESPACE === "broken-haze" ? `
+type TAK2Marker {
+    uid: ID!
+    callsign: String!
+    lat: Float!
+    lon: Float!
+    expiry: Float!
+    namespace: String!
+}
+
+type Query {
+    TAK2Markers: [TAK2Marker!]!
+    _sdl: String!
+}` :
+		`
+type TAK1Marker {
+    uid: ID!
+    callsign: String!
+    lat: Float!
+    lon: Float!
+    expiry: Float!
+    namespace: String!
+}
+
+type Query {
+    TAK1Markers: [TAK1Marker!]!
+    _sdl: String!
+}`
+
+	console.log(typeDefs)
+	const resFunc = async(_,{},c: Context) => {
+		console.log("makrers handler", c.env.ENABLED)
+		const enabled = c.env.ENABLED === "true"
+		if (!enabled || !Boolean(c.get('valid'))) return []
+
+		const id = c.env.TAK_MANAGER.idFromName(c.env.NAMESPACE!)
+		const stub: DurableObjectStub<TAKDataManager> = c.env.TAK_MANAGER.get(id)
+		console.log(await stub.getTAKPoints())
+		return (await stub.getTAKPoints()).map(point => {
+			return {
+				namespace: c.env.NAMESPACE!,
+				...point
+			}
+		})
+	}
+	const resolver = c.env.NAMESPACE === "broken-haze" ?
+		{
+			TAK2Markers: resFunc
+		} :
+		{
+			TAK1Markers: resFunc
+		}
+	const schema = createSchema({
+		typeDefs: typeDefs,
+		resolvers: {
+			Query: {
+				_sdl: () => typeDefs,
+				...resolver
+				}
+			}
+		})
+
 	const JWKS = createRemoteJWKSet(new URL(c.env.CATALYST_GATEWAY_URL.replace("graphql", ".well-known/jwks.json")))
 	const token = c.req.header("Authorization") ? c.req.header("Authorization")!.split(" ")[1] : ""
 	let valid = false
