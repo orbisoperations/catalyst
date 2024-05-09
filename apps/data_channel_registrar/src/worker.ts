@@ -99,6 +99,13 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
         success: true,
       });
     } else if (token.catalystToken) {
+      // datachannels cant be read via catalyst if they are disabled
+      if (channel && channel.accessSwitch === false) {
+        return PermissionCheckResponse.parse({
+          success: false,
+          error: "catalyst cannot access disabled data channels",
+        });
+      }
       // validate JWT here
       const jwtEntity: JWTParsingResponse = await this.env.AUTHX_TOKEN_API.validateToken(
         token.catalystToken,
