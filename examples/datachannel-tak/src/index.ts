@@ -38,7 +38,6 @@ export class TAKDataManager extends DurableObject<Env> {
 		if (enable) {
 			console.log("enabling alarm")
 			if (await this.ctx.storage.getAlarm() === null) {
-				this.ctx.waitUntil(this.alarm())
 				await this.ctx.storage.setAlarm(Date.now() + ALARM_MS)
 			} else {
 				console.log("alarm is already enabled")
@@ -76,8 +75,6 @@ export class TAKDataManager extends DurableObject<Env> {
 			await this.ctx.blockConcurrencyWhile(async () => {
 				await this.ctx.storage.put("catalyst-uuids", currentUUIDs)
 			})
-			// You could store this result in KV, write to a D1 Database, or publish to a Queue.
-			// In this template, we'll just log the result:
 			console.log(`sent stuff to tak`);
 			console.log("catalyst graphlq uuids: ", currentUUIDs.size)
 
@@ -89,35 +86,38 @@ export class TAKDataManager extends DurableObject<Env> {
 					"Authorization": `Basic ${btoa(this.env.TAK_USER + ":" + this.env.TAK_PASSWORD)}`
 				}
 			})
-
-			console.log(unitResp)
-			const allTAKPoints: {
-				uid: string,
-				callsign: string,
-				lat: number,
-				lon: number,
-				stale_time: string
-			}[] = await unitResp.json()
-			console.log("all points on the map: ", allTAKPoints.length)
-			const allTAKPointsUnique = new Map<string, {
-				uid: string,
-				callsign: string,
-				lat: number,
-				lon: number,
-				stale_time: string
-			}>()
-			allTAKPoints.forEach(point => {
-				allTAKPointsUnique.set(point.uid, point)
-			})
-			console.log("unique points on map: ", allTAKPointsUnique.size)
-			//console.log(allTAKPoints)
-			const takGenPoints = Array.from(allTAKPointsUnique.entries()).filter(([uid, point]) => {
-				// if point is not being tracked and still valid
-				return !currentUUIDs.has(uid) && (new Date(point.stale_time).getTime() > Date.now())
-			}).map(([key, point]) => point)
-			console.log("tak generated point: ", currentUUIDs.size, takGenPoints.length, allTAKPointsUnique.size)
-			console.log(takGenPoints)
-			await this.ctx.storage.put("tak-uuids", takGenPoints)
+			if (unitResp.status != 200) {
+				console.log("error with tak data points", await unitResp.text())
+			} else {
+				console.log("got tak data points")
+				const allTAKPoints: {
+					uid: string,
+					callsign: string,
+					lat: number,
+					lon: number,
+					stale_time: string
+				}[] = await unitResp.json()
+				console.log("all points on the map: ", allTAKPoints.length)
+				const allTAKPointsUnique = new Map<string, {
+					uid: string,
+					callsign: string,
+					lat: number,
+					lon: number,
+					stale_time: string
+				}>()
+				allTAKPoints.forEach(point => {
+					allTAKPointsUnique.set(point.uid, point)
+				})
+				console.log("unique points on map: ", allTAKPointsUnique.size)
+				//console.log(allTAKPoints)
+				const takGenPoints = Array.from(allTAKPointsUnique.entries()).filter(([uid, point]) => {
+					// if point is not being tracked and still valid
+					return !currentUUIDs.has(uid) && (new Date(point.stale_time).getTime() > Date.now())
+				}).map(([key, point]) => point)
+				console.log("tak generated point: ", currentUUIDs.size, takGenPoints.length, allTAKPointsUnique.size)
+				console.log(takGenPoints)
+				await this.ctx.storage.put("tak-uuids", takGenPoints)
+			}
 		} catch (e) {
 			console.error(e)
 		}
@@ -125,7 +125,7 @@ export class TAKDataManager extends DurableObject<Env> {
 	}
 
 	async getTAKPoints() {
-		return await this.ctx.storage.get<{uid: string, callsign: string, lat: number, lon: number, stale_time: string}[]>("tak-uuids") ??
+		return (await this.ctx.storage.get<{uid: string, callsign: string, lat: number, lon: number, stale_time: string}[]>("tak-uuids")) ??
 			[] as {uid: string, callsign: string, lat: number, lon: number, stale_time: string}[]
 	}
 }
@@ -171,11 +171,13 @@ const schema = createSchema({
 		Query: {
 			_sdl: () => typeDefs,
 			TAKMarkers: async(_,{},c: Context) => {
+				console.log("makrers handler", c.env.ENABLED)
 				const enabled = c.env.ENABLED === "true"
 				if (!enabled || !Boolean(c.get('valid'))) return []
 
 				const id = c.env.TAK_MANAGER.idFromName(c.env.NAMESPACE!)
 				const stub: DurableObjectStub<TAKDataManager> = c.env.TAK_MANAGER.get(id)
+				console.log(await stub.getTAKPoints())
 				return (await stub.getTAKPoints()).map(point => {
 					return {
 						namespace: c.env.NAMESPACE!,
@@ -187,28 +189,7 @@ const schema = createSchema({
 	}
 })
 
-app.use("/graphql", async (c) => {
-	const JWKS = createRemoteJWKSet(new URL(c.env.CATALYST_GATEWAY_URL.replace("graphql", ".well-known/jwks.json")))
-	const token = c.req.header("Authorization") ? c.req.header("Authorization")!.split(" ")[1] : ""
-	let valid = false
-	try {
-		const { payload, protectedHeader } = await jwtVerify(token, JWKS)
-		valid = payload.claims != undefined && (payload.claims as string[]).includes(c.env.CATALYST_DC_ID)
-
-	} catch (e) {
-		console.error("error validating jwt: ", e)
-		valid = false
-	}
-	c.set('valid', valid)
-	const yoga = createYoga({
-		schema: schema,
-		graphqlEndpoint: "/graphql",
-	});
-	console.log("graphql handler")
-	return yoga.handle(c.req.raw as Request, c);
-})
-
-app.use('/', async (c) => {
+app.use("*", async (c, next) => {
 	const id = c.env.TAK_MANAGER.idFromName(c.env.NAMESPACE!)
 	const stub = c.env.TAK_MANAGER.get(id)
 	if (c.env.ENABLED === "true") {
@@ -223,7 +204,30 @@ app.use('/', async (c) => {
 		console.log("disabled alarm")
 		await stub.alarmInit(false)
 	}
+	await next()
+})
+app.use("/graphql", async (c) => {
+	const JWKS = createRemoteJWKSet(new URL(c.env.CATALYST_GATEWAY_URL.replace("graphql", ".well-known/jwks.json")))
+	const token = c.req.header("Authorization") ? c.req.header("Authorization")!.split(" ")[1] : ""
+	let valid = false
+	try {
+		const { payload, protectedHeader } = await jwtVerify(token, JWKS)
+		valid = payload.claims != undefined && (payload.claims as string[]).includes(c.env.CATALYST_DC_ID)
+		console.log("user is able to access claim: ", valid)
+	} catch (e) {
+		console.error("error validating jwt: ", e)
+		valid = false
+	}
+	c.set('valid', valid)
+	const yoga = createYoga({
+		schema: schema,
+		graphqlEndpoint: "/graphql",
+	});
+	console.log("graphql handler")
+	return yoga.handle(c.req.raw as Request, c);
+})
 
+app.use('/', async (c) => {
 	return c.text("ok", 200)
 })
 export default class TAKWorker extends WorkerEntrypoint<Env>{
