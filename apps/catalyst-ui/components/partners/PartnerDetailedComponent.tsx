@@ -1,30 +1,20 @@
 "use client";
 export const runtime = "edge";
 import {
+  APIKeyText,
   OpenButton,
   OrbisBadge,
-  OrbisButton,
   OrbisCard,
   OrbisTable,
-  TrashButton,
 } from "@/components/elements";
 import { ListView } from "@/components/layouts";
 import { navigationItems } from "@/utils/nav.utils";
 import { DataChannel } from "@catalyst/schema_zod";
-import { Box, Flex, Stack, StackDivider } from "@chakra-ui/layout";
-import {
-  Modal,
-  ModalBody,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  Switch,
-  useDisclosure,
-} from "@chakra-ui/react";
+import { Flex } from "@chakra-ui/layout";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useUser } from "../contexts/User/UserContext";
+import { Text } from "@chakra-ui/layout";
 type PartnerDetailedComponentProps = {
   listPartnersChannels: (
     token: string,
@@ -64,12 +54,20 @@ export default function PartnerDetailedComponent({
             <OrbisTable
               headers={["Channel"]}
               rows={channels.map((channel, index) => [
-                <Flex key={index} justifyContent={"space-between"}>
+                <Flex
+                  key={index}
+                  justifyContent={"space-between"}
+                  alignItems={"center"}
+                >
                   <OpenButton
                     onClick={() => router.push(`/channels/${channel.id}`)}
                   >
                     {channel.name}
                   </OpenButton>
+                  <Text>{channel.description}</Text>
+                  <APIKeyText allowCopy showAsClearText>
+                    {channel.id}
+                  </APIKeyText>
                 </Flex>,
               ])}
               tableProps={{}}
