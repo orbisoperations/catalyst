@@ -10,6 +10,7 @@
 		"test": "bun test"
 	},
 	"dependencies": {
+		"@graphql-tools/stitching-directives": "^3.0.2",
 		"geo-route-generator": "^1.3.0",
 		"hono": "^4.3.3",
 		"jose": "^5.2.4",
