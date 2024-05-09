@@ -49,10 +49,11 @@ export const TopBar = (props: TopBarProps) => {
             {customActions}
           </Flex>
         )}
-        <ProfileButton
-          avatarProps={{ name: user?.email ?? "" }}
-          userInfo={{ userEmail: user?.email ?? "", organization: orgName }}
-        ></ProfileButton>
+         <ProfileButton
+            avatarProps= {{ name: user?.email ? user.email : "User email"}}
+            userInfo = {{userEmail: user?.email ? user.email : "", organization: orgName ? orgName : ""}}
+          >
+        </ProfileButton>
       </Flex>
     </Box>
   );
