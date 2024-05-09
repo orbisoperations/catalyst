@@ -29,6 +29,7 @@ export interface Env {
 	TAK_USER: string
 	TAK_PASSWORD: string
 	TAK_UI: string
+	CATALYST_DC_ID: string
 }
 
 const ALARM_MS = 28 * 1000 // 10s
@@ -121,6 +122,7 @@ type bindings = {
 	TAK_USER: string
 	TAK_PASSWORD: string
 	TAK_UI: string
+	CATALYST_DC_ID: string
 }
 
 const app: Hono<{Bindings: bindings, Variables: Variables}> = new Hono()
@@ -168,8 +170,8 @@ app.use("/graphql", async (c) => {
 	let valid = false
 	try {
 		const { payload, protectedHeader } = await jwtVerify(token, JWKS)
-		//valid = payload.claims != undefined && (payload.claims as string[]).includes(c.env.CATALYST_APP_ID)
-		valid = true
+		valid = payload.claims != undefined && (payload.claims as string[]).includes(c.env.CATALYST_DC_ID)
+
 	} catch (e) {
 		console.error("error validating jwt: ", e)
 		valid = false

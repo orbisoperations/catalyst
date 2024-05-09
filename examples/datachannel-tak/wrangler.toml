@@ -14,6 +14,7 @@ TAK_UI ="https://tak-server-2-auth-proxy.fly.dev/"
 TAK_PORT = 8999
 ENABLED = "true"
 NAMESPACE =  "broken-haze"
+CATALYST_DC_ID = "8a9c86ae-7ff2-4cca-9fe7-b72b54605c84"
 
 [dev]
 port = 4005
@@ -41,6 +42,7 @@ TAK_UI ="https://tak-server-2-auth-proxy.fly.dev/"
 ENABLED = "true"
 NAMESPACE =  "broken-haze"
 CATALYST_GATEWAY_URL = "https://gateway.catalyst.devintelops.io/graphql"
+CATALYST_DC_ID = "8a9c86ae-7ff2-4cca-9fe7-b72b54605c84"
 #CATALYST_GATEWAY_TOKEN
 
 [[env.staging.routes]]
