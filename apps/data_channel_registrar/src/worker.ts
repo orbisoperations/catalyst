@@ -62,6 +62,7 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
       success: true,
     });
   }
+
   async RPerms(token: Token, dataChannelId: string) {
     if (token.cfToken) {
       const user: User | undefined = await this.env.USERCACHE.getUser(token.cfToken);
@@ -106,9 +107,12 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
           error: parsedJWTEntity.data.error,
         });
       }
-
       const userId = parsedJWTEntity.data.entity!.split('/')[1];
-      const canRead = await this.env.AUTHZED.canReadFromDataChannel(dataChannelId, userId);
+      // The user must have read access to the data channel and the token must have the data channel id in the claims
+      const canRead =
+        parsedJWTEntity.data.claims.includes(dataChannelId) &&
+        (await this.env.AUTHZED.canReadFromDataChannel(dataChannelId, userId));
+
       if (!canRead) {
         return PermissionCheckResponse.parse({
           success: false,
@@ -126,6 +130,7 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
       error: 'catalyst did not recieve a token',
     });
   }
+
   async create(doNamespace: string, dataChannel: Omit<DataChannel, 'id'>, token: Token) {
     const checkResp = await this.CUDPerms(token);
     if (!checkResp.success) {
@@ -144,6 +149,7 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
       data: create,
     });
   }
+
   async update(doNamespace: string, dataChannel: DataChannel, token: Token) {
     console.log('updating data channel', dataChannel);
     const checkResp = await this.CUDPerms(token);
@@ -163,6 +169,7 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
       data: update,
     });
   }
+
   async read(doNamespace: string, dataChannelId: string, token: Token) {
     console.log('getting dc for user');
     const canRead = await this.RPerms(token, dataChannelId);
@@ -181,12 +188,13 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
       data: channel,
     });
   }
+
   async list(doNamespace: string, token: Token) {
-    console.log('running list operation');
     const { DO } = this.env;
     const doId = DO.idFromName(doNamespace);
     const stub = DO.get(doId);
     const list = await stub.list();
+
     const listWithPerms = (
       await Promise.all(
         list.map(async dc => {
@@ -200,12 +208,12 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
       .map(({ dataChannel }) => {
         return dataChannel;
       });
-    console.log('found datachannels for user', listWithPerms);
     return DataChannelActionResponse.parse({
       success: true,
       data: listWithPerms,
     });
   }
+
   async remove(doNamespace: string, dataChannelID: string, token: Token) {
     const checkResp = await this.CUDPerms(token);
     if (!checkResp.success) {
