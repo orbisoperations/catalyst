@@ -30,13 +30,14 @@ export class CatalystGatewayClient {
 					city
 					lat
 					lon
+					expiry
 				}
 				earthquakes {
 					EpicenterLatitude
 					EpicenterLongitude
 					LocalMagnitude
 					expiry
-					UUID
+					uuid
 				}
     	}
   `;
@@ -50,9 +51,10 @@ export class CatalystGatewayClient {
 			body: JSON.stringify({query}),
 		});
 
+		console.log("catalyst resp", response)
 		const {data, errors} = await response.json() as any;
 
-		//console.log({data});
+		console.log({data});
 
 		if (errors) {
 			console.error('GraphQL Errors: ', JSON.stringify(errors));
