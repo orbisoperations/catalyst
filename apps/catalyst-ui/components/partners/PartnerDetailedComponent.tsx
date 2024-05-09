@@ -7,7 +7,7 @@ import {
   OrbisCard,
   OrbisTable,
 } from "@/components/elements";
-import { ListView } from "@/components/layouts";
+import { DetailedView } from "@/components/layouts";
 import { navigationItems } from "@/utils/nav.utils";
 import { DataChannel } from "@catalyst/schema_zod";
 import { Flex } from "@chakra-ui/layout";
@@ -38,7 +38,7 @@ export default function PartnerDetailedComponent({
     }
   }, [params.id, token]);
   return (
-    <ListView
+    <DetailedView
       topbaractions={navigationItems}
       showspinner={!token}
       actions={<></>}
@@ -48,34 +48,32 @@ export default function PartnerDetailedComponent({
       }}
       positionChildren="bottom"
       subtitle=""
-      table={
-        <Flex gap={10}>
-          <OrbisCard pb={0} header={"Shared Channels"} flex={2}>
-            <OrbisTable
-              headers={["Channel"]}
-              rows={channels.map((channel, index) => [
-                <Flex
-                  key={index}
-                  justifyContent={"space-between"}
-                  alignItems={"center"}
-                >
-                  <OpenButton
-                    onClick={() => router.push(`/channels/${channel.id}`)}
-                  >
-                    {channel.name}
-                  </OpenButton>
-                  <Text>{channel.description}</Text>
-                  <APIKeyText allowCopy showAsClearText>
-                    {channel.id}
-                  </APIKeyText>
-                </Flex>,
-              ])}
-              tableProps={{}}
-            />
-          </OrbisCard>
-        </Flex>
-      }
       topbartitle="Partners"
-    ></ListView>
+    >
+      <Flex gap={10}>
+        <OrbisCard pb={0} header={"Shared Channels"} flex={2}>
+          <OrbisTable
+            headers={["Channel"]}
+            rows={channels.map((channel, index) => [
+              <Flex
+                key={index}
+                justifyContent={"space-between"}
+                alignItems={"center"}
+              >
+                <OpenButton
+                  onClick={() => router.push(`/channels/${channel.id}`)}
+                >
+                  {channel.name}
+                </OpenButton>
+                <Text>{channel.description}</Text>
+                <APIKeyText allowCopy showAsClearText>
+                  {channel.id}
+                </APIKeyText>
+              </Flex>,
+            ])}
+          />
+        </OrbisCard>
+      </Flex>
+    </DetailedView>
   );
 }
