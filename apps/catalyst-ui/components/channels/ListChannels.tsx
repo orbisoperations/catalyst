@@ -78,37 +78,37 @@ export default function DataChannelListComponents({
       positionChildren="bottom"
       subtitle="All your data channels in one place."
       table={
-        channels.length > 0 ? (
-          <Flex gap={5} direction={"column"}>
-            <Card p={2}>
-              <Flex gap={5} align={"center"}>
-                <Select
-                  value={filterMode}
-                  onChange={(e) => {
-                    filterChannels(
-                      e.target.value as "all" | "subscribed" | "owned"
-                    );
-                    setFilterMode(
-                      e.target.value as "all" | "subscribed" | "owned"
-                    );
-                  }}
-                >
-                  <option defaultChecked value="all">
-                    All Channels
-                  </option>
-                  <option value="subscribed">Subscribed Channels</option>
-                  <option value="owned">My Organization Channels</option>
-                </Select>
-                <OrbisButton
-                  onClick={() => {
-                    filterChannels("all");
-                    setFilterMode("all");
-                  }}
-                >
-                  Clear Filter
-                </OrbisButton>
-              </Flex>
-            </Card>
+        <Flex gap={5} direction={"column"}>
+          <Card p={2}>
+            <Flex gap={5} align={"center"}>
+              <Select
+                value={filterMode}
+                onChange={(e) => {
+                  filterChannels(
+                    e.target.value as "all" | "subscribed" | "owned"
+                  );
+                  setFilterMode(
+                    e.target.value as "all" | "subscribed" | "owned"
+                  );
+                }}
+              >
+                <option defaultChecked value="all">
+                  All Channels
+                </option>
+                <option value="subscribed">Subscribed Channels</option>
+                <option value="owned">My Organization Channels</option>
+              </Select>
+              <OrbisButton
+                onClick={() => {
+                  filterChannels("all");
+                  setFilterMode("all");
+                }}
+              >
+                Clear Filter
+              </OrbisButton>
+            </Flex>
+          </Card>
+          {channels.length > 0 ? (
             <Card>
               <OrbisTable
                 headers={["Data Channel", "Description", "Channel ID"]}
@@ -148,14 +148,14 @@ export default function DataChannelListComponents({
                 })}
               />
             </Card>
-          </Flex>
-        ) : (
-          <Card>
-            <CardBody>No Channels Available</CardBody>
-          </Card>
-        )
+          ) : (
+            <Card>
+              <CardBody>No Channels Available</CardBody>
+            </Card>
+          )}
+        </Flex>
       }
       topbartitle="Data Channels"
-    ></ListView>
+    />
   );
 }
