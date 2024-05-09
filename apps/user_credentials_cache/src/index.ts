@@ -41,7 +41,7 @@ type OrganizationWithRoles = {
 };
 
 function getOrgFromRoles(roles: Roles): OrganizationWithRoles | undefined {
-	const adminRoles = ['platform-admin', 'org-admin', 'org-user'];
+	const adminRoles = ['platform-admin', 'org-admin', 'org-user', 'data-custodian'];
 	const roleKeys = Object.keys(roles);
 	let rolesList = roleKeys.filter((key) => adminRoles.includes(key));
 	const adminRoleKey = roleKeys.find((key) => adminRoles.includes(key));
