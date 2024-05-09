@@ -90,6 +90,8 @@ export async function runTask(env: any, ctx: any) {
 				return xml;
 			})
 			console.log("created airplane cot events: ", airplaneCOTEvents.length, pointUUIDs.size)
+
+			// earhtquakes
 			const earthquakeCOTEvents = data.earthquakes.map((item: any) => {
 				const stale = new Date(item.expiry);
 
@@ -136,6 +138,8 @@ export async function runTask(env: any, ctx: any) {
 				return xml;
 			})
 			console.log("created earthquake cot events: ", earthquakeCOTEvents.length, pointUUIDs.size)
+
+			// line events
 			const lineCOTEvents = data.pings.map((item: any) => {
 
 				console.log("line expiry", item.expiry,  new Date(item.expiry))
@@ -183,7 +187,6 @@ export async function runTask(env: any, ctx: any) {
 			console.log("created line cot events: ", lineCOTEvents.length, pointUUIDs.size)
 
 			console.log("sending airplane, earthquake txn")
-
 			console.log(await Promise.all([
 				...airplaneCOTEvents.map(async (e: any) => {
 					const encoded = encoder.encode(e);
