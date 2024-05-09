@@ -73,6 +73,9 @@ export default function DataChannelDetailsComponent({
   const { isOpen, onOpen, onClose } = useDisclosure();
   const editDisclosure = useDisclosure();
   const router = useRouter();
+  const [gatewayUrl, setGatewayUrl] = useState<string>(
+    "https://gateway.catalyst.intelops.io/graphql"
+  );
   const { user, token } = useUser();
   const { id } = useParams();
   const [channel, setChannel] = useState<DataChannel>();
@@ -81,45 +84,53 @@ export default function DataChannelDetailsComponent({
   function fetchChannelDetails() {
     if (id && typeof id === "string" && token)
       channelDetails(id, token).then((data) => {
-        console.log("data channel in ui:", data);
         setChannel(data);
         setEditChannel(data);
         editDisclosure.onClose();
       });
   }
 
+  useEffect(() => {
+    "use client";
+    if (window.location.origin) {
+      const url = window.location.origin.includes("catalyst")
+        ? window.location.origin
+        : "https://catalyst.devintelops.io";
+      setGatewayUrl(url.replace("catalyst", "gateway") + "/graphql");
+    }
+  });
   useEffect(fetchChannelDetails, [token]);
 
   return (
     <DetailedView
       showspinner={!channel}
       actions={
-        <Flex gap={10}>
-          <Flex gap={2} align={"center"}>
-            {channel && (
-              <>
-                <Switch
-                  colorScheme="green"
-                  defaultChecked={channel?.accessSwitch ?? false}
-                  onChange={(e) => {
-                    if (channel) {
-                      handleSwitch(
-                        channel.id,
-                        e.target.checked ? true : false,
-                        token ?? ""
-                      ).then(fetchChannelDetails);
-                    }
-                  }}
-                />
-                <Text>Enable</Text>
-              </>
-            )}
+        channel && channel.creatorOrganization === user?.custom.org ? (
+          <Flex gap={10}>
+            <Flex gap={2} align={"center"}>
+              <Switch
+                colorScheme="green"
+                defaultChecked={channel?.accessSwitch ?? false}
+                onChange={(e) => {
+                  if (channel) {
+                    handleSwitch(
+                      channel.id,
+                      e.target.checked ? true : false,
+                      token ?? ""
+                    ).then(fetchChannelDetails);
+                  }
+                }}
+              />
+              <Text>Enable</Text>
+            </Flex>
+            <Flex gap={5} align={"center"}>
+              <EditButton onClick={editDisclosure.onOpen} />
+              <TrashButton onClick={onOpen} />
+            </Flex>
           </Flex>
-          <Flex gap={5} align={"center"}>
-            <EditButton onClick={editDisclosure.onOpen} />
-            <TrashButton onClick={onOpen} />
-          </Flex>
-        </Flex>
+        ) : (
+          <></>
+        )
       }
       headerTitle={{
         adjacent:
@@ -136,205 +147,201 @@ export default function DataChannelDetailsComponent({
       topbartitle="Data Channel Details"
     >
       <div>
-        <div id="delete-modal">
-          <Modal isOpen={isOpen} onClose={onClose}>
-            <ModalOverlay />
-            <ModalContent>
-              <ModalHeader>
-                Are you sure you want to delete this channel?
-              </ModalHeader>
-              <ModalBody>
-                <Text>
-                  Deleting this channel will remove all associated data
-                </Text>
-              </ModalBody>
-              <ModalFooter>
-                <Flex gap={5}>
-                  <OrbisButton colorScheme="gray" onClick={onClose}>
-                    Cancel
-                  </OrbisButton>
-                  <OrbisButton
-                    colorScheme="red"
-                    onClick={() => {
-                      if (id && typeof id === "string" && token)
-                        deleteChannel(id, token).then(() => {
-                          onClose();
-                          router.push("/channels");
-                        });
+        <div id="modals">
+          <div id="delete-modal">
+            <Modal isOpen={isOpen} onClose={onClose}>
+              <ModalOverlay />
+              <ModalContent>
+                <ModalHeader>
+                  Are you sure you want to delete this channel?
+                </ModalHeader>
+                <ModalBody>
+                  <Text>
+                    Deleting this channel will remove all associated data
+                  </Text>
+                </ModalBody>
+                <ModalFooter>
+                  <Flex gap={5}>
+                    <OrbisButton colorScheme="gray" onClick={onClose}>
+                      Cancel
+                    </OrbisButton>
+                    <OrbisButton
+                      colorScheme="red"
+                      onClick={() => {
+                        if (id && typeof id === "string" && token)
+                          deleteChannel(id, token).then(() => {
+                            onClose();
+                            router.push("/channels");
+                          });
+                      }}
+                    >
+                      Delete
+                    </OrbisButton>
+                  </Flex>
+                </ModalFooter>
+              </ModalContent>
+            </Modal>
+          </div>
+          <div id="edit-modal">
+            <Modal
+              isOpen={editDisclosure.isOpen}
+              onClose={editDisclosure.onClose}
+            >
+              <ModalOverlay />
+              <ModalContent>
+                <ModalHeader>Edit Data Channel</ModalHeader>
+                <ModalBody>
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const formData = new FormData(e.currentTarget);
+                      if (editChannel && token) {
+                        formData.append("id", editChannel.id);
+                        formData.append("organization", user?.custom.org);
+                        formData.set(
+                          "name",
+                          user?.custom.org + "/" + editChannel.name
+                        );
+                        updateChannel(formData, token).then(
+                          fetchChannelDetails
+                        );
+                      }
+                      // todo update data channel here
                     }}
                   >
-                    Delete
-                  </OrbisButton>
-                </Flex>
-              </ModalFooter>
-            </ModalContent>
-          </Modal>
-        </div>
-        <div id="edit-modal">
-          <Modal
-            isOpen={editDisclosure.isOpen}
-            onClose={editDisclosure.onClose}
-          >
-            <ModalOverlay />
-            <ModalContent>
-              <ModalHeader>Edit Data Channel</ModalHeader>
-              <ModalBody>
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    const formData = new FormData(e.currentTarget);
-                    if (editChannel && token) {
-                      formData.append("id", editChannel.id);
-                      formData.append("organization", user?.custom.org);
-                      formData.set(
-                        "name",
-                        user?.custom.org + "/" + editChannel.name
-                      );
-                      updateChannel(formData, token).then(fetchChannelDetails);
-                    }
-                    // todo update data channel here
-                  }}
-                >
-                  <Grid gap={5}>
-                    <FormControl display={"grid"} gap={2}>
-                      <label htmlFor="name">Data Channel Name</label>
-                      <InputGroup>
-                        <InputLeftAddon>{user?.custom.org}/</InputLeftAddon>
-                        <Input
+                    <Grid gap={5}>
+                      <FormControl display={"grid"} gap={2}>
+                        <label htmlFor="name">Data Channel Name</label>
+                        <InputGroup>
+                          <InputLeftAddon>{user?.custom.org}/</InputLeftAddon>
+                          <Input
+                            rounded="md"
+                            name="name"
+                            required={true}
+                            defaultValue={editChannel?.name?.split("/")[1]}
+                            onChange={(e) => {
+                              editChannel &&
+                                setEditChannel({
+                                  ...editChannel,
+                                  name: e.target.value,
+                                });
+                            }}
+                            placeholder="Data Channel Name"
+                          />
+                        </InputGroup>
+                      </FormControl>
+                      <FormControl display={"grid"} gap={2}>
+                        <label htmlFor="description">Description</label>
+                        <Textarea
                           rounded="md"
-                          name="name"
+                          name="description"
                           required={true}
-                          defaultValue={editChannel?.name?.split("/")[1]}
+                          value={editChannel?.description}
                           onChange={(e) => {
                             editChannel &&
                               setEditChannel({
                                 ...editChannel,
-                                name: e.target.value,
+                                description: e.target.value,
                               });
                           }}
-                          placeholder="Data Channel Name"
+                          placeholder="Description"
                         />
-                      </InputGroup>
-                    </FormControl>
-                    <FormControl display={"grid"} gap={2}>
-                      <label htmlFor="description">Description</label>
-                      <Textarea
-                        rounded="md"
-                        name="description"
-                        required={true}
-                        value={editChannel?.description}
-                        onChange={(e) => {
-                          editChannel &&
-                            setEditChannel({
-                              ...editChannel,
-                              description: e.target.value,
-                            });
-                        }}
-                        placeholder="Description"
-                      />
-                    </FormControl>
-                    <FormControl display={"grid"} gap={2}>
-                      <label htmlFor="endpoint">Endpoint URL</label>
-                      <Input
-                        rounded="md"
-                        name="endpoint"
-                        required={true}
-                        value={editChannel?.endpoint}
-                        onChange={(e) => {
-                          editChannel &&
-                            setEditChannel({
-                              ...editChannel,
-                              endpoint: e.target.value,
-                            });
-                        }}
-                        placeholder="Endpoint URL"
-                      />
-                    </FormControl>
-                    <FormControl display={"none"}>
-                      <label htmlFor="accessSwitch"></label>
-                      <Input
-                        rounded="md"
-                        name="accessSwitch"
-                        required={true}
-                        defaultValue={editChannel?.accessSwitch ? "on" : "off"}
-                      />
-                    </FormControl>
-                    <Flex justifyContent={"space-between"}>
-                      <OrbisButton
-                        colorScheme="gray"
-                        onClick={() => {
-                          editDisclosure.onClose();
-                          setEditChannel(channel);
-                        }}
-                      >
-                        Cancel
-                      </OrbisButton>
-                      <OrbisButton type="submit">Save</OrbisButton>
-                    </Flex>
-                  </Grid>
-                </form>
-              </ModalBody>
-            </ModalContent>
-          </Modal>
+                      </FormControl>
+                      <FormControl display={"grid"} gap={2}>
+                        <label htmlFor="endpoint">Endpoint URL</label>
+                        <Input
+                          rounded="md"
+                          name="endpoint"
+                          required={true}
+                          value={editChannel?.endpoint}
+                          onChange={(e) => {
+                            editChannel &&
+                              setEditChannel({
+                                ...editChannel,
+                                endpoint: e.target.value,
+                              });
+                          }}
+                          placeholder="Endpoint URL"
+                        />
+                      </FormControl>
+                      <FormControl display={"none"}>
+                        <label htmlFor="accessSwitch"></label>
+                        <Input
+                          rounded="md"
+                          name="accessSwitch"
+                          required={true}
+                          defaultValue={
+                            editChannel?.accessSwitch ? "on" : "off"
+                          }
+                        />
+                      </FormControl>
+                      <Flex justifyContent={"space-between"}>
+                        <OrbisButton
+                          colorScheme="gray"
+                          onClick={() => {
+                            editDisclosure.onClose();
+                            setEditChannel(channel);
+                          }}
+                        >
+                          Cancel
+                        </OrbisButton>
+                        <OrbisButton type="submit">Save</OrbisButton>
+                      </Flex>
+                    </Grid>
+                  </form>
+                </ModalBody>
+              </ModalContent>
+            </Modal>
+          </div>
         </div>
 
-        <form>
+        <Grid gap={5}>
           <Grid gap={5} gridTemplateColumns={"1fr 1fr"}>
             <FormControl display={"grid"} gap={2}>
-              <label htmlFor="endpoint">Endpoint URL</label>
-              <Flex
-                w={"100%"}
-                className="border"
-                align={"center"}
-                justify={"space-between"}
-                gap={5}
-                paddingX={".5em"}
-                paddingY={".25em"}
-                borderRadius={"md"}
-              >
-                <Text>{channel?.endpoint}</Text>
-                <Flex gap={2}>
-                  <CopyButton
-                    copytext={channel?.endpoint}
-                    variant={"ghost"}
-                    colorScheme="blue"
-                  />
-                </Flex>
-              </Flex>
+              <label htmlFor="gatewayUrl">Access URL</label>
+              <APIKeyText width={"100%"} allowCopy showAsClearText>
+                {gatewayUrl}
+              </APIKeyText>
             </FormControl>
+            {channel?.creatorOrganization === user?.custom.org ? (
+              <FormControl display={"grid"} gap={2}>
+                <label htmlFor="endpoint">Source URL</label>
+                <APIKeyText width={"100%"} allowCopy showAsClearText>
+                  {channel?.endpoint}
+                </APIKeyText>
+              </FormControl>
+            ) : (
+              <></>
+            )}
             <FormControl display={"grid"} gap={2}>
               <label htmlFor="description">Channel ID</label>
-              <APIKeyText allowCopy showAsClearText>
+              <APIKeyText width={"100%"} allowCopy showAsClearText>
                 {channel?.id}
               </APIKeyText>
             </FormControl>
+          </Grid>
 
-            <Flex
-              direction={"column"}
-              gap={5}
-              gridColumnStart={1}
-              gridColumnEnd={3}
-            >
-              <Card>
-                <CardHeader>
-                  <Heading size="md">Available Metadata</Heading>
-                </CardHeader>
+          <Flex direction={"column"} gap={5}>
+            <Card>
+              <CardHeader>
+                <Heading size="md">Available Metadata</Heading>
+              </CardHeader>
 
-                <CardBody>
-                  <Stack divider={<StackDivider />} spacing="4">
-                    <Box>
-                      <Heading size="xs" textTransform="uppercase">
-                        No Metadata Available
-                      </Heading>
-                      <Text pt="2" fontSize="sm">
-                        Intentionally Left Blank
-                      </Text>
-                    </Box>
-                  </Stack>
-                </CardBody>
-              </Card>
-              {/* TODO: enable sharing view on the UI */}
-              {/* channel?.creatorOrganization === "org2" && (
+              <CardBody>
+                <Stack divider={<StackDivider />} spacing="4">
+                  <Box>
+                    <Heading size="xs" textTransform="uppercase">
+                      No Metadata Available
+                    </Heading>
+                    <Text pt="2" fontSize="sm">
+                      Intentionally Left Blank
+                    </Text>
+                  </Box>
+                </Stack>
+              </CardBody>
+            </Card>
+            {/* TODO: enable sharing view on the UI */}
+            {/* channel?.creatorOrganization === "org2" && (
                 <Card>
                   <CardHeader>
                     <Flex justify={"space-between"} gap={5} align={"center"}>
@@ -365,9 +372,8 @@ export default function DataChannelDetailsComponent({
                   </CardBody>
                 </Card>
               ) */}
-            </Flex>
-          </Grid>
-        </form>
+          </Flex>
+        </Grid>
       </div>
     </DetailedView>
   );
