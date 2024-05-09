@@ -200,7 +200,8 @@ export default function DataChannelDetailsComponent({
                         formData.append("organization", user?.custom.org);
                         formData.set(
                           "name",
-                          user?.custom.org + "/" + editChannel.name
+
+                          user?.custom.org + "/" + formData.get("name")
                         );
                         updateChannel(formData, token).then(
                           fetchChannelDetails
