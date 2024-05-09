@@ -80,6 +80,7 @@ export class TAKDataManager extends DurableObject<Env> {
 
 
 			// get all points on taK
+			console.log(this.env.TAK_UI, this.env.TAK_USER, this.env.TAK_PASSWORD)
 			const unitResp = await fetch(this.env.TAK_UI + "unit", {
 				method: "GET",
 				headers: {
