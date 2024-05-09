@@ -63,7 +63,7 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
     });
   }
 
-  async RPerms(token: Token, dataChannelId: string) {
+  async RPerms(token: Token, dataChannelId: string, channel?: DataChannel) {
     if (token.cfToken) {
       const user: User | undefined = await this.env.USERCACHE.getUser(token.cfToken);
       const parsedUser = User.safeParse(user);
@@ -73,7 +73,17 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
           error: 'catalyst unable to validate user token',
         });
       }
+      if (channel) {
+        const isCreator = channel.creatorOrganization === parsedUser.data.orgId;
+        const isEnabled = channel.accessSwitch;
 
+        if (!isEnabled && !isCreator) {
+          return PermissionCheckResponse.parse({
+            success: false,
+            error: 'catalyst asserts user does not have permission to read data channel',
+          });
+        }
+      }
       const canRead = await this.env.AUTHZED.canReadFromDataChannel(
         dataChannelId,
         parsedUser.data.userId,
@@ -198,7 +208,7 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
     const listWithPerms = (
       await Promise.all(
         list.map(async dc => {
-          return { canRead: await this.RPerms(token, dc.id), dataChannel: dc };
+          return { canRead: await this.RPerms(token, dc.id, dc), dataChannel: dc };
         }),
       )
     )
