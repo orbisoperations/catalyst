@@ -2,7 +2,7 @@ import { useUser } from "@/components/contexts/User/UserContext";
 import { Box, Flex, Grid, PropsOf, Text, Image } from "@chakra-ui/react";
 import { BackButton, OrbisButton, ProfileButton } from "../../elements";
 import { useEffect, useState } from "react";
-import logo from 'next/image';
+import logo from "next/image";
 
 type TopBarProps = PropsOf<typeof Box> & {
   title?: string;
@@ -16,7 +16,7 @@ export const TopBar = (props: TopBarProps) => {
   const { title, actions, customActions, ...boxProps } = props;
   const { user } = useUser();
   const [orgName, setOrgName] = useState<string>(
-    localStorage.getItem("org") ?? ""
+    window.localStorage.getItem("org") ?? ""
   );
 
   useEffect(() => {
@@ -29,7 +29,6 @@ export const TopBar = (props: TopBarProps) => {
 
   return (
     <Box position={"sticky"} top={0} bg={"white"}>
-      
       <Flex
         {...boxProps}
         shadow={"md"}
@@ -38,7 +37,7 @@ export const TopBar = (props: TopBarProps) => {
         alignItems={"center"}
         zIndex={10}
       >
-        <Image src="/C-logo.png" w="120px" mr="auto"></Image>
+        <Image src="/C-logo.png" w="120px" alt="Catalyst Logo" mr="auto" />
         {(actions || customActions) && (
           <Flex gap={5} alignItems={"center"} pr="2%">
             {actions &&
@@ -53,7 +52,8 @@ export const TopBar = (props: TopBarProps) => {
          <ProfileButton
             avatarProps= {{ name: user?.email ? user.email : "User email"}}
             userInfo = {{userEmail: user?.email ? user.email : "", organization: orgName ? orgName : ""}}
-          ></ProfileButton>
+          >
+        </ProfileButton>
       </Flex>
     </Box>
   );
