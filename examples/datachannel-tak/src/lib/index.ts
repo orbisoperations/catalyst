@@ -11,7 +11,9 @@ export async function runTask(env: any, ctx: any) {
 
 		const sendStuffToTak = async (env: any, client: CatalystGatewayClient) => {
 			const pointUUIDs = new Map<string, number>()
+			console.log("querying catalyst for data")
 			const data = await gatewayClient.useADSBData();
+			console.log(data)
 
 			//console.log({data});
 
@@ -26,8 +28,6 @@ export async function runTask(env: any, ctx: any) {
 
 			const now: string = new Date().toISOString();
 
-      let stale = new Date(now);
-      stale.setSeconds(stale.getSeconds() + TTL_S);
 
 
 			// TODO: Evaluate values in the CoT XML for something more accurate. ce="45.3" hae="1-42.6" 1e="99.5"
@@ -35,10 +35,6 @@ export async function runTask(env: any, ctx: any) {
 
 			// airplane cot events
 			const airplaneCOTEvents = data.aircraftWithinDistance.map((item: any) => {
-
-				const now: string = new Date().toISOString();
-
-
 				let stale = new Date(now);
 				stale.setSeconds(stale.getSeconds() + TTL_S);
 				//console.log(item.alt_geom);
@@ -93,15 +89,16 @@ export async function runTask(env: any, ctx: any) {
 				//console.log("COTXML:", xml);
 				return xml;
 			})
+			console.log("created airplane cot events: ", airplaneCOTEvents.length, pointUUIDs.size)
 			const earthquakeCOTEvents = data.earthquakes.map((item: any) => {
-				let stale = new Date(item.expiry);
+				const stale = new Date(item.expiry);
 
-				pointUUIDs.set(item.UUID, stale.getTime())
+				pointUUIDs.set(item.uuid, stale.getTime())
 				const cotEvent = {
 					event: {
 						_attributes: {
 							version: '2.0',
-							uid: item.UUID,
+							uid: item.uuid,
 							time: now,
 							start: now,
 							how: 'm-g',
@@ -138,8 +135,10 @@ export async function runTask(env: any, ctx: any) {
 				//console.log({xml});
 				return xml;
 			})
+			console.log("created earthquake cot events: ", earthquakeCOTEvents.length, pointUUIDs.size)
 			const lineCOTEvents = data.pings.map((item: any) => {
 
+				console.log("line expiry", item.expiry,  new Date(item.expiry))
 				let stale = new Date(item.expiry);
 
 				pointUUIDs.set(item.UID, stale.getTime())
@@ -181,14 +180,11 @@ export async function runTask(env: any, ctx: any) {
 				//console.log({xml});
 				return xml;
 			})
+			console.log("created line cot events: ", lineCOTEvents.length, pointUUIDs.size)
 
 			console.log("sending airplane, earthquake txn")
-			/*const futureTx = airplaneCOTEvents.map(async (e: any) => {
-				const encoded = encoder.encode(e);
-				return await writer.write(encoded);
-			})*/
 
-			await Promise.all([
+			console.log(await Promise.all([
 				...airplaneCOTEvents.map(async (e: any) => {
 					const encoded = encoder.encode(e);
 					return await writer.write(encoded);
@@ -201,9 +197,9 @@ export async function runTask(env: any, ctx: any) {
 					const encoded = encoder.encode(e);
 					return await writer.write(encoded);
 				}),
-			]);
+			]))
 			console.log("sent airplane, earthquake txn")
-			//console.log(lineCOTEvents)
+
 
 			await socket.close();
 			console.log("sent points to tak: ", pointUUIDs.size)
