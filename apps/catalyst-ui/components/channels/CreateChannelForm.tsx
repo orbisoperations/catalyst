@@ -3,7 +3,7 @@ import { useUser } from "@/components/contexts/User/UserContext";
 import { OrbisButton } from "@/components/elements";
 import { DetailedView } from "@/components/layouts";
 import { navigationItems } from "@/utils/nav.utils";
-import { DataChannel, DataChannelActionResponse } from "@catalyst/schema_zod";
+import { DataChannel } from "@catalyst/schema_zod";
 import { Flex, Grid } from "@chakra-ui/layout";
 import {
   Card,
@@ -16,10 +16,7 @@ import {
 import { useRouter } from "next/navigation";
 
 type DataChannelFormProps = {
-  createDataChannel: (
-    fd: FormData,
-    token: string
-  ) => Promise<DataChannelActionResponse>;
+  createDataChannel: (fd: FormData, token: string) => Promise<DataChannel>;
 };
 
 export default function CreateChannelForm({
@@ -45,13 +42,14 @@ export default function CreateChannelForm({
             action={async (fd) => {
               fd.set("organization", user?.custom.org);
               fd.set("name", user?.custom.org + "/" + fd.get("name"));
-              const newChannel = await createDataChannel(fd, token ?? "");
-              if (newChannel.success)
-                router.push("/channels/" + (newChannel.data as DataChannel).id);
-              else {
-                console.error(newChannel.error);
-                alert("Failed to create channel");
-              }
+              createDataChannel(fd, token ?? "")
+                .then((newChannel) => {
+                  router.push("/channels/" + newChannel.id);
+                })
+                .catch((e) => {
+                  console.error(e);
+                  alert("Failed to create channel");
+                });
             }}
           >
             <Grid gap={5}>

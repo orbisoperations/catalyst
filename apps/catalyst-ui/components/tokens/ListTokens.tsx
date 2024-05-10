@@ -3,7 +3,6 @@ import { rotateJWTKeyMaterial } from "@/app/actions/tokens";
 import {
   CreateButton,
   OpenButton,
-  OrbisBadge,
   OrbisButton,
   OrbisCard,
   OrbisTable,
