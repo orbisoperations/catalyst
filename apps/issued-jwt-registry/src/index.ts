@@ -1,5 +1,5 @@
 import { DurableObject, WorkerEntrypoint } from 'cloudflare:workers';
-import { IssuedJWTRegistry, Token, User, UserCheckActionResponse } from '@catalyst/schema_zod';
+import { IssuedJWTRegistry, Token, User, UserCheckActionResponse, zIssuedJWTRegistry } from '@catalyst/schema_zod';
 import UserCredsCacheWorker from '../../user_credentials_cache/src';
 import { Logger } from 'tslog';
 
@@ -29,18 +29,15 @@ export default class IssuedJWTRegistryWorker extends WorkerEntrypoint<Env> {
 		});
 	}
 
-	async create(
-		token: Token,
-		issuedJWTRegistry: Omit<IssuedJWTRegistry, 'id'>,
-		doNamespace: string = 'default',
-	): Promise<IssuedJWTRegistry> {
+	async create(token: Token, issuedJWTRegistry: Omit<IssuedJWTRegistry, 'id'>, doNamespace: string = 'default') {
 		const permCheck = await this.RPerms(token);
 		if (!permCheck.success) {
 			throw new Error(permCheck.error);
 		}
 		const doId = this.env.ISSUED_JWT_REGISTRY_DO.idFromName(doNamespace);
 		const stub = this.env.ISSUED_JWT_REGISTRY_DO.get(doId);
-		return stub.create(issuedJWTRegistry);
+		const resp = await stub.create(issuedJWTRegistry);
+		return zIssuedJWTRegistry.safeParse(resp);
 	}
 	async get(token: Token, issuedJWTRegId: string, doNamespace: string = 'default') {
 		const permCheck = await this.RPerms(token);
@@ -49,7 +46,9 @@ export default class IssuedJWTRegistryWorker extends WorkerEntrypoint<Env> {
 		}
 		const doId = this.env.ISSUED_JWT_REGISTRY_DO.idFromName(doNamespace);
 		const stub = this.env.ISSUED_JWT_REGISTRY_DO.get(doId);
-		return stub.get(issuedJWTRegId);
+
+		const resp = await stub.get(issuedJWTRegId);
+		return zIssuedJWTRegistry.safeParse(resp);
 	}
 
 	async list(token: Token, doNamespace: string = 'default') {
@@ -60,18 +59,18 @@ export default class IssuedJWTRegistryWorker extends WorkerEntrypoint<Env> {
 		const doId = this.env.ISSUED_JWT_REGISTRY_DO.idFromName(doNamespace);
 		const stub = this.env.ISSUED_JWT_REGISTRY_DO.get(doId);
 		const list = await stub.list(permCheck.data.orgId);
-		console.log({ list });
-		return list;
+		return zIssuedJWTRegistry.array().safeParse(list);
 	}
 
-	async update(token: Token, issuedJWTRegistry: IssuedJWTRegistry, doNamespace: string = 'default'): Promise<IssuedJWTRegistry> {
+	async update(token: Token, issuedJWTRegistry: IssuedJWTRegistry, doNamespace: string = 'default') {
 		const permCheck = await this.RPerms(token);
 		if (!permCheck.success) {
 			throw new Error(permCheck.error);
 		}
 		const doId = this.env.ISSUED_JWT_REGISTRY_DO.idFromName(doNamespace);
 		const stub = this.env.ISSUED_JWT_REGISTRY_DO.get(doId);
-		return stub.update(issuedJWTRegistry);
+		const resp = await stub.update(issuedJWTRegistry);
+		return zIssuedJWTRegistry.safeParse(resp);
 	}
 
 	async delete(token: Token, issuedJWTRegId: string, doNamespace: string = 'default') {
@@ -81,7 +80,9 @@ export default class IssuedJWTRegistryWorker extends WorkerEntrypoint<Env> {
 		}
 		const doId = this.env.ISSUED_JWT_REGISTRY_DO.idFromName(doNamespace);
 		const stub = this.env.ISSUED_JWT_REGISTRY_DO.get(doId);
-		return stub.delete(issuedJWTRegId);
+		const resp = await stub.delete(issuedJWTRegId);
+		console.log('deleted iJWTRegistry', { resp });
+		return resp;
 	}
 }
 
