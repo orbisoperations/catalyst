@@ -10,7 +10,7 @@
     "deploymentStaging": "pnpm install --ignore-workspace && fly deploy",
     "lint": "next lint",
     "start": "bun run.ts",
-    "server": "NODE_ENV=production bun run.ts"
+    "server": "NODE_ENV=production yes | npx tsx run.ts"
   },
   "dependencies": {
     "@chakra-ui/icons": "^2.1.1",
@@ -19,6 +19,7 @@
     "@emotion/styled": "^11.11.0",
     "@monaco-editor/react": "^4.6.0",
     "axios": "^1.6.8",
+    "tsx": "^4.9.4",
     "express": "^4.19.2",
     "framer-motion": "^11.1.7",
     "graphql-yoga": "^5.3.1",

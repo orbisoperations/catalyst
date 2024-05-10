@@ -76,16 +76,16 @@ export default function MessagesLogCard() {
 
   return (
       <>
-        <SocketConnection handleMessage={handleMessage} />
+        <SocketConnection handleMessage={handleMessage}  />
         <Card w="100%" h="100%" variant="outline">
           <CardBody
               display="flex"
               flexDirection="column"
               justifyContent="center"
           >
-            <Heading size="md">Messages log</Heading>
+            <Heading size="md">Live Logs</Heading>
             <Text fontSize="md" color="Gray 500" mb="16px">
-              Live Messages (From TAK)
+              Connected
             </Text>
             <Terminal messages={messages} />
           </CardBody>
