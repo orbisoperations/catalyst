@@ -1,5 +1,5 @@
 "use client";
-import { useRouter } from "next/router";
+import {useRouter} from "next/router";
 import React, {
   createContext,
   ReactNode,
@@ -14,22 +14,26 @@ import {
   Text,
   HStack,
 } from "@chakra-ui/react";
-import { AppContext, StepsDataContext } from "./AppState";
-import { ErrorContext, errMsgArr } from "./ErrorState";
-import ResponseContainer from "../ResponseContainer";
-import IntroCard from "../section-cards/IntroCard";
-interface GlobalContext {}
+import {AppContext, StepsDataContext} from "./AppState";
+import {ErrorContext, errMsgArr} from "./ErrorState";
+import Home from "../Home";
+import {QueryItemsContextProvider} from "@/components/query-items/context";
+
+interface GlobalContext {
+}
+
 const GlobalContext = createContext<GlobalContext | undefined>(undefined);
 
 type GlobalContextProps = {
   children: ReactNode;
 };
-export const GlobalProvider: React.FC<GlobalContextProps> = ({ children }) => {
+export const GlobalProvider: React.FC<GlobalContextProps> = ({children}) => {
   // const router = useRouter();
   const [isShowingResults, setIsShowingResults] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [stepData, setStepData] = useState(StepsDataContext);
+  const [activeQueryList, setActiveQueryList] = useState(StepsDataContext);
 
   //Error context
   const [isErrVisible, setIsErrVisible] = useState(false);
@@ -41,47 +45,50 @@ export const GlobalProvider: React.FC<GlobalContextProps> = ({ children }) => {
   }
 
   return (
-    <ChakraProvider>
-      <GlobalContext.Provider value={{}}>
-        <ErrorContext.Provider
-          value={{
-            isErrVisible,
-            setIsErrVisible,
-            errorMessage,
-            setErrorMessage,
-          }}
-        >
-          <AppContext.Provider
-            value={{
-              isLoading,
-              setIsLoading,
-              isShowingResults,
-              setIsShowingResults,
-              currentStep,
-              setCurrentStep,
-              stepData,
-              setStepData,
-            }}
+      <ChakraProvider>
+        <GlobalContext.Provider value={{}}>
+          <ErrorContext.Provider
+              value={{
+                isErrVisible,
+                setIsErrVisible,
+                errorMessage,
+                setErrorMessage,
+              }}
           >
-              <ResponseContainer></ResponseContainer>
-            {/* {isShowingResults ? (
+            <AppContext.Provider
+                value={{
+                  isLoading,
+                  setIsLoading,
+                  isShowingResults,
+                  setIsShowingResults,
+                  currentStep,
+                  setCurrentStep,
+                  stepData,
+                  setStepData,
+                }}
+            >
+              <QueryItemsContextProvider>
+                <Home/>
+              </QueryItemsContextProvider>
+              {/*<ResponseContainer></ResponseContainer>*/}
+              {/* {isShowingResults ? (
             ) : (
               <HStack h="100svh" p="50px">
                 <IntroCard />
               </HStack>
             )} */}
 
-            {isErrVisible ? (
-              <Alert status="error" pos="absolute" bottom="0" left="0">
-                <AlertIcon />
-                {errorMessage}
-              </Alert>
-            ) : null}
-            {children}
-          </AppContext.Provider>
-        </ErrorContext.Provider>
-      </GlobalContext.Provider>
-    </ChakraProvider>
+              {isErrVisible ? (
+                  <Alert status="error" pos="absolute" bottom="0" left="0">
+                    <AlertIcon/>
+                    {errorMessage}
+                  </Alert>
+              ) : null}
+              {children}
+            </AppContext.Provider>
+          </ErrorContext.Provider>
+        </GlobalContext.Provider>
+      </ChakraProvider>
   );
 };
 
