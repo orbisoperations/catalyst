@@ -1,24 +1,35 @@
 {
-  "name": "@catalyst-examples/datachannel-next",
+  "name": "@catalyst/datachannel-next",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "dev": "next dev",
+    "dev": "node run.js",
     "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "build:prod": "NODE_ENV=production next build",
+    "lint": "next lint",
+    "start": "node run.js",
+    "server": "NODE_ENV=production node run.js"
   },
   "dependencies": {
+    "@chakra-ui/icons": "^2.1.1",
     "@chakra-ui/react": "^2.8.2",
     "@emotion/react": "^11.11.4",
     "@emotion/styled": "^11.11.0",
-    "framer-motion": "^11.1.7",
     "@monaco-editor/react": "^4.6.0",
+    "express": "^4.19.2",
+    "framer-motion": "^11.1.7",
+    "axios": "^1.6.8",
+    "graphql-yoga": "^5.3.1",
     "next": "14.2.3",
     "react": "^18",
-    "react-dom": "^18"
+    "react-dom": "^18",
+    "socket.io": "^4.7.5",
+    "socket.io-client": "^4.7.5",
+    "swr": "^2.2.5"
   },
   "devDependencies": {
+    "@flydotio/dockerfile": "^0.5.7",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
