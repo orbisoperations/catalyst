@@ -2,6 +2,7 @@
 import { JWTRequest } from "@/app/types";
 import {
   APIKeyText,
+  ErrorCard,
   OrbisButton,
   OrbisCard,
   SelectableTable,
@@ -62,19 +63,31 @@ export default function CreateTokensForm({
   const [apiKeyName, setApiKeyName] = useState<string>("");
   const [apiKeyDescription, setApiKeyDescription] = useState<string>("");
   const [token, setToken] = useState<string>("");
+  const [hasError, setHasError] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string>("");
   const [expiration, setExpiration] = useState<{
     value: number;
     unit: "days" | "weeks";
   }>({ value: 7, unit: "days" });
-  useEffect(() => {
-    if (cfToken)
-      listChannels(cfToken).then((channels) => {
-        setChannels(
-          channels.map((channel) => [channel.name, channel.description])
-        );
-        setChannelsResponse(channels);
-      });
-  }, [cfToken]);
+  function fetchChannels() {
+    setHasError(false);
+    if (cfToken) {
+      listChannels(cfToken)
+        .then((channels) => {
+          setChannels(
+            channels.map((channel) => [channel.name, channel.description])
+          );
+          setChannelsResponse(channels);
+        })
+        .catch((e) => {
+          setHasError(true);
+          setErrorMessage(
+            "An error occurred while fetching the channels. Please try again later."
+          );
+        });
+    }
+  }
+  useEffect(fetchChannels, [cfToken]);
 
   function createToken() {
     const jwtRequest: JWTRequest = {
@@ -99,8 +112,6 @@ export default function CreateTokensForm({
         if (resp.success) {
           setToken(resp.token);
           tokenConfirmation.onOpen();
-          console.log("token", resp.token);
-          console.log("expiration", resp.expiration);
           const issuedJWTRegistryEntry = {
             name: apiKeyName,
             description: apiKeyDescription,
@@ -108,18 +119,25 @@ export default function CreateTokensForm({
             expiry: new Date(resp.expiration * 1000),
             organization: user.custom.org,
           } as Omit<IssuedJWTRegistry, "id">;
-          console.log("before create", { issuedJWTRegistryEntry });
           const iJWTRegistryEntry = await createIJWTRegistry(
             cfToken,
             issuedJWTRegistryEntry
-          );
+          ).catch((e) => {
+            setHasError(true);
+            setErrorMessage(
+              "An error occurred while creating the token. Please try again later."
+            );
+          });
           if (iJWTRegistryEntry) {
             console.log("created iJWTRegistryEntry", iJWTRegistryEntry);
           }
         }
       })
       .catch((err) => {
-        console.error(err);
+        setHasError(true);
+        setErrorMessage(
+          "An error occurred while creating the token. Please try again later."
+        );
       });
   }
 
@@ -128,6 +146,7 @@ export default function CreateTokensForm({
     tokenConfirmation.onClose();
     router.push("/tokens");
   }
+
   return (
     <DetailedView
       topbaractions={navigationItems}
@@ -135,71 +154,82 @@ export default function CreateTokensForm({
       showspinner={false}
       headerTitle={{ text: "Create API Key" }}
       subtitle="Create a new API Key"
-      actions={<OrbisButton onClick={createToken}>Create</OrbisButton>}
+      actions={
+        !hasError ? (
+          <OrbisButton onClick={createToken}>Create</OrbisButton>
+        ) : undefined
+      }
     >
-      <Flex gap={2} mb={5}>
-        <FormControl>
-          <label htmlFor="apiKeyName">API Key Name</label>
-          <Input
-            rounded={"md"}
-            name="apiKeyName"
-            value={apiKeyName}
-            onChange={(e) => setApiKeyName(e.target.value)}
-          />
-        </FormControl>
-        <FormControl>
-          <label htmlFor="apiKeyDescription">Description</label>
-          <Input
-            rounded={"md"}
-            name="description"
-            value={apiKeyDescription}
-            onChange={(e) => setApiKeyDescription(e.target.value)}
-          />
-        </FormControl>
-      </Flex>
-      <Box gap={2} mb={5}>
-        <FormControl>
-          <label htmlFor="expiration">Expiration</label>
-          <InputGroup gap={2}>
-            <Input
-              rounded={"md"}
-              type="number"
-              name="expiration"
-              value={expiration.value}
-              onChange={(e) =>
-                setExpiration({
-                  ...expiration,
-                  value: parseInt(e.target.value),
-                })
-              }
-              placeholder="Expiration"
+      {hasError ? (
+        <ErrorCard title="Error" message={errorMessage} retry={fetchChannels} />
+      ) : (
+        <Box>
+          <Flex gap={2} mb={5}>
+            <FormControl>
+              <label htmlFor="apiKeyName">API Key Name</label>
+              <Input
+                rounded={"md"}
+                name="apiKeyName"
+                value={apiKeyName}
+                onChange={(e) => setApiKeyName(e.target.value)}
+              />
+            </FormControl>
+            <FormControl>
+              <label htmlFor="apiKeyDescription">Description</label>
+              <Input
+                rounded={"md"}
+                name="description"
+                value={apiKeyDescription}
+                onChange={(e) => setApiKeyDescription(e.target.value)}
+              />
+            </FormControl>
+          </Flex>
+          <Box gap={2} mb={5}>
+            <FormControl>
+              <label htmlFor="expiration">Expiration</label>
+              <InputGroup gap={2}>
+                <Input
+                  rounded={"md"}
+                  type="number"
+                  name="expiration"
+                  value={expiration.value}
+                  onChange={(e) =>
+                    setExpiration({
+                      ...expiration,
+                      value: parseInt(e.target.value),
+                    })
+                  }
+                  placeholder="Expiration"
+                />
+                <Select
+                  value={expiration.unit}
+                  onChange={(e) =>
+                    setExpiration({
+                      ...expiration,
+                      unit: e.target.value as "days" | "weeks",
+                    })
+                  }
+                >
+                  <option defaultChecked value="days">
+                    Days
+                  </option>
+                  <option value="weeks">Weeks</option>
+                </Select>
+              </InputGroup>
+            </FormControl>
+          </Box>
+          <OrbisCard>
+            <SelectableTable
+              headers={["", "Channel", "Description"]}
+              rows={channels}
+              handleChange={(rows: number[]) => {
+                setSelectedChannels(rows);
+              }}
             />
-            <Select
-              value={expiration.unit}
-              onChange={(e) =>
-                setExpiration({
-                  ...expiration,
-                  unit: e.target.value as "days" | "weeks",
-                })
-              }
-            >
-              <option defaultChecked value="days">
-                Days
-              </option>
-              <option value="weeks">Weeks</option>
-            </Select>
-          </InputGroup>
-        </FormControl>
-      </Box>
-      <OrbisCard>
-        <SelectableTable
-          headers={["", "Channel", "Description"]}
-          rows={channels}
-          handleChange={(rows: number[]) => {
-            setSelectedChannels(rows);
-          }}
-        />
-      </OrbisCard>
+          </OrbisCard>
+        </Box>
+      )}
+
       <TokenCreatedModal
         token={token}
         tokenConfirmation={tokenConfirmation}
