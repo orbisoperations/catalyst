@@ -15,10 +15,10 @@ export default function PollsCard() {
       <Card w="100%" h="100%" variant="filled">
         <CardBody display="flex" flexDirection="column" justifyContent="center">
           <Heading size="md">Poll Settings</Heading>
-          <Text fontSize="md">
+          {/* <Text fontSize="md">
             A description will go here to help people understand what the
             section is for.
-          </Text>
+          </Text> */}
           <Heading size="sm" mt="16px">Interval (in seconds)</Heading>
           <Input placeholder="Set interval /s" bg="white" mt="6px" />
           <Flex mt="16px">

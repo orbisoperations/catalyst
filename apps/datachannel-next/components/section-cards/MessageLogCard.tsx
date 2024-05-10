@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { Card, CardBody, Text, Heading, Box } from '@chakra-ui/react';
+import { Card, CardBody, Text, Heading, Box, Flex } from '@chakra-ui/react';
 import SocketConnection from '@/components/socket';
 import ReactMarkdown from 'react-markdown';
 
@@ -28,6 +28,8 @@ const Terminal = ({ messages }: { messages: LogMessage[] }) => {
           borderRadius="md"
           overflowY="auto"
           maxHeight="400px"
+          minHeight="100%"
+          height="100%"
       >
         {messages.map((message, index) => (
             <Box key={index} mb={2}>
@@ -44,6 +46,7 @@ const Terminal = ({ messages }: { messages: LogMessage[] }) => {
                             p={2}
                             borderRadius="md"
                             overflowX="auto"
+                            
                         >
                           <Text as="code">{children}</Text>
                         </Box>
@@ -76,17 +79,13 @@ export default function MessagesLogCard() {
 
   return (
       <>
-        <SocketConnection handleMessage={handleMessage}  />
-        <Card w="100%" h="100%" variant="outline">
+        <Card w="100%" h="100%" variant="outline" p="10px">
           <CardBody
               display="flex"
               flexDirection="column"
               justifyContent="center"
           >
-            <Heading size="md">Live Logs</Heading>
-            <Text fontSize="md" color="Gray 500" mb="16px">
-              Connected
-            </Text>
+           <Flex><Heading size="md" mr="2%">Live Logs</Heading><SocketConnection handleMessage={handleMessage}  /></Flex>
             <Terminal messages={messages} />
           </CardBody>
         </Card>
