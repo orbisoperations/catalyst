@@ -3,6 +3,7 @@
 import {
   APIKeyText,
   CreateButton,
+  ErrorCard,
   OpenButton,
   OrbisBadge,
   OrbisButton,
@@ -26,6 +27,7 @@ export default function DataChannelListComponents({
   const router = useRouter();
   const [channels, setChannels] = useState<DataChannel[]>([]);
   const [allChannels, setAllChannels] = useState<DataChannel[]>([]);
+  const [hasError, setHasError] = useState<boolean>(false);
   const [filterMode, setFilterMode] = useState<"all" | "subscribed" | "owned">(
     "all"
   );
@@ -44,9 +46,9 @@ export default function DataChannelListComponents({
     }
     setChannels(filteredChannels);
   }
-
-  useEffect(() => {
-    if (token) {
+  function fetchChannels() {
+    setHasError(false);
+    if (token)
       listChannels(token)
         .then((data) => {
           const response = (data as DataChannel[]).sort((a, b) =>
@@ -56,12 +58,10 @@ export default function DataChannelListComponents({
           setChannels(response);
         })
         .catch((e) => {
-          // TODO: handle error in the ui
-          alert("Failed to fetch channels");
-          console.error(e);
+          setHasError(true);
         });
-    }
-  }, [token]);
+  }
+  useEffect(fetchChannels, [token]);
 
   // TODO: Update to use the dynamic organization id
   return (
@@ -83,82 +83,92 @@ export default function DataChannelListComponents({
       positionChildren="bottom"
       subtitle="All your data channels in one place."
       table={
-        <Flex gap={5} direction={"column"}>
-          <Card p={2}>
-            <Flex gap={5} align={"center"}>
-              <Select
-                value={filterMode}
-                onChange={(e) => {
-                  filterChannels(
-                    e.target.value as "all" | "subscribed" | "owned"
-                  );
-                  setFilterMode(
-                    e.target.value as "all" | "subscribed" | "owned"
-                  );
-                }}
-              >
-                <option defaultChecked value="all">
-                  All Channels
-                </option>
-                <option value="subscribed">Subscribed Channels</option>
-                <option value="owned">My Organization Channels</option>
-              </Select>
-              <OrbisButton
-                onClick={() => {
-                  filterChannels("all");
-                  setFilterMode("all");
-                }}
-              >
-                Clear Filter
-              </OrbisButton>
-            </Flex>
-          </Card>
-          {channels.length > 0 ? (
-            <Card>
-              <OrbisTable
-                headers={["Data Channel", "Description", "Channel ID"]}
-                rows={channels.map((channel, index) => {
-                  return [
-                    <Flex
-                      key={"1"}
-                      justifyContent={"space-between"}
-                      alignItems={"center"}
-                      gap={2}
-                      justifyItems={"center"}
-                    >
-                      <OpenButton
-                        onClick={() => router.push("/channels/" + channel.id)}
+        hasError ? (
+          <ErrorCard
+            title="Error"
+            message="An error occurred while fetching the channels. Please try again later."
+            retry={fetchChannels}
+          />
+        ) : (
+          <Flex gap={5} direction={"column"}>
+            <Card p={2}>
+              <Flex gap={5} align={"center"}>
+                <Select
+                  value={filterMode}
+                  onChange={(e) => {
+                    filterChannels(
+                      e.target.value as "all" | "subscribed" | "owned"
+                    );
+                    setFilterMode(
+                      e.target.value as "all" | "subscribed" | "owned"
+                    );
+                  }}
+                >
+                  <option defaultChecked value="all">
+                    All Channels
+                  </option>
+                  <option value="subscribed">Subscribed Channels</option>
+                  <option value="owned">My Organization Channels</option>
+                </Select>
+                <OrbisButton
+                  onClick={() => {
+                    filterChannels("all");
+                    setFilterMode("all");
+                  }}
+                >
+                  Clear Filter
+                </OrbisButton>
+              </Flex>
+            </Card>
+            {channels.length > 0 ? (
+              <Card>
+                <OrbisTable
+                  headers={["Data Channel", "Description", "Channel ID"]}
+                  rows={channels.map((channel, index) => {
+                    return [
+                      <Flex
+                        key={"1"}
+                        justifyContent={"space-between"}
+                        alignItems={"center"}
+                        gap={2}
+                        justifyItems={"center"}
                       >
-                        {channel.name}
-                      </OpenButton>
-                      {channel.creatorOrganization === user?.custom.org ? (
-                        channel.accessSwitch ? (
-                          <OrbisBadge>Published</OrbisBadge>
+                        <OpenButton
+                          onClick={() => router.push("/channels/" + channel.id)}
+                        >
+                          {channel.name}
+                        </OpenButton>
+                        {channel.creatorOrganization === user?.custom.org ? (
+                          channel.accessSwitch ? (
+                            <OrbisBadge>Published</OrbisBadge>
+                          ) : (
+                            <OrbisBadge colorScheme="red">Disabled</OrbisBadge>
+                          )
                         ) : (
-                          <OrbisBadge colorScheme="red">Disabled</OrbisBadge>
-                        )
-                      ) : (
-                        <OrbisBadge colorScheme="green">Subscribed</OrbisBadge>
-                      )}
-                    </Flex>,
-                    channel.description,
-                    <APIKeyText
-                      allowCopy
-                      showAsClearText
-                      key={index + "-channel-id"}
-                    >
-                      {channel.id}
-                    </APIKeyText>,
-                  ];
-                })}
-              />
-            </Card>
-          ) : (
-            <Card>
-              <CardBody>No Channels Available</CardBody>
-            </Card>
-          )}
-        </Flex>
+                          <OrbisBadge colorScheme="green">
+                            Subscribed
+                          </OrbisBadge>
+                        )}
+                      </Flex>,
+                      channel.description,
+                      <APIKeyText
+                        allowCopy
+                        showAsClearText
+                        key={index + "-channel-id"}
+                      >
+                        {channel.id}
+                      </APIKeyText>,
+                    ];
+                  })}
+                />
+              </Card>
+            ) : (
+              <Card>
+                <CardBody>No Channels Available</CardBody>
+              </Card>
+            )}
+          </Flex>
+        )
       }
       topbartitle="Data Channels"
     />

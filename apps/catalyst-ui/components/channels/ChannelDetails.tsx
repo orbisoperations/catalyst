@@ -3,8 +3,10 @@
 import {
   APIKeyText,
   EditButton,
+  ErrorCard,
   OrbisBadge,
   OrbisButton,
+  OrbisCard,
   TrashButton,
 } from "@/components/elements";
 import { DetailedView } from "@/components/layouts";
@@ -66,15 +68,25 @@ export default function DataChannelDetailsComponent({
   const { user, token } = useUser();
   const { id } = useParams();
   const [channel, setChannel] = useState<DataChannel>();
+  const [hasError, setHasError] = useState<boolean>(false);
   const [editChannel, setEditChannel] = useState<DataChannel>();
-
+  const [errorMessage, setErrorMessage] = useState<string>("");
   function fetchChannelDetails() {
+    setHasError(false);
     if (id && typeof id === "string" && token)
-      channelDetails(id, token).then((data) => {
-        setChannel(data);
-        setEditChannel(data);
-        editDisclosure.onClose();
-      });
+      channelDetails(id, token)
+        .then((data) => {
+          setChannel(data);
+          setEditChannel(data);
+          editDisclosure.onClose();
+        })
+        .catch((e) => {
+          setHasError(true);
+          setErrorMessage(
+            "An error occurred while fetching the channel details. Does the channel exist?"
+          );
+          console.error(e);
+        });
   }
 
   useEffect(() => {
@@ -85,14 +97,16 @@ export default function DataChannelDetailsComponent({
         : "https://catalyst.devintelops.io";
       setGatewayUrl(url.replace("catalyst", "gateway") + "/graphql");
     }
-  });
+  }, []);
   useEffect(fetchChannelDetails, [token]);
 
   return (
     <DetailedView
-      showspinner={!channel}
+      showspinner={!channel && !hasError}
       actions={
-        channel && channel.creatorOrganization === user?.custom.org ? (
+        !hasError &&
+        channel &&
+        channel.creatorOrganization === user?.custom.org ? (
           <Flex gap={10}>
             <Flex gap={2} align={"center"}>
               <Switch
@@ -104,7 +118,14 @@ export default function DataChannelDetailsComponent({
                       channel.id,
                       e.target.checked ? true : false,
                       token ?? ""
-                    ).then(fetchChannelDetails);
+                    )
+                      .then(fetchChannelDetails)
+                      .catch((e) => {
+                        setHasError(true);
+                        setErrorMessage(
+                          "An error occurred while updating the channel. Please try again later."
+                        );
+                      });
                   }
                 }}
               />
@@ -156,10 +177,18 @@ export default function DataChannelDetailsComponent({
                       colorScheme="red"
                       onClick={() => {
                         if (id && typeof id === "string" && token)
-                          deleteChannel(id, token).then(() => {
-                            onClose();
-                            router.push("/channels");
-                          });
+                          deleteChannel(id, token)
+                            .then(() => {
+                              onClose();
+                              router.push("/channels");
+                            })
+                            .catch((e) => {
+                              onClose();
+                              setHasError(true);
+                              setErrorMessage(
+                                "An error occurred while deleting the channel. Please try again later."
+                              );
+                            });
                       }}
                     >
                       Delete
@@ -190,11 +219,16 @@ export default function DataChannelDetailsComponent({
 
                           user?.custom.org + "/" + formData.get("name")
                         );
-                        updateChannel(formData, token).then(
-                          fetchChannelDetails
-                        );
+                        updateChannel(formData, token)
+                          .then(fetchChannelDetails)
+                          .catch((e) => {
+                            editDisclosure.onClose();
+                            setHasError(true);
+                            setErrorMessage(
+                              "An error occurred while updating the channel. Please try again later."
+                            );
+                          });
                       }
-                      // todo update data channel here
                     }}
                   >
                     <Grid gap={5}>
@@ -282,54 +316,61 @@ export default function DataChannelDetailsComponent({
             </Modal>
           </div>
         </div>
-
-        <Grid gap={5}>
-          <Grid gap={5} gridTemplateColumns={"1fr 1fr"}>
-            <FormControl display={"grid"} gap={2}>
-              <label htmlFor="gatewayUrl">Access URL</label>
-              <APIKeyText width={"100%"} allowCopy showAsClearText>
-                {gatewayUrl}
-              </APIKeyText>
-            </FormControl>
-            {channel?.creatorOrganization === user?.custom.org ? (
+        {hasError ? (
+          <ErrorCard
+            title="Error"
+            message={errorMessage}
+            goBack={router.back}
+            retry={fetchChannelDetails}
+          />
+        ) : (
+          <Grid gap={5}>
+            <Grid gap={5} gridTemplateColumns={"1fr 1fr"}>
               <FormControl display={"grid"} gap={2}>
-                <label htmlFor="endpoint">Source URL</label>
+                <label htmlFor="gatewayUrl">Access URL</label>
                 <APIKeyText width={"100%"} allowCopy showAsClearText>
-                  {channel?.endpoint}
+                  {gatewayUrl}
                 </APIKeyText>
               </FormControl>
-            ) : (
-              <></>
-            )}
-            <FormControl display={"grid"} gap={2}>
-              <label htmlFor="description">Channel ID</label>
-              <APIKeyText width={"100%"} allowCopy showAsClearText>
-                {channel?.id}
-              </APIKeyText>
-            </FormControl>
-          </Grid>
+              {channel?.creatorOrganization === user?.custom.org ? (
+                <FormControl display={"grid"} gap={2}>
+                  <label htmlFor="endpoint">Source URL</label>
+                  <APIKeyText width={"100%"} allowCopy showAsClearText>
+                    {channel?.endpoint}
+                  </APIKeyText>
+                </FormControl>
+              ) : (
+                <></>
+              )}
+              <FormControl display={"grid"} gap={2}>
+                <label htmlFor="description">Channel ID</label>
+                <APIKeyText width={"100%"} allowCopy showAsClearText>
+                  {channel?.id}
+                </APIKeyText>
+              </FormControl>
+            </Grid>
 
-          <Flex direction={"column"} gap={5}>
-            <Card>
-              <CardHeader>
-                <Heading size="md">Available Metadata</Heading>
-              </CardHeader>
+            <Flex direction={"column"} gap={5}>
+              <Card>
+                <CardHeader>
+                  <Heading size="md">Available Metadata</Heading>
+                </CardHeader>
 
-              <CardBody>
-                <Stack divider={<StackDivider />} spacing="4">
-                  <Box>
-                    <Heading size="xs" textTransform="uppercase">
-                      No Metadata Available
-                    </Heading>
-                    <Text pt="2" fontSize="sm">
-                      Intentionally Left Blank
-                    </Text>
-                  </Box>
-                </Stack>
-              </CardBody>
-            </Card>
-            {/* TODO: enable sharing view on the UI */}
-            {/* channel?.creatorOrganization === "org2" && (
+                <CardBody>
+                  <Stack divider={<StackDivider />} spacing="4">
+                    <Box>
+                      <Heading size="xs" textTransform="uppercase">
+                        No Metadata Available
+                      </Heading>
+                      <Text pt="2" fontSize="sm">
+                        Intentionally Left Blank
+                      </Text>
+                    </Box>
+                  </Stack>
+                </CardBody>
+              </Card>
+              {/* TODO: enable sharing view on the UI */}
+              {/* channel?.creatorOrganization === "org2" && (
                 <Card>
                   <CardHeader>
                     <Flex justify={"space-between"} gap={5} align={"center"}>
@@ -360,8 +401,9 @@ export default function DataChannelDetailsComponent({
                   </CardBody>
                 </Card>
               ) */}
-          </Flex>
-        </Grid>
+            </Flex>
+          </Grid>
+        )}
       </div>
     </DetailedView>
   );
