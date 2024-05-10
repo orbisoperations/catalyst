@@ -4,13 +4,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node run.js",
+    "dev": "bun run.ts",
     "build": "next build",
     "build:prod": "NODE_ENV=production next build",
     "deploymentStaging": "pnpm install --ignore-workspace && fly deploy",
     "lint": "next lint",
-    "start": "node run.js",
-    "server": "NODE_ENV=production node run.js"
+    "start": "bun run.ts",
+    "server": "NODE_ENV=production bun run.ts"
   },
   "dependencies": {
     "@chakra-ui/icons": "^2.1.1",
@@ -18,22 +18,25 @@
     "@emotion/react": "^11.11.4",
     "@emotion/styled": "^11.11.0",
     "@monaco-editor/react": "^4.6.0",
+    "axios": "^1.6.8",
     "express": "^4.19.2",
     "framer-motion": "^11.1.7",
-    "axios": "^1.6.8",
     "graphql-yoga": "^5.3.1",
     "next": "14.2.3",
     "react": "^18",
     "react-dom": "^18",
+    "react-markdown": "^9.0.1",
     "socket.io": "^4.7.5",
     "socket.io-client": "^4.7.5",
-    "swr": "^2.2.5"
+    "swr": "^2.2.5",
+    "tslog": "^4.9.2"
   },
   "devDependencies": {
     "@flydotio/dockerfile": "^0.5.7",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "bun": "^1.1.7",
     "eslint": "^8",
     "eslint-config-next": "14.2.3",
     "postcss": "^8",
