@@ -2,6 +2,7 @@
 export const runtime = "edge";
 import {
   APIKeyText,
+  ErrorCard,
   OpenButton,
   OrbisBadge,
   OrbisCard,
@@ -27,23 +28,23 @@ export default function PartnerDetailedComponent({
   const router = useRouter();
   const params = useParams();
   const { token } = useUser();
+  const [hasError, setHasError] = useState<boolean>(false);
   const [channels, setChannels] = useState<DataChannel[]>([]);
-  useEffect(() => {
+  function fetchChannels() {
+    setHasError(false);
     if (params.id && typeof params.id === "string" && token) {
       listPartnersChannels(token, params.id)
-        .then((data) => {
-          setChannels(data);
-        })
+        .then(setChannels)
         .catch((e) => {
-          alert("Failed to fetch channels");
-          console.error(e);
+          setHasError(true);
         });
     }
-  }, [params.id, token]);
+  }
+  useEffect(fetchChannels, [params.id, token]);
   return (
     <DetailedView
       topbaractions={navigationItems}
-      showspinner={!token}
+      showspinner={!token && !hasError}
       actions={<></>}
       headerTitle={{
         text: (params.id as string) ?? "",
@@ -53,32 +54,44 @@ export default function PartnerDetailedComponent({
       topbartitle="Partners"
     >
       <Flex gap={10}>
-        <OrbisCard pb={0} header={"Shared Channels"} flex={2}>
-          {channels.length > 0 ? (
-            <OrbisTable
-              headers={["Channel"]}
-              rows={channels.map((channel, index) => [
-                <Flex
-                  key={index}
-                  justifyContent={"space-between"}
-                  alignItems={"center"}
-                >
-                  <OpenButton
-                    onClick={() => router.push(`/channels/${channel.id}`)}
+        {hasError ? (
+          <ErrorCard
+            title="Error"
+            message={
+              "An error occurred while fetching the channels. Please try again later."
+            }
+            retry={fetchChannels}
+          />
+        ) : (
+          <OrbisCard pb={0} header={"Shared Channels"} flex={2}>
+            {channels.length > 0 ? (
+              <OrbisTable
+                headers={["Channel"]}
+                rows={channels.map((channel, index) => [
+                  <Flex
+                    key={index}
+                    justifyContent={"space-between"}
+                    alignItems={"center"}
                   >
-                    {channel.name}
-                  </OpenButton>
-                  <Text>{channel.description}</Text>
-                  <APIKeyText allowCopy showAsClearText>
-                    {channel.id}
-                  </APIKeyText>
-                </Flex>,
-              ])}
-            />
-          ) : (
-            <Text my={5}>{params.id} is not sharing any channels with you</Text>
-          )}
-        </OrbisCard>
+                    <OpenButton
+                      onClick={() => router.push(`/channels/${channel.id}`)}
+                    >
+                      {channel.name}
+                    </OpenButton>
+                    <Text>{channel.description}</Text>
+                    <APIKeyText allowCopy showAsClearText>
+                      {channel.id}
+                    </APIKeyText>
+                  </Flex>,
+                ])}
+              />
+            ) : (
+              <Text my={5}>
+                {params.id} is not sharing any channels with you
+              </Text>
+            )}
+          </OrbisCard>
+        )}
       </Flex>
     </DetailedView>
   );
