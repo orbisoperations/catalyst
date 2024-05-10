@@ -10,7 +10,6 @@ import { DetailedView } from "@/components/layouts";
 import { navigationItems } from "@/utils/nav.utils";
 import {
   DataChannel,
-  DataChannelActionResponse,
   IssuedJWTRegistry,
   JWTSigningResponse,
 } from "@catalyst/schema_zod";
@@ -42,7 +41,7 @@ type CreateTokensFormProps = {
     },
     cfToken: string
   ) => Promise<JWTSigningResponse>;
-  listChannels: (token: string) => Promise<DataChannelActionResponse>;
+  listChannels: (token: string) => Promise<DataChannel[]>;
   createIJWTRegistry: (
     token: string,
     data: Omit<IssuedJWTRegistry, "id">
@@ -69,16 +68,11 @@ export default function CreateTokensForm({
   }>({ value: 7, unit: "days" });
   useEffect(() => {
     if (cfToken)
-      listChannels(cfToken).then((resp) => {
-        if (resp.success) {
-          setChannels(
-            (resp.data as DataChannel[]).map((channel) => [
-              channel.name,
-              channel.description,
-            ])
-          );
-          setChannelsResponse(resp.data as DataChannel[]);
-        }
+      listChannels(cfToken).then((channels) => {
+        setChannels(
+          channels.map((channel) => [channel.name, channel.description])
+        );
+        setChannelsResponse(channels);
       });
   }, [cfToken]);
 

@@ -19,7 +19,7 @@ type PartnerDetailedComponentProps = {
   listPartnersChannels: (
     token: string,
     partnerId: string
-  ) => Promise<DataChannel[] | undefined>;
+  ) => Promise<DataChannel[]>;
 };
 export default function PartnerDetailedComponent({
   listPartnersChannels,
@@ -30,11 +30,14 @@ export default function PartnerDetailedComponent({
   const [channels, setChannels] = useState<DataChannel[]>([]);
   useEffect(() => {
     if (params.id && typeof params.id === "string" && token) {
-      listPartnersChannels(token, params.id).then((data) => {
-        if (data) {
+      listPartnersChannels(token, params.id)
+        .then((data) => {
           setChannels(data);
-        }
-      });
+        })
+        .catch((e) => {
+          alert("Failed to fetch channels");
+          console.error(e);
+        });
     }
   }, [params.id, token]);
   return (
