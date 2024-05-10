@@ -1,5 +1,4 @@
 packages:
   - "apps/*"
-  - "!apps/channel-control-ui"
   - "packages/*"
   - "examples/*"
