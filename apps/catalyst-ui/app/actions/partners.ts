@@ -1,9 +1,14 @@
 "use server";
+import { CloudflareEnv } from "@/env";
+import { OrgInvite } from "@catalyst/schema_zod";
 import { getRequestContext } from "@cloudflare/next-on-pages";
 
+function getEnv() {
+  return getRequestContext().env as CloudflareEnv;
+}
+
 function getMatcher() {
-  // @ts-ignore
-  return getRequestContext().env.ORGANIZATION_MATCHMAKING;
+  return getEnv().ORGANIZATION_MATCHMAKING;
 }
 
 export async function listInvites(token: string) {
@@ -12,7 +17,7 @@ export async function listInvites(token: string) {
   if (!result.success) {
     throw new Error(result.error);
   }
-  return result.invite;
+  return result.invite as OrgInvite[];
 }
 
 export async function sendInvite(
@@ -29,7 +34,7 @@ export async function sendInvite(
   if (!result.success) {
     throw new Error("Sending Invite Failed");
   }
-  return result.invite;
+  return result.invite as OrgInvite;
 }
 
 export async function readInvite(inviteId: string, token: string) {
@@ -38,7 +43,7 @@ export async function readInvite(inviteId: string, token: string) {
   if (!result.success) {
     throw new Error("Reading Invite Failed");
   }
-  return result.invite;
+  return result.invite as OrgInvite;
 }
 
 export async function declineInvite(inviteId: string, token: string) {
@@ -48,7 +53,7 @@ export async function declineInvite(inviteId: string, token: string) {
   if (!result.success) {
     throw new Error("Declining Invite Failed");
   }
-  return result.invite;
+  return result.invite as OrgInvite;
 }
 
 export async function acceptInvite(inviteId: string, token: string) {
@@ -58,7 +63,7 @@ export async function acceptInvite(inviteId: string, token: string) {
   if (!result.success) {
     throw new Error("Accepting Invite Failed");
   }
-  return result.invite;
+  return result.invite as OrgInvite;
 }
 
 export async function togglePartnership(orgId: string, token: string) {
@@ -67,5 +72,5 @@ export async function togglePartnership(orgId: string, token: string) {
   if (!result.success) {
     throw new Error("Toggling Partnership Failed");
   }
-  return result.invite;
+  return result.invite as OrgInvite;
 }
