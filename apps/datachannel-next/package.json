@@ -7,7 +7,7 @@
     "dev": "node run.js",
     "build": "next build",
     "build:prod": "NODE_ENV=production next build",
-    "deploymentPreview": "pnpm install --ignore-workspace && fly deploy",
+    "deploymentStaging": "pnpm install --ignore-workspace && fly deploy",
     "lint": "next lint",
     "start": "node run.js",
     "server": "NODE_ENV=production node run.js"
