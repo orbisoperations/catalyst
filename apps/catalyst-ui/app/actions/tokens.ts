@@ -1,28 +1,35 @@
 "use server";
+import { CloudflareEnv } from "@/env";
 import { getRequestContext } from "@cloudflare/next-on-pages";
 import { JWTRequest } from "../types";
+function getEnv() {
+  return getRequestContext().env as CloudflareEnv;
+}
+function getAuthx() {
+  return getEnv().AUTHX_TOKEN_API;
+}
 export async function getPublicKey() {
   // @ts-ignore
-  const tokens = getRequestContext().env.AUTHX_TOKEN_API;
+  const tokens = getAuthx();
 
   return await tokens.getPublicKey();
 }
 
 /*
-* WARNING - below is an admin function and will invalidate all active tokens
-*/
+ * WARNING - below is an admin function and will invalidate all active tokens
+ */
 export async function rotateJWTKeyMaterial(cfToken: string) {
   const tokenObject = {
     cfToken: cfToken,
   };
   // @ts-ignore
-  const tokens = getRequestContext().env.AUTHX_TOKEN_API;
+  const tokens = getAuthx();
 
-  return await tokens.rotateKey(tokenObject)
+  return await tokens.rotateKey(tokenObject);
 }
 /*
-* WARNING - above is an admin function and will invalidate all active tokens
-*/
+ * WARNING - above is an admin function and will invalidate all active tokens
+ */
 
 export async function signJWT(
   jwtRequest: JWTRequest,
@@ -32,12 +39,11 @@ export async function signJWT(
   },
   cfToken: string
 ) {
-
   const tokenObject = {
     cfToken: cfToken,
   };
   // @ts-ignore
-  const tokens = getRequestContext().env.AUTHX_TOKEN_API;
+  const tokens = getAuthx();
   if (expiration.unit === "days" && expiration.value > 365) {
     throw new Error("Expiration time cannot be greater than 365 days");
   }
@@ -50,5 +56,9 @@ export async function signJWT(
     24 *
     (expiration.unit === "days" ? expiration.value : expiration.value * 7);
 
-  return await tokens.signJWT(jwtRequest, exp, tokenObject);
+  const signedToken = await tokens.signJWT(jwtRequest, exp, tokenObject);
+  if (!signedToken.success) {
+    throw new Error("Failed to sign JWT");
+  }
+  return signedToken;
 }
