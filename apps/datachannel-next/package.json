@@ -10,10 +10,11 @@
     "deploymentStaging": "pnpm install --ignore-workspace && fly deploy",
     "lint": "next lint",
     "start": "bun run.ts",
-    "server": "NODE_ENV=production yes | npx tsx run.ts"
+    "server": "NODE_ENV=production bun run.ts"
   },
   "dependencies": {
     "@chakra-ui/icons": "^2.1.1",
+    "@types/bun": "^1.1.1",
     "@chakra-ui/react": "^2.8.2",
     "@emotion/react": "^11.11.4",
     "@emotion/styled": "^11.11.0",
@@ -32,14 +33,14 @@
     "swr": "^2.2.5",
     "tslog": "^4.9.2",
     "tsx": "^4.9.4",
-    "unstorage": "^1.10.2"
+    "unstorage": "^1.10.2",
+    "bun": "^1.1.7"
   },
   "devDependencies": {
     "@flydotio/dockerfile": "^0.5.7",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
-    "bun": "^1.1.7",
     "eslint": "^8",
     "eslint-config-next": "14.2.3",
     "postcss": "^8",
