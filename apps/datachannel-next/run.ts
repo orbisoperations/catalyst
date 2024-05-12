@@ -1,8 +1,11 @@
-import { createServer } from 'node:http';
 import next from 'next';
 import {Server} from 'socket.io';
 import { Logger } from 'tslog';
 import net from 'net';
+import { listen } from "listhen";
+import { createStorage } from "unstorage";
+import fsDriver from "unstorage/drivers/fs";
+import {createStorageServer} from "unstorage/server";
 
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = 'localhost';
@@ -11,30 +14,44 @@ const takHost = 'tak-server-2-broken-haze-8097.fly.dev';
 const takPort = 8999;
 
 const logger = new Logger({
-    name: 'run.js',
+    name: 'app',
 });
 
+// Configure a long-lived application storage backend
+const dataStorageDirectory = process.env.APP_DATA_STORAGE_DIRECTORY ?? "./.app/data";
+
+// This sets up an instance of unstorage @ dataStorageDirectory
+export const storage = createStorage({
+    driver: fsDriver({ base: dataStorageDirectory }),
+});
+// Setup the server so we can communicate with it from the UI
+const storageServer = createStorageServer(storage, {});
+
 const app = next({ dev, hostname, port });
-const handler = app.getRequestHandler();
+const nextHandler = app.getRequestHandler();
 let io: Server;
 
 const startServer = async () => {
     try {
         await app.prepare();
 
-        const httpServer = createServer(handler);
-        io = new Server(httpServer);
+        // manages a next.js server on port 3000
+        await listen((req, res) => {
+            if(req.url?.includes("/state/")) {
+                return storageServer.handle(req, res);
+            }
+            return nextHandler(req, res)
+        }, {port: 3000}).then((l) => {
+            io = new Server(l.server);
+            io.on('connection', onSocketConnection);
 
-        io.on('connection', onSocketConnection);
-
-        const client = net.createConnection(takPort, takHost, onTakServerConnected);
-        client.on('data', onTakServerData);
-        client.on('error', onTakServerError);
-        client.on('end', onTakServerDisconnected);
-
-        httpServer.listen(port, () => {
-            logger.info(`> Ready on http://${hostname}:${port}`);
+            const client = net.createConnection(takPort, takHost, onTakServerConnected);
+            client.on('data', onTakServerData);
+            client.on('error', onTakServerError);
+            client.on('end', onTakServerDisconnected);
+            logger.info(`> Next.js: ${l.url}`)
         });
+
     } catch (error) {
         logger.error(error);
         process.exit(1);
@@ -47,8 +64,8 @@ const onSocketConnection = (socket: any) => {
 };
 
 const onTakServerConnected = () => {
-    logger.info(`TAK Connected: ${takHost}`);
-    io.emit(`TAK Connected: ${takHost}`);
+    logger.info(`> TAK Server Connected: ${takHost}`);
+    io.emit(`TAK Server: ${takHost}`);
 };
 
 const onTakServerData = (data: Buffer) => {

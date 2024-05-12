@@ -85,7 +85,7 @@ export default function MessagesLogCard() {
               flexDirection="column"
               justifyContent="center"
           >
-           <Flex><Heading size="md" mr="2%">Live Logs</Heading><SocketConnection handleMessage={handleMessage}  /></Flex>
+           <Flex><Heading size="md" mr="2%">Live</Heading><SocketConnection handleMessage={handleMessage}  /></Flex>
             <Terminal messages={messages} />
           </CardBody>
         </Card>
