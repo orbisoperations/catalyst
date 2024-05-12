@@ -33,7 +33,6 @@ export default function SocketConnection(props: {
     socket.on("disconnect", onDisconnect);
 
     socket.on("cot", (arg) => {
-      console.log({ arg });
       props.handleMessage(arg);
     });
 

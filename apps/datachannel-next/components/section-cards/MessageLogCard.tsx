@@ -64,7 +64,6 @@ const Terminal = ({ messages }: { messages: LogMessage[] }) => {
 };
 
 export default function MessagesLogCard() {
-  const valueState = useState<string>('');
   const [messages, setMessages] = useState<LogMessage[]>([]);
 
   const handleMessage = useCallback((m: any) => {
