@@ -7,8 +7,10 @@ export interface StepInfoType {
 
 
 export interface QueryItem {
+  id?: string;
   name: string;
   value: string;
+  date: Date;
 }
 
 interface AppContext {

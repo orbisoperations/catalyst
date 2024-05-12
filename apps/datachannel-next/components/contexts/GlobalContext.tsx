@@ -1,23 +1,9 @@
 "use client";
-import {useRouter} from "next/router";
-import React, {
-  createContext,
-  ReactNode,
-  useContext,
-  useEffect,
-  useState,
-} from "react";
-import {
-  ChakraProvider,
-  Alert,
-  AlertIcon,
-  Text,
-  HStack,
-} from "@chakra-ui/react";
+import React, {createContext, ReactNode, useContext, useState,} from "react";
+import {Alert, AlertIcon, ChakraProvider,} from "@chakra-ui/react";
 import {AppContext, StepsDataContext} from "./AppState";
-import {ErrorContext, errMsgArr} from "./ErrorState";
+import {errMsgArr, ErrorContext} from "./ErrorState";
 import Home from "../Home";
-import {QueryItemsContextProvider} from "@/components/query-items/context";
 
 interface GlobalContext {
 }
@@ -67,9 +53,7 @@ export const GlobalProvider: React.FC<GlobalContextProps> = ({children}) => {
                   setStepData,
                 }}
             >
-              <QueryItemsContextProvider>
                 <Home/>
-              </QueryItemsContextProvider>
               {/*<ResponseContainer></ResponseContainer>*/}
               {/* {isShowingResults ? (
             ) : (
