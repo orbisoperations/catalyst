@@ -2,7 +2,6 @@
 "use client";
 import {
   APIKeyText,
-  CopyButton,
   EditButton,
   OrbisBadge,
   OrbisButton,
@@ -37,31 +36,19 @@ import {
 } from "@chakra-ui/react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import {
-  DataChannel,
-  DataChannelActionResponse,
-} from "../../../../packages/schema_zod";
+import { DataChannel } from "../../../../packages/schema_zod";
 import { useUser } from "../contexts/User/UserContext";
 
 export const runtime = "edge";
 type DataChannelDetailsProps = {
-  channelDetails: (
-    id: string,
-    token: string
-  ) => Promise<DataChannel | undefined>;
-  updateChannel: (
-    data: FormData,
-    token: string
-  ) => Promise<DataChannelActionResponse>;
-  deleteChannel: (
-    id: string,
-    token: string
-  ) => Promise<DataChannelActionResponse>;
+  channelDetails: (id: string, token: string) => Promise<DataChannel>;
+  updateChannel: (data: FormData, token: string) => Promise<DataChannel>;
+  deleteChannel: (id: string, token: string) => Promise<DataChannel>;
   handleSwitch: (
     channelId: string,
     accessSwitch: boolean,
     token: string
-  ) => Promise<DataChannelActionResponse>;
+  ) => Promise<DataChannel>;
 };
 
 export default function DataChannelDetailsComponent({

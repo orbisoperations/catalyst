@@ -11,11 +11,7 @@ import {
 } from "@/components/elements";
 import { DetailedView } from "@/components/layouts";
 import { navigationItems } from "@/utils/nav.utils";
-import {
-  DataChannel,
-  DataChannelActionResponse,
-  IssuedJWTRegistry,
-} from "@catalyst/schema_zod";
+import { DataChannel, IssuedJWTRegistry } from "@catalyst/schema_zod";
 import { Box, Flex } from "@chakra-ui/layout";
 import {
   Card,
@@ -39,7 +35,7 @@ interface TokenDetailsProps {
     token: string,
     id: string
   ) => Promise<IssuedJWTRegistry | undefined>;
-  listChannels: (token: string) => Promise<DataChannelActionResponse>;
+  listChannels: (token: string) => Promise<DataChannel[]>;
 }
 type DisplayedJWTRegistry = {
   claims: { name: string; id: string; description: string }[];
@@ -66,12 +62,10 @@ export default function TokenDetailsComponent({
     if (token && id && typeof id === "string") {
       getIJWTRegistry(token, id).then((data) => {
         listChannels(token).then((channels) => {
-          if (data && channels.success) {
-            const claims = (channels.data as DataChannel[]).filter(
-              (channel) => {
-                return data.claims.includes(channel.id);
-              }
-            );
+          if (data) {
+            const claims = channels.filter((channel) => {
+              return data.claims.includes(channel.id);
+            });
             const iJWTRegistry: DisplayedJWTRegistry = {
               ...data,
               claims,
