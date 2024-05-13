@@ -25,8 +25,8 @@ durable_objects.bindings = [{name = "ISSUED_JWT_REGISTRY_DO", class_name = "I_JW
 services = [
     { binding = "USERCACHE", service = "user_credentials_cache-staging" },
 ]
-[env.production]
+[env.demo]
 durable_objects.bindings = [{name = "ISSUED_JWT_REGISTRY_DO", class_name = "I_JWT_Registry_DO"}]
 services = [
-    { binding = "USERCACHE", service = "user_credentials_cache-production" },
+    { binding = "USERCACHE", service = "user_credentials_cache-demo" },
 ]

@@ -22,9 +22,7 @@ new_classes = ["OrganizationMatchmakingDO"]
 tag = "v2"
 
 
-
-
-# STAGING VALUES
+###################  STAGING VALUES ###################
 [env.staging]
 
 durable_objects.bindings = [{name = "ORG_MATCHMAKING", class_name = "OrganizationMatchmakingDO"}]
@@ -37,12 +35,12 @@ services = [
 
 
 
-# PRODUCTION VALUES
-[env.production]
+################### DEMO VALUES ###################
+[env.demo]
 
 durable_objects.bindings = [{name = "ORG_MATCHMAKING", class_name = "OrganizationMatchmakingDO"}]
 
 services = [
-	{ binding = "AUTHZED", service = "authx_authzed_api-production"},
-	{ binding = "USERCACHE", service = "user_credentials_cache-production"}
+	{ binding = "AUTHZED", service = "authx_authzed_api-demo"},
+	{ binding = "USERCACHE", service = "user_credentials_cache-demo"}
 ]

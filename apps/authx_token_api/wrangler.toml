@@ -4,15 +4,14 @@ compatibility_flags = [ "nodejs_compat" ]
 main = "src/index.ts"
 account_id = "3be6f7bb0cc73869d555e1156586c1f2"
 
+[dev]
+ip = "localhost"
+port = 5052
+
 services = [
 	{ binding = "AUTHZED", service = "authx_authzed_api"},
 	{ binding = "USERCACHE", service = "user_credentials_cache"}
 ]
-
-
-[dev]
-ip = "localhost"
-port = 5052
 
 
 # https://developers.cloudflare.com/durable-objects/
@@ -25,15 +24,7 @@ tag = "v1" # Should be unique for each entry
 new_classes = ["JWTKeyProvider"]
 
 
-
-
-
-
-
-
-
-
-# STAGING VALUES
+############################ STAGING VALUES #################################
 [env.staging]
 services = [
 	{ binding = "AUTHZED", service = "authx_authzed_api-staging"},
@@ -42,15 +33,10 @@ services = [
 durable_objects.bindings = [{name = "KEY_PROVIDER", class_name = "JWTKeyProvider"}]
 
 
-
-
-
-
-
-# PRODUCTION VALUES
-[env.production]
+# DEMO VALUES
+[env.demo]
 services = [
-	{ binding = "AUTHZED", service = "authx_authzed_api-production"},
-	{ binding = "USERCACHE", service = "user_credentials_cache-production"}
+	{ binding = "AUTHZED", service = "authx_authzed_api-demo"},
+	{ binding = "USERCACHE", service = "user_credentials_cache-demo"}
 ]
 durable_objects.bindings = [{name = "KEY_PROVIDER", class_name = "JWTKeyProvider"}]
