@@ -2,7 +2,7 @@ name: 'Demo Deployment'
 on:
   push:
     branches:
-      - demo
+      - main
 
 # Limit to 1 concurrent run per workflow run
 concurrency:
