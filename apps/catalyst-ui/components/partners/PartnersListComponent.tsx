@@ -34,15 +34,9 @@ import { useEffect, useState } from "react";
 import { useUser } from "../contexts/User/UserContext";
 import { OrgInvite } from "../../../../packages/schema_zod";
 type PartnersListComponentProps = {
-  listInvites: (token: string) => Promise<OrgInvite[] | undefined>;
-  declineInvite: (
-    inviteId: string,
-    token: string
-  ) => Promise<OrgInvite | undefined>;
-  togglePartnership(
-    orgId: string,
-    token: string
-  ): Promise<OrgInvite | undefined>;
+  listInvites: (token: string) => Promise<OrgInvite[]>;
+  declineInvite: (inviteId: string, token: string) => Promise<OrgInvite>;
+  togglePartnership(orgId: string, token: string): Promise<OrgInvite>;
 };
 export default function PartnersListComponent({
   listInvites,
@@ -62,18 +56,16 @@ export default function PartnersListComponent({
         .then((invites) => {
           const partners: OrgInvite[] = [];
           const invitations: OrgInvite[] = [];
-          if (invites) {
-            invites.forEach((invite) => {
-              if (invite.status === "accepted") {
-                partners.push(invite);
-              }
-              if (invite.status === "pending") {
-                invitations.push(invite);
-              }
-            });
-            setPartners(partners);
-            setInvitations(invitations);
-          }
+          invites.forEach((invite) => {
+            if (invite.status === "accepted") {
+              partners.push(invite);
+            }
+            if (invite.status === "pending") {
+              invitations.push(invite);
+            }
+          });
+          setPartners(partners);
+          setInvitations(invitations);
         })
         .catch((e) => {
           alert("Failed to fetch invites " + e);
