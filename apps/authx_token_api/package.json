@@ -4,7 +4,7 @@
 	"private": true,
 	"type": "module",
 	"scripts": {
-		"deployment": "yes | wrangler deploy --minify --env production",
+		"deployment": "yes | wrangler deploy --minify --keep-vars --env production",
 		"deploymentPreview": "yes | wrangler deploy --env staging",
 		"dev": "wrangler dev",
 		"start": "wrangler dev",

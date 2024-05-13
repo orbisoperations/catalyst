@@ -4,6 +4,7 @@
 	"private": true,
 	"scripts": {
 		"deploymentPreview": "yes | wrangler deploy --env staging",
+		"deployment": "yes | wrangler deploy --minify --keep-vars --env production",
 		"dev": "wrangler dev --test-scheduled",
 		"start": "wrangler dev",
 		"triggerScheduled": "curl http://localhost:4005/__scheduled",
