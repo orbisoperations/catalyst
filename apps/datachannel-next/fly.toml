@@ -16,6 +16,11 @@ primary_region = 'iad'
   min_machines_running = 0
   processes = ['app']
 
+[mounts]
+source="app_data"
+destination="/app/.app"
+
+
 [[vm]]
   memory = '2gb'
   cpu_kind = 'shared'
