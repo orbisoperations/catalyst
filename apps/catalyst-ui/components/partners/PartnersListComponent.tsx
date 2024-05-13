@@ -1,6 +1,7 @@
 "use client";
 import {
   CreateButton,
+  ErrorCard,
   OpenButton,
   OrbisBadge,
   OrbisButton,
@@ -44,6 +45,8 @@ export default function PartnersListComponent({
   togglePartnership,
 }: PartnersListComponentProps) {
   const router = useRouter();
+  const [hasError, setHasError] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string>("");
   const [partners, setPartners] = useState<OrgInvite[]>([]);
   const [invitations, setInvitations] = useState<OrgInvite[]>([]);
   const [selectedPartner, setSelectedPartner] = useState<OrgInvite | null>(
@@ -51,6 +54,7 @@ export default function PartnersListComponent({
   );
   const { token, user } = useUser();
   function fetchInvites() {
+    setHasError(false);
     if (token)
       return listInvites(token)
         .then((invites) => {
@@ -68,14 +72,25 @@ export default function PartnersListComponent({
           setInvitations(invitations);
         })
         .catch((e) => {
-          alert("Failed to fetch invites " + e);
+          setHasError(true);
+          setErrorMessage(
+            "An error occurred while fetching the invites. Please try again later."
+          );
           console.error(e);
         });
     return Promise.resolve();
   }
 
   function deletePartner(inviteID: string) {
-    return declineInvite(inviteID, token ?? "").then(fetchInvites);
+    onClose();
+    return declineInvite(inviteID, token ?? "")
+      .then(fetchInvites)
+      .catch((e) => {
+        setHasError(true);
+        setErrorMessage(
+          "An error occurred while accepting the invite. Please try again later."
+        );
+      });
   }
   useEffect(() => {
     fetchInvites();
@@ -100,81 +115,96 @@ export default function PartnersListComponent({
       positionChildren="bottom"
       subtitle="Partners you can trust."
       table={
-        <Flex gap={5}>
-          <OrbisCard header={"Partners"} pb={0} flex={3} h="min-content">
-            {partners.length > 0 ? (
-              <OrbisTable
-                headers={["Partner"]}
-                rows={partners.map((partner) => [
-                  <Box key={partner.id}>
-                    <Flex justifyContent={"space-between"}>
+        hasError ? (
+          <ErrorCard
+            title="Error"
+            message={errorMessage}
+            retry={fetchInvites}
+          />
+        ) : (
+          <Flex gap={5}>
+            <OrbisCard header={"Partners"} pb={0} flex={3} h="min-content">
+              {partners.length > 0 ? (
+                <OrbisTable
+                  headers={["Partner"]}
+                  rows={partners.map((partner) => [
+                    <Box key={partner.id}>
+                      <Flex justifyContent={"space-between"}>
+                        <OpenButton
+                          onClick={() =>
+                            router.push(
+                              "/partners/" +
+                                (partner.sender === user?.custom.org
+                                  ? partner.receiver
+                                  : partner.sender)
+                            )
+                          }
+                        >
+                          {partner.sender === user?.custom.org
+                            ? partner.receiver
+                            : partner.sender}
+                        </OpenButton>
+                        <Flex gap={10} align={"center"}>
+                          <Switch
+                            colorScheme="green"
+                            defaultChecked={partner.isActive}
+                            onChange={() => {
+                              togglePartnership(partner.id, token ?? "")
+                                .then(fetchInvites)
+                                .catch((e) => {
+                                  setHasError(true);
+                                  setErrorMessage(
+                                    "An error occurred while toggling the partner. Please try again later."
+                                  );
+                                });
+                            }}
+                          />
+                          <TrashButton
+                            onClick={() => {
+                              setSelectedPartner(partner);
+                              onOpen();
+                            }}
+                          />
+                        </Flex>
+                      </Flex>
+                    </Box>,
+                  ])}
+                  tableProps={{}}
+                />
+              ) : (
+                <Text my={5}>No Partners</Text>
+              )}
+            </OrbisCard>
+            <OrbisCard
+              header={`Invitations (${invitations.length})`}
+              h={"min-content"}
+              flex={2}
+            >
+              {invitations.length > 0 ? (
+                <Stack divider={<StackDivider />}>
+                  {invitations.map((invitation) => (
+                    <StackItem key={invitation.id}>
                       <OpenButton
                         onClick={() =>
                           router.push(
-                            "/partners/" +
-                              (partner.sender === user?.custom.org
-                                ? partner.receiver
-                                : partner.sender)
+                            `/partners/invite/accept/${invitation.id}`
                           )
                         }
                       >
-                        {partner.sender === user?.custom.org
-                          ? partner.receiver
-                          : partner.sender}
+                        <OrgInviteMessage
+                          org={user?.custom.org}
+                          invite={invitation}
+                        />
                       </OpenButton>
-                      <Flex gap={10} align={"center"}>
-                        <Switch
-                          colorScheme="green"
-                          defaultChecked={partner.isActive}
-                          onChange={() => {
-                            togglePartnership(partner.id, token ?? "").then(
-                              fetchInvites
-                            );
-                          }}
-                        />
-                        <TrashButton
-                          onClick={() => {
-                            setSelectedPartner(partner);
-                            onOpen();
-                          }}
-                        />
-                      </Flex>
-                    </Flex>
-                  </Box>,
-                ])}
-                tableProps={{}}
-              />
-            ) : (
-              <Text my={5}>No Partners</Text>
-            )}
-          </OrbisCard>
-          <OrbisCard
-            header={`Invitations (${invitations.length})`}
-            h={"min-content"}
-            flex={2}
-          >
-            {invitations.length > 0 ? (
-              <Stack divider={<StackDivider />}>
-                {invitations.map((invitation) => (
-                  <StackItem key={invitation.id}>
-                    <OpenButton
-                      onClick={() =>
-                        router.push(`/partners/invite/accept/${invitation.id}`)
-                      }
-                    >
-                      <OrgInviteMessage
-                        org={user?.custom.org}
-                        invite={invitation}
-                      />
-                    </OpenButton>
-                  </StackItem>
-                ))}
-              </Stack>
-            ) : (
-              <Text mt={5}>No Invitations</Text>
-            )}
-          </OrbisCard>
-        </Flex>
+                    </StackItem>
+                  ))}
+                </Stack>
+              ) : (
+                <Text mt={5}>No Invitations</Text>
+              )}
+            </OrbisCard>
+          </Flex>
+        )
       }
       topbartitle="Partners"
     >
@@ -195,7 +225,6 @@ export default function PartnersListComponent({
                 colorScheme="red"
                 onClick={() => {
                   deletePartner(selectedPartner?.id ?? "");
-                  onClose();
                 }}
               >
                 Cancel Partnership
