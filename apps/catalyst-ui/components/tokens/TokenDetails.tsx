@@ -2,6 +2,7 @@
 export const runtime = "edge";
 import {
   APIKeyText,
+  ErrorCard,
   OrbisBadge,
   OrbisButton,
   OrbisCard,
@@ -51,28 +52,46 @@ export default function TokenDetailsComponent({
   const { token, user } = useUser();
   const router = useRouter();
   const { id } = useParams();
+  const [hasError, setHasError] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string>("");
   const [iJWTRegistry, setIJWTRegistry] = useState<
     DisplayedJWTRegistry | undefined
   >(undefined);
-
-  useEffect(() => {
+  function fetchDetails() {
+    setHasError(false);
     if (token && id && typeof id === "string") {
-      getIJWTRegistry(token, id).then((data) => {
-        listChannels(token).then((channels) => {
-          if (data) {
-            const claims = channels.filter((channel) => {
-              return data.claims.includes(channel.id);
+      getIJWTRegistry(token, id)
+        .then((data) => {
+          listChannels(token)
+            .then((channels) => {
+              if (data) {
+                const claims = channels.filter((channel) => {
+                  return data.claims.includes(channel.id);
+                });
+                const iJWTRegistry: DisplayedJWTRegistry = {
+                  ...data,
+                  claims,
+                };
+                setIJWTRegistry(iJWTRegistry);
+              }
+            })
+            .catch((e) => {
+              setHasError(true);
+              setErrorMessage(
+                "An error occurred while fetching the channels. Please try again later."
+              );
             });
-            const iJWTRegistry: DisplayedJWTRegistry = {
-              ...data,
-              claims,
-            };
-            setIJWTRegistry(iJWTRegistry);
-          }
+        })
+        .catch((e) => {
+          setHasError(true);
+          setErrorMessage(
+            "An error occurred while fetching the token details. Please try again later."
+          );
         });
-      });
     }
-  }, [token, id]);
+  }
+  useEffect(fetchDetails, [token, id]);
+
   return (
     <DetailedView
       topbaractions={navigationItems}
@@ -81,70 +100,81 @@ export default function TokenDetailsComponent({
       headerTitle={{ text: iJWTRegistry?.name }}
       subtitle={iJWTRegistry?.description}
       actions={
-        <Flex gap={10} align={"center"}>
-          <TrashButton onClick={onOpen} colorScheme="red" />
-        </Flex>
+        !hasError ? (
+          <Flex gap={10} align={"center"}>
+            <TrashButton onClick={onOpen} colorScheme="red" />
+          </Flex>
+        ) : undefined
       }
     >
-      <Card p={2} mb={5} variant={"outline"} shadow={"sm"}>
-        <Flex gap={2} mt={0} justify={"space-between"} px={5}>
-          <Text>Created By: {iJWTRegistry?.organization}</Text>
-          <Text>Valid Until: {iJWTRegistry?.expiry.toLocaleString()}</Text>
-        </Flex>
-      </Card>
-      <Box mb={5}>
-        <OrbisTabs
-          tabsProps={{
-            size: "md",
-            variant: "enclosed",
-            colorScheme: "blue",
-          }}
-          tabs={[
-            "Scopes",
-            // TODO: Enable Audit Log
-            //, "Audit Log"
-          ]}
-          content={[
-            <Box key={1}>
-              <OrbisCard header={"Key Scopes"}>
-                <OrbisTable
-                  headers={["Channel", "Description", "Channel ID"]}
-                  rows={iJWTRegistry?.claims.map((claim, index) => [
-                    <Flex key={index + "-claim-name"} justify={"space-between"}>
-                      <Text>{claim.name}</Text>
-                      {user && !claim.name.includes(user.custom.org) && (
-                        <OrbisBadge>Shared</OrbisBadge>
-                      )}
-                    </Flex>,
-                    claim.description,
-                    <APIKeyText
-                      allowCopy
-                      showAsClearText
-                      key={index + "-claim-id"}
-                    >
-                      {claim.id}
-                    </APIKeyText>,
-                  ])}
-                />
-              </OrbisCard>
-            </Box>,
-            // TODO: Enable Audit Log
-            // <OrbisCard key={2} paddingSize="none">
-            //   <OrbisTable
-            //     tableProps={{ variant: "simple" }}
-            //     headers={["Action", "Actor", "IP Address", "Event Date"]}
-            //     rows={[
-            //       ["Created", "Mario", "127.0.0.1", "2/2/2024"],
-            //       ["Created", "Mario", "127.0.0.1", "2/2/2024"],
-            //       ["Created", "Mario", "127.0.0.1", "2/2/2024"],
-            //       ["Created", "Mario", "127.0.0.1", "2/2/2024"],
-            //       ["Created", "Mario", "127.0.0.1", "2/2/2024"],
-            //     ]}
-            //   ></OrbisTable>
-            // </OrbisCard>,
-          ]}
-        />
-      </Box>
+      {hasError ? (
+        <ErrorCard title="Error" message={errorMessage} retry={fetchDetails} />
+      ) : (
+        <Box>
+          <Card p={2} mb={5} variant={"outline"} shadow={"sm"}>
+            <Flex gap={2} mt={0} justify={"space-between"} px={5}>
+              <Text>Created By: {iJWTRegistry?.organization}</Text>
+              <Text>Valid Until: {iJWTRegistry?.expiry.toLocaleString()}</Text>
+            </Flex>
+          </Card>
+          <Box mb={5}>
+            <OrbisTabs
+              tabsProps={{
+                size: "md",
+                variant: "enclosed",
+                colorScheme: "blue",
+              }}
+              tabs={[
+                "Scopes",
+                // TODO: Enable Audit Log
+                //, "Audit Log"
+              ]}
+              content={[
+                <Box key={1}>
+                  <OrbisCard header={"Key Scopes"}>
+                    <OrbisTable
+                      headers={["Channel", "Description", "Channel ID"]}
+                      rows={iJWTRegistry?.claims.map((claim, index) => [
+                        <Flex
+                          key={index + "-claim-name"}
+                          justify={"space-between"}
+                        >
+                          <Text>{claim.name}</Text>
+                          {user && !claim.name.includes(user.custom.org) && (
+                            <OrbisBadge>Shared</OrbisBadge>
+                          )}
+                        </Flex>,
+                        claim.description,
+                        <APIKeyText
+                          allowCopy
+                          showAsClearText
+                          key={index + "-claim-id"}
+                        >
+                          {claim.id}
+                        </APIKeyText>,
+                      ])}
+                    />
+                  </OrbisCard>
+                </Box>,
+                // TODO: Enable Audit Log
+                // <OrbisCard key={2} paddingSize="none">
+                //   <OrbisTable
+                //     tableProps={{ variant: "simple" }}
+                //     headers={["Action", "Actor", "IP Address", "Event Date"]}
+                //     rows={[
+                //       ["Created", "Mario", "127.0.0.1", "2/2/2024"],
+                //       ["Created", "Mario", "127.0.0.1", "2/2/2024"],
+                //       ["Created", "Mario", "127.0.0.1", "2/2/2024"],
+                //       ["Created", "Mario", "127.0.0.1", "2/2/2024"],
+                //       ["Created", "Mario", "127.0.0.1", "2/2/2024"],
+                //     ]}
+                //   ></OrbisTable>
+                // </OrbisCard>,
+              ]}
+            />
+          </Box>
+        </Box>
+      )}
       {/* Delete API Key Confirmation Modal */}
       <Modal isOpen={isOpen} onClose={onClose}>
         <ModalContent>
@@ -169,8 +199,11 @@ export default function TokenDetailsComponent({
                         router.back();
                       })
                       .catch((e) => {
-                        alert("Failed to delete iJWTRegistry");
-                        console.error(e);
+                        onClose();
+                        setHasError(true);
+                        setErrorMessage(
+                          "An error occurred while deleting the token. Please try again later."
+                        );
                       });
                   }
                 }}
