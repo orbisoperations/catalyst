@@ -97,6 +97,8 @@ export class TAKDataManager extends DurableObject<Env> {
 					lat: number,
 					lon: number,
 					stale_time: string
+					type: string
+
 				}[] = await unitResp.json()
 				console.log("all points on the map: ", allTAKPoints.length)
 				const allTAKPointsUnique = new Map<string, {
@@ -105,6 +107,7 @@ export class TAKDataManager extends DurableObject<Env> {
 					lat: number,
 					lon: number,
 					stale_time: string
+					type: string
 				}>()
 				allTAKPoints.forEach(point => {
 					allTAKPointsUnique.set(point.uid, point)
@@ -126,7 +129,7 @@ export class TAKDataManager extends DurableObject<Env> {
 	}
 
 	async getTAKPoints() {
-		return (await this.ctx.storage.get<{uid: string, callsign: string, lat: number, lon: number, stale_time: string}[]>("tak-uuids")) ??
+		return (await this.ctx.storage.get<{uid: string, callsign: string, lat: number, lon: number, stale_time: string, type: string}[]>("tak-uuids")) ??
 			[] as {uid: string, callsign: string, lat: number, lon: number, stale_time: string}[]
 	}
 }
@@ -177,6 +180,7 @@ type TAK2Marker {
     lon: Float!
     expiry: Float!
     namespace: String!
+	type: String!
 }
 
 type Query {
@@ -191,6 +195,7 @@ type TAK1Marker {
     lon: Float!
     expiry: Float!
     namespace: String!
+	type: String!
 }
 
 type Query {
@@ -210,6 +215,7 @@ type Query {
 		return (await stub.getTAKPoints()).map(point => {
 			return {
 				namespace: c.env.NAMESPACE!,
+				expiry: new Date(point.stale_time).getTime(),
 				...point
 			}
 		})

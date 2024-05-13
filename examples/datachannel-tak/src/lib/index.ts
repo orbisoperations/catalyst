@@ -12,7 +12,7 @@ export async function runTask(env: any, ctx: any) {
 		const sendStuffToTak = async (env: any, client: CatalystGatewayClient) => {
 			const pointUUIDs = new Map<string, number>()
 			console.log("querying catalyst for data")
-			const data = await gatewayClient.useADSBData();
+			const data = await gatewayClient.useCatalystData();
 			console.log(data)
 
 			//console.log({data});
@@ -34,7 +34,7 @@ export async function runTask(env: any, ctx: any) {
 			// Documentation: https://www.mitre.org/sites/default/files/pdf/09_4937.pdf
 
 			// airplane cot events
-			const airplaneCOTEvents = data.aircraftWithinDistance.map((item: any) => {
+			const airplaneCOTEvents = data.airplanes ? data.airplanes.aircraftWithinDistance.map((item: any) => {
 				let stale = new Date(now);
 				stale.setSeconds(stale.getSeconds() + TTL_S);
 				//console.log(item.alt_geom);
@@ -88,11 +88,11 @@ export async function runTask(env: any, ctx: any) {
 
 				//console.log("COTXML:", xml);
 				return xml;
-			})
+			}) : []
 			console.log("created airplane cot events: ", airplaneCOTEvents.length, pointUUIDs.size)
 
 			// earhtquakes
-			const earthquakeCOTEvents = data.earthquakes.map((item: any) => {
+			const earthquakeCOTEvents = data.earthquakes ? data.earthquakes.earthquakes.map((item: any) => {
 				const stale = new Date(item.expiry);
 
 				pointUUIDs.set(item.uuid, stale.getTime())
@@ -136,11 +136,11 @@ export async function runTask(env: any, ctx: any) {
 
 				//console.log({xml});
 				return xml;
-			})
+			}) : []
 			console.log("created earthquake cot events: ", earthquakeCOTEvents.length, pointUUIDs.size)
 
 			// line events
-			const lineCOTEvents = data.pings.map((item: any) => {
+			const lineCOTEvents = data.line ? data.line.pings.map((item: any) => {
 
 				console.log("line expiry", item.expiry,  new Date(item.expiry))
 				let stale = new Date(item.expiry);
@@ -183,8 +183,59 @@ export async function runTask(env: any, ctx: any) {
 
 				//console.log({xml});
 				return xml;
-			})
+			}) : []
 			console.log("created line cot events: ", lineCOTEvents.length, pointUUIDs.size)
+
+			const takData = data.tak === undefined ?
+			undefined :
+			'TAK1Markers' in data.tak ? 
+			data.tak.TAK1Markers//true
+			:  'TAK2Markers' in data.tak ? // false
+			data.tak.TAK2Markers
+			: undefined
+
+			const takCOTEvents = takData ? takData.map((item:any) => {
+
+				pointUUIDs.set(item.uid, item.expiry)
+				const cotEvent = {
+					event: {
+						_attributes: {
+							version: '2.0',
+							uid: item.uid,
+							time: now,
+							start: now,
+							how: 'h-t',
+							stale: new Date(item.expiry).toISOString(),
+							type: item.type//"b-m-p-w-GOTO",//'f-d-p',//'a-u-G',
+						},
+						point: {
+							_attributes: {
+								lat: item.lat,
+								lon: item.lon,
+								hae: 0,
+								ce: '9999999',
+								le: '9999999',
+							}
+						},
+						detail: {
+							contact: {
+								_attributes: {
+									callsign: item.callsign
+								}
+							},
+						}
+					}
+				};
+
+
+				const options = {compact: true, ignoreComment: true, spaces: 4};
+
+				const xml = convert.js2xml(cotEvent, options);
+
+				//console.log({xml});
+				return xml;
+			}) : []
+			console.log("created tak cot events: ", takCOTEvents.length, pointUUIDs.size)
 
 			console.log("sending airplane, earthquake txn")
 			console.log(await Promise.all([
@@ -200,6 +251,11 @@ export async function runTask(env: any, ctx: any) {
 					const encoded = encoder.encode(e);
 					return await writer.write(encoded);
 				}),
+				...takCOTEvents.map(async (e: any) => 
+					{
+					const encoded = encoder.encode(e);
+					return await writer.write(encoded);
+				})
 			]))
 			console.log("sent airplane, earthquake txn")
 
