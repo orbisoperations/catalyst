@@ -33,7 +33,7 @@ export interface Env {
 	CATALYST_DC_ID: string
 }
 
-const ALARM_MS = 28 * 1000 // 28s
+const ALARM_MS = 5 * 1000 // 28s
 export class TAKDataManager extends DurableObject<Env> {
 	async alarmInit(enable: boolean) {
 		if (enable) {
