@@ -1,20 +1,16 @@
-import { Context, Hono } from "hono";
-import { stitchSchemas } from "@graphql-tools/stitch";
-import { createYoga, renderGraphiQL } from "graphql-yoga";
-import { buildSchema, parse } from "graphql";
-import { isAsyncIterable, type Executor } from "@graphql-tools/utils";
-import { stitchingDirectives } from "@graphql-tools/stitching-directives";
 import { grabTokenInHeader } from "@catalyst/jwt";
-import { print } from "graphql";
-import { AsyncExecutor } from "@graphql-tools/utils";
-import { Env } from "./env";
+import { DataChannel, Token } from "@catalyst/schema_zod";
+import { stitchSchemas } from "@graphql-tools/stitch";
+import { stitchingDirectives } from "@graphql-tools/stitching-directives";
 import {
-  DataChannel,
-  DataChannelActionResponse,
-  DataChannelId,
-  Token,
-} from "@catalyst/schema_zod";
-import { toError } from "graphql/jsutils/toError";
+  AsyncExecutor,
+  isAsyncIterable,
+  type Executor,
+} from "@graphql-tools/utils";
+import { buildSchema, parse, print } from "graphql";
+import { createYoga } from "graphql-yoga";
+import { Hono } from "hono";
+import { Env } from "./env";
 // // https://github.com/ardatan/schema-stitching/blob/master/examples/stitching-directives-sdl/src/gateway.ts
 export async function fetchRemoteSchema(executor: Executor) {
   // throw new Error();
