@@ -1,6 +1,6 @@
 "use client";
 
-import { OrbisButton } from "@/components/elements";
+import { ErrorCard, OrbisButton } from "@/components/elements";
 import { DetailedView } from "@/components/layouts";
 import { navigationItems } from "@/utils/nav.utils";
 import {
@@ -26,72 +26,104 @@ export default function CreateInviteComponent({
 }: CreateInviteProps) {
   const router = useRouter();
   const { token, user } = useUser();
+  const [hasError, setHasError] = useState<boolean>(false);
+  const [inviteState, setInviteState] = useState<{
+    org: string;
+    message: string;
+  }>({
+    org: "",
+    message: "",
+  });
   const [displayError, setDisplayError] = useState<boolean>(false);
   return (
     <DetailedView
       topbartitle="Invite Partner"
       topbaractions={navigationItems}
       showspinner={false}
-      actions={<></>}
       subtitle="Invite a partner to start sharing data."
       headerTitle={{ text: "Invite Parner" }}
     >
-      <form
-        action={(formData) => {
-          const org = formData.get("orgId");
-          const message = formData.get("message");
-          if (org === user?.custom.org) {
-            setDisplayError(true);
-            return;
-          }
-          if (typeof org === "string" && typeof message === "string") {
+      {hasError ? (
+        <ErrorCard
+          title="Error"
+          message="An error occurred while sending the invite. Please try again later."
+          retry={() => {
+            setHasError(false);
+          }}
+        />
+      ) : (
+        <form
+          action={(formData) => {
+            const org = formData.get("orgId") as string;
+            const message = formData.get("message") as string;
+            if (org === user?.custom.org) {
+              setDisplayError(true);
+              return;
+            }
             sendInvite(
               org,
               token ?? "",
               message.trim() === ""
                 ? user?.custom.org + " invited you to partner with them"
                 : message
-            ).then((res) => {
-              router.back();
-            });
-          } else {
-            alert("Organization ID can't be empty");
-          }
-        }}
-      >
-        <Grid gap={5}>
-          <FormControl isRequired>
-            <label htmlFor="orgId">Organization ID</label>
-            <Input
-              rounded={"md"}
-              name="orgId"
-              type="text"
-              onChange={() => setDisplayError(false)}
-            />
-            {displayError && (
-              <Text
-                color={"red"}
-                fontSize={"sm"}
-                mt={"1em"}
-                fontWeight={"semibold"}
-                textAlign={"center"}
-              >
-                You cannot invite your own organization
-              </Text>
-            )}
-          </FormControl>
-          <FormControl>
-            <label htmlFor="message">Invite Message</label>
-            <Textarea name="message" />
-          </FormControl>
-          <Flex justify={"space-between"}>
-            <OrbisButton colorScheme="gray" onClick={() => router.back()}>
-              Cancel
-            </OrbisButton>
-            <OrbisButton type="submit">Send Invite</OrbisButton>
-          </Flex>
-        </Grid>
-      </form>
+            )
+              .then(router.back)
+              .catch((e) => {
+                setHasError(true);
+              });
+          }}
+        >
+          <Grid gap={5}>
+            <FormControl isRequired>
+              <label htmlFor="orgId">Organization ID</label>
+              <Input
+                required
+                rounded={"md"}
+                name="orgId"
+                value={inviteState.org}
+                onChange={(e) => {
+                  setDisplayError(false);
+                  setInviteState({
+                    ...inviteState,
+                    org: e.target.value,
+                  });
+                }}
+                type="text"
+              />
+              {displayError && (
+                <Text
+                  color={"red"}
+                  fontSize={"sm"}
+                  mt={"1em"}
+                  fontWeight={"semibold"}
+                  textAlign={"center"}
+                >
+                  You cannot invite your own organization
+                </Text>
+              )}
+            </FormControl>
+            <FormControl>
+              <label htmlFor="message">Invite Message</label>
+              <Textarea
+                value={inviteState.message}
+                onChange={(e) => {
+                  setInviteState({
+                    ...inviteState,
+                    message: e.target.value,
+                  });
+                }}
+                name="message"
+              />
+            </FormControl>
+            <Flex justify={"space-between"}>
+              <OrbisButton colorScheme="gray" onClick={() => router.back()}>
+                Cancel
+              </OrbisButton>
+              <OrbisButton type="submit">Send Invite</OrbisButton>
+            </Flex>
+          </Grid>
+        </form>
+      )}
     </DetailedView>
   );
 }
