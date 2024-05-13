@@ -3,8 +3,8 @@
 	"version": "0.0.0",
 	"private": true,
 	"scripts": {
-		"deploymentPreview": "yes | wrangler deploy --env staging",
-		"deployment": "yes | wrangler deploy --minify --keep-vars --env production",
+		"deploymentStaging": "yes | wrangler deploy --env staging",
+		"deploymentDemo": "yes | wrangler deploy --minify --keep-vars --env demo",
 		"dev": "wrangler dev --test-scheduled",
 		"start": "wrangler dev",
 		"triggerScheduled": "curl http://localhost:4005/__scheduled",
@@ -16,7 +16,8 @@
 		"graphql-yoga": "^5.3.1",
 		"hono": "^4.3.3",
 		"jose": "^5.2.4",
-		"xml-js": "^1.6.11"
+		"xml-js": "^1.6.11",
+		"graphql-yoga": "^5.3.1"
 	},
 	"devDependencies": {
 		"@cloudflare/workers-types": "^4.20240502.0",

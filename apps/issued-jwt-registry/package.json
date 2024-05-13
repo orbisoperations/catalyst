@@ -4,8 +4,8 @@
 	"main": "index.ts",
 	"type": "module",
   "scripts": {
-	  "deployment": "yes | wrangler deploy --minify --keep-vars --env production",
-	  "deploymentPreview": "yes | wrangler deploy --keep-vars --env staging",
+	  "deploymentDemo": "yes | wrangler deploy --minify --keep-vars --env demo",
+	  "deploymentStaging": "yes | wrangler deploy --keep-vars --env staging",
     "dev": "wrangler dev",
 	  "test": "vitest"
   },

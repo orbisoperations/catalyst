@@ -18,7 +18,7 @@ keep_vars = true
 #Value encrypted
 #AUTHZED_PREFIX=	orbisops_catalyst_staging2/
 
-[env.production.vars]
+[env.demo.vars]
 #AUTHZED_ENDPOINT=	https://gateway-demo.authzed.com
 #AUTHZED_KEY=
 #Value encrypted
