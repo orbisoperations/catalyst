@@ -3,13 +3,37 @@ import { Card, CardBody, Text, Heading, Button, Stack } from "@chakra-ui/react";
 import QueryBox from "../QueryBox";
 import {useState} from 'react';
 export default function QuerySearchCard() {
-  const valueState = useState<string>('')
-  const defaultValue = ` query MyQuery {
-    aircraftWithinDistance(dist: 1.5, lat: 1.5, lon: 1.5) {
-      lat
-      lon
-    }
-  }`;
+  const valueState = useState<string>('');
+
+  const defaultValue = `
+  query {
+    		aircraftWithinDistance(lat: 25.15090749876091, lon: 121.37875727934632, dist: 200) {
+        	hex
+					flight
+					lat
+					lon
+					alt_geom
+					track
+					gs
+					t
+      	}
+      	pings {
+					UID
+					title
+					city
+					lat
+					lon
+					expiry
+				}
+				earthquakes {
+					EpicenterLatitude
+					EpicenterLongitude
+					LocalMagnitude
+					expiry
+					uuid
+				}
+    	}
+  `;
 
   function runQuery() {
 
@@ -33,15 +57,12 @@ export default function QuerySearchCard() {
     <>
       <Card w="100%" h="100%" variant="filled">
         <CardBody display="flex" flexDirection="column" justifyContent="center">
-          <Heading size="lg">Search for data channel</Heading>
+          <Heading size="lg">Active Query</Heading>
           <Text mb="16px" fontSize="md" color="Gray 500">
-            A description will go here to help people understand what the
-            section is for.
+            Defines data being pulled from catalyst into tak. Edits have no effect.
           </Text>
           <QueryBox mWidth="100%" mHeight="50%" state={valueState} defaultValue={defaultValue} />
-          <Button onClick={runQuery} mt="16px" colorScheme="blue">
-            Search Query
-          </Button>
+
         </CardBody>
       </Card>
     </>

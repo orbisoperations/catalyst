@@ -2,4 +2,3 @@ packages:
   - "apps/*"
   - "packages/*"
   - "examples/*"
-  - "examples/datachannel_tak_old/datachannel-ui"
