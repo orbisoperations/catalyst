@@ -3,5 +3,23 @@ name = "authx_authzed_api"
 main = "src/index.ts"
 compatibility_date = "2024-04-05"
 node_compat = true
+# will preserve vars in the remote deployment
+keep_vars = true
 
+[vars]
+#AUTHZED_ENDPOINT=	not-provided
+#AUTHZED_KEY= 		not-provided
+#Value encrypted
+#AUTHZED_PREFIX=	not-provided
 
+[env.staging.vars]
+#AUTHZED_ENDPOINT=	https://gateway-alpha.authzed.com
+#AUTHZED_KEY=
+#Value encrypted
+#AUTHZED_PREFIX=	orbisops_catalyst_staging2/
+
+[env.production.vars]
+#AUTHZED_ENDPOINT=	https://gateway-demo.authzed.com
+#AUTHZED_KEY=
+#Value encrypted
+#AUTHZED_PREFIX=	orbisops_catalyst_demo/

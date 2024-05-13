@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "wrangler dev",
-    "deploymentPreview": "yes | wrangler deploy --minify --keep-vars --env staging"
+    "deploymentPreview": "yes | wrangler deploy --minify --keep-vars --env staging",
+    "deployment": "yes | wrangler deploy --minify --keep-vars --env production"
   },
   "keywords": [],
   "author": "",
