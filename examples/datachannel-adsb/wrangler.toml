@@ -18,11 +18,11 @@ CATALYST_JWKS_URL = "https://gateway.catalyst.devintelops.io/.well-known/jwks.js
 pattern = "datachannel-adsb.devintelops.io"
 custom_domain = true
 
-[env.production.vars]
+[env.demo.vars]
 CATALYST_JWKS_URL = "https://gateway.catalyst.demointelops.io/.well-known/jwks.json"
 #RAPID_API_KEY
 
-[env.production.route]
+[env.demo.route]
 pattern = "datachannel-adsb.demointelops.io"
 custom_domain = true
 

@@ -2,7 +2,7 @@ name: 'Demo Deployment'
 on:
   push:
     branches:
-      - main
+      - demo
 
 # Limit to 1 concurrent run per workflow run
 concurrency:
@@ -17,7 +17,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          ref: 'main'
+          ref: 'demo'
 
 
       - name: Set up Node.js
@@ -46,61 +46,72 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      - name: Deploy user_credentials_cache
+        working-directory: apps/user_credentials_cache
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: pnpm run deploymentDemo
 
       - name: Deploy issued-jwt-registry
         working-directory: apps/issued-jwt-registry
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: pnpm run deployment
+        run: pnpm run deploymentDemo
 
       - name: Deploy authx_authzed_api
         working-directory: apps/authx_authzed_api
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: pnpm run deployment
-
-
-      - name: Deploy user_credentials_cache
-        working-directory: apps/user_credentials_cache
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: pnpm run deployment
-
+        run: pnpm run deploymentDemo
 
       - name: Deploy authx_token_api
         working-directory: apps/authx_token_api
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: pnpm run deployment
+        run: pnpm run deploymentDemo
 
       - name: Deploy data_channel_registrar
         working-directory: apps/data_channel_registrar
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: pnpm run deployment
+        run: pnpm run deploymentDemo
 
       - name: Deploy organization_matchmaking
         working-directory: apps/organization_matchmaking
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: pnpm run deployment
+        run: pnpm run deploymentDemo
 
       - name: Deploy data_channel_gateway
         working-directory: apps/data_channel_gateway
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: pnpm run deployment
+        run: pnpm run deploymentDemo
 
       - name: Deploy catalyst-ui
         working-directory: apps/catalyst-ui
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: pnpm run deployment
+        run: pnpm run deploymentDemo
+
+      - name: Deploy catalyst-adapter-tak
+        working-directory: examples/datachannel-tak
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: pnpm run deploymentDemo
+
+      - name: Deploy catalyst-adapter-adsb
+        working-directory: examples/datachannel-adsb
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: pnpm run deploymentDemo
