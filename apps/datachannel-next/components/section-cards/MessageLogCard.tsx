@@ -64,7 +64,6 @@ const Terminal = ({ messages }: { messages: LogMessage[] }) => {
 };
 
 export default function MessagesLogCard() {
-  const valueState = useState<string>('');
   const [messages, setMessages] = useState<LogMessage[]>([]);
 
   const handleMessage = useCallback((m: any) => {
@@ -85,7 +84,7 @@ export default function MessagesLogCard() {
               flexDirection="column"
               justifyContent="center"
           >
-           <Flex><Heading size="md" mr="2%">Live Logs</Heading><SocketConnection handleMessage={handleMessage}  /></Flex>
+           <Flex><Heading size="md" mr="2%">Live</Heading><SocketConnection handleMessage={handleMessage}  /></Flex>
             <Terminal messages={messages} />
           </CardBody>
         </Card>
