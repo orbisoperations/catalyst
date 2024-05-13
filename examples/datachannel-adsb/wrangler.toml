@@ -8,12 +8,22 @@ workers_dev = true
 [dev]
 port = 4008
 
+[vars]
+#RAPID_API_KEY="RAPID_API_KEY can be set in .dev.vars for local development"
+
 [env.staging.vars]
 CATALYST_JWKS_URL = "https://gateway.catalyst.devintelops.io/.well-known/jwks.json"
-
+#RAPID_API_KEY
 [env.staging.route]
 pattern = "datachannel-adsb.devintelops.io"
 custom_domain = true
 
+[env.production.vars]
+CATALYST_JWKS_URL = "https://gateway.catalyst.demointelops.io/.well-known/jwks.json"
+#RAPID_API_KEY
+
+[env.production.route]
+pattern = "datachannel-adsb.demointelops.io"
+custom_domain = true
 
 
