@@ -53,16 +53,21 @@ export default function AcceptInviteComponent({
             "An error occurred while fetching the invite. Please try again later."
           );
         });
+    } else {
+      setHasError(true);
+      setErrorMessage(
+        "An error occurred while fetching the invite. Please try again later."
+      );
     }
   }
-  useEffect(fetchInvite, [params.id]);
+  useEffect(fetchInvite, [params.id, token]);
 
   const { isOpen, onOpen, onClose } = useDisclosure();
   return (
     <DetailedView
       topbartitle="Accept Invite"
       topbaractions={navigationItems}
-      showspinner={!invite}
+      showspinner={!invite && !hasError}
       subtitle={
         invite && user
           ? orgIsSender
