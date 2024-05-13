@@ -1,16 +1,18 @@
 "use server";
-import { getRequestContext } from "@cloudflare/next-on-pages";
-import {
-  DataChannel,
-  DataChannelActionResponse,
-} from "../../../../packages/schema_zod";
 import { CloudflareEnv } from "@/env";
+import { getRequestContext } from "@cloudflare/next-on-pages";
+import { DataChannel } from "../../../../packages/schema_zod";
+
+function getEnv() {
+  return getRequestContext().env as CloudflareEnv;
+}
+
+function getRegistar() {
+  return getEnv().CATALYST_DATA_CHANNEL_REGISTRAR_API;
+}
 
 export async function createDataChannel(formData: FormData, token: string) {
-  const {
-    CATALYST_DATA_CHANNEL_REGISTRAR_API: api,
-  } = getRequestContext().env as CloudflareEnv;
-  // zitadel roles muust inclide org-admin or data-custodian
+  const api = getRegistar();
   const tokenObject = {
     cfToken: token,
   };
@@ -30,57 +32,48 @@ export async function createDataChannel(formData: FormData, token: string) {
     throw new Error("Invalid data channel");
   }
   const newChannel = await api.create("default", parsed.data, tokenObject);
-  return newChannel;
+  if (!newChannel.success) {
+    throw new Error("Failed to create data channel");
+  }
+  return newChannel.data as DataChannel;
 }
 
 export async function listChannels(token: string) {
-  const {
-    // @ts-ignore
-    CATALYST_DATA_CHANNEL_REGISTRAR_API: api,
-  } = getRequestContext().env as CloudflareEnv;
+  const api = getRegistar();
 
   const tokenObject = {
     cfToken: token,
   };
 
   const channels = await api.list("default", tokenObject);
-  return channels;
+  if (!channels.success) {
+    throw new Error("Failed to list data channels");
+  }
+  return channels.data as DataChannel[];
 }
 
 export async function listPartnersChannels(token: string, partnerId: string) {
   const channelsResponse = await listChannels(token);
-  if (!channelsResponse.success) return undefined;
-  const allChannels = channelsResponse.data as DataChannel[];
-  return allChannels.filter(
+  return channelsResponse.filter(
     (channel) => channel.creatorOrganization === partnerId
   );
 }
 
 export async function getChannel(channelId: string, token: string) {
-  const { CATALYST_DATA_CHANNEL_REGISTRAR_API: api } = getRequestContext()
-    .env as CloudflareEnv;
-
+  const api = getRegistar();
   const tokenObject = {
     cfToken: token,
   };
 
-  const channelResp: DataChannelActionResponse = await api.read(
-    "default",
-    channelId,
-    tokenObject
-  );
-  if (channelResp.success) {
-    console.log("found data channels: ", channelResp.data);
-    return channelResp.data as DataChannel;
+  const channelResp = await api.read("default", channelId, tokenObject);
+  if (!channelResp.success) {
+    throw new Error("Failed to get data channel");
   }
-  console.error(channelResp.error);
-  throw new Error("unable to find data channel");
+  return channelResp.data as DataChannel;
 }
 
 export async function updateChannel(formData: FormData, token: string) {
-  // @ts-ignore
-  const { CATALYST_DATA_CHANNEL_REGISTRAR_API: api, AUTHX_AUTHZED_API: authx } =
-    getRequestContext().env as CloudflareEnv;
+  const api = getRegistar();
   const tokenObject = {
     cfToken: token,
   };
@@ -92,12 +85,17 @@ export async function updateChannel(formData: FormData, token: string) {
     accessSwitch: formData.get("accessSwitch") === "on" ? true : false,
     id: formData.get("id") as string,
   };
+
   const parsed = DataChannel.safeParse(dataChannel);
   if (!parsed.success) {
     console.error(parsed.error);
     throw new Error("Invalid data channel");
   }
-  return await api.update("default", parsed.data, tokenObject);
+  const updateOperation = await api.update("default", parsed.data, tokenObject);
+  if (!updateOperation.success) {
+    throw new Error("Failed to update data channel");
+  }
+  return updateOperation.data as DataChannel;
 }
 
 export async function handleSwitch(
@@ -105,9 +103,7 @@ export async function handleSwitch(
   accessSwitch: boolean,
   token: string
 ) {
-  // @ts-ignore
-  const { CATALYST_DATA_CHANNEL_REGISTRAR_API: api } = getRequestContext()
-    .env as CloudflareEnv;
+  const api = getRegistar();
   const tokenObject = {
     cfToken: token,
   };
@@ -117,15 +113,22 @@ export async function handleSwitch(
   }
   let channel = channelResp.data as DataChannel;
   channel.accessSwitch = accessSwitch;
-  return await api.update("default", channel, tokenObject);
+  const updateOperation = await api.update("default", channel, tokenObject);
+  if (!updateOperation.success) {
+    throw new Error("Failed to update data channel");
+  }
+  return updateOperation.data as DataChannel;
 }
 
 export async function deleteChannel(channelID: string, token: string) {
   // @ts-ignore
-  const { CATALYST_DATA_CHANNEL_REGISTRAR_API: api } = getRequestContext()
-    .env as CloudflareEnv;
+  const api = getRegistar();
   const tokenObject = {
     cfToken: token,
   };
-  return await api.remove("default", channelID, tokenObject);
+  const deleteOperation = await api.remove("default", channelID, tokenObject);
+  if (!deleteOperation.success) {
+    throw new Error("Failed to delete data channel");
+  }
+  return deleteOperation.data as DataChannel;
 }

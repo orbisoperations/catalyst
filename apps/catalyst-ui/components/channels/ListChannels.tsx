@@ -10,14 +10,14 @@ import {
 } from "@/components/elements";
 import { ListView } from "@/components/layouts";
 import { navigationItems } from "@/utils/nav.utils";
-import { Box, Flex } from "@chakra-ui/layout";
+import { DataChannel } from "@catalyst/schema_zod";
+import { Flex } from "@chakra-ui/layout";
 import { Card, CardBody, Select } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useUser } from "../contexts/User/UserContext";
-import { DataChannel, DataChannelActionResponse } from "@catalyst/schema_zod";
 type ListChannelsProps = {
-  listChannels: (token: string) => Promise<DataChannelActionResponse>;
+  listChannels: (token: string) => Promise<DataChannel[]>;
 };
 
 export default function DataChannelListComponents({
@@ -47,14 +47,19 @@ export default function DataChannelListComponents({
 
   useEffect(() => {
     if (token) {
-      listChannels(token).then((data) => {
-        if (!data.success) return console.error(data.error);
-        const response = (data.data as DataChannel[]).sort((a, b) =>
-          a.name.localeCompare(b.name)
-        );
-        setAllChannels(response);
-        setChannels(response);
-      });
+      listChannels(token)
+        .then((data) => {
+          const response = (data as DataChannel[]).sort((a, b) =>
+            a.name.localeCompare(b.name)
+          );
+          setAllChannels(response);
+          setChannels(response);
+        })
+        .catch((e) => {
+          // TODO: handle error in the ui
+          alert("Failed to fetch channels");
+          console.error(e);
+        });
     }
   }, [token]);
 
