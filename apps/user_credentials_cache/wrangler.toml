@@ -15,11 +15,11 @@ new_classes = ["UserCredsCache"]
 [[migrations]]
 tag = "v2"
 
-# STAGING VALUES
+############# STAGING VALUES #############
 [env.staging]
 durable_objects.bindings = [{name = "CACHE", class_name = "UserCredsCache"}]
 
-# PRODUCTION VALUES
-[env.production]
+############# DEMO VALUES #############
+[env.demo]
 durable_objects.bindings = [{name = "CACHE", class_name = "UserCredsCache"}]
 

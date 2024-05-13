@@ -17,7 +17,6 @@ port = 5050
 
 
 
-
 [durable_objects]
 bindings = [{name = "DO", class_name = "Registrar"}]
 
@@ -27,8 +26,7 @@ new_classes = ["Registrar"]
 
 
 
-
-# STAGING VALUES
+############# STAGING VALUES #############
 [env.staging]
 services = [
   { binding = "AUTHX_TOKEN_API", service = "authx_token_api-staging" },
@@ -39,11 +37,11 @@ durable_objects.bindings = [{name = "DO", class_name = "Registrar"}]
 
 
 
-# PRODUCTION VALUES
-[env.production]
+#############  DEMO VALUES #############
+[env.demo]
 services = [
-  { binding = "AUTHX_TOKEN_API", service = "authx_token_api-production" },
-  { binding = "AUTHZED", service = "authx_authzed_api-production" },
-  { binding = "USERCACHE", service = "user_credentials_cache-production" }
+  { binding = "AUTHX_TOKEN_API", service = "authx_token_api-demo" },
+  { binding = "AUTHZED", service = "authx_authzed_api-demo" },
+  { binding = "USERCACHE", service = "user_credentials_cache-demo" }
 ]
 durable_objects.bindings = [{name = "DO", class_name = "Registrar"}]
