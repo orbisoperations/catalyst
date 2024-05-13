@@ -11,23 +11,17 @@ function getIJWT() {
 
 export async function listIJWTRegistry(token: string) {
   const matcher = getIJWT();
-  try {
-    const resp = await matcher.list({ cfToken: token });
-    if (!resp.success) {
-      throw new Error("list ijwt registry failed");
-    }
-    return resp.data;
-  } catch (error) {
-    console.error("List IssuedJWTRegistry Error:", error);
-    return [];
+  const resp = await matcher.list({ cfToken: token });
+  if (!resp.success) {
+    throw new Error("list ijwt registry failed");
   }
+  return resp.data;
 }
 
 export async function getIJWTRegistry(token: string, id: string) {
   const matcher = getIJWT();
   const getResult = await matcher.get({ cfToken: token }, id);
   if (!getResult.success) {
-    console.error("get ijwt registry failed", getResult.error);
     throw new Error("get ijwt registry failed");
   }
   return getResult.data;
@@ -38,16 +32,11 @@ export async function createIJWTRegistry(
   data: Omit<IssuedJWTRegistry, "id">
 ) {
   const matcher = getIJWT();
-  try {
-    const resp = await matcher.create({ cfToken: token }, data);
-    if (!resp.success) {
-      throw new Error("create ijwt registry failed");
-    }
-    return resp.data;
-  } catch (error) {
-    console.error("create ijwt registry failed", error);
+  const resp = await matcher.create({ cfToken: token }, data);
+  if (!resp.success) {
     throw new Error("create ijwt registry failed");
   }
+  return resp.data;
 }
 
 export async function updateIJWTRegistry(
@@ -55,28 +44,18 @@ export async function updateIJWTRegistry(
   data: IssuedJWTRegistry
 ) {
   const matcher = getIJWT();
-  try {
-    const resp = await matcher.update({ cfToken: token }, data);
-    if (!resp.success) {
-      throw new Error("update ijwt registry failed");
-    }
-    return resp.data;
-  } catch (error) {
-    console.error("update ijwt registry failed", error);
+  const resp = await matcher.update({ cfToken: token }, data);
+  if (!resp.success) {
     throw new Error("update ijwt registry failed");
   }
+  return resp.data;
 }
 
 export async function deleteIJWTRegistry(token: string, id: string) {
   const matcher = getIJWT();
-  try {
-    const resp = await matcher.delete({ cfToken: token }, id);
-    if (!resp) {
-      throw new Error("delete ijwt registry failed");
-    }
-    return resp;
-  } catch (error) {
-    console.error("delete ijwt registry failed", error);
+  const resp = await matcher.delete({ cfToken: token }, id);
+  if (!resp) {
     throw new Error("delete ijwt registry failed");
   }
+  return resp;
 }
