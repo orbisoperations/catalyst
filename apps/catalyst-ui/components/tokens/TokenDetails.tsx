@@ -27,10 +27,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useUser } from "../contexts/User/UserContext";
 interface TokenDetailsProps {
-  deleteIJWTRegistry: (
-    token: string,
-    id: string
-  ) => Promise<IssuedJWTRegistry | undefined>;
+  deleteIJWTRegistry: (token: string, id: string) => Promise<boolean>;
   getIJWTRegistry: (
     token: string,
     id: string
@@ -164,12 +161,17 @@ export default function TokenDetailsComponent({
                 colorScheme="red"
                 onClick={() => {
                   if (token && iJWTRegistry) {
-                    deleteIJWTRegistry(token, iJWTRegistry.id).then(
-                      async () => {
+                    console.log("deleting iJWTRegistry");
+                    console.log(iJWTRegistry, token);
+                    deleteIJWTRegistry(token, iJWTRegistry.id)
+                      .then(async () => {
                         onClose();
                         router.back();
-                      }
-                    );
+                      })
+                      .catch((e) => {
+                        alert("Failed to delete iJWTRegistry");
+                        console.error(e);
+                      });
                   }
                 }}
               >
