@@ -7,7 +7,7 @@ import MessagesLogCard from "./section-cards/MessageLogCard";
 
 export default function ResponseContainer() {
   return (
-    <HStack h="100svh" p="50px">
+    <HStack h="100svh" w="100%" p="50px">
       <VStack h="100%" w="30%">
         <SearchCard />
         <PollsCard />

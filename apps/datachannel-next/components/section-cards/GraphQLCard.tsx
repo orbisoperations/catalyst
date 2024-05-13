@@ -11,13 +11,13 @@ export default function GraphQLCard() {
         <CardBody
           display="flex"
           flexDirection="column"
-          justifyContent="center"
+          justifyContent="start"
         >
-          <Heading size="md">GraphQL Attributes</Heading>
-          <Text fontSize="md" color="Gray 500" mb="16px">
+          <Heading size="md" mb="8px">GraphQL Attributes</Heading>
+          {/* <Text fontSize="md" color="Gray 500" mb="16px">
             A description will go here to help people understand what the
             section is for.
-          </Text>
+          </Text> */}
           <QueryBox mWidth="100%" mHeight="60%" state={valueState} useTheme={""} /> 
         </CardBody>
       </Card>

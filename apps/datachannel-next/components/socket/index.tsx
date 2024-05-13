@@ -2,8 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { socket } from "@/app/socket";
+import { Flex, Text } from "@chakra-ui/react";
 
-export default function SocketConnection(props: {handleMessage: (m: any) => void }) {
+export default function SocketConnection(props: {
+  handleMessage: (m: any) => void;
+}) {
   const [isConnected, setIsConnected] = useState(false);
   const [transport, setTransport] = useState("N/A");
 
@@ -29,10 +32,10 @@ export default function SocketConnection(props: {handleMessage: (m: any) => void
     socket.on("connect", onConnect);
     socket.on("disconnect", onDisconnect);
 
-    socket.on('cot', (arg) => {
-      console.log({arg});
+    socket.on("cot", (arg) => {
+      console.log({ arg });
       props.handleMessage(arg);
-    })
+    });
 
     return () => {
       socket.off("connect", onConnect);
@@ -41,9 +44,15 @@ export default function SocketConnection(props: {handleMessage: (m: any) => void
   }, []);
 
   return (
-      <div>
-        <p>Status: { isConnected ? "connected" : "disconnected" }</p>
-        <p>Transport: { transport }</p>
-      </div>
+    <Flex mb="8px">
+      <Flex>
+        <Text fontWeight="bold" mr="4px">Status:</Text>
+        <Text mr="8px" fontWeight="semibold" textColor={isConnected ? "green" : "red"}> {isConnected ? "Connected" : "Disconnected"}</Text>
+      </Flex>
+      <Flex>
+        <Text fontWeight="bold" mr="4px">Transport:</Text>
+        <Text>{transport}</Text>
+      </Flex>
+    </Flex>
   );
 }
