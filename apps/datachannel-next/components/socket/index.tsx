@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { socket } from "@/app/socket";
 
-export default function Home() {
+export default function SocketConnection(props: {handleMessage: (m: any) => void }) {
   const [isConnected, setIsConnected] = useState(false);
   const [transport, setTransport] = useState("N/A");
 
@@ -28,6 +28,11 @@ export default function Home() {
 
     socket.on("connect", onConnect);
     socket.on("disconnect", onDisconnect);
+
+    socket.on('cot', (arg) => {
+      console.log({arg});
+      props.handleMessage(arg);
+    })
 
     return () => {
       socket.off("connect", onConnect);

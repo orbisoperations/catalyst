@@ -8,8 +8,7 @@
 		"dev": "wrangler dev --test-scheduled",
 		"start": "wrangler dev",
 		"triggerScheduled": "curl http://localhost:4005/__scheduled",
-		"test": "bun test",
-		"postinstall": "cd ../../apps/channel-control-ui; pnpm install --ignore-workspace"
+		"test": "bun test"
 	},
 	"dependencies": {
 		"@graphql-tools/stitching-directives": "^3.0.2",
