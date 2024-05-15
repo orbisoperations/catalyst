@@ -63,6 +63,35 @@ class_name = "TAKDataManager"
 tag = "v1"
 new_classes = ["TAKDataManager"]
 
+[env.staging2.vars]
+TAK_HOST = "https://goatak-empty-violet-5442.fly.dev"
+TAK_PORT = 8999
+TAK_UI ="https://tak-server-1-auth-proxy.fly.dev/"
+ENABLED = "true"
+NAMESPACE =  "empty-violet"
+CATALYST_GATEWAY_URL = "https://gateway.catalyst.demointelops.io/graphql"
+CATALYST_DC_ID = "791a630c-6a39-4ea1-b271-140e28ac75dc"
+TAK_USER = "user"
+#CATALYST_GATEWAY_TOKEN
+#TAK_PASSWORD
+
+[[env.staging2.routes]]
+pattern = "datachannel-tak-empty-violet.catalyst.devintelops.io"
+custom_domain = true
+
+
+
+[[env.staging2.durable_objects.bindings]]
+name = "TAK_MANAGER"
+class_name = "TAKDataManager"
+
+# Durable Object migrations.
+# Docs: https://developers.cloudflare.com/workers/learning/using-durable-objects#configure-durable-object-classes-with-migrations
+[[env.staging2.migrations]]
+tag = "v1"
+new_classes = ["TAKDataManager"]
+
+
 
 
 ########################## PRODUCTION VALUES #############################

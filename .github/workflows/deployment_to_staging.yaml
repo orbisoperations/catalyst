@@ -111,11 +111,11 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: pnpm run deploymentStaging
+        run: yes | pnpm wrangler deploy --env staging --keep-vars
 
-      - name: Deploy catalyst-adapter-adsb
-        working-directory: examples/datachannel-adsb
+      - name: Deploy catalyst-adapter-tak
+        working-directory: examples/datachannel-tak
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: pnpm run deploymentStaging
+        run: yes | pnpm wrangler deploy --env staging2 --keep-vars
