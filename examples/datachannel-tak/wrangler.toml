@@ -92,21 +92,21 @@ tag = "v1"
 new_classes = ["TAKDataManager"]
 
 
-########################## PRODUCTION VALUES #############################
+########################## DEMO VALUES #############################
 [env.demo.vars]
 TAK_HOST = "https://goatak-empty-violet-5442.fly.dev"
 TAK_PORT = 8999
 TAK_UI ="https://tak-server-1-auth-proxy.fly.dev/"
 ENABLED = "true"
 NAMESPACE =  "empty-violet"
-CATALYST_GATEWAY_URL = "https://gateway.catalyst.devintelops.io/graphql"
+CATALYST_GATEWAY_URL = "https://gateway.catalyst.demointelops.io/graphql"
 CATALYST_DC_ID = "791a630c-6a39-4ea1-b271-140e28ac75dc"
 TAK_USER = "user"
 #CATALYST_GATEWAY_TOKEN
 #TAK_PASSWORD
 
 [[env.demo.routes]]
-pattern = "datachannel-tak-empty-violet.catalyst.devintelops.io"
+pattern = "datachannel-tak-empty-violet.catalyst.demointelops.io"
 custom_domain = true
 
 
