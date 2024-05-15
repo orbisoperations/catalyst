@@ -9,7 +9,7 @@
     "pages:build": "pnpm next-on-pages",
     "pages:deploy": "pnpm run pages:build && wrangler pages deploy ./.vercel/output",
     "deploymentStaging": "npx @cloudflare/next-on-pages && pnpm wrangler pages deploy --branch staging --env preview",
-    "deploymentDemo": "npx @cloudflare/next-on-pages && pnpm wrangler pages deploy --branch main --env production",
+    "deploymentDemo": "npx @cloudflare/next-on-pages && pnpm wrangler pages deploy --branch demo --env production",
     "bdev": "pnpm pages:build && pnpm pages:dev",
     "dev": "pnpm pages:build --skip-build && pnpm pages:dev",
     "cbuild": "npx @cloudflare/next-on-pages@1",
