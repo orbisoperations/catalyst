@@ -2,7 +2,7 @@ import { connect } from 'cloudflare:sockets';
 import convert from "xml-js";
 import {CatalystGatewayClient} from "./catalyst-gateway-client";
 
-const TTL_S = 30
+const TTL_S = 8
 // TODO: Replace this exact function with a call to catalyst to retrieve data
 
 export async function runTask(env: any, ctx: any) {
@@ -188,7 +188,7 @@ export async function runTask(env: any, ctx: any) {
 
 			const takData = data.tak === undefined ?
 			undefined :
-			'TAK1Markers' in data.tak ? 
+			'TAK1Markers' in data.tak ?
 			data.tak.TAK1Markers//true
 			:  'TAK2Markers' in data.tak ? // false
 			data.tak.TAK2Markers
@@ -251,7 +251,7 @@ export async function runTask(env: any, ctx: any) {
 					const encoded = encoder.encode(e);
 					return await writer.write(encoded);
 				}),
-				...takCOTEvents.map(async (e: any) => 
+				...takCOTEvents.map(async (e: any) =>
 					{
 					const encoded = encoder.encode(e);
 					return await writer.write(encoded);
