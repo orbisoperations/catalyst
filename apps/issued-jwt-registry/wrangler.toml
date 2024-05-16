@@ -3,10 +3,11 @@ name = "issued-jwt-registry"
 main = "src/index.ts"
 compatibility_date = "2024-04-19"
 compatibility_flags = [ "nodejs_compat" ]
-account_id = "3be6f7bb0cc73869d555e1156586c1f2"
+
 services = [
     { binding = "USERCACHE", service = "user_credentials_cache" },
 ]
+
 [dev]
 ip = "localhost"
 port = 5053

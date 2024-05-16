@@ -2,7 +2,6 @@
 name = "user_credentials_cache"
 main = "src/index.ts"
 compatibility_date = "2024-04-19"
-account_id = "3be6f7bb0cc73869d555e1156586c1f2"
 
 # https://developers.cloudflare.com/durable-objects/
 [durable_objects]
@@ -22,4 +21,3 @@ durable_objects.bindings = [{name = "CACHE", class_name = "UserCredsCache"}]
 ############# DEMO VALUES #############
 [env.demo]
 durable_objects.bindings = [{name = "CACHE", class_name = "UserCredsCache"}]
-
