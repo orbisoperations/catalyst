@@ -18,7 +18,8 @@ import {
   Text,
   Th,
   Thead,
-  Tr
+  Tr,
+  Heading
 } from '@chakra-ui/react';
 import {ChevronLeftIcon, ChevronRightIcon, DeleteIcon, InfoIcon, MoonIcon} from '@chakra-ui/icons';
 import {useQueryItems} from "@/components/query-items-list/context";
@@ -54,22 +55,21 @@ const QueryItemsListComponent: React.FC = () => {
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
 
   return (
-      <Card w="90%" h="100%" variant="filled">
-        <CardBody display="flex" flexDirection="column" justifyContent="center">
-          <Box overflow="auto" maxHeight="400px">
-            <TableContainer>
-              <Table variant="simple">
+      <Card w="100%" h="100%" variant="filled" bg='white'>
+        <CardBody h='100%' >
+            <TableContainer h='90%' maxHeight="90%">
+              <Table variant='striped' colorScheme='blackAlpha' size='sm'>
                 <Thead>
                   <Tr>
-                    <Th>{queryItems.length ? "Name" : ""}</Th>
-                    <Th>{queryItems.length ? "Actions" : ""}</Th>
+                    <Th  width='100%'>Name </Th>
+                    <Th textAlign="center" width='100%'>Actions</Th>
                   </Tr>
                 </Thead>
                 <Tbody>
                   {currentRecords.map((record, index) => (
                       <Tr key={index}>
-                        <Td pointerEvents="none">{record.name}</Td>
-                        <Td>
+                        <Td pointerEvents="none" width='100%'>{record.name}</Td>
+                        <Td width='100%'>
                           <IconButton
                               icon={<DeleteIcon/>}
                               aria-label="Delete Feed"
@@ -117,9 +117,8 @@ const QueryItemsListComponent: React.FC = () => {
                 </Tbody>
               </Table>
             </TableContainer>
-          </Box>
-          <Flex justifyContent="space-between" alignItems="center" mt={4}>
-            <IconButton
+          <Flex justifyContent="space-between" alignItems="center" mt={4} h='10%'>
+            <IconButton mb='16px'
                 icon={<ChevronLeftIcon/>}
                 aria-label="Previous Page"
                 onClick={() => paginate(currentPage - 1)}
@@ -129,12 +128,13 @@ const QueryItemsListComponent: React.FC = () => {
             Page {currentPage} of {Math.ceil(queryItems.length / recordsPerPage)}
             </Text>
             {/*Handle display when no data*/}
-            <Text hidden={!(queryItems.length === 0)} textAlign='center' color="darkslategrey">
-              No active data.
-              <br></br>
+            <Box hidden={!(queryItems.length === 0)} textAlign='center' position='absolute' top='45%' left='25%' right='25%'>
+            <Heading size="lg">No active data</Heading>
+            <Text color="darkslategrey">
               Active data will appear here when it is added...
             </Text>
-            <IconButton
+            </Box>
+            <IconButton mb='16px'
                 icon={<ChevronRightIcon/>}
                 aria-label="Next Page"
                 onClick={() => paginate(currentPage + 1)}
