@@ -9,35 +9,37 @@ import {
   InputGroup,
   InputLeftAddon,
   Text,
-  Wrap
+  Wrap,
+  Box,
 } from "@chakra-ui/react";
 import QueryBox from "../QueryBox";
-import {QueryItem} from "@/components/contexts/AppState";
-import {useQueryItems} from "@/components/query-items-list/context";
+import { QueryItem } from "@/components/contexts/AppState";
+import { useQueryItems } from "@/components/query-items-list/context";
 import React from "react";
-import {ArrowRightIcon, InfoIcon} from "@chakra-ui/icons";
+import { ArrowRightIcon, InfoIcon } from "@chakra-ui/icons";
 
 export default function NewFeedWizardCard() {
-
-  const {queryItems, queryInput, dispatch} = useQueryItems();
+  const { queryItems, queryInput, dispatch } = useQueryItems();
 
   function setInputs(inputPayload: Partial<QueryItem>) {
     dispatch({
       type: "input",
-      payload: inputPayload
-    })
+      payload: inputPayload,
+    });
   }
 
   function handleSubmitQuery(queryPayload: QueryItem) {
-    const filledKeys = Object.keys(queryPayload).filter(key => (queryPayload as any)[key]['length'] > 0);
-    if(filledKeys.length !== Object.keys(queryPayload).length) {
+    const filledKeys = Object.keys(queryPayload).filter(
+      (key) => (queryPayload as any)[key]["length"] > 0
+    );
+    if (filledKeys.length !== Object.keys(queryPayload).length) {
       throw "All fields must be filled";
     }
 
     dispatch({
       type: "create",
-      payload: queryPayload
-    })
+      payload: queryPayload,
+    });
     console.log(queryItems);
   }
 
@@ -71,53 +73,56 @@ export default function NewFeedWizardCard() {
   `;
 
   return (
-      <>
-        <Card w="100%" h="100%" variant="filled">
-          <CardBody display="flex" flexDirection="column" justifyContent="center">
-            <Heading size="lg">Feed Wizard</Heading>
-              <Text>Define a feed by providing a valid query</Text>
-            <InputGroup mt="4">
-              <InputLeftAddon>Feed Name</InputLeftAddon>
-              <Input
-                  variant="flushed"
-                  placeholder=" e.g homies-on-le-flot"
-                  bg="white"
-                  value={queryInput?.name}
-                  onChange={(e) => {
-                    setInputs({
-                      name: String(e.target.value)
-                    })
-                  }}
-              />
-            </InputGroup>
-            <QueryBox mWidth="100%" mHeight="50%" state={
-              [
+    <>
+      <Card w="100%" h="100%" variant="filled">
+        <CardBody display="flex" flexDirection="column">
+          <Heading size="lg">Feed Wizard</Heading>
+          <Text>Define a feed by providing a valid query</Text>
+          <InputGroup my="8px">
+            <InputLeftAddon>Feed Name</InputLeftAddon>
+            <Input
+              variant="outline"
+              placeholder=" e.g homies-on-le-flot"
+              bg="white"
+              size="md"
+              value={queryInput?.name}
+              onChange={(e) => {
+                setInputs({
+                  name: String(e.target.value),
+                });
+              }}
+            />
+          </InputGroup>
+            <QueryBox
+              mWidth="100%"
+              mHeight="75%"
+              state={[
                 String(queryInput),
                 (arg) => {
-                  setInputs(
-                      {
-                        value: arg
-                      }
-                  )
-                }
-              ]} defaultValue={defaultValue}/>
-            <Button
-                w="40%"
-                m="4"
-                variant="solid"
-                colorScheme="blue"
-                p={"5%"}
-                justifyContent={"space-between"}
-                onClick={() => {
-              console.log({queryValue: queryInput.value})
-              handleSubmitQuery(queryInput as QueryItem)
-            }}>
-              <ArrowRightIcon/>
-              <Text>CREATE FEED</Text>
-
-            </Button>
-          </CardBody>
-        </Card>
-      </>
+                  setInputs({
+                    value: arg,
+                  });
+                },
+              ]}
+              defaultValue={defaultValue}
+            />
+          <Button
+            w="40%"
+            my="4"
+            variant="solid"
+            colorScheme="blue"
+            p={"5%"}
+            justifyContent={"space-between"}
+            onClick={() => {
+              console.log({ queryValue: queryInput.value });
+              handleSubmitQuery(queryInput as QueryItem);
+            }}
+          >
+            <Text>CREATE FEED</Text>
+            <ArrowRightIcon />
+          </Button>
+        </CardBody>
+      </Card>
+    </>
   );
 }
