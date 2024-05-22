@@ -1,7 +1,10 @@
 import { generateKeyPair, jwtVerify, KeyLike, exportSPKI, importSPKI, SignJWT, exportJWK, importJWK, JWK, createLocalJWKSet } from 'jose';
 import { JWT } from './jwt';
+import {DEFAULT_STANDARD_DURATIONS} from "../../../packages/schema_zod"
 
 export const KEY_ALG = 'EdDSA'
+
+
 
 export interface KeyStateSerialized {
 	private: JWK;
@@ -21,7 +24,8 @@ export class KeyState {
 	expiry;
 	constructor() {
 		this.uuid = crypto.randomUUID();
-		this.expiry = 60 * 60 * 24 * 7; // 1 week in millis
+		// this is the max value
+		this.expiry = DEFAULT_STANDARD_DURATIONS.Y
 		this.publicKey = {} as KeyLike;
 		this.privateKey = {} as KeyLike;
 		this.publicKeyPEM = '';
@@ -47,8 +51,9 @@ export class KeyState {
 		return this.expired;
 	}
 
-	async sign(jwt: JWT, expiry: number = 60 * 60 * 24 * 7) {
-		const payload = jwt.payloadRaw(expiry);
+	async sign(jwt: JWT, expiry: number) {
+
+		const payload = jwt.payloadRaw(expiry <= this.expiry ? expiry : this.expiry);
 
 		return new SignJWT(payload).setProtectedHeader({ alg: KEY_ALG }).sign(this.privateKey);
 	}
