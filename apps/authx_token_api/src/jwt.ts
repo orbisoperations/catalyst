@@ -63,11 +63,11 @@ export class JWT implements DSSJWT{
     }
 
     payloadRaw(expiry: number) {
-				const now = Math.floor(Date.now() / 1000);
+				const now = Date.now();
 
-        this.nbf = now; // seconds
-        this.iat = now; //seconds
-        this.exp = now  + expiry; //seconds
+        this.nbf = now;
+        this.iat = now;
+        this.exp = now  + expiry;
         return {
             iss: this.iss,
             sub: this.sub,

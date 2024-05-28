@@ -80,6 +80,9 @@ export const JWTParsingResponse = z.discriminatedUnion("valid", [
 ]);
 export type JWTParsingResponse = z.infer<typeof JWTParsingResponse>;
 
+export const JWTRegisterStatus = z.enum(["active", "revoked", "deleted", "expired"])
+export type JWTRegisterStatus = z.infer<typeof JWTRegisterStatus>
+
 export const zIssuedJWTRegistry = z.object({
   id: z.string(),
   name: z.string(),
@@ -87,6 +90,7 @@ export const zIssuedJWTRegistry = z.object({
   claims: z.array(z.string()),
   expiry: z.date(),
   organization: z.string(),
+  status: JWTRegisterStatus.default(JWTRegisterStatus.enum.active)
 });
 
 export type IssuedJWTRegistry = z.infer<typeof zIssuedJWTRegistry>;
@@ -192,3 +196,15 @@ export const UserCheckActionResponse = z.discriminatedUnion("success", [
   zUserCheckActionError,
   zUserCheckActionSuccess,
 ]);
+
+
+export enum DEFAULT_STANDARD_DURATIONS {
+  MS = 1,
+  S = DEFAULT_STANDARD_DURATIONS.MS * 1000,
+  M = DEFAULT_STANDARD_DURATIONS.S * 60,
+  H = DEFAULT_STANDARD_DURATIONS.M * 60,
+  D = DEFAULT_STANDARD_DURATIONS.H * 24,
+  W = DEFAULT_STANDARD_DURATIONS.D * 7,
+  MONTH = DEFAULT_STANDARD_DURATIONS.D * 30,
+  Y = DEFAULT_STANDARD_DURATIONS.D * 365
+}
