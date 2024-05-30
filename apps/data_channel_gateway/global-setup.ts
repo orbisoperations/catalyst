@@ -30,4 +30,8 @@ export default function () {
   childProcess.execSync("pnpm build", { cwd: path.join("../issued-jwt-registry") });
   console.timeEnd(label);
 
+  label = "Compiled user_credentials_cache";
+  console.time(label);
+  childProcess.execSync("pnpm build", { cwd: path.join("../user_credentials_cache") });
+  console.timeEnd(label);
 }

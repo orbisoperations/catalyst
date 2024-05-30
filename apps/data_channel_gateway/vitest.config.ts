@@ -12,6 +12,7 @@ const dataChannelRegistrarPath = path.resolve("../data_channel_registrar/dist/wo
 const authzedServicePath = path.resolve("../authx_authzed_api/dist/index.js")
 const jwtRegistryPath = path.resolve("../issued-jwt-registry/dist/index.js")
 
+
 logger.info('Using built services from other workspaces within @catalyst');
 logger.info({
   authxServicePath,
@@ -54,7 +55,9 @@ export default defineWorkersProject(async () => {
       maxConcurrency: 1,
       globalSetup: './global-setup.ts',
       //setupFiles: ["./tests/apply-migrations.ts"],
+      singleWorker: true,
       poolOptions: {
+        singleWorker: true,
         workers: {
           main: "src/index.ts",
           wrangler: {configPath: "./wrangler.toml"},
@@ -148,6 +151,19 @@ export default defineWorkersProject(async () => {
                 unsafeEphemeralDurableObjects: true,
                 durableObjects: {
                   ISSUED_JWT_REGISTRY_DO: "I_JWT_Registry_DO"
+                }
+              },
+              {
+                name: "user_credentials_cache",
+                modules: true,
+                modulesRoot: path.resolve("../user_credentials_cache"),
+                script: path.resolve("../user_credentials_cache/dist/index.js"), // Built by `global-setup.ts`
+                compatibilityDate: "2024-04-05",
+                compatibilityFlags: ["nodejs_compat"],
+                entrypoint: "UserCredsCacheWorker",
+                unsafeEphemeralDurableObjects: true,
+                durableObjects: {
+                  CACHE: "UserCredsCache"
                 }
               }
             ],

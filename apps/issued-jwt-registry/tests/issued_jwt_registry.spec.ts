@@ -14,7 +14,7 @@ describe("issued-jwt-registry unit tests", () => {
 			expiry:  new Date(Date.now() + (1000 * 60 * 60 * 24)), //tomorrow
 			hash: "alsdfanlkweopivnweoiwe"
 		}
-		
+
 		const id = env.ISSUED_JWT_REGISTRY_DO.idFromName("creation");
 		const stub = env.ISSUED_JWT_REGISTRY_DO.get(id);
 
@@ -62,7 +62,7 @@ describe("issued-jwt-registry unit tests", () => {
 		const list1Entry = await stub.list("org 1");
 		expect(list1Entry).toBeDefined();
 		expect(list1Entry.length).toBe(1);
-		
+
 		expect(await stub.list("org 2")).toHaveLength(0);
 	})
 
@@ -131,7 +131,7 @@ describe("issued-jwt-registry unit tests", () => {
 			name: "my_first_jwt",
 			description: "the first one we have ever tested",
 			claims: ["claim1", "claim2"],
-			expiry:  new Date(Date.now() - (1000 * 60 * 60 * 60)), 
+			expiry:  new Date(Date.now() - (1000 * 60 * 60 * 60)),
 			organization: "org 1",
 			status: "active"
 		});
@@ -153,7 +153,7 @@ describe("issued-jwt-registry unit tests", () => {
 			organization: "org 1",
 			status: "active"
 		});
-		
+
 		// move status to revoked
 		const revoked = await stub.changeStatus(activeResp.id, "revoked");
 		expect(revoked).toBe(true)
@@ -215,6 +215,6 @@ describe("issued-jwt-registry unit tests", () => {
 		expect(await stub.removeFromRevocationList(item1.id)).toBe(true);
 
 		expect(await stub.isOnRevocationList(item1.id)).toBe(false);
-		
+
 	})
 });
