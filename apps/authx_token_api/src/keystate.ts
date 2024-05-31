@@ -39,7 +39,7 @@ export class KeyState {
 	constructor() {
 		this.uuid = crypto.randomUUID();
 		// this is the max value
-		this.expiry = DEFAULT_STANDARD_DURATIONS.Y / DEFAULT_STANDARD_DURATIONS.MS // to be S in a year
+		this.expiry = DEFAULT_STANDARD_DURATIONS.Y  // to be MS in a year
 		this.publicKey = {} as KeyLike;
 		this.privateKey = {} as KeyLike;
 		this.publicKeyPEM = '';

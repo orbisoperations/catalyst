@@ -104,6 +104,7 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 		const id = this.env.KEY_PROVIDER.idFromName(keyNamespace);
 		const stub = this.env.KEY_PROVIDER.get(id);
 		const jwt = await stub.signJWT(jwtRequest, expiresIn);
+		// returns expiration in MS
 		return JWTSigningResponse.parse({
 			success: true,
 			token: jwt.token,
