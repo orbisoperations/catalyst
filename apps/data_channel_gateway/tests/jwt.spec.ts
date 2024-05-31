@@ -75,5 +75,23 @@ describe("jwt integration tests", () => {
   console.log(protectedHeader)
   console.log(payload)
   })
+  it("expired token does not validate", async () => {
+    const jwtRequest = {
+      entity: "testuser",
+      claims: ["testclaim"],
+    };
+    const jwtDoId = env.JWT_TOKEN_DO.idFromName("newtest");
+    const jwtStub = env.JWT_TOKEN_DO.get(jwtDoId);
+    const jwtToken = await jwtStub.signJWT(
+      jwtRequest,
+      -6 * DEFAULT_STANDARD_DURATIONS.M
+    );
+    // wait for token to expire
+    console.log("jwtToken: ", jwtToken);
+    console.error("decode: ", decodeJwt(jwtToken.token));
+    expect(jwtStub.validateToken);
+    const validateResp = await jwtStub.validateToken(jwtToken.token);
+    console.error("validateResp: ", validateResp);
+    expect(validateResp.valid).toBeFalsy();
+  });
 })
-
