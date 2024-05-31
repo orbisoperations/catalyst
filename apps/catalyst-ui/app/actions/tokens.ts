@@ -51,6 +51,7 @@ export async function signJWT(
   if (expiration.unit === "weeks" && expiration.value > 52) {
     throw new Error("Expiration time cannot be greater than 52 weeks");
   }
+  // sets expiration in MS
   const exp =  expiration.unit === "days" ?
     expiration.value * DEFAULT_STANDARD_DURATIONS.D
     : expiration.value * DEFAULT_STANDARD_DURATIONS.W;

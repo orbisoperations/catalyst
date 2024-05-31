@@ -116,7 +116,7 @@ export default function CreateTokensForm({
             name: apiKeyName,
             description: apiKeyDescription,
             claims: jwtRequest.claims,
-            expiry: new Date(resp.expiration * 1000),
+            expiry: new Date(resp.expiration),
             organization: user.custom.org,
           } as Omit<IssuedJWTRegistry, "id">;
           const iJWTRegistryEntry = await createIJWTRegistry(
