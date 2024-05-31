@@ -11,6 +11,7 @@ import { buildSchema, parse, print } from "graphql";
 import { createYoga } from "graphql-yoga";
 import { Hono } from "hono";
 import { Env } from "./env";
+
 // // https://github.com/ardatan/schema-stitching/blob/master/examples/stitching-directives-sdl/src/gateway.ts
 export async function fetchRemoteSchema(executor: Executor) {
   // throw new Error();
@@ -31,7 +32,7 @@ export async function fetchRemoteSchema(executor: Executor) {
 // https://github.com/ardatan/schema-stitching/blob/master/examples/combining-local-and-remote-schemas/src/gateway.ts
 async function makeGatewaySchema(
   endpoints: { endpoint: string }[],
-  token: string
+  token: string,
 ) {
   console.log("makeGatewaySchema");
   const { stitchingDirectivesTransformer } = stitchingDirectives();
@@ -68,7 +69,7 @@ async function makeGatewaySchema(
         schema: await fetchRemoteSchema(exec),
         executor: exec,
       };
-    })
+    }),
   );
   return stitchSchemas({
     subschemas: await subschemas,
@@ -115,7 +116,7 @@ app.use(async (c, next) => {
       {
         error: error.msg,
       },
-      error.status
+      error.status,
     );
   }
   if (token == "") {
@@ -123,7 +124,7 @@ app.use(async (c, next) => {
       {
         error: "JWT Invalid",
       },
-      403
+      403,
     );
   }
 
@@ -158,7 +159,7 @@ app.use("/graphql", async (ctx) => {
   // default is used here get the default registrar
   const allDataChannels = await ctx.env.DATA_CHANNEL_REGISTRAR.list(
     "default",
-    token.data
+    token.data,
   );
 
   if (!allDataChannels.success) {

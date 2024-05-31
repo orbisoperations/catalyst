@@ -1,6 +1,6 @@
 import { string, z } from "zod";
-
-export const DataChannel = z.object({
+// DATA CHANNELS // DATA CHANNELS // DATA CHANNELS // DATA CHANNELS // DATA CHANNELS // DATA CHANNELS
+export const zDataChannel = z.object({
   id: z.string(),
   accessSwitch: z.boolean(),
   name: z.string(),
@@ -9,23 +9,42 @@ export const DataChannel = z.object({
   creatorOrganization: z.string(),
 });
 
-export type DataChannel = z.infer<typeof DataChannel>;
-
-export const OrgId = z.string();
-export type OrgId = z.infer<typeof OrgId>;
-
-export const UserId = z.string();
-export type UserId = z.infer<typeof UserId>;
+export type DataChannel = z.infer<typeof zDataChannel>;
 
 export const DataChannelId = z.string();
 export type DataChannelId = z.infer<typeof DataChannelId>;
 
+// DATA CHANNEL SCHEMA FILTERS // DATA CHANNEL SCHEMA FILTERS // DATA CHANNEL SCHEMA FILTERS
+export const zDataChannelSchemaFilter = z.object({
+  id: z.string(),
+  dataChannelId: z.string(),
+  partnerId: z.string(),
+  filter: z.array(z.string()),
+});
+
+export type DataChannelSchemaFilter = z.infer<typeof zDataChannelSchemaFilter>;
+
+export const zDataChannelSchemaFilterId = z.string();
+export type DataChannelSchemaFilterId = z.infer<
+  typeof zDataChannelSchemaFilterId
+>;
+
+export const OrgId = z.string();
+export type OrgId = z.infer<typeof OrgId>;
+
+// TOKEN // TOKEN // TOKEN // TOKEN // TOKEN // TOKEN // TOKEN // TOKEN // TOKEN // TOKEN // TOKEN // TOKEN
 export const Token = z.object({
   cfToken: z.string().optional(),
   catalystToken: z.string().optional(),
 });
 
 export type Token = z.infer<typeof Token>;
+
+// USER // USER // USER // USER // USER // USER // USER // USER // USER // USER // USER // USER // USER
+export type User = z.infer<typeof User>;
+
+export const UserId = z.string();
+export type UserId = z.infer<typeof UserId>;
 
 export const User = z.object({
   userId: UserId,
@@ -35,8 +54,6 @@ export const User = z.object({
     .array(),
 });
 
-export type User = z.infer<typeof User>;
-
 export const PermissionCheckResponse = z.object({
   success: z.boolean(),
   error: z.string().optional(),
@@ -44,9 +61,10 @@ export const PermissionCheckResponse = z.object({
 
 export type PermissionCheckResponse = z.infer<typeof PermissionCheckResponse>;
 
+// DATA CHANNEL ACTIONS // DATA CHANNEL ACTIONS // DATA CHANNEL ACTIONS // DATA CHANNEL ACTIONS
 const dataChannelActionSuccess = z.object({
   success: z.literal(true),
-  data: z.union([DataChannel, DataChannel.array()]),
+  data: z.union([zDataChannel, zDataChannel.array()]),
 });
 
 const dataChannelActionError = z.object({
@@ -62,6 +80,7 @@ export type DataChannelActionResponse = z.infer<
   typeof DataChannelActionResponse
 >;
 
+// JWT PARSE // JWT PARSE // JWT PARSE // JWT PARSE // JWT PARSE // JWT PARSE // JWT PARSE // JWT PARSE
 const jwtParseSuccess = z.object({
   valid: z.literal(true),
   entity: z.string(),
@@ -80,8 +99,14 @@ export const JWTParsingResponse = z.discriminatedUnion("valid", [
 ]);
 export type JWTParsingResponse = z.infer<typeof JWTParsingResponse>;
 
-export const JWTRegisterStatus = z.enum(["active", "revoked", "deleted", "expired"])
-export type JWTRegisterStatus = z.infer<typeof JWTRegisterStatus>
+// ISSUED JWT REGISTRY // ISSUED JWT REGISTRY // ISSUED JWT REGISTRY // ISSUED JWT REGISTRY
+export const JWTRegisterStatus = z.enum([
+  "active",
+  "revoked",
+  "deleted",
+  "expired",
+]);
+export type JWTRegisterStatus = z.infer<typeof JWTRegisterStatus>;
 
 export const zIssuedJWTRegistry = z.object({
   id: z.string(),
@@ -90,7 +115,7 @@ export const zIssuedJWTRegistry = z.object({
   claims: z.array(z.string()),
   expiry: z.date(),
   organization: z.string(),
-  status: JWTRegisterStatus.default(JWTRegisterStatus.enum.active)
+  status: JWTRegisterStatus.default(JWTRegisterStatus.enum.active),
 });
 
 export type IssuedJWTRegistry = z.infer<typeof zIssuedJWTRegistry>;
@@ -106,13 +131,14 @@ const zIssuedJWTRegistryActionError = z.object({
 });
 export const zIssuedJWTRegistryActionResponse = z.discriminatedUnion(
   "success",
-  [zIssuedJWTRegistryActionError, zIssuedJWTRegistryActionSuccess]
+  [zIssuedJWTRegistryActionError, zIssuedJWTRegistryActionSuccess],
 );
 
 export type IssuedJWTRegistryActionResponse = z.infer<
   typeof zIssuedJWTRegistryActionResponse
 >;
 
+// JWT SIGNING // JWT SIGNING // JWT SIGNING // JWT SIGNING // JWT SIGNING // JWT SIGNING
 export const JWTSigningRequest = z.object({
   entity: z.string(),
   claims: z.string().array(),
@@ -139,6 +165,7 @@ export const JWTSigningResponse = z.discriminatedUnion("success", [
 
 export type JWTSigningResponse = z.infer<typeof JWTSigningResponse>;
 
+// JWT ROTATE // JWT ROTATE // JWT ROTATE // JWT ROTATE // JWT ROTATE // JWT ROTATE // JWT ROTATE
 export const JWTRotateResponse = z.discriminatedUnion("success", [
   z.object({
     success: z.literal(true),
@@ -151,6 +178,7 @@ export const JWTRotateResponse = z.discriminatedUnion("success", [
 
 export type JWTRotateResponse = z.infer<typeof JWTRotateResponse>;
 
+// ORG INVITE // ORG INVITE // ORG INVITE // ORG INVITE // ORG INVITE // ORG INVITE // ORG INVITE
 export const OrgInviteStatus = z.enum(["pending", "accepted", "declined"]);
 export type OrgInviteStatus = z.infer<typeof OrgInviteStatus>;
 export const OrgInvite = z.object({
@@ -166,7 +194,7 @@ export const OrgInvite = z.object({
 
 export type OrgInvite = z.infer<typeof OrgInvite>;
 
-const invtiteAction = z.object({
+const inviteAction = z.object({
   success: z.literal(true),
   invite: z.union([OrgInvite, OrgInvite.array()]),
 });
@@ -177,7 +205,7 @@ const inviteError = z.object({
 });
 
 export const OrgInviteResponse = z.discriminatedUnion("success", [
-  invtiteAction,
+  inviteAction,
   inviteError,
 ]);
 
@@ -197,7 +225,6 @@ export const UserCheckActionResponse = z.discriminatedUnion("success", [
   zUserCheckActionSuccess,
 ]);
 
-
 export enum DEFAULT_STANDARD_DURATIONS {
   MS = 1,
   S = DEFAULT_STANDARD_DURATIONS.MS * 1000,
@@ -206,5 +233,5 @@ export enum DEFAULT_STANDARD_DURATIONS {
   D = DEFAULT_STANDARD_DURATIONS.H * 24,
   W = DEFAULT_STANDARD_DURATIONS.D * 7,
   MONTH = DEFAULT_STANDARD_DURATIONS.D * 30,
-  Y = DEFAULT_STANDARD_DURATIONS.D * 365
+  Y = DEFAULT_STANDARD_DURATIONS.D * 365,
 }

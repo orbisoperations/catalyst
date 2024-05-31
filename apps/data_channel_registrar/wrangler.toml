@@ -18,7 +18,7 @@ port = 5050
 
 
 [durable_objects]
-bindings = [{name = "DO", class_name = "Registrar"}]
+bindings = [{name = "DATA_CHANNEL_REGISTRAR_DO", class_name = "Registrar"}]
 
 [[migrations]]
 tag = "v1" # Should be unique for each entry
@@ -33,7 +33,7 @@ services = [
   { binding = "AUTHZED", service = "authx_authzed_api-staging" },
   { binding = "USERCACHE", service = "user_credentials_cache-staging" }
 ]
-durable_objects.bindings = [{name = "DO", class_name = "Registrar"}]
+durable_objects.bindings = [{name = "DATA_CHANNEL_REGISTRAR_DO", class_name = "Registrar"}]
 
 
 
@@ -44,4 +44,4 @@ services = [
   { binding = "AUTHZED", service = "authx_authzed_api-demo" },
   { binding = "USERCACHE", service = "user_credentials_cache-demo" }
 ]
-durable_objects.bindings = [{name = "DO", class_name = "Registrar"}]
+durable_objects.bindings = [{name = "DATA_CHANNEL_REGISTRAR_DO", class_name = "Registrar"}]

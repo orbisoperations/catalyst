@@ -1,19 +1,16 @@
-import {SELF, env, createExecutionContext, waitOnExecutionContext} from "cloudflare:test";
-import {describe, it, expect, beforeAll} from "vitest";
-import {Logger} from "tslog";
+import { SELF, env, createExecutionContext, waitOnExecutionContext } from 'cloudflare:test';
+import { describe, it, expect, beforeAll } from 'vitest';
+import { Logger } from 'tslog';
 const logger = new Logger();
 
+describe('Data Channel Registrar as Durable Object integration tests', () => {
+  console.log(env);
+  it('should fetch an empty array DATA_CHANNEL_REGISTRAR_DO', async () => {
+    console.log(env);
+    const list = await env.WORKER.list('default');
+  });
 
-describe("Data Channel Registrar as Durable Object integration tests", () => {
-  console.log(env)
-    it('should fetch an empty array DO', async () => {
-      console.log(env)
-        const list = await env.WORKER.list("default")
-
-    })
-
-
-    /*it('should create a Data Channel and return the id, also show in the DO list', async () => {
+  /*it('should create a Data Channel and return the id, also show in the DATA_CHANNEL_REGISTRAR_DO list', async () => {
         const createResponse = await giveMeADataChannel();
         const dataChannelId: string = await createResponse.json();
 
@@ -89,5 +86,4 @@ describe("Data Channel Registrar as Durable Object integration tests", () => {
         // expect(await phantomDataChannel.text()).toEqual("o data channel found: "+removeId);
         // expect(phantomDataChannel.status).toEqual(500);
     });*/
-
-})
+});

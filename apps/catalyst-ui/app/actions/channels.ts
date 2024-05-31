@@ -2,6 +2,7 @@
 import { CloudflareEnv } from "@/env";
 import { getRequestContext } from "@cloudflare/next-on-pages";
 import { DataChannel } from "../../../../packages/schema_zod";
+import { print } from "graphql/index";
 
 function getEnv() {
   return getRequestContext().env as CloudflareEnv;
@@ -55,7 +56,7 @@ export async function listChannels(token: string) {
 export async function listPartnersChannels(token: string, partnerId: string) {
   const channelsResponse = await listChannels(token);
   return channelsResponse.filter(
-    (channel) => channel.creatorOrganization === partnerId
+    (channel) => channel.creatorOrganization === partnerId,
   );
 }
 
@@ -70,6 +71,26 @@ export async function getChannel(channelId: string, token: string) {
     throw new Error("Failed to get data channel");
   }
   return channelResp.data as DataChannel;
+}
+
+export async function getChannelSchema(
+  dataChannelId: string,
+  partnerId: string,
+  token: string,
+) {
+  const api = getRegistar();
+  const tokenObject = {
+    cfToken: token,
+  };
+  const channelSchemaResp = await api.getChannelSchemaFilters(
+    "default",
+    partnerId,
+    tokenObject,
+  );
+  if (!channelSchemaResp.success) {
+    throw new Error("Failed to get data channel schema for partner");
+  }
+  return channelSchemaResp.data;
 }
 
 export async function updateChannel(formData: FormData, token: string) {
@@ -101,7 +122,7 @@ export async function updateChannel(formData: FormData, token: string) {
 export async function handleSwitch(
   channelId: string,
   accessSwitch: boolean,
-  token: string
+  token: string,
 ) {
   const api = getRegistar();
   const tokenObject = {

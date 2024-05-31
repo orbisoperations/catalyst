@@ -6,13 +6,15 @@ import {
   PermissionCheckResponse,
   DataChannelActionResponse,
   JWTParsingResponse,
+  DataChannelSchemaFilter,
 } from '../../../packages/schema_zod';
 import AuthzedWorker from '../../authx_authzed_api/src';
 import JWTWorker from '../../authx_token_api/src';
 import UserCredsCacheWorker from '../../user_credentials_cache/src';
 
 export type Env = Record<string, string> & {
-  DO: DurableObjectNamespace<Registrar>;
+  DATA_CHANNEL_REGISTRAR_DO: DurableObjectNamespace<Registrar>;
+  DATA_CHANNEL_REGISTRAR_SCHEMA_FILTERS_DO: DurableObjectNamespace<RegistrarSchemaFilters>;
   AUTHZED: Service<AuthzedWorker>;
   AUTHX_TOKEN_API: Service<JWTWorker>;
   USERCACHE: Service<UserCredsCacheWorker>;
@@ -103,7 +105,7 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
       if (channel && channel.accessSwitch === false) {
         return PermissionCheckResponse.parse({
           success: false,
-          error: "catalyst cannot access disabled data channels",
+          error: 'catalyst cannot access disabled data channels',
         });
       }
       // validate JWT here
@@ -144,7 +146,7 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
 
     return PermissionCheckResponse.parse({
       success: false,
-      error: 'catalyst did not recieve a token',
+      error: 'catalyst did not receive a token',
     });
   }
 
@@ -156,8 +158,8 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
         error: checkResp.error,
       });
     }
-    const doId = this.env.DO.idFromName(doNamespace);
-    const stub = this.env.DO.get(doId);
+    const doId = this.env.DATA_CHANNEL_REGISTRAR_DO.idFromName(doNamespace);
+    const stub = this.env.DATA_CHANNEL_REGISTRAR_DO.get(doId);
     const create = await stub.create(dataChannel);
     await this.env.AUTHZED.addDataChannelToOrg(dataChannel.creatorOrganization, create.id);
     await this.env.AUTHZED.addOrgToDataChannel(create.id, dataChannel.creatorOrganization);
@@ -168,7 +170,6 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
   }
 
   async update(doNamespace: string, dataChannel: DataChannel, token: Token) {
-    console.log('updating data channel', dataChannel);
     const checkResp = await this.CUDPerms(token);
     if (!checkResp.success) {
       return DataChannelActionResponse.parse({
@@ -176,11 +177,11 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
         error: checkResp.error,
       });
     }
-    console.log('user can update data channel');
-    const doId = this.env.DO.idFromName(doNamespace);
-    const stub = this.env.DO.get(doId);
+
+    const doId = this.env.DATA_CHANNEL_REGISTRAR_DO.idFromName(doNamespace);
+    const stub = this.env.DATA_CHANNEL_REGISTRAR_DO.get(doId);
     const update = await stub.update(dataChannel);
-    console.log('updated data channel', update);
+
     return DataChannelActionResponse.parse({
       success: true,
       data: update,
@@ -188,7 +189,6 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
   }
 
   async read(doNamespace: string, dataChannelId: string, token: Token) {
-    console.log('getting dc for user');
     const canRead = await this.RPerms(token, dataChannelId);
     if (!canRead.success) {
       return DataChannelActionResponse.parse({
@@ -196,10 +196,9 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
         error: canRead.error,
       });
     }
-    const doId = this.env.DO.idFromName(doNamespace);
-    const stub = this.env.DO.get(doId);
+    const doId = this.env.DATA_CHANNEL_REGISTRAR_DO.idFromName(doNamespace);
+    const stub = this.env.DATA_CHANNEL_REGISTRAR_DO.get(doId);
     const channel = await stub.get(dataChannelId);
-    console.log('found dc: ', channel);
     return DataChannelActionResponse.parse({
       success: true,
       data: channel,
@@ -207,9 +206,9 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
   }
 
   async list(doNamespace: string, token: Token) {
-    const { DO } = this.env;
-    const doId = DO.idFromName(doNamespace);
-    const stub = DO.get(doId);
+    const { DATA_CHANNEL_REGISTRAR_DO } = this.env;
+    const doId = DATA_CHANNEL_REGISTRAR_DO.idFromName(doNamespace);
+    const stub = DATA_CHANNEL_REGISTRAR_DO.get(doId);
     const list = await stub.list();
 
     const listWithPerms = (
@@ -239,8 +238,8 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
         error: checkResp.error,
       });
     }
-    const doId = this.env.DO.idFromName(doNamespace);
-    const stub = this.env.DO.get(doId);
+    const doId = this.env.DATA_CHANNEL_REGISTRAR_DO.idFromName(doNamespace);
+    const stub = this.env.DATA_CHANNEL_REGISTRAR_DO.get(doId);
     const d = await stub.delete(dataChannelID);
     if (!d) {
       return DataChannelActionResponse.parse({
@@ -252,6 +251,38 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
       success: true,
       data: [],
     });
+  }
+
+  async getChannelSchemaFilters(doNamespace: string, partnerId: string, token: Token) {
+    const checkResp = await this.CUDPerms(token);
+    if (!checkResp.success) {
+      return DataChannelActionResponse.parse({
+        success: false,
+        error: checkResp.error,
+      });
+    }
+
+    const jwtEntity: JWTParsingResponse = await this.env.AUTHX_TOKEN_API.validateToken(
+      token.catalystToken!,
+    );
+    const parsedJWTEntity = JWTParsingResponse.safeParse(jwtEntity);
+    if (!parsedJWTEntity.success) {
+      return PermissionCheckResponse.parse({
+        success: false,
+        error: parsedJWTEntity.error,
+      });
+    }
+    const dataChannelId =
+      parsedJWTEntity.data.claims.length === 1 ? parsedJWTEntity.data.claims[0] : '';
+    if (!dataChannelId) {
+      throw new Error('catalyst token must have exactly one claim for a single data channel');
+    }
+    const doId = this.env.DATA_CHANNEL_REGISTRAR_SCHEMA_FILTERS_DO.idFromName(doNamespace);
+    const stub = this.env.DATA_CHANNEL_REGISTRAR_SCHEMA_FILTERS_DO.get(doId);
+
+    const channelFilters = await stub.getSchemaFilters(dataChannelId, partnerId);
+
+    return channelFilters;
   }
 }
 
@@ -297,5 +328,24 @@ export class Registrar extends DurableObject {
 
   async delete(id: string) {
     return this.ctx.storage.delete(id);
+  }
+}
+
+export class RegistrarSchemaFilters extends DurableObject {
+  async getSchemaFilters(dataChannelId: string, partnerId: string) {
+    const allSchemaFilters = await this.ctx.storage.list<DataChannelSchemaFilter>();
+    const schemaFiltersByPartnerByDataChannel = Array.from(allSchemaFilters.values()).filter(
+      filter => {
+        filter.dataChannelId === dataChannelId && filter.partnerId === partnerId;
+      },
+    );
+    if (schemaFiltersByPartnerByDataChannel.length != 1) {
+      throw new Error(
+        'Number of schema filters for this partner data channel is, ' +
+          schemaFiltersByPartnerByDataChannel.length +
+          ', expected 1',
+      );
+    }
+    return schemaFiltersByPartnerByDataChannel[0].filter;
   }
 }
