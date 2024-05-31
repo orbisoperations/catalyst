@@ -36,7 +36,7 @@ describe.sequential("authzed integration tests", () => {
       const org = "Org1"
       const userStatement = await env.AUTHX_AUTHZED_API.addUserToOrg(org,"TestUser")
       console.log(userStatement)
-      expect(userStatement.entity).toBe("orbisops_catalyst_dev/organization:Org1#user@orbisops_catalyst_dev/user:TestUser")
+      expect(userStatement.entity).toBe("orbisops_catalyst_dev/organization:Org1#user@orbisops_catalyst_dev/user:VGVzdFVzZXI=")
       expect(userStatement.writtenAt).toBeDefined()
       await env.AUTHX_AUTHZED_API.deleteUserFromOrg(org,"TestUser")
     })
@@ -44,7 +44,7 @@ describe.sequential("authzed integration tests", () => {
       const org = "Org2"
       const userStatement = await env.AUTHX_AUTHZED_API.addDataCustodianToOrg(org,"TestUser")
       console.log(userStatement)
-      expect(userStatement.entity).toBe("orbisops_catalyst_dev/organization:Org2#data_custodian@orbisops_catalyst_dev/user:TestUser")
+      expect(userStatement.entity).toBe("orbisops_catalyst_dev/organization:Org2#data_custodian@orbisops_catalyst_dev/user:VGVzdFVzZXI=")
       expect(userStatement.writtenAt).toBeDefined()
       await env.AUTHX_AUTHZED_API.deleteDataCustodianFromOrg(org,"TestUser")
     })
@@ -52,7 +52,7 @@ describe.sequential("authzed integration tests", () => {
       const org = "Org3"
       const userStatement = await env.AUTHX_AUTHZED_API.addAdminToOrg(org,"TestUser")
       console.log(userStatement)
-      expect(userStatement.entity).toBe("orbisops_catalyst_dev/organization:Org3#admin@orbisops_catalyst_dev/user:TestUser")
+      expect(userStatement.entity).toBe("orbisops_catalyst_dev/organization:Org3#admin@orbisops_catalyst_dev/user:VGVzdFVzZXI=")
       expect(userStatement.writtenAt).toBeDefined()
       await env.AUTHX_AUTHZED_API.deleteAdminFromOrg(org,"TestUser")
     })

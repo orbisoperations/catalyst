@@ -56,13 +56,12 @@ export class JWTKeyProvider extends DurableObject {
 	async signJWT(req: JWTSigningRequest, expiresIn: number) {
 		await this.key();
 		const jwt = new JWT(req.entity, req.claims, 'catalyst:system:jwt:latest');
-		console.log(this.currentSerializedKey);
 		const newToken = await this.currentKey!.sign(jwt, expiresIn);
 		const payload = decodeJwt(newToken);
 		const expiration = payload.exp as number;
 
 		return {
-			token: await this.currentKey!.sign(jwt, expiresIn),
+			token: newToken,
 			expiration,
 		};
 	}
@@ -82,7 +81,7 @@ export class JWTKeyProvider extends DurableObject {
 				return resp;
 			}
 			const jwkPub = createLocalJWKSet(await this.getJWKS());
-			const { payload, protectedHeader } = await jwtVerify(token, jwkPub);
+			const { payload, protectedHeader } = await jwtVerify(token, jwkPub, {clockTolerance: "5 minutes"});
 			const resp = JWTParsingResponse.parse({
 				valid: true,
 				entity: payload.sub,
