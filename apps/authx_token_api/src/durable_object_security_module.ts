@@ -1,9 +1,11 @@
 import { JSONWebKeySet, createLocalJWKSet, decodeJwt, jwtVerify } from 'jose';
 // @ts-ignore
 import { DurableObject } from 'cloudflare:workers';
-import { JWTParsingResponse, JWTSigningRequest } from '../../../packages/schema_zod';
+import { DEFAULT_STANDARD_DURATIONS, JWTParsingResponse, JWTSigningRequest } from '../../../packages/schema_zod';
 import { JWT } from './jwt';
 import { KeyState, KeyStateSerialized } from './keystate';
+import { e } from 'vitest/dist/reporters-QGe8gs4b.js';
+import exp from 'constants';
 
 export class JWTKeyProvider extends DurableObject {
 	currentKey: KeyState | undefined;
@@ -58,8 +60,7 @@ export class JWTKeyProvider extends DurableObject {
 		const jwt = new JWT(req.entity, req.claims, 'catalyst:system:jwt:latest');
 		const newToken = await this.currentKey!.sign(jwt, expiresIn);
 		const payload = decodeJwt(newToken);
-		const expiration = payload.exp as number;
-
+		const expiration = (payload.exp as number) * DEFAULT_STANDARD_DURATIONS.S;
 		return {
 			token: newToken,
 			expiration,

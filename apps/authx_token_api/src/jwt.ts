@@ -61,38 +61,37 @@ export class JWT implements DSSJWT{
     }
 
     payload(keyURN:string, expiry: number) {
-			const now = Date.now(); // in MS
-
-			this.nbf = (Math.floor(now / DEFAULT_STANDARD_DURATIONS.S))-1; // in S
-			this.iat = (Math.floor(now / DEFAULT_STANDARD_DURATIONS.S)); // in S
-			this.exp = Math.floor((now  + expiry) / DEFAULT_STANDARD_DURATIONS.S); // in S
-			return base64url(JSON.stringify({
-					iss: keyURN,
-					sub: this.sub,
-					claims: this.claims,
-					aud: this.aud,
-					jti: this.jti,
-					nbf: this.nbf,
-					iat: this.iat,
-					exp: this.exp,
-			}));
+        const now = Math.floor(Date.now()/DEFAULT_STANDARD_DURATIONS.S); // in S
+        this.nbf = now - 1; // in S
+        this.iat = now; // in S
+        this.exp = now + Math.floor((expiry/DEFAULT_STANDARD_DURATIONS.S)); // in S
+        return base64url(JSON.stringify({
+                iss: keyURN,
+                sub: this.sub,
+                claims: this.claims,
+                aud: this.aud,
+                jti: this.jti,
+                nbf: this.nbf,
+                iat: this.iat,
+                exp: this.exp,
+        }));
     }
 
     payloadRaw(expiry: number) {
-			const now = Date.now(); // in MS
-			this.nbf = (Math.floor(now / DEFAULT_STANDARD_DURATIONS.S))-1; // in S
-			this.iat = (Math.floor(now / DEFAULT_STANDARD_DURATIONS.S)); // in S
-			this.exp = Math.floor((now  + expiry) / DEFAULT_STANDARD_DURATIONS.S); // in S
-			return {
-				iss: this.iss,
-				sub: this.sub,
-				claims: this.claims,
-				aud: this.aud,
-				jti: this.jti,
-				nbf: this.nbf,
-				iat: this.iat,
-				exp: this.exp,
-			};
+        const now = Math.floor(Date.now()/DEFAULT_STANDARD_DURATIONS.S); // in S
+        this.nbf = now - 1; // in S
+        this.iat = now; // in S
+        this.exp = now + Math.floor((expiry/DEFAULT_STANDARD_DURATIONS.S)); // in S
+        return {
+            iss: this.iss,
+            sub: this.sub,
+            claims: this.claims,
+            aud: this.aud,
+            jti: this.jti,
+            nbf: this.nbf,
+            iat: this.iat,
+            exp: this.exp,
+        };
     }
 
     static fromJOSEJWT(payload: JWTPayload): JWT {
