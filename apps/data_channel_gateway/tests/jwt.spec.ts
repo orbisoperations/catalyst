@@ -2,7 +2,8 @@
 
 import { describe, expect, it } from 'vitest';
 import { env } from 'cloudflare:test';
-import {importJWK, jwtVerify, createLocalJWKSet} from "jose"
+import {importJWK, jwtVerify, createLocalJWKSet, decodeJwt} from "jose"
+import { DEFAULT_STANDARD_DURATIONS } from '@catalyst/schema_zod';
 describe("jwt integration tests", () => {
   it("can get the public key", async () =>{
     console.log(env)
@@ -34,12 +35,12 @@ describe("jwt integration tests", () => {
       entity: "testuser",
       claims: ["testclaim"],
     }
-    const jwtDoId = env.JWT_TOKEN_DO.idFromName("default")
+    const jwtDoId = env.JWT_TOKEN_DO.idFromName("newtest")
     const jwtStub = env.JWT_TOKEN_DO.get(jwtDoId)
-    const jwtToken = await jwtStub.signJWT(jwtRequest, 1000000000)
-    console.log(jwtToken)
+    const jwtToken = await jwtStub.signJWT(jwtRequest, 360 * DEFAULT_STANDARD_DURATIONS.S)
+    console.log("jwtToken: ", jwtToken)
+    console.error("decode: ", decodeJwt(jwtToken.token))
     const validateResp = await jwtStub.validateToken(jwtToken.token)
-    delete validateResp["Symbol(dispose)"]
     console.log(validateResp)
     expect(validateResp.claims[0]).toBe( 'testclaim' )
     expect(validateResp.valid).toBeTruthy()
@@ -59,9 +60,12 @@ describe("jwt integration tests", () => {
       entity: "testuser",
       claims: ["testclaim"],
     }
-    const jwtToken = await jwtStub.signJWT(jwtRequest, 1000000000)
+    const jwtToken = await jwtStub.signJWT(jwtRequest, 360 * DEFAULT_STANDARD_DURATIONS.S)
+    console.error(jwtToken.token)
 
     const jwkPub = await createLocalJWKSet(jwk);
+    console.error("time now: ", Date.now())
+    console.error("token decode: ", decodeJwt(jwtToken.token), jwtToken)
   const { payload, protectedHeader } = await jwtVerify(jwtToken.token, jwkPub, {
     issuer: 'catalyst:system:jwt:latest',
     audience: 'catalyst:system:datachannels',
