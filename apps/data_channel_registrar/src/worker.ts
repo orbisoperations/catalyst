@@ -7,6 +7,7 @@ import {
   DataChannelActionResponse,
   JWTParsingResponse,
   DataChannelSchemaFilter,
+  zDataChannelSchemaFilter,
 } from '../../../packages/schema_zod';
 import AuthzedWorker from '../../authx_authzed_api/src';
 import JWTWorker from '../../authx_token_api/src';
@@ -252,7 +253,47 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
       data: [],
     });
   }
+  async createChannelSchemaFilter(
+    doNamespace: string,
+    partnerId: string,
+    filter: string[],
+    token: Token,
+  ) {
+    const checkResp = await this.CUDPerms(token);
+    if (!checkResp.success) {
+      return DataChannelActionResponse.parse({
+        success: false,
+        error: checkResp.error,
+      });
+    }
 
+    const doId = this.env.DATA_CHANNEL_REGISTRAR_SCHEMA_FILTERS_DO.idFromName(doNamespace);
+    const stub = this.env.DATA_CHANNEL_REGISTRAR_SCHEMA_FILTERS_DO.get(doId);
+    const jwtEntity: JWTParsingResponse = await this.env.AUTHX_TOKEN_API.validateToken(
+      token.catalystToken!,
+    );
+    const parsedJWTEntity = JWTParsingResponse.safeParse(jwtEntity);
+    if (!parsedJWTEntity.success) {
+      return PermissionCheckResponse.parse({
+        success: false,
+        error: parsedJWTEntity.error,
+      });
+    }
+    const dataChannelId =
+      parsedJWTEntity.data.claims.length === 1 ? parsedJWTEntity.data.claims[0] : '';
+
+    if (!dataChannelId) {
+      throw new Error('catalyst token must have exactly one claim for a single data channel');
+    }
+    const newDataChannelSchemaFilter = Object.assign(zDataChannelSchemaFilter, {
+      id: crypto.randomUUID(),
+      dataChannelId,
+      partnerId,
+      filter,
+    });
+    const createdDataChannelFilters = await stub.createSchemaFilter(newDataChannelSchemaFilter);
+    return createdDataChannelFilters;
+  }
   async getChannelSchemaFilters(doNamespace: string, partnerId: string, token: Token) {
     const checkResp = await this.CUDPerms(token);
     if (!checkResp.success) {
@@ -280,9 +321,41 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
     const doId = this.env.DATA_CHANNEL_REGISTRAR_SCHEMA_FILTERS_DO.idFromName(doNamespace);
     const stub = this.env.DATA_CHANNEL_REGISTRAR_SCHEMA_FILTERS_DO.get(doId);
 
-    const channelFilters = await stub.getSchemaFilters(dataChannelId, partnerId);
+    const channelFilters = await stub.getSchemaFilter(dataChannelId, partnerId);
 
     return channelFilters;
+  }
+
+  async updateDataChannelSchemaFilter(
+    doNamespace: string,
+    filter: DataChannelSchemaFilter,
+    token: Token,
+  ) {
+    const checkResp = await this.CUDPerms(token);
+    if (!checkResp.success) {
+      return DataChannelActionResponse.parse({
+        success: false,
+        error: checkResp.error,
+      });
+    }
+    const doId = this.env.DATA_CHANNEL_REGISTRAR_SCHEMA_FILTERS_DO.idFromName(doNamespace);
+    const stub = this.env.DATA_CHANNEL_REGISTRAR_SCHEMA_FILTERS_DO.get(doId);
+    const updatedDataChannelSchemaFilter = stub.updateSchemaFilter(filter);
+    return updatedDataChannelSchemaFilter;
+  }
+
+  async deleteDataChannelSchemaFilter(doNamespace: string, id: string, token: Token) {
+    const checkResp = await this.CUDPerms(token);
+    if (!checkResp.success) {
+      return DataChannelActionResponse.parse({
+        success: false,
+        error: checkResp.error,
+      });
+    }
+    const doId = this.env.DATA_CHANNEL_REGISTRAR_SCHEMA_FILTERS_DO.idFromName(doNamespace);
+    const stub = this.env.DATA_CHANNEL_REGISTRAR_SCHEMA_FILTERS_DO.get(doId);
+    const deletedDataChannelSchemaFilter = stub.removeSchemaFilter(id);
+    return deletedDataChannelSchemaFilter;
   }
 }
 
@@ -332,7 +405,21 @@ export class Registrar extends DurableObject {
 }
 
 export class RegistrarSchemaFilters extends DurableObject {
-  async getSchemaFilters(dataChannelId: string, partnerId: string) {
+  async createSchemaFilter(newDataChannelSchemaFilter: DataChannelSchemaFilter) {
+    await this.ctx.blockConcurrencyWhile(async () => {
+      await this.ctx.storage.put(newDataChannelSchemaFilter.id, newDataChannelSchemaFilter);
+    });
+    return newDataChannelSchemaFilter;
+  }
+
+  async updateSchemaFilter(newDataChannelSchemaFilter: DataChannelSchemaFilter) {
+    await this.ctx.blockConcurrencyWhile(async () => {
+      await this.ctx.storage.put(newDataChannelSchemaFilter.id, newDataChannelSchemaFilter);
+    });
+    return newDataChannelSchemaFilter;
+  }
+
+  async getSchemaFilter(dataChannelId: string, partnerId: string) {
     const allSchemaFilters = await this.ctx.storage.list<DataChannelSchemaFilter>();
     const schemaFiltersByPartnerByDataChannel = Array.from(allSchemaFilters.values()).filter(
       filter => {
@@ -347,5 +434,9 @@ export class RegistrarSchemaFilters extends DurableObject {
       );
     }
     return schemaFiltersByPartnerByDataChannel[0].filter;
+  }
+
+  async removeSchemaFilter(id: string) {
+    return this.ctx.storage.delete(id);
   }
 }
