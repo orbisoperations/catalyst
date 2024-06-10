@@ -38,22 +38,31 @@ import {
 } from "@chakra-ui/react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { DataChannel } from "../../../../packages/schema_zod";
+import {
+  DataChannel,
+  DataChannelSchemaFilter,
+} from "../../../../packages/schema_zod";
 import { useUser } from "../contexts/User/UserContext";
+import { CloudflareEnv } from "@/env";
 
 export const runtime = "edge";
 type DataChannelDetailsProps = {
+  createChannelSchema: (token: string) => Promise<DataChannelSchemaFilter>;
   channelDetails: (id: string, token: string) => Promise<DataChannel>;
   updateChannel: (data: FormData, token: string) => Promise<DataChannel>;
   deleteChannel: (id: string, token: string) => Promise<DataChannel>;
   handleSwitch: (
     channelId: string,
     accessSwitch: boolean,
-    token: string
+    token: string,
   ) => Promise<DataChannel>;
 };
 
 export default function DataChannelDetailsComponent({
+  // getChannelSchema,
+  // updateChannelSchema,
+  createChannelSchema,
+  // deleteChannelSchema,
   channelDetails,
   updateChannel,
   deleteChannel,
@@ -62,9 +71,7 @@ export default function DataChannelDetailsComponent({
   const { isOpen, onOpen, onClose } = useDisclosure();
   const editDisclosure = useDisclosure();
   const router = useRouter();
-  const [gatewayUrl, setGatewayUrl] = useState<string>(
-    "https://gateway.catalyst.intelops.io/graphql"
-  );
+  const [gatewayUrl, setGatewayUrl] = useState<string>();
   const { user, token } = useUser();
   const { id } = useParams();
   const [channel, setChannel] = useState<DataChannel>();
@@ -83,7 +90,7 @@ export default function DataChannelDetailsComponent({
         .catch((e) => {
           setHasError(true);
           setErrorMessage(
-            "An error occurred while fetching the channel details. Does the channel exist?"
+            "An error occurred while fetching the channel details. Does the channel exist?",
           );
           console.error(e);
         });
@@ -117,13 +124,13 @@ export default function DataChannelDetailsComponent({
                     handleSwitch(
                       channel.id,
                       e.target.checked ? true : false,
-                      token ?? ""
+                      token ?? "",
                     )
                       .then(fetchChannelDetails)
                       .catch((e) => {
                         setHasError(true);
                         setErrorMessage(
-                          "An error occurred while updating the channel. Please try again later."
+                          "An error occurred while updating the channel. Please try again later.",
                         );
                       });
                   }
@@ -186,7 +193,7 @@ export default function DataChannelDetailsComponent({
                               onClose();
                               setHasError(true);
                               setErrorMessage(
-                                "An error occurred while deleting the channel. Please try again later."
+                                "An error occurred while deleting the channel. Please try again later.",
                               );
                             });
                       }}
@@ -217,7 +224,7 @@ export default function DataChannelDetailsComponent({
                         formData.set(
                           "name",
 
-                          user?.custom.org + "/" + formData.get("name")
+                          user?.custom.org + "/" + formData.get("name"),
                         );
                         updateChannel(formData, token)
                           .then(fetchChannelDetails)
@@ -225,7 +232,7 @@ export default function DataChannelDetailsComponent({
                             editDisclosure.onClose();
                             setHasError(true);
                             setErrorMessage(
-                              "An error occurred while updating the channel. Please try again later."
+                              "An error occurred while updating the channel. Please try again later.",
                             );
                           });
                       }

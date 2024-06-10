@@ -294,7 +294,7 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
     const createdDataChannelFilters = await stub.createSchemaFilter(newDataChannelSchemaFilter);
     return createdDataChannelFilters;
   }
-  async getChannelSchemaFilters(doNamespace: string, partnerId: string, token: Token) {
+  async getChannelSchemaFilter(doNamespace: string, partnerId: string, token: Token) {
     const checkResp = await this.CUDPerms(token);
     if (!checkResp.success) {
       return DataChannelActionResponse.parse({
@@ -321,9 +321,9 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
     const doId = this.env.DATA_CHANNEL_REGISTRAR_SCHEMA_FILTERS_DO.idFromName(doNamespace);
     const stub = this.env.DATA_CHANNEL_REGISTRAR_SCHEMA_FILTERS_DO.get(doId);
 
-    const channelFilters = await stub.getSchemaFilter(dataChannelId, partnerId);
+    const channelFilter = await stub.getSchemaFilter(dataChannelId, partnerId);
 
-    return channelFilters;
+    return channelFilter;
   }
 
   async updateDataChannelSchemaFilter(

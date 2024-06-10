@@ -11,4 +11,6 @@ interface CloudflareEnv {
   USER_CREDS_CACHE: Service<UserCredsCacheWorker>;
   ORGANIZATION_MATCHMAKING: Service<OrganizationMatchmakingWorker>;
   ISSUED_JWT_WORKER: Service<IssuedJWTRegistryWorker>;
+
+  DATA_CHANNEL_GATEWAY_URL: string;
 }

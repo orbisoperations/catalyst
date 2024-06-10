@@ -3,6 +3,8 @@ compatibility_date = "2024-04-15"
 compatibility_flags = [ "nodejs_compat" ]
 pages_build_output_dir = "./.vercel/output/static"
 
+vars = { DATA_CHANNEL_GATEWAY_URL= "https://gateway.catalyst.intelops.io/graphql" }
+
 services = [
     { binding = "ISSUED_JWT_WORKER", service = "issued-jwt-registry" },
   { binding = "CATALYST_DATA_CHANNEL_REGISTRAR_API", service = "data_channel_registrar" },
@@ -36,4 +38,3 @@ services = [
     { binding = "USER_CREDS_CACHE", service = "user_credentials_cache-demo" },
     { binding = "ORGANIZATION_MATCHMAKING", service = "organization-matchmaking-demo" }
 ]
-
