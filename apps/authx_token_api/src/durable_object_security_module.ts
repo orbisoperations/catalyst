@@ -87,6 +87,7 @@ export class JWTKeyProvider extends DurableObject {
 				valid: true,
 				entity: payload.sub,
 				claims: payload.claims,
+				jwtId: payload.jti
 			});
 			console.log({ resp });
 			return resp;

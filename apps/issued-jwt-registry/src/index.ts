@@ -1,9 +1,6 @@
 import { DurableObject, WorkerEntrypoint } from 'cloudflare:workers';
 import { IssuedJWTRegistry, Token, User, UserCheckActionResponse, zIssuedJWTRegistry, JWTRegisterStatus } from '@catalyst/schema_zod';
-import UserCredsCacheWorker from '../../user_credentials_cache/src';
-import { Logger } from 'tslog';
-
-const logger = new Logger({});
+import UserCredsCacheWorker from '@catalyst/user-credentials-cache/src';
 
 export type Env = {
 	ISSUED_JWT_REGISTRY_DO: DurableObjectNamespace<I_JWT_Registry_DO>;
@@ -110,21 +107,13 @@ export default class IssuedJWTRegistryWorker extends WorkerEntrypoint<Env> {
 	}
 }
 
-/** A Durable Object's behavior is defined in an exported Javascript class */
 export class I_JWT_Registry_DO extends DurableObject {
 
 	async JWTRegistryItemGuard(ijr?: IssuedJWTRegistry) {
-		const canEditIJR = ijr
-			? (
-				(
-					ijr.status === JWTRegisterStatus.enum.active
-					|| ijr.status === JWTRegisterStatus.enum.revoked
-				)
-				&& (ijr.expiry.getTime() > Date.now())
-			)
-			: false
-
-		return [canEditIJR, ijr ? ijr.expiry.getTime() > Date.now(): false]
+		const editableStatus = ijr? ijr.status === JWTRegisterStatus.enum.active
+		|| ijr.status === JWTRegisterStatus.enum.revoked : false
+		const isExpired =  ijr ? ijr.expiry.getTime() < Date.now() : false
+		return [ editableStatus && !isExpired,  isExpired]
 	}
 	async create(issuedJWTRegistry: Omit<IssuedJWTRegistry, 'id'>) {
 		const newIJR = Object.assign(issuedJWTRegistry, { id: crypto.randomUUID() });

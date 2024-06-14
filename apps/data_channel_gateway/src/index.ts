@@ -131,12 +131,18 @@ app.use(async (c, next) => {
     valid,
     entity,
     claims,
+    jwtId,
     error: ValidError,
   } = await c.env.AUTHX_TOKEN_API.validateToken(token);
-  console.log(valid, entity, claims, error);
+  console.log(valid, entity, claims, jwtId, error);
   if (!valid || ValidError) {
     return c.json({ message: "Token validation failed" }, 403);
   }
+
+  if (!jwtId && !(await c.env.JWT_REGISTRY.isOnRevocationList(jwtId))) {
+    return c.json({ message: "Token has been revoked" }, 403);
+  }
+  
   c.set("claims", claims);
   c.set("catalyst-token", token);
   // we good
