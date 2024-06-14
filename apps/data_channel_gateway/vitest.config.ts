@@ -3,18 +3,21 @@ import {defineWorkersProject, readD1Migrations} from "@cloudflare/vitest-pool-wo
 import path from "node:path";
 import {Logger} from "tslog";
 import {env} from "cloudflare:test";
+import { JWT } from "@catalyst/authx_token_api/src/jwt";
 
 const logger = new Logger({});
 
 const authxServicePath = path.resolve("../authx_token_api/dist/index.js");
 const dataChannelRegistrarPath = path.resolve("../data_channel_registrar/dist/worker.js");
 const authzedServicePath = path.resolve("../authx_authzed_api/dist/index.js")
+const jwtRegistryPath = path.resolve("../issued-jwt-registry/dist/index.js")
 
 logger.info('Using built services from other workspaces within @catalyst');
 logger.info({
   authxServicePath,
   dataChannelRegistrarPath,
-  authzedServicePath
+  authzedServicePath,
+  jwtRegistryPath
 })
 
 // Setup files run outside isolated storage, and may be run multiple times.
@@ -65,6 +68,10 @@ export default defineWorkersProject(async () => {
               JWT_TOKEN_DO: {
                 className: "JWTKeyProvider",
                 scriptName: "authx_token_api"
+              },
+              JWT_REGISTRY_DO: {
+                className: "I_JWT_Registry_DO",
+                scriptName: "issued_jwt_registry"
               }
             },
             /*d1Databases: {
@@ -129,6 +136,19 @@ export default defineWorkersProject(async () => {
                 /*d1Databases: {
                   "APP_DB": "catalyst"
                 },*/
+              },
+              {
+                name: "issued_jwt_registry",
+                modules: true,
+                modulesRoot: path.resolve("../issued-jwt-registry"),
+                script: jwtRegistryPath, // Built by `global-setup.ts`
+                compatibilityDate: "2024-04-05",
+                compatibilityFlags: ["nodejs_compat"],
+                entrypoint: "IssuedJWTRegistryWorker",
+                unsafeEphemeralDurableObjects: true,
+                durableObjects: {
+                  ISSUED_JWT_REGISTRY_DO: "I_JWT_Registry_DO"
+                }
               }
             ],
           },

@@ -1,25 +1,18 @@
 // @ts-ignore
 import {defineWorkersProject, readD1Migrations} from "@cloudflare/vitest-pool-workers/config";
 import path from "node:path";
-import {Logger} from "tslog";
 
-const logger = new Logger({});
 
-const authxServicePath = path.resolve("../authx_token_api/dist/index.js");
-const dataChannelRegistrarPath = path.resolve("../data_channel_registrar/dist/worker.js");
-const authzedServicePath = path.resolve("../authx_authzed_api/dist/index.js")
+const userCache = path.resolve("../user_credentials_cache/dist/index.js")
 
-logger.info('No external services used in this project from other workspaces within @catalyst');
+console.info('No external services used in this project from other workspaces within @catalyst');
 
-logger.info(`Setting up vite tests for the issued-jwt durable object...`)
+console.info(`Setting up vite tests for the issued-jwt durable object...`)
 export default defineWorkersProject(async () => {
 
 	return {
-		customLogger: {
-			...logger,
-			warnOnce(msg: unknown, opts: any) {
-				logger.warn(msg);
-			},
+		esbuild: {
+			target: "ES2022"
 		},
 		optimizeDeps: {
 			entries: ['@graphql-tools/executor-http'],
@@ -27,34 +20,27 @@ export default defineWorkersProject(async () => {
 		logLevel: 'info',
 		clearScreen: false,
 		test: {
-			singleWorker: true,
+			globalSetup: './global-setup.ts',
 			poolOptions: {
 				workers: {
-					main: "src/index.ts",
+					singleWorker: true,
 					wrangler: {configPath: "./wrangler.toml"},
 					miniflare: {
 						unsafeEphemeralDurableObjects: true,
-
-
 						workers: [
-							// Configuration for "auxiliary" Worker dependencies.
-							// Unfortunately, auxiliary Workers cannot load their configuration
-							// from `wrangler.toml` files, and must be configured with Miniflare
-							// `WorkerOptions`.
-							// {
-							//
-							// 	name: "authx_token_api",
-							// 	modules: true,
-							// 	modulesRoot: path.resolve("../authx_token_api"),
-							// 	scriptPath: authxServicePath, // Built by `global-setup.ts`
-							// 	entrypoint: "JWTWorker",
-							// 	compatibilityDate: "2024-04-05",
-							// 	compatibilityFlags: ["nodejs_compat"],
-							// 	unsafeEphemeralDurableObjects: true,
-							// 	durableObjects: {
-							// 		"HSM": "HSM"
-							// 	},
-							// },
+							{
+								name: "user_credentials_cache",
+								modules: true,
+								modulesRoot: path.resolve("../user_credentials_cache"),
+								scriptPath: path.resolve("../user_credentials_cache/dist/index.js"),
+								compatibilityDate: "2024-04-05",
+								compatibilityFlags: ["nodejs_compat"],
+								entrypoint: "UserCredsCacheWorker",
+								unsafeEphemeralDurableObjects: true,
+								durableObjects: {
+									CACHE: "UserCredentialCache"
+								}
+							}
 						],
 					},
 				},

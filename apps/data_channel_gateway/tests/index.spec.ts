@@ -7,13 +7,61 @@ import { Catalyst, DataChannel } from '@catalyst/schema_zod';
 
 const logger = new Logger();
 
+const setup = async (env: ProvidedEnv) => {
+  console.log(env)
+  const id = env.DATA_CHANNEL_REGISTRAR_DO.idFromName("default")
+  const stub = env.DATA_CHANNEL_REGISTRAR_DO.get(id)
+
+  await stub.update({
+    id: 'airplanes1',
+    name: 'airplanes',
+    endpoint: 'http://localhost:4001/graphql',
+    accessSwitch: true,
+    description: 'na',
+    creatorOrganization: 'Org1',
+  });
+
+  await stub.update({
+    id: "cars1",
+    name: "cars",
+    endpoint: "http://localhost:4002/graphql",
+    accessSwitch: true,
+    description: "na",
+    creatorOrganization: "Org1"
+  })
+
+  await stub.update({
+    id: "man1",
+    name: "manufacture",
+    endpoint: "http://localhost:4003/graphql",
+    accessSwitch: true,
+    description: "na",
+    creatorOrganization: "Org1"
+  })
+
+  console.log(await stub.list())
+  expect((await stub.list())).toHaveLength(3)
+}
+
+const teardown = async (env: ProvidedEnv) => {
+  console.log(env)
+  const id = env.DATA_CHANNEL_REGISTRAR_DO.idFromName("default")
+  const stub = env.DATA_CHANNEL_REGISTRAR_DO.get(id)
+  await stub.delete("airplanes1")
+  await stub.delete("cars1")
+  await stub.delete("man1")
+  console.log(await stub.list())
+  expect((await stub.list())).toHaveLength(0)
+}
 
 describe("gateway integration tests", () => {
-    const getToken = async (entity: string, claims?: string[], ctx?: any) => {
-      const tokenResp = await env.AUTHX_TOKEN_API.signJWT({
+    const getToken = async (entity: string, claims: string[], ctx?: any) => {
+      const jwtDOID = env.JWT_TOKEN_DO.idFromName('default');
+      const jwtStub = env.JWT_TOKEN_DO.get(jwtDOID);
+      const tokenResp = await jwtStub.signJWT({
         entity: entity,
         claims: claims
-      })
+      }, 10 * 60 * 1000)
 
       console.log({
         // @ts-ignore
@@ -88,7 +136,7 @@ describe("gateway integration tests", () => {
         }
       }
     }>();
-
+    console.error("responsePayload", responsePayload)
     // Since we did not provide claims when the token was created, this will only return the health query in the list of fields
     expect(responsePayload.data["__type"].fields).toHaveLength(1);
     // @ts-ignore
@@ -133,7 +181,9 @@ describe("gateway integration tests", () => {
 
   it("should get data-channel for airplanes only when accessSwitch is 1 - THIS IS A BAD TEST", async (testContext) => {
     await setup(env)
-    await env.DATA_CHANNEL_REGISTRAR.update("default", {
+    const id = env.DATA_CHANNEL_REGISTRAR_DO.idFromName("default")
+    const stub = env.DATA_CHANNEL_REGISTRAR_DO.get(id)
+    await stub.update({
       id: "airplanes1",
       name: "airplanes",
       endpoint: "http://localhost:4001/graphql",
@@ -141,10 +191,19 @@ describe("gateway integration tests", () => {
       description: "na",
       creatorOrganization: "Org1"
     })
-    // checks that airplanes is disabled
-    console.log(await env.DATA_CHANNEL_REGISTRAR.list("default"))
-    expect((await env.DATA_CHANNEL_REGISTRAR.list("default")).length).toBe(2)
+
     const token = await getToken("Org1", ["airplanes"], testContext);
+
+    // checks that airplanes is disabled
+    const dataChannelList = await env.DATA_CHANNEL_REGISTRAR.list(
+      "default",
+      {
+        catalystToken: token
+      }
+    );
+    console.log(await stub.list())
+    expect((await stub.list()).length).toBe(2)
+
     const getAvailableQueries = await SELF.fetch('https://data-channel-gateway/graphql', {
       method: 'POST',
       headers: {

@@ -1,9 +1,11 @@
 import { JSONWebKeySet, createLocalJWKSet, decodeJwt, jwtVerify } from 'jose';
 // @ts-ignore
 import { DurableObject } from 'cloudflare:workers';
-import { JWTParsingResponse, JWTSigningRequest } from '../../../packages/schema_zod';
+import { DEFAULT_STANDARD_DURATIONS, JWTParsingResponse, JWTSigningRequest } from '../../../packages/schema_zod';
 import { JWT } from './jwt';
 import { KeyState, KeyStateSerialized } from './keystate';
+import { e } from 'vitest/dist/reporters-QGe8gs4b.js';
+import exp from 'constants';
 
 export class JWTKeyProvider extends DurableObject {
 	currentKey: KeyState | undefined;
@@ -56,13 +58,11 @@ export class JWTKeyProvider extends DurableObject {
 	async signJWT(req: JWTSigningRequest, expiresIn: number) {
 		await this.key();
 		const jwt = new JWT(req.entity, req.claims, 'catalyst:system:jwt:latest');
-		console.log(this.currentSerializedKey);
 		const newToken = await this.currentKey!.sign(jwt, expiresIn);
 		const payload = decodeJwt(newToken);
-		const expiration = payload.exp as number;
-
+		const expiration = (payload.exp as number) * DEFAULT_STANDARD_DURATIONS.S;
 		return {
-			token: await this.currentKey!.sign(jwt, expiresIn),
+			token: newToken,
 			expiration,
 		};
 	}
@@ -82,11 +82,12 @@ export class JWTKeyProvider extends DurableObject {
 				return resp;
 			}
 			const jwkPub = createLocalJWKSet(await this.getJWKS());
-			const { payload, protectedHeader } = await jwtVerify(token, jwkPub);
+			const { payload, protectedHeader } = await jwtVerify(token, jwkPub, {clockTolerance: "5 minutes"});
 			const resp = JWTParsingResponse.parse({
 				valid: true,
 				entity: payload.sub,
 				claims: payload.claims,
+				jwtId: payload.jti
 			});
 			console.log({ resp });
 			return resp;

@@ -1,7 +1,24 @@
 import { generateKeyPair, jwtVerify, KeyLike, exportSPKI, importSPKI, SignJWT, exportJWK, importJWK, JWK, createLocalJWKSet } from 'jose';
 import { JWT } from './jwt';
+import {DEFAULT_STANDARD_DURATIONS} from "../../../packages/schema_zod"
 
 export const KEY_ALG = 'EdDSA'
+
+/*
+RFC 7519 (JWT)
+
+NumericDate
+      A JSON numeric value representing the number of seconds from
+      1970-01-01T00:00:00Z UTC until the specified UTC date/time,
+      ignoring leap seconds.  This is equivalent to the IEEE Std 1003.1,
+      2013 Edition [POSIX.1] definition "Seconds Since the Epoch", in
+      which each day is accounted for by exactly 86400 seconds, other
+      than that non-integer values can be represented.  See RFC 3339
+      [RFC3339] for details regarding date/times in general and UTC in
+      particular.
+
+ */
+
 
 export interface KeyStateSerialized {
 	private: JWK;
@@ -21,7 +38,8 @@ export class KeyState {
 	expiry;
 	constructor() {
 		this.uuid = crypto.randomUUID();
-		this.expiry = 60 * 60 * 24 * 7; // 1 week in millis
+		// this is the max value
+		this.expiry = DEFAULT_STANDARD_DURATIONS.Y  // to be MS in a year
 		this.publicKey = {} as KeyLike;
 		this.privateKey = {} as KeyLike;
 		this.publicKeyPEM = '';
@@ -47,9 +65,9 @@ export class KeyState {
 		return this.expired;
 	}
 
-	async sign(jwt: JWT, expiry: number = 60 * 60 * 24 * 7) {
+	async sign(jwt: JWT, expiresIn: number) {
+		const expiry = (expiresIn <= this.expiry ? expiresIn : this.expiry)
 		const payload = jwt.payloadRaw(expiry);
-
 		return new SignJWT(payload).setProtectedHeader({ alg: KEY_ALG }).sign(this.privateKey);
 	}
 
