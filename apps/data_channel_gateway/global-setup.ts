@@ -25,4 +25,9 @@ export default function () {
   });
   console.timeEnd(label);
 
+  label = "Compiled issued-jwt-registry";
+  console.time(label);
+  childProcess.execSync("pnpm build", { cwd: path.join("../issued-jwt-registry") });
+  console.timeEnd(label);
+
 }

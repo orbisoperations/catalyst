@@ -66,6 +66,7 @@ const jwtParseSuccess = z.object({
   valid: z.literal(true),
   entity: z.string(),
   claims: z.string().array(),
+  jwtId: z.string().optional()
 });
 
 const jwtParseError = z.object({
