@@ -33,6 +33,7 @@ export async function createDataChannel(formData: FormData, token: string) {
   }
   const newChannel = await api.create("default", parsed.data, tokenObject);
   if (!newChannel.success) {
+    console.error(newChannel.error);
     throw new Error("Failed to create data channel");
   }
   return newChannel.data as DataChannel;
