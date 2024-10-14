@@ -20,7 +20,7 @@
     "@emotion/styled": "^11.11.0",
     "@monaco-editor/react": "^4.6.0",
     "axios": "^1.6.8",
-    "express": "^4.19.2",
+    "express": "^4.20.0",
     "framer-motion": "^11.1.7",
     "graphql-yoga": "^5.3.1",
     "listhen": "^1.7.2",
