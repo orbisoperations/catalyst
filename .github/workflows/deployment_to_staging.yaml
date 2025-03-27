@@ -1,9 +1,12 @@
-name: 'Preview Deployment'
 # deploys a preview of the site to a temporary URL for pull requests
+name: 'Preview Deployment'
+
+# on:
+#   push:
+#     branches:
+#       - staging
 on:
-  push:
-    branches:
-      - staging
+    workflow_dispatch:
 
 # Limit to 1 concurrent run per workflow run
 concurrency:
