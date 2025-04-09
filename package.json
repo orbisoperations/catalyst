@@ -1,22 +1,42 @@
 {
-  "name": "catalyst",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "pnpm run -r test",
-    "sim": "pnpm run -r sim",
-    "ls": "pnpm ls -r --json --long --depth 6 --prod >> ./pnpmls.json",
-    "dev": "turbo dev",
-    "deploymentPreview": "pnpm run -r deploymentPreview"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "Elastic-2.0",
-  "devDependencies": {
-    "@types/node": "^20.11.16",
-    "bun": "^1.0.30",
-    "turbo": "^1.13.0",
-    "typescript": "^5.3.3"
-  }
+    "name": "catalyst",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "test": "pnpm run -r test",
+        "sim": "pnpm run -r sim",
+        "ls": "pnpm ls -r --json --long --depth 6 --prod >> ./pnpmls.json",
+        "dev": "turbo dev",
+        "deploymentPreview": "pnpm run -r deploymentPreview",
+        "prepare": "husky"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "Elastic-2.0",
+    "devDependencies": {
+        "@commitlint/cli": "^19.8.0",
+        "@commitlint/config-conventional": "^19.8.0",
+        "@types/node": "^20.11.16",
+        "bun": "^1.0.30",
+        "eslint": "^9.23.0",
+        "eslint-config-prettier": "^9.1.0",
+        "eslint-plugin-prettier": "^5.2.5",
+        "eslint-plugin-react": "^7.37.4",
+        "husky": "^9.1.7",
+        "lint-staged": "^15.5.0",
+        "prettier": "^3.2.5",
+        "turbo": "^2.5.0",
+        "typescript": "^5.3.3",
+        "typescript-eslint": "^8.28.0"
+    },
+    "lint-staged": {
+        "**/*.{js,ts,tsx}": [
+            "eslint --fix"
+        ],
+        "**/*": [
+            "prettier --write --ignore-unknown"
+        ]
+    },
+    "packageManager": "pnpm@10.7.0"
 }
