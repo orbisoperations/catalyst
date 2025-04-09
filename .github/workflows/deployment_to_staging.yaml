@@ -53,8 +53,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Deploy user_credentials_cache
-        working-directory: apps/user_credentials_cache
+      - name: Deploy user-credentials-cache
+        working-directory: apps/user-credentials-cache
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

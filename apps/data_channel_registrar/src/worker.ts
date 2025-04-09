@@ -9,7 +9,7 @@ import {
 } from '../../../packages/schema_zod';
 import AuthzedWorker from '../../authx_authzed_api/src';
 import JWTWorker from '../../authx_token_api/src';
-import UserCredsCacheWorker from '../../user_credentials_cache/src';
+import UserCredsCacheWorker from '../../user-credentials-cache/src';
 
 export type Env = Record<string, string> & {
   DO: DurableObjectNamespace<Registrar>;

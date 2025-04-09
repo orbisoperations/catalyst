@@ -16,7 +16,7 @@ const dataChannelRegistrarPath = path.resolve(
 const authxServicePath = path.resolve("../authx_token_api/dist/index.js");
 const authzedServicePath = path.resolve("../authx_authzed_api/dist/index.js");
 const credsCacheServicePath = path.resolve(
-  "../user_credentials_cache/dist/index.js"
+  "../user-credentials-cache/dist/index.js"
 );
 
 logger.info("Using built services from other workspaces within @catalyst");
@@ -99,7 +99,7 @@ export default defineWorkersProject(async () => {
               {
                 name: "user-credentials-cache",
                 modules: true,
-                modulesRoot: path.resolve("../user_credentials_cache"),
+                modulesRoot: path.resolve("../user-credentials-cache"),
                 scriptPath: credsCacheServicePath, // Built by `global-setup.ts`
                 compatibilityDate: "2024-04-05",
                 compatibilityFlags: ["nodejs_compat"],

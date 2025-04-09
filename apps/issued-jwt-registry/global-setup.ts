@@ -4,10 +4,10 @@ import path from "node:path";
 export default function () {
   // Build `api-service`'s dependencies
 
-  let label = "Compiled user cache";
+  let label = "Compiled user-credentials-cache";
   console.time(label);
   childProcess.execSync("pnpm build", {
-    cwd: path.join("../user_credentials_cache"),
+    cwd: path.join("../user-credentials-cache"),
   });
   console.timeEnd(label);
 }
