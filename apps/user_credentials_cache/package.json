@@ -1,18 +1,18 @@
 {
-  "name": "@catalyst/user-credentials-cache",
-  "version": "0.0.0",
-  "private": true,
-  "scripts": {
-	  "deploymentDemo": "yes | wrangler deploy --minify --keep-vars --env demo",
-	  "deploymentStaging": "yes | wrangler deploy --keep-vars --env staging",
-    "dev": "wrangler dev",
-    "start": "wrangler dev",
-    "cf-typegen": "wrangler types",
-    "build": "wrangler build"
-  },
-  "devDependencies": {
-    "@cloudflare/workers-types": "^4.20240423.0",
-    "typescript": "^5.0.4",
-    "wrangler": "^3.0.0"
-  }
+	"name": "@catalyst/user-credentials-cache",
+	"version": "0.0.0",
+	"private": true,
+	"scripts": {
+		"deploymentDemo": "yes | wrangler deploy --minify --keep-vars --env demo",
+		"deploymentStaging": "yes | wrangler deploy --keep-vars --env staging",
+		"dev": "wrangler dev",
+		"start": "wrangler dev",
+		"cf-typegen": "wrangler types",
+		"build": "wrangler build"
+	},
+	"devDependencies": {
+		"@cloudflare/workers-types": "^4.20240423.0",
+		"typescript": "^5.0.4",
+		"wrangler": "^4.9.1"
+	}
 }
