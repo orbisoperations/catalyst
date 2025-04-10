@@ -3,7 +3,7 @@ import {defineWorkersProject, readD1Migrations} from "@cloudflare/vitest-pool-wo
 import path from "node:path";
 
 
-const userCache = path.resolve("../user_credentials_cache/dist/index.js")
+const userCache = path.resolve("../user-credentials-cache/dist/index.js")
 
 console.info('No external services used in this project from other workspaces within @catalyst');
 
@@ -31,8 +31,8 @@ export default defineWorkersProject(async () => {
 							{
 								name: "user-credentials-cache",
 								modules: true,
-								modulesRoot: path.resolve("../user_credentials_cache"),
-								scriptPath: path.resolve("../user_credentials_cache/dist/index.js"),
+								modulesRoot: path.resolve("../user-credentials-cache"),
+								scriptPath: path.resolve("../user-credentials-cache/dist/index.js"),
 								compatibilityDate: "2024-04-05",
 								compatibilityFlags: ["nodejs_compat"],
 								entrypoint: "UserCredsCacheWorker",

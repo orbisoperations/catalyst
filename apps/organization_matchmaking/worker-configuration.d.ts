@@ -2,7 +2,7 @@
 // After adding bindings to `wrangler.toml`, regenerate this interface via `npm run cf-typegen`
 import { OrganizationMatchmakingDO } from './src';
 import AuthzedWorker from "../authx_authzed_api/src"
-import UserCredsCacheWorker from "../user_credentials_cache/src"
+import UserCredsCacheWorker from "../user-credentials-cache/src"
 
 export interface Env {
 	ORG_MATCHMAKING: DurableObjectNamespace<OrganizationMatchmakingDO>

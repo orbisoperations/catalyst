@@ -6,9 +6,8 @@
 APPS_DIR="apps"
 # Define the startup order based on dependencies (Management -> Control -> Data -> UI/CLI)
 APP_ORDER=(
-  "user_credentials_cache"   # Management: Caches user identity
+  "user-credentials-cache"   # Management: Caches user identity
   "authx_token_api"          # Management: Issues service tokens
-  # "user_credentials_cache"   # Management: Caches user identity
   "issued-jwt-registry"      # Management: Tracks issued tokens
   "authx_authzed_api"        # Control: Core authorization service
   "data_channel_registrar"   # Control: Manages data channel discovery
@@ -52,7 +51,7 @@ for app_name in "${APP_ORDER[@]}"; do
     if [ -f "package.json" ]; then
       # Determine which dev command to use
       if [ "$app_name" = "catalyst-ui" ]; then
-        DEV_COMMAND="pnpm run ndev --port 4000"
+        DEV_COMMAND="pnpm run ndev"
       else
         DEV_COMMAND="$DEFAULT_DEV_COMMAND"
       fi

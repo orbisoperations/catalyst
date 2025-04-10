@@ -41,10 +41,10 @@ export default function () {
   });
   console.timeEnd(label);
 
-  label = "Compiled user_credentials_cache";
+  label = "Compiled user-credentials-cache";
   console.time(label);
   childProcess.execSync("pnpm wrangler deploy --dry-run --outdir dist ", {
-    cwd: path.join("../user_credentials_cache"),
+    cwd: path.join("../user-credentials-cache"),
   });
   console.timeEnd(label);
 }
