@@ -5,7 +5,7 @@ compatibility_date = "2024-04-19"
 compatibility_flags = [ "nodejs_compat" ]
 
 services = [
-    { binding = "USERCACHE", service = "user_credentials_cache" },
+    { binding = "USERCACHE", service = "user-credentials-cache" },
 ]
 
 [dev]
@@ -24,10 +24,10 @@ new_classes = ["I_JWT_Registry_DO"]
 [env.staging]
 durable_objects.bindings = [{name = "ISSUED_JWT_REGISTRY_DO", class_name = "I_JWT_Registry_DO"}]
 services = [
-    { binding = "USERCACHE", service = "user_credentials_cache-staging" },
+    { binding = "USERCACHE", service = "user-credentials-cache-staging" },
 ]
 [env.demo]
 durable_objects.bindings = [{name = "ISSUED_JWT_REGISTRY_DO", class_name = "I_JWT_Registry_DO"}]
 services = [
-    { binding = "USERCACHE", service = "user_credentials_cache-demo" },
+    { binding = "USERCACHE", service = "user-credentials-cache-demo" },
 ]
