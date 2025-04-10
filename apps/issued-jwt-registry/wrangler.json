@@ -1,0 +1,99 @@
+{
+	"name": "issued-jwt-registry",
+	"main": "src/index.ts",
+	"compatibility_date": "2024-04-19",
+	"compatibility_flags": ["nodejs_compat"],
+	"workers_dev": false,
+	"preview_urls": false,
+	"observability": {
+		"enabled": true
+	},
+	"tsconfig": "tsconfig.json",
+	"minify": true,
+	"services": [
+		{
+			"binding": "USERCACHE",
+			"service": "user-credentials-cache"
+		}
+	],
+	"durable_objects": {
+		"bindings": [
+			{
+				"name": "ISSUED_JWT_REGISTRY_DO",
+				"class_name": "I_JWT_Registry_DO"
+			}
+		]
+	},
+	"migrations": [
+		{
+			"tag": "v1",
+			"new_classes": ["I_JWT_Registry_DO"]
+		}
+	],
+	"env": {
+		"preview": {
+			"durable_objects": {
+				"bindings": [
+					{
+						"name": "ISSUED_JWT_REGISTRY_DO",
+						"class_name": "I_JWT_Registry_DO"
+					}
+				]
+			},
+			"services": [
+				{
+					"binding": "USERCACHE",
+					"service": "user-credentials-cache-preview"
+				}
+			]
+		},
+		"staging": {
+			"durable_objects": {
+				"bindings": [
+					{
+						"name": "ISSUED_JWT_REGISTRY_DO",
+						"class_name": "I_JWT_Registry_DO"
+					}
+				]
+			},
+			"services": [
+				{
+					"binding": "USERCACHE",
+					"service": "user-credentials-cache-staging"
+				}
+			]
+		},
+		"demo": {
+			"durable_objects": {
+				"bindings": [
+					{
+						"name": "ISSUED_JWT_REGISTRY_DO",
+						"class_name": "I_JWT_Registry_DO"
+					}
+				]
+			},
+			"services": [
+				{
+					"binding": "USERCACHE",
+					"service": "user-credentials-cache-demo"
+				}
+			]
+		},
+		"production": {
+			"durable_objects": {
+				"bindings": [
+					{
+						"name": "ISSUED_JWT_REGISTRY_DO",
+						"class_name": "I_JWT_Registry_DO"
+					}
+				]
+			},
+			"services": [
+				{
+					"binding": "USERCACHE",
+					"service": "user-credentials-cache-production"
+				}
+			]
+		}
+	}
+} 
