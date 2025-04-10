@@ -6,8 +6,9 @@
 APPS_DIR="apps"
 # Define the startup order based on dependencies (Management -> Control -> Data -> UI/CLI)
 APP_ORDER=(
-  "authx_token_api"          # Management: Issues service tokens
   "user_credentials_cache"   # Management: Caches user identity
+  "authx_token_api"          # Management: Issues service tokens
+  # "user_credentials_cache"   # Management: Caches user identity
   "issued-jwt-registry"      # Management: Tracks issued tokens
   "authx_authzed_api"        # Control: Core authorization service
   "data_channel_registrar"   # Control: Manages data channel discovery
@@ -33,15 +34,15 @@ trap cleanup SIGINT
 
 # --- Main Execution ---
 echo "Starting Catalyst local development environment..."
-echo "Ensure 'npm install' has been run in all app directories."
+echo "Ensure 'pnpm install' has been run in all app directories."
 echo "----------------------------------------------------"
 
 # Store PIDs of background processes
-pids=()
+pids=""
 
 # Get the absolute path to the apps directory
 ABS_APPS_DIR="$(pwd)/$APPS_DIR"
-
+echo "ABS_APPS_DIR: $ABS_APPS_DIR"
 for app_name in "${APP_ORDER[@]}"; do
   app_path="$ABS_APPS_DIR/$app_name"
   if [ -d "$app_path" ]; then
@@ -58,8 +59,9 @@ for app_name in "${APP_ORDER[@]}"; do
       
       # Start the dev command in the background
       $DEV_COMMAND &
-      pids+=($!) # Store the PID of the background process
-      echo "Started $app_name (PID: ${pids[-1]})"
+      current_pid=$!
+      pids="$pids $current_pid"
+      echo "Started $app_name (PID: $current_pid)"
       sleep $SLEEP_DURATION
     else
       echo "Warning: package.json not found in $app_path. Skipping."
@@ -74,12 +76,12 @@ done
 
 echo "All specified applications started in the background."
 echo "Logs for each application will be interleaved in this terminal."
-echo "PIDs: ${pids[*]}"
+echo "PIDs: $pids"
 echo ""
 echo "To stop all services:"
 echo "1. Press Ctrl+C in this terminal (should trigger cleanup)."
 echo "2. If Ctrl+C fails, manually kill the processes using their PIDs:"
-echo "   kill ${pids[*]}"
+echo "   kill $pids"
 echo "3. Or, try killing all Node.js development processes (use with caution):"
 echo "   pkill -f 'node .* dev'"
 echo ""

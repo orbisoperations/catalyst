@@ -12,6 +12,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "dockerode": "^4.0.2"
+    "dockerode": "^4.0.5"
   }
 }

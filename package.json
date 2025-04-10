@@ -3,6 +3,11 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "packageManager": "pnpm@10.7.0",
+  "engines": {
+    "node": ">=20.11.1",
+    "pnpm": ">=10.7.0"
+  },
   "scripts": {
     "test": "pnpm run -r test",
     "sim": "pnpm run -r sim",
@@ -14,9 +19,9 @@
   "author": "",
   "license": "Elastic-2.0",
   "devDependencies": {
-    "@types/node": "^20.11.16",
-    "bun": "^1.0.30",
-    "turbo": "^1.13.0",
-    "typescript": "^5.3.3"
+    "@types/node": "^20.17.30",
+    "bun": "^1.2.9",
+    "turbo": "^1.13.4",
+    "typescript": "^5.8.3"
   }
 }

@@ -11,29 +11,29 @@
     "@catalyst/authx_authzed_api": "workspace:^",
     "@catalyst/authx_token_api": "workspace:^",
     "@catalyst/data_channel_registrar": "workspace:*",
-    "@catalyst/jwt": "workspace:*",
     "@catalyst/issued-jwt-registry": "workspace:*",
+    "@catalyst/jwt": "workspace:*",
     "@catalyst/schema_zod": "workspace:*",
-    "@graphql-tools/stitch": "^9.1.0",
-    "@graphql-tools/stitching-directives": "^3.0.2",
-    "@graphql-tools/utils": "^10.1.3",
-    "@graphql-tools/wrap": "^10.0.5",
-    "graphql": "^16.8.1",
-    "graphql-yoga": "^5.3.0",
-    "hono": "^4.2.4",
-    "tslog": "^4.9.2"
+    "@graphql-tools/stitch": "^9.4.22",
+    "@graphql-tools/stitching-directives": "^3.1.32",
+    "@graphql-tools/utils": "^10.8.6",
+    "@graphql-tools/wrap": "^10.0.35",
+    "graphql": "^16.10.0",
+    "graphql-yoga": "^5.13.3",
+    "hono": "^4.7.6",
+    "tslog": "^4.9.3"
   },
   "devDependencies": {
-    "@apollo/client": "^3.9.11",
+    "@apollo/client": "^3.13.7",
     "@cloudflare/vitest-pool-workers": "^0.1.19",
-    "@cloudflare/workers-types": "^4.20240405.0",
+    "@cloudflare/workers-types": "^4.20250410.0",
     "@graphql-codegen/typescript-graphql-request": "^6.2.0",
     "@urql/core": "^4.3.0",
     "gqty": "3.0.0-alpha-7b21563c.0",
     "graphql": "^16.8.1",
     "graphql-request": "^6.1.0",
-    "jose": "^5.2.4",
+    "jose": "^5.10.0",
     "vitest": "1.3.0",
-    "wrangler": "^3.50.0"
+    "wrangler": "^3.114.5"
   }
 }

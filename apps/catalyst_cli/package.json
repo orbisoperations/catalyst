@@ -4,29 +4,29 @@
     "cctl": "./bin/run.js"
   },
   "dependencies": {
-    "@oclif/core": "^3",
-    "@oclif/plugin-help": "^6",
-    "@oclif/plugin-plugins": "^4",
-    "axios": "^1.6.7",
+    "@oclif/core": "^3.27.0",
+    "@oclif/plugin-help": "^6.2.27",
+    "@oclif/plugin-plugins": "^4.3.10",
+    "axios": "^1.8.4",
     "graphql-request": "^6.1.0"
   },
   "description": "Catalyst CLI",
   "devDependencies": {
     "@oclif/prettier-config": "^0.2.1",
-    "@oclif/test": "^3",
-    "@types/chai": "^4",
-    "@types/mocha": "^10",
-    "@types/node": "^18",
-    "chai": "^4",
-    "eslint": "^8",
-    "eslint-config-oclif": "^5",
-    "eslint-config-oclif-typescript": "^3",
+    "@oclif/test": "^3.2.15",
+    "@types/chai": "^4.3.20",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^18.19.86",
+    "chai": "^4.5.0",
+    "eslint": "^8.57.1",
+    "eslint-config-oclif": "^5.2.2",
+    "eslint-config-oclif-typescript": "^3.1.14",
     "eslint-config-prettier": "^9.1.0",
-    "mocha": "^10",
-    "oclif": "^4.4.2",
+    "mocha": "^10.8.2",
+    "oclif": "^4.17.43",
     "shx": "^0.3.4",
     "ts-node": "^10.9.2",
-    "typescript": "^5"
+    "typescript": "^5.8.3"
   },
   "engines": {
     "node": ">=18.0.0"
