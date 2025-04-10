@@ -1,0 +1,88 @@
+{
+	"name": "user-credentials-cache",
+	"main": "src/index.ts",
+	"compatibility_date": "2025-04-01",
+	"compatibility_flags": ["nodejs_compat"],
+	"workers_dev": false,
+	"preview_urls": false,
+	"observability": {
+		"enabled": true
+	},
+	"tsconfig": "tsconfig.json",
+	"minify": true,
+	"durable_objects": {
+		"bindings": [
+			{
+				"name": "CACHE",
+				"class_name": "UserCredsCache"
+			}
+		]
+	},
+	"migrations": [
+		{
+			"tag": "v1",
+			"new_classes": ["UserCredsCache"]
+		},
+		{
+			"tag": "v2"
+		}
+	],
+	"env": {
+		"preview": {
+			"durable_objects": {
+				"bindings": [
+					{
+						"name": "CACHE",
+						"class_name": "UserCredsCache"
+					}
+				]
+			},
+			"vars": {
+				"ENVIRONMENT": "preview",
+				"SERVICE_NAME": "catalyst/preview/user-credentials-cache"
+			}
+		},
+		"staging": {
+			"durable_objects": {
+				"bindings": [
+					{
+						"name": "CACHE",
+						"class_name": "UserCredsCache"
+					}
+				]
+			},
+			"vars": {
+				"ENVIRONMENT": "staging",
+				"SERVICE_NAME": "catalyst/staging/user-credentials-cache"
+			}
+		},
+		"demo": {
+			"durable_objects": {
+				"bindings": [
+					{
+						"name": "CACHE",
+						"class_name": "UserCredsCache"
+					}
+				]
+			},
+			"vars": {
+				"ENVIRONMENT": "demo",
+				"SERVICE_NAME": "catalyst/demo/user-credentials-cache"
+			}
+		},
+		"production": {
+			"durable_objects": {
+				"bindings": [
+					{
+						"name": "CACHE",
+						"class_name": "UserCredsCache"
+					}
+				]
+			},
+			"vars": {
+				"ENVIRONMENT": "production",
+				"SERVICE_NAME": "catalyst/production/user-credentials-cache"
+			}
+		}
+	}
+}
