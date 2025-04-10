@@ -6,7 +6,7 @@ main = "src/index.ts"
 
 services = [
 	{ binding = "AUTHZED", service = "authx_authzed_api"},
-	{ binding = "USERCACHE", service = "user_credentials_cache"}
+	{ binding = "USERCACHE", service = "user-credentials-cache"}
 ]
 
 [dev]
@@ -27,7 +27,7 @@ new_classes = ["JWTKeyProvider"]
 [env.staging]
 services = [
 	{ binding = "AUTHZED", service = "authx_authzed_api-staging"},
-	{ binding = "USERCACHE", service = "user_credentials_cache-staging"}
+	{ binding = "USERCACHE", service = "user-credentials-cache-staging"}
 ]
 durable_objects.bindings = [{name = "KEY_PROVIDER", class_name = "JWTKeyProvider"}]
 
@@ -36,6 +36,6 @@ durable_objects.bindings = [{name = "KEY_PROVIDER", class_name = "JWTKeyProvider
 [env.demo]
 services = [
 	{ binding = "AUTHZED", service = "authx_authzed_api-demo"},
-	{ binding = "USERCACHE", service = "user_credentials_cache-demo"}
+	{ binding = "USERCACHE", service = "user-credentials-cache-demo"}
 ]
 durable_objects.bindings = [{name = "KEY_PROVIDER", class_name = "JWTKeyProvider"}]

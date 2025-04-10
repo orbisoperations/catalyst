@@ -5,7 +5,7 @@ compatibility_date = "2024-04-23"
 compatibility_flags = ["nodejs_compat"]
 
 services = [
-	{ binding = "USERCACHE", service = "user_credentials_cache"},
+	{ binding = "USERCACHE", service = "user-credentials-cache"},
 	{ binding = "AUTHZED", service = "authx_authzed_api"},
 ]
 
@@ -28,7 +28,7 @@ durable_objects.bindings = [{name = "ORG_MATCHMAKING", class_name = "Organizatio
 
 services = [
 	{ binding = "AUTHZED", service = "authx_authzed_api-staging"},
-	{ binding = "USERCACHE", service = "user_credentials_cache-staging"}
+	{ binding = "USERCACHE", service = "user-credentials-cache-staging"}
 ]
 
 
@@ -41,5 +41,5 @@ durable_objects.bindings = [{name = "ORG_MATCHMAKING", class_name = "Organizatio
 
 services = [
 	{ binding = "AUTHZED", service = "authx_authzed_api-demo"},
-	{ binding = "USERCACHE", service = "user_credentials_cache-demo"}
+	{ binding = "USERCACHE", service = "user-credentials-cache-demo"}
 ]
