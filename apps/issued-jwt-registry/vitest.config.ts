@@ -29,7 +29,7 @@ export default defineWorkersProject(async () => {
 						unsafeEphemeralDurableObjects: true,
 						workers: [
 							{
-								name: "user_credentials_cache",
+								name: "user-credentials-cache",
 								modules: true,
 								modulesRoot: path.resolve("../user_credentials_cache"),
 								scriptPath: path.resolve("../user_credentials_cache/dist/index.js"),
