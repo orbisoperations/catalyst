@@ -19,10 +19,10 @@
 		"xml-js": "^1.6.11"
 	},
 	"devDependencies": {
-		"@cloudflare/workers-types": "^4.20250410.0",
+		"@cloudflare/workers-types": "^4.20250413.0",
 		"@types/bun": "^1.2.9",
 		"bun": "^1.2.9",
 		"typescript": "^5.8.3",
-		"wrangler": "^3.114.5"
+		"wrangler": "^4.10.0"
 	}
 }

@@ -1,0 +1,94 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "data_channel_registrar",
+  "compatibility_date": "2025-04-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "./src/worker.ts",
+  "workers_dev": false,
+  "account_id": "3be6f7bb0cc73869d555e1156586c1f2",
+  "observability": {
+    "enabled": true
+  },
+  "services": [
+    {
+      "binding": "AUTHX_TOKEN_API",
+      "service": "authx_token_api"
+    },
+    {
+      "binding": "AUTHZED",
+      "service": "authx_authzed_api"
+    },
+    {
+      "binding": "USERCACHE",
+      "service": "user-credentials-cache"
+    }
+  ],
+  "dev": {
+    "ip": "localhost",
+    "port": 5050
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "DO",
+        "class_name": "Registrar"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_classes": ["Registrar"]
+    }
+  ],
+  "env": {
+    "staging": {
+      "services": [
+        {
+          "binding": "AUTHX_TOKEN_API",
+          "service": "authx_token_api-staging"
+        },
+        {
+          "binding": "AUTHZED",
+          "service": "authx_authzed_api-staging"
+        },
+        {
+          "binding": "USERCACHE",
+          "service": "user-credentials-cache-staging"
+        }
+      ],
+      "durable_objects": {
+        "bindings": [
+          {
+            "name": "DO",
+            "class_name": "Registrar"
+          }
+        ]
+      }
+    },
+    "demo": {
+      "services": [
+        {
+          "binding": "AUTHX_TOKEN_API",
+          "service": "authx_token_api-demo"
+        },
+        {
+          "binding": "AUTHZED",
+          "service": "authx_authzed_api-demo"
+        },
+        {
+          "binding": "USERCACHE",
+          "service": "user-credentials-cache-demo"
+        }
+      ],
+      "durable_objects": {
+        "bindings": [
+          {
+            "name": "DO",
+            "class_name": "Registrar"
+          }
+        ]
+      }
+    }
+  }
+}

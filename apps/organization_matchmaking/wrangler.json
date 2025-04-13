@@ -1,0 +1,76 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "organization-matchmaking",
+	"main": "src/index.ts",
+	"compatibility_date": "2025-04-01",
+	"compatibility_flags": ["nodejs_compat"],
+	"services": [
+		{
+			"binding": "USERCACHE",
+			"service": "user-credentials-cache"
+		},
+		{
+			"binding": "AUTHZED",
+			"service": "authx_authzed_api"
+		}
+	],
+	"durable_objects": {
+		"bindings": [
+			{
+				"name": "ORG_MATCHMAKING",
+				"class_name": "OrganizationMatchmakingDO"
+			}
+		]
+	},
+	"migrations": [
+		{
+			"tag": "v1",
+			"new_classes": ["OrganizationMatchmakingDO"]
+		},
+		{
+			"tag": "v2"
+		}
+	],
+	"env": {
+		"staging": {
+			"durable_objects": {
+				"bindings": [
+					{
+						"name": "ORG_MATCHMAKING",
+						"class_name": "OrganizationMatchmakingDO"
+					}
+				]
+			},
+			"services": [
+				{
+					"binding": "AUTHZED",
+					"service": "authx_authzed_api-staging"
+				},
+				{
+					"binding": "USERCACHE",
+					"service": "user-credentials-cache-staging"
+				}
+			]
+		},
+		"demo": {
+			"durable_objects": {
+				"bindings": [
+					{
+						"name": "ORG_MATCHMAKING",
+						"class_name": "OrganizationMatchmakingDO"
+					}
+				]
+			},
+			"services": [
+				{
+					"binding": "AUTHZED",
+					"service": "authx_authzed_api-demo"
+				},
+				{
+					"binding": "USERCACHE",
+					"service": "user-credentials-cache-demo"
+				}
+			]
+		}
+	}
+}

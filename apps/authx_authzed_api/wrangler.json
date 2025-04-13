@@ -1,0 +1,29 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "authx_authzed_api",
+	"main": "src/index.ts",
+	"compatibility_date": "2025-04-01",
+	"compatibility_flags": ["nodejs_compat"],
+	"keep_vars": true,
+	"vars": {
+		"AUTHZED_ENDPOINT": "not-provided",
+		"AUTHZED_KEY": "not-provided",
+		"AUTHZED_PREFIX": "not-provided"
+	},
+	"env": {
+		"staging": {
+			"vars": {
+				"AUTHZED_ENDPOINT": "https://gateway-alpha.authzed.com",
+				"AUTHZED_KEY": "",
+				"AUTHZED_PREFIX": "orbisops_catalyst_staging2/"
+			}
+		},
+		"demo": {
+			"vars": {
+				"AUTHZED_ENDPOINT": "https://gateway-alpha.authzed.com",
+				"AUTHZED_KEY": "",
+				"AUTHZED_PREFIX": "orbisops_catalyst_demo/"
+			}
+		}
+	}
+}

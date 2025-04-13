@@ -1,0 +1,78 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "authx_token_api",
+	"compatibility_date": "2025-04-01",
+	"compatibility_flags": ["nodejs_compat"],
+	"main": "src/index.ts",
+	"services": [
+		{
+			"binding": "AUTHZED",
+			"service": "authx_authzed_api"
+		},
+		{
+			"binding": "USERCACHE",
+			"service": "user-credentials-cache"
+		}
+	],
+	// https://developers.cloudflare.com/durable-objects/
+	"dev": {
+		"ip": "localhost",
+		"port": 5052
+	},
+	"durable_objects": {
+		"bindings": [
+			{
+				"name": "KEY_PROVIDER",
+				"class_name": "JWTKeyProvider"
+			}
+		]
+	},
+	"migrations": [
+		{
+			"tag": "v1",
+			"new_classes": ["JWTKeyProvider"]
+		}
+	],
+	"env": {
+		"staging": {
+			"services": [
+				{
+					"binding": "AUTHZED",
+					"service": "authx_authzed_api-staging"
+				},
+				{
+					"binding": "USERCACHE",
+					"service": "user-credentials-cache-staging"
+				}
+			],
+			"durable_objects": {
+				"bindings": [
+					{
+						"name": "KEY_PROVIDER",
+						"class_name": "JWTKeyProvider"
+					}
+				]
+			}
+		},
+		"demo": {
+			"services": [
+				{
+					"binding": "AUTHZED",
+					"service": "authx_authzed_api-demo"
+				},
+				{
+					"binding": "USERCACHE",
+					"service": "user-credentials-cache-demo"
+				}
+			],
+			"durable_objects": {
+				"bindings": [
+					{
+						"name": "KEY_PROVIDER",
+						"class_name": "JWTKeyProvider"
+					}
+				]
+			}
+		}
+	}
+}

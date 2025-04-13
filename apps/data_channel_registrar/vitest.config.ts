@@ -1,9 +1,7 @@
-
 // @ts-ignore
-import {defineWorkersProject, readD1Migrations} from "@cloudflare/vitest-pool-workers/config";
+import { defineWorkersProject } from '@cloudflare/vitest-pool-workers/config';
 // @ts-ignore esmoduleInterop not allowing this to be resolved by the ide compiler
-import path from "node:path";
-import {Logger} from "tslog";
+import { Logger } from 'tslog';
 
 const logger = new Logger({});
 
@@ -12,9 +10,8 @@ logger.info('no external services used in this project');
 
 // Setup files run outside isolated storage, and may be run multiple times.
 
-logger.info(`Setting up vite tests for the Data Channel Registrar...`)
+logger.info(`Setting up vite tests for the Data Channel Registrar...`);
 export default defineWorkersProject(async () => {
-
   return {
     optimizeDeps: {
       entries: ['@graphql-tools/executor-http'],
@@ -26,17 +23,17 @@ export default defineWorkersProject(async () => {
         workers: {
           isolatedStorage: true,
           singleWorker: true,
-          main: "src/worker.ts",
-          wrangler: {configPath: "./wrangler.toml"},
-          entrypoint: "RegistrarWorker",
+          main: 'src/worker.ts',
+          wrangler: { configPath: './wrangler.toml' },
+          entrypoint: 'RegistrarWorker',
           miniflare: {
-            compatibilityDate: "2024-04-05",
-            compatibilityFlags: ["nodejs_compat"],
+            compatibilityDate: '2025-04-01',
+            compatibilityFlags: ['nodejs_compat'],
           },
         },
       },
     },
-  }
+  };
 });
 
 // export default defineWorkersConfig({

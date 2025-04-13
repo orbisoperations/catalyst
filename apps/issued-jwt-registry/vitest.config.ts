@@ -1,18 +1,16 @@
 // @ts-ignore
-import {defineWorkersProject, readD1Migrations} from "@cloudflare/vitest-pool-workers/config";
-import path from "node:path";
+import { defineWorkersProject } from '@cloudflare/vitest-pool-workers/config';
+import path from 'node:path';
 
-
-const userCache = path.resolve("../user-credentials-cache/dist/index.js")
+const userCache = path.resolve('../user-credentials-cache/dist/index.js');
 
 console.info('No external services used in this project from other workspaces within @catalyst');
 
-console.info(`Setting up vite tests for the issued-jwt durable object...`)
+console.info(`Setting up vite tests for the issued-jwt durable object...`);
 export default defineWorkersProject(async () => {
-
 	return {
 		esbuild: {
-			target: "ES2022"
+			target: 'ES2022',
 		},
 		optimizeDeps: {
 			entries: ['@graphql-tools/executor-http'],
@@ -24,27 +22,27 @@ export default defineWorkersProject(async () => {
 			poolOptions: {
 				workers: {
 					singleWorker: true,
-					wrangler: {configPath: "./wrangler.toml"},
+					wrangler: { configPath: './wrangler.toml' },
 					miniflare: {
 						unsafeEphemeralDurableObjects: true,
 						workers: [
 							{
-								name: "user-credentials-cache",
+								name: 'user-credentials-cache',
 								modules: true,
-								modulesRoot: path.resolve("../user-credentials-cache"),
-								scriptPath: path.resolve("../user-credentials-cache/dist/index.js"),
-								compatibilityDate: "2024-04-05",
-								compatibilityFlags: ["nodejs_compat"],
-								entrypoint: "UserCredsCacheWorker",
+								modulesRoot: path.resolve('../user-credentials-cache'),
+								scriptPath: path.resolve('../user-credentials-cache/dist/index.js'),
+								compatibilityDate: '2025-04-01',
+								compatibilityFlags: ['nodejs_compat'],
+								entrypoint: 'UserCredsCacheWorker',
 								unsafeEphemeralDurableObjects: true,
 								durableObjects: {
-									CACHE: "UserCredentialCache"
-								}
-							}
+									CACHE: 'UserCredentialCache',
+								},
+							},
 						],
 					},
 				},
 			},
 		},
-	}
+	};
 });

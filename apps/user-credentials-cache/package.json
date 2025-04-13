@@ -11,8 +11,9 @@
     "build": "wrangler build"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20250410.0",
+    "@cloudflare/workers-types": "^4.20250413.0",
+    "eslint": "^9.24.0",
     "typescript": "^5.8.3",
-    "wrangler": "^3.114.5"
+    "wrangler": "^4.10.0"
   }
 }

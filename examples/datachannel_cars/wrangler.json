@@ -1,0 +1,9 @@
+{
+    "$schema": "./node_modules/wrangler/config-schema.json",
+    "name": "test_datachannel_cars",
+    "compatibility_date": "2025-04-01",
+    "main": "./src/index.ts",
+    "dev": {
+        "port": 4002
+    }
+}

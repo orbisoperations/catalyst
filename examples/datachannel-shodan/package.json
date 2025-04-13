@@ -11,10 +11,10 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20250410.0",
+    "@cloudflare/workers-types": "^4.20250413.0",
     "graphql-yoga": "^5.13.3",
     "shodan-api": "^0.1.6",
     "typescript": "^5.8.3",
-    "wrangler": "latest"
+    "wrangler": "^4.10.0"
   }
 }
