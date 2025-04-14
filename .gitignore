@@ -1,5 +1,9 @@
 # Based on https://raw.githubusercontent.com/github/gitignore/main/Node.gitignore
 
+# Cloudflare Workers
+.wrangler/
+.dev.vars
+
 # Logs
 
 logs
