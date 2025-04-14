@@ -6,7 +6,7 @@ name: 'Preview Deployment'
 #     branches:
 #       - staging
 on:
-    workflow_dispatch:
+  workflow_dispatch:
 
 # Limit to 1 concurrent run per workflow run
 concurrency:
@@ -23,16 +23,15 @@ jobs:
         with:
           ref: 'staging'
 
-
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: '22'
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
         with:
-          version: 8
+          version: 10
 
       - name: Get pnpm store directory
         shell: bash
