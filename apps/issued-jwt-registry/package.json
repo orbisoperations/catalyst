@@ -11,7 +11,7 @@
     "build": "wrangler build"
   },
   "devDependencies": {
-    "@cloudflare/vitest-pool-workers": "^0.8.15",
+    "@cloudflare/vitest-pool-workers": "catalog:",
     "@cloudflare/workers-types": "catalog:",
     "@eslint/js": "catalog:",
     "@typescript-eslint/eslint-plugin": "^8.29.1",
