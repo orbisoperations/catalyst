@@ -8,13 +8,14 @@
   },
   "dependencies": {
     "@catalyst/jwt": "workspace:^",
-    "@pothos/core": "^3.41.0",
-    "graphql": "^16.8.1",
-    "graphql-yoga": "^5.1.1",
-    "hono": "^4.0.5"
+    "@pothos/core": "catalog:",
+    "graphql": "catalog:",
+    "graphql-yoga": "^5.3.1",
+    "hono": "^4.3.3"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20240208.0",
-    "wrangler": "^3.25.0"
+    "@cloudflare/workers-types": "catalog:",
+    "@eslint/js": "catalog:",
+    "wrangler": "catalog:"
   }
 }

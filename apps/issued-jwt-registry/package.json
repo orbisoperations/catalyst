@@ -11,20 +11,20 @@
     "build": "wrangler build"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20240603.0",
-    "@typescript-eslint/eslint-plugin": "^7.7.0",
-    "@typescript-eslint/parser": "^7.7.0",
-    "eslint": "^8.57.0",
-    "prettier": "^3.2.5",
-    "tsx": "latest",
-    "typescript": "^5.4.5",
-    "vitest": "1.5.0",
-    "wrangler": "^3.51.0",
-    "@cloudflare/vitest-pool-workers": "^0.4.0"
+    "@cloudflare/vitest-pool-workers": "^0.8.15",
+    "@cloudflare/workers-types": "catalog:",
+    "@eslint/js": "catalog:",
+    "@typescript-eslint/eslint-plugin": "^8.29.1",
+    "@typescript-eslint/parser": "^8.29.1",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "wrangler": "catalog:"
   },
   "dependencies": {
     "@catalyst/schema_zod": "workspace:*",
     "@catalyst/user-credentials-cache": "workspace:*"
-    
   }
 }
