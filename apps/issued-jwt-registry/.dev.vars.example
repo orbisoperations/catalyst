@@ -1,0 +1,2 @@
+ENVIRONMENT=development
+SERVICE_NAME=catalyst/development/issued-jwt-registry
