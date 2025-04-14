@@ -14,9 +14,10 @@
   "author": "",
   "license": "Elastic-2.0",
   "devDependencies": {
-    "@types/node": "^20.11.16",
-    "bun": "^1.0.30",
-    "turbo": "^1.13.0",
-    "typescript": "^5.3.3"
-  }
+    "@types/node": "^20",
+    "bun": "^1.1.7",
+    "turbo": "catalog:",
+    "typescript": "catalog:"
+  },
+  "private": true
 }

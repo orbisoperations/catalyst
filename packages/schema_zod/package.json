@@ -10,7 +10,8 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "typescript": "^5.4.5"
+    "@eslint/js": "catalog:",
+    "typescript": "catalog:"
   },
   "dependencies": {
     "zod": "^3.22.4"
