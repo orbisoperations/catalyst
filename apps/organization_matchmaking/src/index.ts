@@ -1,6 +1,7 @@
-import { DurableObject, WorkerEntrypoint, RpcTarget } from 'cloudflare:workers';
-import { Env } from '../worker-configuration';
-import { OrgId, OrgInvite, OrgInviteStatus, OrgInviteResponse, Token, User } from '../../../packages/schema_zod';
+import { DurableObject, WorkerEntrypoint } from 'cloudflare:workers';
+import { OrgId, OrgInvite, OrgInviteResponse, OrgInviteStatus, Token, User } from '../../../packages/schema_zod';
+import { Env } from './env';
+
 /**
  * Welcome to Cloudflare Workers! This is your first worker.
  *
@@ -62,6 +63,12 @@ export class OrganizationMatchmakingDO extends DurableObject {
 		});
 	}
 
+	/**
+	 * Reads an invite from the org mailbox
+	 * @param orgId - The org id to read the invite from
+	 * @param inviteId - The invite id to read
+	 * @returns The invite
+	 */
 	async read(orgId: OrgId, inviteId: string) {
 		const listMailbox = (await this.ctx.storage.get<OrgInvite[]>(orgId)) ?? new Array<OrgInvite>();
 		const filteredInvites = listMailbox.filter((invite) => invite.id == inviteId);
@@ -78,6 +85,23 @@ export class OrganizationMatchmakingDO extends DurableObject {
 		});
 	}
 
+	/**
+	 * Toggles the active status of a partnership invite between organizations.
+	 *
+	 * @param orgId - The ID of the organization whose mailbox contains the invite
+	 * @param inviteId - The unique identifier of the invite to toggle
+	 * @returns A response containing the updated invite if successful, or an error message if the invite is not found
+	 *
+	 * @example
+	 * ```typescript
+	 * const response = await durableObject.togglePartnership('org-123', 'invite-456');
+	 * if (response.success) {
+	 *   console.log('Invite status toggled:', response.invite.isActive);
+	 * } else {
+	 *   console.error('Failed to toggle invite:', response.error);
+	 * }
+	 * ```
+	 */
 	async togglePartnership(orgId: OrgId, inviteId: string) {
 		// get invite from org mailbox
 		const orgMailbox = (await this.ctx.storage.get<OrgInvite[]>(orgId)) ?? new Array<OrgInvite>();
