@@ -1,94 +1,78 @@
+import { defineWorkersProject } from '@cloudflare/vitest-pool-workers/config';
+import path from 'path';
 
-// @ts-ignore
-import {defineWorkersProject, readD1Migrations} from "@cloudflare/vitest-pool-workers/config";
-// @ts-ignore esmoduleInterop not allowing this to be resolved by the ide compiler
-import path from "node:path";
-import {Logger} from "tslog";
+import { Logger } from 'tslog';
 
 const logger = new Logger({});
 
 logger.info('Using built services from other workspaces within @catalyst');
 logger.info('no external services used in this project');
 
-// Setup files run outside isolated storage, and may be run multiple times.
+logger.info(`Setting up vite tests for the Data Channel Registrar...`);
 
-logger.info(`Setting up vite tests for the Data Channel Registrar...`)
-export default defineWorkersProject(async () => {
-
-  return {
-    optimizeDeps: {
-      entries: ['@graphql-tools/executor-http'],
-    },
-    logLevel: 'info',
-    clearScreen: false,
-    test: {
-      poolOptions: {
-        workers: {
-          isolatedStorage: true,
-          singleWorker: true,
-          main: "src/worker.ts",
-          wrangler: {configPath: "./wrangler.toml"},
-          entrypoint: "RegistrarWorker",
-          miniflare: {
-            compatibilityDate: "2024-04-05",
-            compatibilityFlags: ["nodejs_compat"],
+export default defineWorkersProject({
+  optimizeDeps: {
+    entries: ['@graphql-tools/executor-http'],
+  },
+  logLevel: 'info',
+  clearScreen: false,
+  test: {
+    globalSetup: './global-setup.ts',
+    poolOptions: {
+      workers: {
+        isolatedStorage: false,
+        singleWorker: true,
+        main: 'src/worker.ts',
+        wrangler: { configPath: './wrangler.jsonc' },
+        miniflare: {
+          durableObjects: {
+            DO: 'Registrar',
           },
+          compatibilityDate: '2025-04-01',
+          compatibilityFlags: ['nodejs_compat'],
+          workers: [
+            {
+              name: 'authx_authzed_api',
+              modules: true,
+              modulesRoot: path.resolve('../authx_authzed_api'),
+              scriptPath: path.resolve('../authx_authzed_api/dist/index.js'),
+              compatibilityDate: '2025-04-01',
+              compatibilityFlags: ['nodejs_compat'],
+              entrypoint: 'AuthzedWorker',
+              bindings: {
+                AUTHZED_ENDPOINT: 'http://localhost:8443',
+                AUTHZED_KEY: 'atoken',
+                AUTHZED_PREFIX: 'orbisops_catalyst_dev/',
+              },
+            },
+            {
+              name: 'authx_token_api',
+              modules: true,
+              modulesRoot: path.resolve('../authx_token_api'),
+              scriptPath: path.resolve('../authx_token_api/dist/index.js'),
+              compatibilityDate: '2025-04-01',
+              compatibilityFlags: ['nodejs_compat'],
+              entrypoint: 'JWTWorker',
+              durableObjects: {
+                KEY_PROVIDER: 'JWTKeyProvider',
+              },
+            },
+            {
+              name: 'user-credentials-cache',
+              modules: true,
+              modulesRoot: path.resolve('../user_credentials_cache'),
+              scriptPath: path.resolve('../user_credentials_cache/dist/index.js'),
+              compatibilityDate: '2025-04-01',
+              compatibilityFlags: ['nodejs_compat'],
+              entrypoint: 'UserCredsCacheWorker',
+              unsafeEphemeralDurableObjects: true,
+              durableObjects: {
+                CACHE: 'UserCredsCache',
+              },
+            },
+          ],
         },
       },
     },
-  }
+  },
 });
-
-// export default defineWorkersConfig({
-//   test: {
-//
-//     poolOptions: {
-//       workers: {
-//         main: "src/index.ts",
-//         wrangler: { configPath: "./wrangler.toml" },
-//         miniflare: {
-//           d1Databases: {
-//             "REGISTRAR_DB": "catalyst"
-//           },
-//           // modulesRoot: path.resolve("."),
-//
-//           // bindings: {
-//           //   TEST_AUTH_PUBLIC_KEY: authKeypair.publicKey,
-//           // },
-//
-//           workers: [
-//             // Configuration for "auxiliary" Worker dependencies.
-//             // Unfortunately, auxiliary Workers cannot load their configuration
-//             // from `wrangler.toml` files, and must be configured with Miniflare
-//             // `WorkerOptions`.
-//             {
-//               name: "authx_token_api",
-//               modules: true,
-//               modulesRoot: path.resolve("../authx_token_api"),
-//               scriptPath: authxServicePath, // Built by `global-setup.ts`
-//               compatibilityDate: "2024-01-01",
-//               compatibilityFlags: ["nodejs_compat"],
-//               // unsafeEphemeralDurableObjects: true,
-//               durableObjects: {
-//                 "HSM": "HSM"
-//               },
-//               // kvNamespaces: ["KV_NAMESPACE"],
-//             },
-//             {
-//               name: "data_channel_registrar",
-//               modules: true,
-//               modulesRoot: path.resolve("../data_channel_registrar"),
-//               scriptPath: dataChannelRegistrarPath, // Built by `global-setup.ts`
-//               compatibilityDate: "2024-01-01",
-//               compatibilityFlags: ["nodejs_compat"],
-//               d1Databases: {
-//                 "APP_DB": "catalyst"
-//               },
-//
-//             },
-//           ],
-//         },
-//       },
-//     },
-//   },
-// });

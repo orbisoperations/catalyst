@@ -1,0 +1,80 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "data_channel_registrar",
+  "compatibility_date": "2025-04-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "./src/worker.ts",
+  "workers_dev": false,
+  "preview_urls": false,
+  "minify": true,
+  "keep_vars": true,
+  "send_metrics": false,
+  "account_id": "3be6f7bb0cc73869d555e1156586c1f2",
+
+  // wrangler v3.78.6^
+  "observability": {
+    "enabled": true,
+  },
+
+  "services": [
+    { "binding": "AUTHX_TOKEN_API", "service": "authx_token_api" },
+    { "binding": "AUTHZED", "service": "authx_authzed_api" },
+    { "binding": "USERCACHE", "service": "user-credentials-cache" },
+  ],
+
+  "durable_objects": {
+    "bindings": [{ "name": "DO", "class_name": "Registrar" }],
+  },
+
+  "migrations": [
+    {
+      "tag": "v1", // Should be unique for each entry
+      "new_classes": ["Registrar"],
+    },
+  ],
+
+  // STAGING VALUES
+  "env": {
+    "preview": {
+      "services": [
+        { "binding": "AUTHX_TOKEN_API", "service": "authx_token_api-preview" },
+        { "binding": "AUTHZED", "service": "authx_authzed_api-preview" },
+        { "binding": "USERCACHE", "service": "user-credentials-cache-preview" },
+      ],
+      "durable_objects": {
+        "bindings": [{ "name": "DO", "class_name": "Registrar" }],
+      },
+    },
+    "staging": {
+      "services": [
+        { "binding": "AUTHX_TOKEN_API", "service": "authx_token_api-staging" },
+        { "binding": "AUTHZED", "service": "authx_authzed_api-staging" },
+        { "binding": "USERCACHE", "service": "user-credentials-cache-staging" },
+      ],
+      "durable_objects": {
+        "bindings": [{ "name": "DO", "class_name": "Registrar" }],
+      },
+    },
+    // DEMO VALUES
+    "demo": {
+      "services": [
+        { "binding": "AUTHX_TOKEN_API", "service": "authx_token_api-demo" },
+        { "binding": "AUTHZED", "service": "authx_authzed_api-demo" },
+        { "binding": "USERCACHE", "service": "user-credentials-cache-demo" },
+      ],
+      "durable_objects": {
+        "bindings": [{ "name": "DO", "class_name": "Registrar" }],
+      },
+    },
+    "production": {
+        "services": [
+          { "binding": "AUTHX_TOKEN_API", "service": "authx_token_api-production" },
+          { "binding": "AUTHZED", "service": "authx_authzed_api-production" },
+          { "binding": "USERCACHE", "service": "user-credentials-cache-production" },
+        ],
+        "durable_objects": {
+          "bindings": [{ "name": "DO", "class_name": "Registrar" }],
+        },
+      },
+  },
+}

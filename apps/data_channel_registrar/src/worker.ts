@@ -1,22 +1,13 @@
 import { DurableObject, WorkerEntrypoint } from 'cloudflare:workers';
 import {
   DataChannel,
-  Token,
-  User,
-  PermissionCheckResponse,
   DataChannelActionResponse,
   JWTParsingResponse,
+  PermissionCheckResponse,
+  Token,
+  User,
 } from '../../../packages/schema_zod';
-import AuthzedWorker from '../../authx_authzed_api/src';
-import JWTWorker from '../../authx_token_api/src';
-import UserCredsCacheWorker from '../../user_credentials_cache/src';
-
-export type Env = Record<string, string> & {
-  DO: DurableObjectNamespace<Registrar>;
-  AUTHZED: Service<AuthzedWorker>;
-  AUTHX_TOKEN_API: Service<JWTWorker>;
-  USERCACHE: Service<UserCredsCacheWorker>;
-};
+import { Env } from './env';
 
 export default class RegistrarWorker extends WorkerEntrypoint<Env> {
   async fetch() {
@@ -37,6 +28,7 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
       });
     }
 
+    // NEED TO MOCK THIS
     const user: User | undefined = await this.env.USERCACHE.getUser(token.cfToken);
     const parsedUser = User.safeParse(user);
     if (!parsedUser.success) {
@@ -67,6 +59,7 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
   async RPerms(token: Token, dataChannelId: string, channel?: DataChannel) {
     if (token.cfToken) {
       const user: User | undefined = await this.env.USERCACHE.getUser(token.cfToken);
+
       const parsedUser = User.safeParse(user);
       if (!parsedUser.success) {
         return PermissionCheckResponse.parse({
@@ -211,20 +204,20 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
   async list(doNamespace: string, token: Token) {
     const { DO } = this.env;
     const doId = DO.idFromName(doNamespace);
-    const stub = DO.get(doId);
-    const list = await stub.list();
+    const stub: Registrar = DO.get(doId);
+    const list: DataChannel[] = await stub.list();
 
     const listWithPerms = (
       await Promise.all(
-        list.map(async dc => {
+        list.map(async (dc: DataChannel) => {
           return { canRead: await this.RPerms(token, dc.id, dc), dataChannel: dc };
         }),
       )
     )
-      .filter(({ canRead }) => {
+      .filter(({ canRead }: { canRead: PermissionCheckResponse }) => {
         return canRead.success;
       })
-      .map(({ dataChannel }) => {
+      .map(({ dataChannel }: { dataChannel: DataChannel }) => {
         return dataChannel;
       });
     return DataChannelActionResponse.parse({
@@ -241,8 +234,10 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
         error: checkResp.error,
       });
     }
+
     const doId = this.env.DO.idFromName(doNamespace);
     const stub = this.env.DO.get(doId);
+
     const d = await stub.delete(dataChannelID);
     if (!d) {
       return DataChannelActionResponse.parse({
@@ -258,7 +253,7 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
 }
 
 export class Registrar extends DurableObject {
-  async list(filterByAccessSwitch: boolean = false) {
+  async list(filterByAccessSwitch: boolean = false): Promise<DataChannel[]> {
     const allChannels = await this.ctx.storage.list<DataChannel>();
     // if filterByAccessSwitch is set we passthrough access switch, else return all
     return Array.from(allChannels.values()).filter(dc =>
