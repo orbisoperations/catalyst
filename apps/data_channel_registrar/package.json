@@ -7,7 +7,7 @@
   "scripts": {
     "deploymentDemo": "yes | wrangler deploy --minify --keep-vars --env demo",
     "deploymentStaging": "yes | wrangler deploy --keep-vars --env staging",
-    "test": "vitest --config vitest.config.ts --reporter basic",
+    "test": "vitest",
     "dev": "pnpm wrangler dev",
     "deploy": "wrangler deploy --minify src/worker.ts",
     "fmt": "prettier --write .",
@@ -18,7 +18,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@cloudflare/vitest-pool-workers": "^0.8.15",
+    "@cloudflare/vitest-pool-workers": "catalog:",
     "@cloudflare/workers-types": "catalog:",
     "@eslint/js": "catalog:",
     "@graphql-codegen/cli": "catalog:",

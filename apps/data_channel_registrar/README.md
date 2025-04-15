@@ -42,7 +42,7 @@ The application is structured around two main components:
 - **Organization Isolation**: Data channels are owned by organizations
 - **JWT-based Access**: Support for JWT token-based access to data channels. Provides access to external organizations who do not own the data channel. This access can only be coordinated via invitation from the owning organization to the invited external organization
 
-# Integration 
+## Integration
 
 This service is a critical component in the Catalyst ecosystem:
 
@@ -51,7 +51,22 @@ This service is a critical component in the Catalyst ecosystem:
 - Enforces organization boundaries and access controls
 - Provides consistent data channel information across the platform
 
-### Data Isolation
+## Data Isolation
+
 - Data channels are owned by specific organizations
 - Users can only access data channels they have permission for
 - JWT tokens must explicitly include data channel claims
+
+---
+
+## Testing Requirements
+
+For running tests locally, **Podman** ([https://podman.io](https://podman.io)) must be installed on your machine. Podman is used to manage containers required for integration testing.
+
+To run the tests, use:
+
+```sh
+pnpm test
+```
+
+For more details on the test environment setup, see [`global-setup.ts`](./global-setup.ts).
