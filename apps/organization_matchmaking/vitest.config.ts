@@ -3,6 +3,7 @@ import path from 'node:path';
 
 export default defineWorkersConfig({
 	test: {
+		globalSetup: './global-setup.ts',
 		poolOptions: {
 			workers: {
 				wrangler: { configPath: './wrangler.jsonc' },
