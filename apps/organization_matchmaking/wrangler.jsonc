@@ -1,0 +1,94 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "organization-matchmaking",
+	"main": "src/index.ts",
+	"compatibility_date": "2025-04-01",
+	"compatibility_flags": ["nodejs_compat"],
+	"preview_urls": false,
+	"workers_dev": false,
+	"minify": true,
+	"keep_vars": true,
+	"send_metrics": false,
+	"observability": {
+		"enabled": true
+	},
+	"services": [
+		{ "binding": "USERCACHE", "service": "user-credentials-cache" },
+		{ "binding": "AUTHZED", "service": "authx_authzed_api" }
+	],
+	"durable_objects": {
+		"bindings": [
+			{
+				"name": "ORG_MATCHMAKING",
+				"class_name": "OrganizationMatchmakingDO"
+			}
+		]
+	},
+	"migrations": [
+		{
+			"tag": "v1",
+			"new_classes": ["OrganizationMatchmakingDO"]
+		},
+		{
+			"tag": "v2"
+		}
+	],
+	"env": {
+		"preview": {
+			"durable_objects": {
+				"bindings": [
+					{
+						"name": "ORG_MATCHMAKING",
+						"class_name": "OrganizationMatchmakingDO"
+					}
+				]
+			},
+			"services": [
+				{ "binding": "AUTHZED", "service": "authx_authzed_api-preview" },
+				{ "binding": "USERCACHE", "service": "user-credentials-cache-preview" }
+			]
+		},
+        "staging": {
+			"durable_objects": {
+				"bindings": [
+					{
+						"name": "ORG_MATCHMAKING",
+						"class_name": "OrganizationMatchmakingDO"
+					}
+				]
+			},
+			"services": [
+				{ "binding": "AUTHZED", "service": "authx_authzed_api-staging" },
+				{ "binding": "USERCACHE", "service": "user-credentials-cache-staging" }
+			]
+		},
+        "demo": {
+			"durable_objects": {
+				"bindings": [
+					{
+						"name": "ORG_MATCHMAKING",
+						"class_name": "OrganizationMatchmakingDO"
+					}
+				]
+			},
+			"services": [
+				{ "binding": "AUTHZED", "service": "authx_authzed_api-demo" },
+				{ "binding": "USERCACHE", "service": "user-credentials-cache-demo" }
+			]
+		},
+		"production": {
+			"durable_objects": {
+				"bindings": [
+					{
+						"name": "ORG_MATCHMAKING",
+						"class_name": "OrganizationMatchmakingDO"
+					}
+				]
+			},
+			"services": [
+				{ "binding": "AUTHZED", "service": "authx_authzed_api-production" },
+				{ "binding": "USERCACHE", "service": "user-credentials-cache-production" }
+			]
+		}
+	}
+}
