@@ -1,6 +1,6 @@
-import { AuthzedClient } from './authzed';
-import { WorkerEntrypoint, RpcTarget } from 'cloudflare:workers';
 import { Catalyst, DataChannelId, OrgId, UserId } from '@catalyst/schema_zod';
+import { WorkerEntrypoint } from 'cloudflare:workers';
+import { AuthzedClient } from './authzed';
 
 type Env = {
 	AUTHZED_ENDPOINT: string;

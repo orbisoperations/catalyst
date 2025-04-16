@@ -1,4 +1,4 @@
-import { Catalyst, Authzed, OrgId, UserId, DataChannelId } from '@catalyst/schema_zod';
+import { Authzed, Catalyst, DataChannelId, OrgId, UserId } from '@catalyst/schema_zod';
 
 export type SearchInfoBody = {
 	consistency?: {
@@ -261,6 +261,7 @@ export class AuthzedClient {
 		},
 	) {
 		const searchRoles = args.roles ?? [Catalyst.RoleEnum.enum.user, Catalyst.RoleEnum.enum.data_custodian, Catalyst.RoleEnum.enum.admin];
+		console.log(searchRoles)
 
 		let results: Catalyst.Relationship[] = [];
 

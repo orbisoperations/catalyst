@@ -1,0 +1,22 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "authx_authzed_api",
+	"main": "src/index.ts",
+	"compatibility_date": "2025-04-01",
+	"compatibility_flags": ["nodejs_compat"],
+	// will preserve vars in the remote deployment
+	"keep_vars": true,
+	"preview_urls": false,
+	"workers_dev": false,
+	"minify": true,
+	"send_metrics": false,
+	"observability": {
+		"enabled": true
+	},
+	"env": {
+		"preview": {},
+		"staging": {},
+		"demo": {},
+		"production": {}
+	}
+}
