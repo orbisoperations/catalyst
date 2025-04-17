@@ -72,3 +72,4 @@ catalog:
   vitest: 3.0.9
   wrangler: ^4.10.0
   xml-js: ^1.6.11
+  kill-port: ^2.0.1

@@ -2,9 +2,10 @@
   "name": "@catalyst/data_channel_gateway",
   "type": "module",
   "scripts": {
-    "dev": "wrangler dev src/index.ts",
+    "dev": "wrangler dev --port 5051",
     "deploymentDemo": "yes | wrangler deploy --minify --keep-vars --env demo",
     "deploymentStaging": "yes | wrangler deploy --keep-vars --env staging",
+    "start": "wrangler dev --port 5051",
     "test": "vitest"
   },
   "dependencies": {
