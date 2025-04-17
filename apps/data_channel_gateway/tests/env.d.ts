@@ -1,10 +1,11 @@
 declare module "cloudflare:test" {
   // Controls the type of `import("cloudflare:test").env`
 
-  import RegistrarWorker, {Registrar} from '@catalyst/data_channel_registrar/src/worker';
   import AuthzedWorker from "@catalyst/authx_authzed_api/src";
-  import JWTWorker, {JWTKeyProvider} from "@catalyst/authx_token_api/src";
-  import JWTRegistry, {I_JWT_Registry_DO} from "@catalyst/issued-jwt-registry/src";
+  import JWTWorker, { JWTKeyProvider } from "@catalyst/authx_token_api/src";
+  import RegistrarWorker, { Registrar } from '@catalyst/data_channel_registrar/src/worker';
+  import JWTRegistry, { I_JWT_Registry_DO } from "@catalyst/issued-jwt-registry/src";
+
 // @ts-expect-error Env is extended (but not exported) as a part of the vitest integration
   interface ProvidedEnv extends Env {
     APP_MIGRATIONS: D1Migration[];
