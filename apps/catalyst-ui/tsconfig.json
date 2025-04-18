@@ -5,6 +5,9 @@
       "dom.iterable",
       "ESNext"
     ],
+    "types": [
+      "@cloudflare/workers-types"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -29,7 +32,8 @@
       "@orbis-ui/*": [
         "../../packages/orbis-ui/src/*"
       ]
-    }
+    },
+    "target": "ES2017"
   },
   "include": [
     "next-env.d.ts",
@@ -39,8 +43,5 @@
   ],
   "exclude": [
     "node_modules"
-  ],
-  "types": [
-    "@cloudflare/workers-types"
   ]
 }

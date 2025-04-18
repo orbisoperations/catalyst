@@ -1,6 +1,5 @@
 import TokenDetailsComponent from "@/components/tokens/TokenDetails";
 
-export const runtime = "edge";
 import {
   deleteIJWTRegistry,
   getIJWTRegistry,
