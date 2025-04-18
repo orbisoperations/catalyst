@@ -1,10 +1,10 @@
 "use server";
 import { CloudflareEnv } from "@/env";
 import { OrgInvite } from "@catalyst/schema_zod";
-import { getRequestContext } from "@cloudflare/next-on-pages";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 function getEnv() {
-  return getRequestContext().env as CloudflareEnv;
+  return getCloudflareContext().env as CloudflareEnv;
 }
 
 function getMatcher() {
