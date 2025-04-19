@@ -8,3 +8,6 @@ if (process.env.NODE_ENV === 'development') {
 const nextConfig = { output: 'standalone'}
 
 export default nextConfig
+
+import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
+initOpenNextCloudflareForDev();
