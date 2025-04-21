@@ -1,5 +1,5 @@
 "use client";
-export const runtime = "edge";
+
 import { ErrorCard, OrbisButton, OrbisCard } from "@/components/elements";
 import { DetailedView } from "@/components/layouts";
 import { navigationItems } from "@/utils/nav.utils";

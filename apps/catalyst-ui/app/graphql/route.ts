@@ -1,11 +1,10 @@
-import { getRequestContext } from "@cloudflare/next-on-pages";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { NextRequest, NextResponse } from "next/server";
 
-export const runtime = "edge";
 
 export async function POST(req: NextRequest) {
   // @ts-ignore
-  const { CATALYST_DATA_CHANNEL_REGISTRAR_API } = getRequestContext()
+  const { CATALYST_DATA_CHANNEL_REGISTRAR_API } = getCloudflareContext()
     .env as CloudflareEnv;
   try {
     const data = await CATALYST_DATA_CHANNEL_REGISTRAR_API.list("default");

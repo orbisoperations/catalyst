@@ -1,6 +1,5 @@
 import AcceptInviteComponent from "@/components/partners/AcceptInviteComponent";
 
-export const runtime = "edge";
 import {
   acceptInvite,
   declineInvite,
