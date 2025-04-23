@@ -1,9 +1,9 @@
 "use server";
 import { CloudflareEnv } from "@/env";
-import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { getRequestContext } from "@cloudflare/next-on-pages";
 import { IssuedJWTRegistry } from "../../../../packages/schema_zod";
 function getEnv() {
-  return getCloudflareContext().env as CloudflareEnv;
+  return getRequestContext().env as CloudflareEnv;
 }
 function getIJWT() {
   return getEnv().ISSUED_JWT_WORKER;

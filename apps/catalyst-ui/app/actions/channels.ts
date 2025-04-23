@@ -1,10 +1,10 @@
 "use server";
 import { CloudflareEnv } from "@/env";
-import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { getRequestContext } from "@cloudflare/next-on-pages";
 import { DataChannel } from "../../../../packages/schema_zod";
 
 function getEnv() {
-  return getCloudflareContext().env as CloudflareEnv;
+  return getRequestContext().env as CloudflareEnv;
 }
 
 function getRegistar() {

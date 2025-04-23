@@ -41,6 +41,7 @@ import { useEffect, useState } from "react";
 import { DataChannel } from "../../../../packages/schema_zod";
 import { useUser } from "../contexts/User/UserContext";
 
+export const runtime = "edge";
 type DataChannelDetailsProps = {
   channelDetails: (id: string, token: string) => Promise<DataChannel>;
   updateChannel: (data: FormData, token: string) => Promise<DataChannel>;
@@ -90,7 +91,7 @@ export default function DataChannelDetailsComponent({
 
   useEffect(() => {
     "use client";
-    if (typeof window !== 'undefined' && window?.location.origin) {
+    if (window.location.origin) {
       const url = window.location.origin.includes("catalyst")
         ? window.location.origin
         : "https://catalyst.devintelops.io";

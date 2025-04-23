@@ -1,10 +1,10 @@
 "use server";
 import { CloudflareEnv } from "@/env";
-import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { getRequestContext } from "@cloudflare/next-on-pages";
 import { JWTRequest } from "../types";
 import {DEFAULT_STANDARD_DURATIONS} from "@catalyst/schema_zod"
 function getEnv() {
-  return getCloudflareContext().env as CloudflareEnv;
+  return getRequestContext().env as CloudflareEnv;
 }
 function getAuthx() {
   return getEnv().AUTHX_TOKEN_API;
