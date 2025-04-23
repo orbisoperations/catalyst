@@ -1,7 +1,7 @@
 import { Card, CardProps } from "@chakra-ui/card";
 import { Box, Flex, Text } from "@chakra-ui/react";
 import { PropsWithChildren } from "react";
-import { OrbisButton } from "./";
+import { OrbisButton } from ".";
 
 export type OrbisCardProps = CardProps & {
   size?: "sm" | "md" | "lg";
