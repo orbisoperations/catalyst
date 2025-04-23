@@ -1,44 +1,43 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 import {
-  APIKeyText,
-  EditButton,
-  ErrorCard,
-  OrbisBadge,
-  OrbisButton,
-  OrbisCard,
-  TrashButton,
+    APIKeyText,
+    EditButton,
+    ErrorCard,
+    OrbisBadge,
+    OrbisButton,
+    TrashButton
 } from "@/components/elements";
 import { DetailedView } from "@/components/layouts";
 import { navigationItems } from "@/utils/nav.utils";
+import { DataChannel } from "@catalyst/schema_zod";
 import { Card, CardBody, CardHeader } from "@chakra-ui/card";
 import {
-  Box,
-  Flex,
-  Grid,
-  Heading,
-  Stack,
-  StackDivider,
-  Text,
+    Box,
+    Flex,
+    Grid,
+    Heading,
+    Stack,
+    StackDivider,
+    Text,
 } from "@chakra-ui/layout";
 import {
-  FormControl,
-  Input,
-  InputGroup,
-  InputLeftAddon,
-  Modal,
-  ModalBody,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  Switch,
-  Textarea,
-  useDisclosure,
+    FormControl,
+    Input,
+    InputGroup,
+    InputLeftAddon,
+    Modal,
+    ModalBody,
+    ModalContent,
+    ModalFooter,
+    ModalHeader,
+    ModalOverlay,
+    Switch,
+    Textarea,
+    useDisclosure,
 } from "@chakra-ui/react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { DataChannel } from "../../../../packages/schema_zod";
 import { useUser } from "../contexts/User/UserContext";
 
 type DataChannelDetailsProps = {

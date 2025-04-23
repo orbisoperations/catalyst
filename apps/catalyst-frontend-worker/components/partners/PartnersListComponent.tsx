@@ -1,39 +1,38 @@
 "use client";
 import {
-  CreateButton,
-  ErrorCard,
-  OpenButton,
-  OrbisBadge,
-  OrbisButton,
-  OrbisCard,
-  OrbisTable,
-  TrashButton,
+    CreateButton,
+    ErrorCard,
+    OpenButton,
+    OrbisButton,
+    OrbisCard,
+    OrbisTable,
+    TrashButton
 } from "@/components/elements";
 import { ListView } from "@/components/layouts";
 import { navigationItems } from "@/utils/nav.utils";
+import { OrgInvite } from "@catalyst/schema_zod";
 import {
-  Box,
-  Flex,
-  Stack,
-  StackDivider,
-  StackItem,
-  Text,
+    Box,
+    Flex,
+    Stack,
+    StackDivider,
+    StackItem,
+    Text,
 } from "@chakra-ui/layout";
 import {
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  Switch,
-  useDisclosure,
+    Modal,
+    ModalBody,
+    ModalCloseButton,
+    ModalContent,
+    ModalFooter,
+    ModalHeader,
+    ModalOverlay,
+    Switch,
+    useDisclosure,
 } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useUser } from "../contexts/User/UserContext";
-import { OrgInvite } from "../../../../packages/schema_zod";
 type PartnersListComponentProps = {
   listInvites: (token: string) => Promise<OrgInvite[]>;
   declineInvite: (inviteId: string, token: string) => Promise<OrgInvite>;
