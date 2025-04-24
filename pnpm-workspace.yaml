@@ -12,6 +12,7 @@ catalog:
   "@chakra-ui/theme-tools": ^2.1.2
   "@cloudflare/next-on-pages": ^1.11.2
   "@cloudflare/workers-types": ^4.20250414.0
+  "@cloudflare/vitest-pool-workers": ^0.8.15
   "@emotion/react": ^11.11.4
   "@eslint/js": ^9.24.0
   "@flydotio/dockerfile": ^0.5.7

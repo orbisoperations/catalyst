@@ -1,11 +1,5 @@
+import { IssuedJWTRegistry, JWTRegisterStatus, Token, User, UserCheckActionResponse, zIssuedJWTRegistry } from '@catalyst/schema_zod';
 import { DurableObject, WorkerEntrypoint } from 'cloudflare:workers';
-import { IssuedJWTRegistry, Token, User, UserCheckActionResponse, zIssuedJWTRegistry, JWTRegisterStatus } from '@catalyst/schema_zod';
-import UserCredsCacheWorker from '@catalyst/user-credentials-cache/src';
-
-export type Env = {
-	ISSUED_JWT_REGISTRY_DO: DurableObjectNamespace<I_JWT_Registry_DO>;
-	USERCACHE: Service<UserCredsCacheWorker>;
-};
 
 export default class IssuedJWTRegistryWorker extends WorkerEntrypoint<Env> {
 	async RPerms(token: Token) {
