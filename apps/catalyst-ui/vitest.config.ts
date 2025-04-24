@@ -97,7 +97,7 @@ export default defineWorkersProject(async () => {
 								},*/
               },
               {
-                name: "user_credentials_cache",
+                name: "user-credentials-cache",
                 modules: true,
                 modulesRoot: path.resolve("../user_credentials_cache"),
                 scriptPath: credsCacheServicePath, // Built by `global-setup.ts`

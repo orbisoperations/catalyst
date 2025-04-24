@@ -8,7 +8,7 @@ services = [
   { binding = "CATALYST_DATA_CHANNEL_REGISTRAR_API", service = "data_channel_registrar" },
   { binding = "AUTHX_TOKEN_API", service = "authx_token_api" },
   { binding = "AUTHX_AUTHZED_API", service = "authx_authzed_api"},
-  { binding = "USER_CREDS_CACHE", service = "user_credentials_cache"},
+  { binding = "USER_CREDS_CACHE", service = "user-credentials-cache"},
   { binding = "ORGANIZATION_MATCHMAKING", service = "organization-matchmaking" }
 ]
 
@@ -21,7 +21,7 @@ services = [
     { binding = "CATALYST_DATA_CHANNEL_REGISTRAR_API", service = "data_channel_registrar-staging" },
     { binding = "AUTHX_TOKEN_API", service = "authx_token_api-staging" },
     { binding = "AUTHX_AUTHZED_API", service = "authx_authzed_api-staging" },
-    { binding = "USER_CREDS_CACHE", service = "user_credentials_cache-staging" },
+    { binding = "USER_CREDS_CACHE", service = "user-credentials-cache-staging" },
     { binding = "ORGANIZATION_MATCHMAKING", service = "organization-matchmaking-staging" }
 ]
 
@@ -33,7 +33,7 @@ services = [
     { binding = "CATALYST_DATA_CHANNEL_REGISTRAR_API", service = "data_channel_registrar-demo" },
     { binding = "AUTHX_TOKEN_API", service = "authx_token_api-demo" },
     { binding = "AUTHX_AUTHZED_API", service = "authx_authzed_api-demo" },
-    { binding = "USER_CREDS_CACHE", service = "user_credentials_cache-demo" },
+    { binding = "USER_CREDS_CACHE", service = "user-credentials-cache-demo" },
     { binding = "ORGANIZATION_MATCHMAKING", service = "organization-matchmaking-demo" }
 ]
 
