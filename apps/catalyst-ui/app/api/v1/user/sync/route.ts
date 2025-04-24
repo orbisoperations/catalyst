@@ -1,7 +1,8 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { getRequestContext } from "@cloudflare/next-on-pages";
 import { NextRequest } from "next/server";
 export const dynamic = "force-dynamic"; // defaults to auto
 
+export const runtime = "edge";
 export async function GET(request: NextRequest) {
   // get CF token
   const cfToken = request.cookies.get("CF_Authorization")?.value;
@@ -9,21 +10,21 @@ export async function GET(request: NextRequest) {
 
     // validate CF token
     // @ts-ignore
-    const { USER_CREDS_CACHE: user_cache } = getCloudflareContext().env as CloudflareEnv;
+    const { USER_CREDS_CACHE: user_cache } = getRequestContext().env as CloudflareEnv;
     const user:
       | { userId: string; orgId: string; zitadelRoles: string[] }
       | undefined = await user_cache.getUser(cfToken);
     if (user) {
       // user role
       // @ts-ignore
-      await getCloudflareContext().env.AUTHX_AUTHZED_API.addUserToOrg(
+      await getRequestContext().env.AUTHX_AUTHZED_API.addUserToOrg(
         user.orgId,
         user.userId
       );
       // data custodian role
       if (user.zitadelRoles.includes("data-custodian")) {
         // @ts-ignore
-        await getCloudflareContext().env.AUTHX_AUTHZED_API.addDataCustodianToOrg(
+        await getRequestContext().env.AUTHX_AUTHZED_API.addDataCustodianToOrg(
           user.orgId,
           user.userId
         );
@@ -31,7 +32,7 @@ export async function GET(request: NextRequest) {
       // admin role
       if (user.zitadelRoles.includes("org-admin")) {
         // @ts-ignore
-        await getCloudflareContext().env.AUTHX_AUTHZED_API.addAdminToOrg(
+        await getRequestContext().env.AUTHX_AUTHZED_API.addAdminToOrg(
           user.orgId,
           user.userId
         );

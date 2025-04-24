@@ -1,5 +1,5 @@
 "use client";
-
+export const runtime = "edge";
 import {
   APIKeyText,
   ErrorCard,
