@@ -1,11 +1,6 @@
-import {Registrar} from "./worker"
-import AuthzedWorker  from "../../authx_authzed_api/src"
-import JWTWorker from "../../authx_token_api/src"
-import UserCredsCacheWorker from "../../user_credentials_cache/src"
-
-interface Env  {
-  DO: DurableObjectNamespace<Registrar>
-  AUTHZED: Service<AuthzedWorker>
-  JWTTOKEN: Service<JWTWorker>
-  USERCACHE: Service<UserCredsCacheWorker>
+export interface Env {
+  DO: DurableObjectNamespace<Registrar>;
+  AUTHZED: Service<import('../../authx_authzed_api/src').default>;
+  AUTHX_TOKEN_API: Service<import('../../authx_token_api/src').default>;
+  USERCACHE: Service<import('../../user_credentials_cache/src').default>;
 }

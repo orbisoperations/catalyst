@@ -1,31 +1,71 @@
-import {SELF, env, createExecutionContext, waitOnExecutionContext} from "cloudflare:test";
-import {describe, it, expect, beforeAll} from "vitest";
-import {Logger} from "tslog";
-const logger = new Logger();
+import { SELF } from 'cloudflare:test';
+import { describe, it } from 'vitest';
+import { DataChannel, DataChannelActionResponse } from '../../../packages/schema_zod';
+
+async function giveMeADataChannel(): Promise<Request<DataChannelActionResponse>> {
+  return new Request('http://dcd/create', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      success: true,
+      data: [
+        {
+          id: '123',
+          name: 'Data Channel 1',
+          endpoint: 'https://example.com/data',
+          creatorOrganization: 'Fake Organization',
+          accessSwitch: true,
+          description: 'This is a test data channel',
+        },
+      ],
+    }),
+  });
+}
+
+function generateDataChannels(count: number = 5): DataChannel[] {
+  const dataChannels: DataChannel[] = [];
+  for (let i = 0; i < count; i++) {
+    const dataChannel = {
+      id: 'dummy-id',
+      name: `Data Channel ${i}`,
+      endpoint: `https://example.com/data${i}`,
+      creatorOrganization: `Fake Organization ${i}`,
+      accessSwitch: true,
+      description: `This is a test data channel ${i}`,
+    };
+    dataChannels.push(dataChannel);
+  }
+  return dataChannels;
+}
+
+// TODO: fix this test
+// Need bettet mocks for the cfToken service
+// Need to mock the authzed service
+describe('Data Channel Registrar as Durable Object integration tests', () => {
+  it('should create a Data Channel and return the id, also show in the DO list', async () => {
+    const createResponse = await SELF.create(
+      'default',
+      {
+        accessSwitch: true,
+        name: 'Data Channel 1',
+        endpoint: 'https://example.com/data',
+        description: 'This is a test data channel',
+        creatorOrganization: 'Fake Organization',
+      },
+      {
+        cfToken: 'test',
+      },
+    );
 
 
-describe("Data Channel Registrar as Durable Object integration tests", () => {
-  console.log(env)
-    it('should fetch an empty array DO', async () => {
-      console.log(env)
-        const list = await env.WORKER.list("default")
+    // const dataChannelId = createResponse.json<DataChannelActionResponse>();
+    // expect(dataChannelId).toMatch(
+    //   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+    // );
+  });
+});
 
-    })
-
-
-    /*it('should create a Data Channel and return the id, also show in the DO list', async () => {
-        const createResponse = await giveMeADataChannel();
-        const dataChannelId: string = await createResponse.json();
-
-        expect(createResponse.status).toEqual(200);
-        expect(dataChannelId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
-
-        const listResponse = await SELF.fetch("http://dcd/list");
-        const responseText = await listResponse.text()
-        expect(listResponse.status).toEqual(200);
-        expect(responseText).toEqual("[{\"name\":\"Data Channel 1\",\"endpoint\":\"https://example.com/data\",\"creatorOrganization\":\"Fake Organization\",\"id\":\""+dataChannelId+"\"}]");
-    })
-
+/*
     it('requests data channel by id', async () => {
     const createdDataChannel = await giveMeADataChannel();
     const findId: string  = await createdDataChannel.json();
@@ -89,5 +129,4 @@ describe("Data Channel Registrar as Durable Object integration tests", () => {
         // expect(await phantomDataChannel.text()).toEqual("o data channel found: "+removeId);
         // expect(phantomDataChannel.status).toEqual(500);
     });*/
-
-})
+// });
