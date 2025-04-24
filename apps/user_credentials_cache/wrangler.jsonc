@@ -1,0 +1,82 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	// Basic worker configuration
+	"name": "user-credentials-cache",
+	"main": "src/index.ts",
+	// READ: https://developers.cloudflare.com/workers/configuration/compatibility-flags/#nodejs-compatibility-flag
+	"compatibility_flags": ["nodejs_compat"],
+	"compatibility_date": "2025-04-01",
+	"workers_dev": false,
+	"preview_urls": false,
+	"observability": {
+		"enabled": true
+	},
+	"tsconfig": "tsconfig.json",
+	"minify": true,
+	// Durable Objects configuration
+	// Defines the binding between the worker and the Durable Object class
+	"durable_objects": {
+		"bindings": [
+			{
+				"name": "CACHE", // The name used to reference the Durable Object in code
+				"class_name": "UserCredsCache" // The class that implements the Durable Object
+			}
+		]
+	},
+
+	// Migration configuration
+	// Used to manage changes to Durable Objects schema
+	"migrations": [
+		{
+			"tag": "v1", // First migration version
+			"new_classes": ["UserCredsCache"] // Initial creation of the UserCredsCache class
+		},
+		{
+			"tag": "v2" // Second migration version
+		}
+	],
+
+	// Environment-specific configurations
+	"env": {
+		"preview": {
+			"durable_objects": {
+				"bindings": [
+					{
+						"name": "CACHE",
+						"class_name": "UserCredsCache"
+					}
+				]
+			},
+		},
+		"staging": {
+			"durable_objects": {
+				"bindings": [
+					{
+						"name": "CACHE",
+						"class_name": "UserCredsCache"
+					}
+				]
+			},
+		},
+		"demo": {
+			"durable_objects": {
+				"bindings": [
+					{
+						"name": "CACHE",
+						"class_name": "UserCredsCache"
+					}
+				]
+			},
+		},
+		"production": {
+			"durable_objects": {
+				"bindings": [
+					{
+						"name": "CACHE",
+						"class_name": "UserCredsCache"
+					}
+				]
+			},
+		}
+	},
+}

@@ -1,5 +1,7 @@
 import { DurableObject, WorkerEntrypoint } from 'cloudflare:workers';
 import { User } from '../../../packages/schema_zod';
+import { Env } from './env';
+
 /**
  * Welcome to Cloudflare Workers! This is your first Durable Objects application.
  *
@@ -12,26 +14,6 @@ import { User } from '../../../packages/schema_zod';
  *
  * Learn more at https://developers.cloudflare.com/durable-objects
  */
-
-/**
- * Associate bindings declared in wrangler.toml with the TypeScript type system
- */
-export interface Env {
-	// Example binding to KV. Learn more at https://developers.cloudflare.com/workers/runtime-apis/kv/
-	// MY_KV_NAMESPACE: KVNamespace;
-	//
-	// Example binding to Durable Object. Learn more at https://developers.cloudflare.com/workers/runtime-apis/durable-objects/
-	CACHE: DurableObjectNamespace<UserCredsCache>;
-	//
-	// Example binding to R2. Learn more at https://developers.cloudflare.com/workers/runtime-apis/r2/
-	// MY_BUCKET: R2Bucket;
-	//
-	// Example binding to a Service. Learn more at https://developers.cloudflare.com/workers/runtime-apis/service-bindings/
-	// MY_SERVICE: Fetcher;
-	//
-	// Example binding to a Queue. Learn more at https://developers.cloudflare.com/queues/javascript-apis/
-	// MY_QUEUE: Queue;
-}
 
 type Roles = Record<string, Record<string, string>>;
 
@@ -90,6 +72,11 @@ export class UserCredsCache extends DurableObject<Env> {
 				cookie: `CF_Authorization=${token}`,
 			},
 		});
+
+		if (!resp.ok) {
+			console.error('error validating user with cloudflare-access');
+			return undefined;
+		}
 
 		try {
 			const cfUser = (await resp.json()) as {
