@@ -1,0 +1,3 @@
+AUTHZED_ENDPOINT=http://localhost:8443
+AUTHZED_KEY=atoken
+AUTHZED_PREFIX=local_catalyst_dev/

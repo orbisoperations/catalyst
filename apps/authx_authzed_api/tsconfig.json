@@ -1,4 +1,5 @@
 {
+	"include": ["./**/*.ts", "./**/*.d.ts"],
 	"compilerOptions": {
 	  "esModuleInterop": true,
 	  "module": "ESNext",
@@ -11,6 +12,4 @@
 	  "strict": true,
 	  "types": ["@cloudflare/workers-types"],
 	},
-	"include": ["src"]
   }
-  

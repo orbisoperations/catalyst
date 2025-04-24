@@ -1,23 +1,58 @@
 // test/index.spec.ts
 
 // RUN THIS TO GET IT WORKING
-// docker run -v "$(pwd)"/schema.zaml:/schema.zaml:ro  -p 8081:8081 authzed/spicedb serve-testing --http-enabled --skip-release-check=true --log-level debug --load-configs /schema.zaml
+// podman run -v "$(pwd)"/schema.zaml:/schema.zaml:ro  -p 8443:8443 authzed/spicedb serve-testing --http-enabled --skip-release-check=true --log-level debug --load-configs /schema.zaml
 
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { SELF } from 'cloudflare:test';
+import { SELF, env } from 'cloudflare:test';
+import { describe, expect, it } from 'vitest';
 
+const generateUsers = (count: number = 1) => {
+	const users = [];
+	for (let i = 0; i < count; i++) {
+		users.push(`test-user-${i}`);
+	}
+	return users;
+};
 
-// For now, you'll need to do something like this to get a correctly-typed
-// `Request` to pass to `worker.fetch()`.
+const generateOrgs = (count: number = 1) => {
+	const orgs = [];
+	for (let i = 0; i < count; i++) {
+		orgs.push(`test-org-${i}`);
+	}
+	return orgs;
+};
 
-describe("Authzed Integration via TRPC", () => {
+describe('Authzed Integration via TRPC', () => {
+	it('should have the env vars defined', async () => {
+		expect(env.AUTHZED_ENDPOINT).toBeDefined();
+		expect(env.AUTHZED_KEY).toBeDefined();
+		expect(env.AUTHZED_PREFIX).toBeDefined();
+	});
 
+	it('health check for service', async () => {
+		expect(await SELF.schema()).toBeDefined();
+	});
 
-	it("health check for service", async () => {
-		expect(await SELF.schema()).toBeDefined()
-	})
+	// get all users in spice db
+	it('get all users in spice db', async () => {
+		const resp = await SELF.listUsersInOrg('orbisops_catalyst_dev', 'test-user-1');
+		// console.log(resp);
+		expect(resp).instanceOf(Array);
+	});
 
-	/*it("get schema from authzed", async () => {
+	// it('should add user to org', async () => {
+	// 	const org1 = generateOrgs(1)[0];
+
+	// 	const resp = await SELF.addUserToOrg(org1, 'test-user-1');
+	// 	console.log(resp);
+	// 	expect(resp).toBeDefined();
+
+	// 	const users = SELF.listUsersInOrg(org1, 'test-user-1');
+	// 	console.log(users);
+	// });
+});
+
+/*it("get schema from authzed", async () => {
 		const resp = await client.authzedSchema.mutate()
 		expect(resp).not.toBe(undefined)
 		expect(resp.schemaText).toEqual(`definition orbisops_catalyst_dev/data_channel {
@@ -54,7 +89,7 @@ definition orbisops_catalyst_dev/user {}`)
 
 		})
 	})*/
-  /*&it("responds with Hello World! (unit style)", async () => {
+/*&it("responds with Hello World! (unit style)", async () => {
     const request = new IncomingRequest("http://example.com");
     // Create an empty context to pass to `worker.fetch()`.
     const ctx = createExecutionContext();
@@ -68,4 +103,3 @@ definition orbisops_catalyst_dev/user {}`)
    const response = await SELF.fetch("https://example.com");
    expect(await response.text()).toMatchInlineSnapshot(`"Hello World!"`);
  });*/
-});

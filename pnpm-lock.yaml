@@ -244,7 +244,7 @@ importers:
         version: 3.23.7
     devDependencies:
       '@cloudflare/vitest-pool-workers':
-        specifier: ^0.8.15
+        specifier: 'catalog:'
         version: 0.8.15(@cloudflare/workers-types@4.20250414.0)(@vitest/runner@3.1.1)(@vitest/snapshot@3.1.1)(vitest@3.0.9(@edge-runtime/vm@3.2.0)(@types/debug@4.1.12)(@types/node@20.12.7)(jiti@1.21.0)(tsx@4.19.3)(yaml@2.4.2))
       '@cloudflare/workers-types':
         specifier: 'catalog:'
