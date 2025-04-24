@@ -8,7 +8,7 @@
     "deploymentDemo": "yes | wrangler deploy --minify --keep-vars --env demo",
     "deploymentStaging": "yes | wrangler deploy --keep-vars --env staging",
     "test": "vitest",
-    "dev": "pnpm wrangler dev",
+    "dev": "pnpm wrangler dev --port 5050",
     "deploy": "wrangler deploy --minify src/worker.ts",
     "fmt": "prettier --write .",
     "lint": "eslint . --ext .ts",
