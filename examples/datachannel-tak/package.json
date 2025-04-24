@@ -12,17 +12,18 @@
 	},
 	"dependencies": {
 		"@graphql-tools/stitching-directives": "^3.0.2",
-		"geo-route-generator": "^1.3.0",
+		"geo-route-generator": "catalog:",
+		"graphql-yoga": "^5.3.1",
 		"hono": "^4.3.3",
 		"jose": "^5.2.4",
-		"xml-js": "^1.6.11",
-		"graphql-yoga": "^5.3.1"
+		"xml-js": "catalog:"
 	},
 	"devDependencies": {
-		"@cloudflare/workers-types": "^4.20240502.0",
+		"@cloudflare/workers-types": "catalog:",
+		"@eslint/js": "catalog:",
 		"@types/bun": "^1.1.1",
 		"bun": "^1.1.7",
-		"typescript": "^5.4.5",
-		"wrangler": "^3.53.1"
+		"typescript": "catalog:",
+		"wrangler": "catalog:"
 	}
 }
