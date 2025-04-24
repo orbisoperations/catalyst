@@ -12,7 +12,8 @@
 		"postinstall": "pnpm build"
 	},
 	"devDependencies": {
-		"@cloudflare/vitest-pool-workers": "^0.8.15",
+		"@catalyst/schema_zod": "workspace:*",
+		"@cloudflare/vitest-pool-workers": "catalog:",
 		"@cloudflare/workers-types": "catalog:",
 		"@eslint/js": "catalog:",
 		"@types/uuid": "catalog:",

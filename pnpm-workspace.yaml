@@ -70,6 +70,6 @@ catalog:
   unstorage: ^1.10.2
   uuid: ^9.0.1
   vitest: 3.0.9
-  wrangler: ^4.10.0
+  wrangler: ^4.13.1
   xml-js: ^1.6.11
   kill-port: ^2.0.1

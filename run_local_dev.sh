@@ -198,7 +198,11 @@ print_header "Starting authzed container"
 printf "  ${CYAN}⏳ Launching podman container...${RESET}\n"
 pushd ./apps > /dev/null
   CONTAINER_NAME="authzed-container"
+  # for development enabling grpc and http
+  # 8443 is the default port for http
+  # 50051 is the default port for grpc: use authzed/zed (see ReADME.md
   AUTHZED_OUTPUT=$(podman run --rm -v ./authx_authzed_api/schema.zaml:/schema.zaml:ro \
+      -p 50051:50051 \
       -p 8443:8443 --detach \
       --name $CONTAINER_NAME authzed/spicedb:latest \
       serve-testing --http-enabled --skip-release-check=true --log-level debug --load-configs ./schema.zaml 2>&1)

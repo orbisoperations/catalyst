@@ -156,10 +156,13 @@ export default function CreateTokensForm({
       subtitle="Create a new API Key"
       actions={
         !hasError ? (
-          <OrbisButton onClick={createToken}>Create</OrbisButton>
+          <OrbisButton isDisabled={selectedChannels.length === 0 || apiKeyName.length === 0 || apiKeyDescription.length === 0} onClick={createToken}>Create</OrbisButton>
         ) : undefined
       }
     >
+      {selectedChannels.length === 0 && (
+        <Text color="gray.500" fontSize="sm" mb={2}>Please select at least one channel</Text>
+      )}
       {hasError ? (
         <ErrorCard title="Error" message={errorMessage} retry={fetchChannels} />
       ) : (

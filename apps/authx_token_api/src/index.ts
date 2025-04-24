@@ -1,9 +1,10 @@
 import { DurableObjectNamespace } from '@cloudflare/workers-types';
-import { JWTKeyProvider } from './durable_object_security_module';
 import { WorkerEntrypoint } from 'cloudflare:workers';
+import { JWTRotateResponse, JWTSigningRequest, JWTSigningResponse, Token, User } from '../../../packages/schema_zod';
+import { JWTKeyProvider } from './durable_object_security_module';
 import { Env } from './env';
 export { JWTKeyProvider } from './durable_object_security_module';
-import { JWTSigningRequest, JWTSigningResponse, Token, User, JWTRotateResponse } from '../../../packages/schema_zod';
+
 type Bindings = {
 	// @ts-ignore
 	KEY_PROVIDER: DurableObjectNamespace<JWTKeyProvider>;
@@ -80,6 +81,13 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 			return JWTSigningResponse.parse({
 				success: false,
 				error: 'catalyst is unable to verify user',
+			});
+		}
+
+		if (jwtRequest.claims.length === 0) {
+			return JWTSigningResponse.parse({
+				success: false,
+				error: 'invalid claimes error: JWT creating request must contain at least one claim',
 			});
 		}
 		const failedClaimsChecks = (

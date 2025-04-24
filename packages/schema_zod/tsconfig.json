@@ -5,7 +5,8 @@
     "target": "ESNext",
     "moduleResolution": "Node",
     "strict": true,
-    "types": ["@cloudflare/workers-types"],
+    "types": ["@cloudflare/workers-types/experimental"],
   },
-  "include": ["src"]
+  "include": ["./authzed/**/*", "./catalyst/**/*", "index.ts"],
+  "exclude": []
 }
