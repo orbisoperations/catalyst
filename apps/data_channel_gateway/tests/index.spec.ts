@@ -194,6 +194,53 @@ describe('gateway integration tests', () => {
         await teardown(env);
     });
 
+    it('should continue working when one producer is offline', async (testContext: TestContext) => {
+        await setup(env);
+
+        // Update one of the producers to have an invalid endpoint
+        const id = env.DATA_CHANNEL_REGISTRAR_DO.idFromName('default');
+        const stub = env.DATA_CHANNEL_REGISTRAR_DO.get(id);
+        await stub.update({
+            id: 'airplanes1',
+            name: 'airplanes',
+            endpoint: 'http://non-existent-endpoint/graphql', // This endpoint will fail
+            accessSwitch: true,
+            description: 'na',
+            creatorOrganization: 'Org1',
+        });
+
+        const token = await getToken('Org1', ['airplanes1', 'cars1'], testContext);
+        const response = await SELF.fetch(
+            'https://data-channel-gateway/graphql',
+            {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'content-type': 'application/json',
+                },
+                body: JSON.stringify({
+                    query: `{
+                        __type(name: "Query") {
+                            name
+                            fields {
+                                name
+                            }
+                        }
+                    }`,
+                }),
+            }
+        );
+
+        // Gateway should still respond successfully
+        expect(response.status).toBe(200);
+
+        const json = await response.json();
+        // We should still get fields from the working producers plus the health check
+        expect(json.data['__type'].fields.length).toBeGreaterThan(0);
+
+        await teardown(env);
+    });
+
     // it('should get data-channel for airplanes only when accessSwitch is 1 - THIS IS A BAD TEST', async (testContext) => {
     //     await setup(env);
     //     const id = env.DATA_CHANNEL_REGISTRAR_DO.idFromName('default');
