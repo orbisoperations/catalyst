@@ -22,7 +22,7 @@ type OrganizationWithRoles = {
 	roles: string[];
 };
 
-function getOrgFromRoles(roles: Roles): OrganizationWithRoles | undefined {
+export function getOrgFromRoles(roles: Roles): OrganizationWithRoles | undefined {
 	const adminRoles = ['platform-admin', 'org-admin', 'org-user', 'data-custodian'];
 	const roleKeys = Object.keys(roles);
 	let rolesList = roleKeys.filter((key) => adminRoles.includes(key));
