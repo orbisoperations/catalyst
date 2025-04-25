@@ -14,7 +14,7 @@ APP_ORDER=(
   "organization_matchmaking" # Control: Manages organization partnerships
   "data_channel_gateway"     # Data: Federates data channels
   "datachannel-next"         # Data: Example data channel implementation
-  "catalyst-ui"              # Management: Web interface
+  "catalyst-ui-worker"       # Management: Web interface
   # "catalyst_cli"           # Management: CLI tool (usually not run continuously in dev)
 )
 DEFAULT_DEV_COMMAND="pnpm run dev"
@@ -33,7 +33,7 @@ trap cleanup SIGINT
 
 # --- Main Execution ---
 echo "Starting Catalyst local development environment..."
-echo "Ensure 'npm install' has been run in all app directories."
+echo "Ensure 'pnpm install' has been run in all app directories."
 echo "----------------------------------------------------"
 
 # Store PIDs of background processes
@@ -51,7 +51,7 @@ for app_name in "${APP_ORDER[@]}"; do
     if [ -f "package.json" ]; then
       # Determine which dev command to use
       if [ "$app_name" = "catalyst-ui" ]; then
-        DEV_COMMAND="pnpm run ndev --port 4000"
+        DEV_COMMAND="pnpm dev --port 4000"
       else
         DEV_COMMAND="$DEFAULT_DEV_COMMAND"
       fi
@@ -77,7 +77,6 @@ pushd ./apps
 podman run --rm -v ./authx_authzed_api/schema.zaml:/schema.zaml:ro \
     -p 8443:8443 --detach \
     --name authzed-container authzed/spicedb:latest \
-    # spiceDB commands
     serve-testing --http-enabled --skip-release-check=true --log-level debug --load-configs ./schema.zaml
 echo "Started authzed podman container successfully"
 popd
