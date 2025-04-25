@@ -68,7 +68,7 @@ function getOrgFromRoles(
 }
 
 function getIdentity() {
-  return fetch(`${window.location.origin}/cdn-cgi/access/get-identity`, {
+  return fetch(`${typeof window !== 'undefined' ? window.location.origin : ''}/cdn-cgi/access/get-identity`, {
     method: "GET",
   }).then((res) => {
     return res.json() as Promise<CloudflareUser>;

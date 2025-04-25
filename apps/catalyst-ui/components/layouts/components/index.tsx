@@ -16,13 +16,13 @@ export const TopBar = (props: TopBarProps) => {
   const { title, actions, customActions, ...boxProps } = props;
   const { user } = useUser();
   const [orgName, setOrgName] = useState<string>(
-    window.localStorage.getItem("org") ?? ""
+    typeof window !== 'undefined' ? window.localStorage.getItem("org") ?? "" : ""
   );
 
   useEffect(() => {
     "use client";
     if (user) {
-      window.localStorage.setItem("org", user.custom.org);
+      if (typeof window !== 'undefined') window.localStorage.setItem("org", user.custom.org);
       setOrgName(user.custom.org);
     }
   }, [user?.custom.org]);

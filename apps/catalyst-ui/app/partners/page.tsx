@@ -4,7 +4,7 @@ import {
   declineInvite,
   togglePartnership,
 } from "../actions/partners";
-export const runtime = "edge";
+
 
 export default function PartnersPage() {
   return (
