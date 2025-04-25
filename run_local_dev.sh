@@ -13,7 +13,7 @@ APP_ORDER=(
   "data_channel_registrar"   # Control: Manages data channel discovery
   "organization_matchmaking" # Control: Manages organization partnerships
   "data_channel_gateway"     # Data: Federates data channels
-  "datachannel-next"         # Data: Example data channel implementation
+  # "datachannel-next"         # Data: Example data channel implementation
   "catalyst-ui-worker"       # Management: Web interface
   # "catalyst_cli"           # Management: CLI tool (usually not run continuously in dev)
 )
@@ -51,7 +51,8 @@ for app_name in "${APP_ORDER[@]}"; do
     if [ -f "package.json" ]; then
       # Determine which dev command to use
       if [ "$app_name" = "catalyst-ui" ]; then
-        DEV_COMMAND="pnpm dev --port 4000"
+        # DEV_COMMAND="pnpm dev --port 4000"
+        DEV_COMMAND="pnpm preview"
       else
         DEV_COMMAND="$DEFAULT_DEV_COMMAND"
       fi

@@ -8,14 +8,17 @@
     "sim": "pnpm run -r sim",
     "ls": "pnpm ls -r --json --long --depth 6 --prod >> ./pnpmls.json",
     "dev": "turbo dev",
-    "deploymentPreview": "pnpm run -r deploymentPreview"
+    "deploymentPreview": "pnpm run -r deploymentPreview",
+    "seed-partners": "tsx scripts/seed-dev-data.ts"
   },
   "keywords": [],
   "author": "",
   "license": "Elastic-2.0",
   "devDependencies": {
+    "@faker-js/faker": "^9.7.0",
     "@types/node": "^20",
     "bun": "^1.1.7",
+    "tsx": "catalog:",
     "turbo": "catalog:",
     "typescript": "catalog:"
   },

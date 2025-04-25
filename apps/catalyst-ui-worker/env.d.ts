@@ -4,7 +4,7 @@ import AuthzedWorker from "../authx_authzed_api/src";
 import UserCredsCacheWorker from "../user_credentials_cache/src";
 import OrganizationMatchmakingWorker from "../organization_matchmaking/src";
 import IssuedJWTRegistryWorker from "@catalyst/issued-jwt-registry/src";
-interface CloudflareEnv {
+export interface CloudflareEnv {
   CATALYST_DATA_CHANNEL_REGISTRAR_API: Service<RegistrarWorker>;
   AUTHX_TOKEN_API: Service<JWTWorker>;
   AUTHX_AUTHZED_API: Service<AuthzedWorker>;
