@@ -29,7 +29,7 @@ export async function fetchRemoteSchema(executor: Executor) {
 }
 //
 // https://github.com/ardatan/schema-stitching/blob/master/examples/combining-local-and-remote-schemas/src/gateway.ts
-async function makeGatewaySchema(
+export async function makeGatewaySchema(
   endpoints: { endpoint: string }[],
   token: string
 ) {
@@ -61,15 +61,19 @@ async function makeGatewaySchema(
   });
   //
   console.log("before promise all");
-  const subschemas = Promise.all(
+  const subschemas = Promise.allSettled(
     remoteExecutors.map(async (exec) => {
-      console.log("subschemas");
       return {
         schema: await fetchRemoteSchema(exec),
         executor: exec,
       };
     })
-  );
+  ).then(results => {
+    // Filter out failed producers and only use successful ones
+    return results
+      .filter(result => result.status === 'fulfilled')
+      .map(result => (result as PromiseFulfilledResult<any>).value);
+  });
   return stitchSchemas({
     subschemas: await subschemas,
     subschemaConfigTransforms: [stitchingDirectivesTransformer],
