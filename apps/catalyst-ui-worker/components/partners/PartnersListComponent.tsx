@@ -50,7 +50,7 @@ export default function PartnersListComponent({
   const [partners, setPartners] = useState<OrgInvite[]>([]);
   const [invitations, setInvitations] = useState<OrgInvite[]>([]);
   const [selectedPartner, setSelectedPartner] = useState<OrgInvite | null>(
-    null
+    null,
   );
   const { token, user } = useUser();
   function fetchInvites() {
@@ -74,7 +74,7 @@ export default function PartnersListComponent({
         .catch((e) => {
           setHasError(true);
           setErrorMessage(
-            "An error occurred while fetching the invites. Please try again later."
+            "An error occurred while fetching the invites. Please try again later.",
           );
           console.error(e);
         });
@@ -88,7 +88,7 @@ export default function PartnersListComponent({
       .catch((e) => {
         setHasError(true);
         setErrorMessage(
-          "An error occurred while accepting the invite. Please try again later."
+          "An error occurred while accepting the invite. Please try again later.",
         );
       });
   }
@@ -136,7 +136,7 @@ export default function PartnersListComponent({
                               "/partners/" +
                                 (partner.sender === user?.custom.org
                                   ? partner.receiver
-                                  : partner.sender)
+                                  : partner.sender),
                             )
                           }
                         >
@@ -154,7 +154,7 @@ export default function PartnersListComponent({
                                 .catch((e) => {
                                   setHasError(true);
                                   setErrorMessage(
-                                    "An error occurred while toggling the partner. Please try again later."
+                                    "An error occurred while toggling the partner. Please try again later.",
                                   );
                                 });
                             }}
@@ -187,7 +187,7 @@ export default function PartnersListComponent({
                       <OpenButton
                         onClick={() =>
                           router.push(
-                            `/partners/invite/accept/${invitation.id}`
+                            `/partners/invite/accept/${invitation.id}`,
                           )
                         }
                       >
@@ -251,11 +251,11 @@ const OrgInviteMessage = ({
   useEffect(() => {
     if (invite.sender === org) {
       setMessage(
-        `You invited ${invite.receiver} to partner with your organization.`
+        `You invited ${invite.receiver} to partner with your organization.`,
       );
     } else {
       setMessage(
-        `${invite.sender} invited your organization to partner with them.`
+        `${invite.sender} invited your organization to partner with them.`,
       );
     }
   }, [invite, org]);

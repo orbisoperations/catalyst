@@ -10,7 +10,7 @@ export const APIKeyText = (
     allowCopy?: boolean;
     showAsClearText?: boolean;
     generateFunction?: MouseEventHandler<HTMLButtonElement>;
-  }
+  },
 ) => {
   const {
     children,
@@ -25,7 +25,7 @@ export const APIKeyText = (
       children.slice(5, children.length).replace(/./g, "*")
     : "";
   const [displayText, setDisplayText] = useState(
-    props.showAsClearText ? children : obscured
+    props.showAsClearText ? children : obscured,
   );
   const toggleText = () => {
     setDisplayText(displayText === obscured ? children ?? "" : obscured);

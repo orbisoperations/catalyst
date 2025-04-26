@@ -5,18 +5,18 @@ import { Logger } from "tslog";
 const logger = new Logger({});
 
 const issuedJWTRegistryServicePath = path.resolve(
-  "../issued-jwt-registry/dist/index.js"
+  "../issued-jwt-registry/dist/index.js",
 );
 const organizationMatchmakingServicePath = path.resolve(
-  "../organization_matchmaking/dist/index.js"
+  "../organization_matchmaking/dist/index.js",
 );
 const dataChannelRegistrarPath = path.resolve(
-  "../data_channel_registrar/dist/worker.js"
+  "../data_channel_registrar/dist/worker.js",
 );
 const authxServicePath = path.resolve("../authx_token_api/dist/index.js");
 const authzedServicePath = path.resolve("../authx_authzed_api/dist/index.js");
 const credsCacheServicePath = path.resolve(
-  "../user-credentials-cache/dist/index.js"
+  "../user-credentials-cache/dist/index.js",
 );
 
 logger.info("Using built services from other workspaces within @catalyst");

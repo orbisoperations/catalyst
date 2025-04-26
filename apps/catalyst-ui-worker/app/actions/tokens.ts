@@ -2,7 +2,7 @@
 import { CloudflareEnv } from "@/env";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { JWTRequest } from "../types";
-import {DEFAULT_STANDARD_DURATIONS} from "@catalyst/schema_zod"
+import { DEFAULT_STANDARD_DURATIONS } from "@catalyst/schema_zod";
 function getEnv() {
   return getCloudflareContext().env as CloudflareEnv;
 }
@@ -38,7 +38,7 @@ export async function signJWT(
     value: 7,
     unit: "days",
   },
-  cfToken: string
+  cfToken: string,
 ) {
   const tokenObject = {
     cfToken: cfToken,
@@ -52,9 +52,10 @@ export async function signJWT(
     throw new Error("Expiration time cannot be greater than 52 weeks");
   }
   // sets expiration in MS
-  const exp =  expiration.unit === "days" ?
-    expiration.value * DEFAULT_STANDARD_DURATIONS.D
-    : expiration.value * DEFAULT_STANDARD_DURATIONS.W;
+  const exp =
+    expiration.unit === "days"
+      ? expiration.value * DEFAULT_STANDARD_DURATIONS.D
+      : expiration.value * DEFAULT_STANDARD_DURATIONS.W;
 
   const signedToken = await tokens.signJWT(jwtRequest, exp, tokenObject);
   if (!signedToken.success) {

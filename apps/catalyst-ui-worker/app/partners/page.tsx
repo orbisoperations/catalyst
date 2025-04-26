@@ -5,7 +5,6 @@ import {
   togglePartnership,
 } from "../actions/partners";
 
-
 export default function PartnersPage() {
   return (
     <PartnersListComponent

@@ -31,7 +31,7 @@ interface TokenDetailsProps {
   deleteIJWTRegistry: (token: string, id: string) => Promise<boolean>;
   getIJWTRegistry: (
     token: string,
-    id: string
+    id: string,
   ) => Promise<IssuedJWTRegistry | undefined>;
   listChannels: (token: string) => Promise<DataChannel[]>;
 }
@@ -78,14 +78,14 @@ export default function TokenDetailsComponent({
             .catch((e) => {
               setHasError(true);
               setErrorMessage(
-                "An error occurred while fetching the channels. Please try again later."
+                "An error occurred while fetching the channels. Please try again later.",
               );
             });
         })
         .catch((e) => {
           setHasError(true);
           setErrorMessage(
-            "An error occurred while fetching the token details. Please try again later."
+            "An error occurred while fetching the token details. Please try again later.",
           );
         });
     }
@@ -202,7 +202,7 @@ export default function TokenDetailsComponent({
                         onClose();
                         setHasError(true);
                         setErrorMessage(
-                          "An error occurred while deleting the token. Please try again later."
+                          "An error occurred while deleting the token. Please try again later.",
                         );
                       });
                   }

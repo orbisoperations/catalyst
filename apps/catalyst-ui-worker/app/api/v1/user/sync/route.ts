@@ -6,10 +6,10 @@ export async function GET(request: NextRequest) {
   // get CF token
   const cfToken = request.cookies.get("CF_Authorization")?.value;
   if (cfToken) {
-
     // validate CF token
     // @ts-ignore
-    const { USER_CREDS_CACHE: user_cache } = getCloudflareContext().env as CloudflareEnv;
+    const { USER_CREDS_CACHE: user_cache } = getCloudflareContext()
+      .env as CloudflareEnv;
     const user:
       | { userId: string; orgId: string; zitadelRoles: string[] }
       | undefined = await user_cache.getUser(cfToken);
@@ -18,14 +18,14 @@ export async function GET(request: NextRequest) {
       // @ts-ignore
       await getCloudflareContext().env.AUTHX_AUTHZED_API.addUserToOrg(
         user.orgId,
-        user.userId
+        user.userId,
       );
       // data custodian role
       if (user.zitadelRoles.includes("data-custodian")) {
         // @ts-ignore
         await getCloudflareContext().env.AUTHX_AUTHZED_API.addDataCustodianToOrg(
           user.orgId,
-          user.userId
+          user.userId,
         );
       }
       // admin role
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
         // @ts-ignore
         await getCloudflareContext().env.AUTHX_AUTHZED_API.addAdminToOrg(
           user.orgId,
-          user.userId
+          user.userId,
         );
       }
     } else {

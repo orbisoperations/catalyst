@@ -29,7 +29,7 @@ export default function DataChannelListComponents({
   const [allChannels, setAllChannels] = useState<DataChannel[]>([]);
   const [hasError, setHasError] = useState<boolean>(false);
   const [filterMode, setFilterMode] = useState<"all" | "subscribed" | "owned">(
-    "all"
+    "all",
   );
   const { token, user } = useUser();
   function filterChannels(filterMode: "all" | "subscribed" | "owned" = "all") {
@@ -52,7 +52,7 @@ export default function DataChannelListComponents({
       listChannels(token)
         .then((data) => {
           const response = (data as DataChannel[]).sort((a, b) =>
-            a.name.localeCompare(b.name)
+            a.name.localeCompare(b.name),
           );
           setAllChannels(response);
           setChannels(response);
@@ -97,10 +97,10 @@ export default function DataChannelListComponents({
                   value={filterMode}
                   onChange={(e) => {
                     filterChannels(
-                      e.target.value as "all" | "subscribed" | "owned"
+                      e.target.value as "all" | "subscribed" | "owned",
                     );
                     setFilterMode(
-                      e.target.value as "all" | "subscribed" | "owned"
+                      e.target.value as "all" | "subscribed" | "owned",
                     );
                   }}
                 >

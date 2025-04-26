@@ -48,7 +48,7 @@ type DataChannelDetailsProps = {
   handleSwitch: (
     channelId: string,
     accessSwitch: boolean,
-    token: string
+    token: string,
   ) => Promise<DataChannel>;
 };
 
@@ -62,7 +62,7 @@ export default function DataChannelDetailsComponent({
   const editDisclosure = useDisclosure();
   const router = useRouter();
   const [gatewayUrl, setGatewayUrl] = useState<string>(
-    "https://gateway.catalyst.intelops.io/graphql"
+    "https://gateway.catalyst.intelops.io/graphql",
   );
   const { user, token } = useUser();
   const { id } = useParams();
@@ -82,7 +82,7 @@ export default function DataChannelDetailsComponent({
         .catch((e) => {
           setHasError(true);
           setErrorMessage(
-            "An error occurred while fetching the channel details. Does the channel exist?"
+            "An error occurred while fetching the channel details. Does the channel exist?",
           );
           console.error(e);
         });
@@ -90,7 +90,7 @@ export default function DataChannelDetailsComponent({
 
   useEffect(() => {
     "use client";
-    if (typeof window !== 'undefined' && window?.location.origin) {
+    if (typeof window !== "undefined" && window?.location.origin) {
       const url = window.location.origin.includes("catalyst")
         ? window.location.origin
         : "https://catalyst.devintelops.io";
@@ -116,13 +116,13 @@ export default function DataChannelDetailsComponent({
                     handleSwitch(
                       channel.id,
                       e.target.checked ? true : false,
-                      token ?? ""
+                      token ?? "",
                     )
                       .then(fetchChannelDetails)
                       .catch((e) => {
                         setHasError(true);
                         setErrorMessage(
-                          "An error occurred while updating the channel. Please try again later."
+                          "An error occurred while updating the channel. Please try again later.",
                         );
                       });
                   }
@@ -185,7 +185,7 @@ export default function DataChannelDetailsComponent({
                               onClose();
                               setHasError(true);
                               setErrorMessage(
-                                "An error occurred while deleting the channel. Please try again later."
+                                "An error occurred while deleting the channel. Please try again later.",
                               );
                             });
                       }}
@@ -216,7 +216,7 @@ export default function DataChannelDetailsComponent({
                         formData.set(
                           "name",
 
-                          user?.custom.org + "/" + formData.get("name")
+                          user?.custom.org + "/" + formData.get("name"),
                         );
                         updateChannel(formData, token)
                           .then(fetchChannelDetails)
@@ -224,7 +224,7 @@ export default function DataChannelDetailsComponent({
                             editDisclosure.onClose();
                             setHasError(true);
                             setErrorMessage(
-                              "An error occurred while updating the channel. Please try again later."
+                              "An error occurred while updating the channel. Please try again later.",
                             );
                           });
                       }
