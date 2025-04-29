@@ -24,7 +24,6 @@ export async function fetchRemoteSchema(executor: Executor) {
   if (isAsyncIterable(result)) {
     throw new Error("Expected executor to return a single result");
   }
-  console.log({ execResult: result }, "index.ts");
   return buildSchema(result.data._sdl);
 }
 //
@@ -146,7 +145,7 @@ app.use(async (c, next) => {
   if (!jwtId && !(await c.env.JWT_REGISTRY.isOnRevocationList(jwtId))) {
     return c.json({ message: "Token has been revoked" }, 403);
   }
-  
+
   c.set("claims", claims);
   c.set("catalyst-token", token);
   // we good
