@@ -7,7 +7,7 @@ export default function () {
   let label = "Compiled user cache";
   console.time(label);
   childProcess.execSync("pnpm build", {
-    cwd: path.join("../user_credentials_cache"),
+    cwd: path.join("../user-credentials-cache"),
   });
   console.timeEnd(label);
 }

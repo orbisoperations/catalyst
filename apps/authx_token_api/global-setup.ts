@@ -6,7 +6,7 @@ export default function () {
   // Build `api-service`'s dependencies
 
   // list of dependencies to compile
-  const dependencies = ['../authx_authzed_api', '../user_credentials_cache'];
+  const dependencies = ['../authx_authzed_api', '../user-credentials-cache'];
 
   // compile dependencies
   for (const dependency of dependencies) {

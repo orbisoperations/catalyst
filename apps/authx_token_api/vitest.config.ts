@@ -32,8 +32,8 @@ export default defineWorkersConfig({
 						{
 							name: 'user-credentials-cache',
 							modules: true,
-							modulesRoot: path.resolve('../user_credentials_cache'),
-							scriptPath: path.resolve('../user_credentials_cache/dist/index.js'),
+							modulesRoot: path.resolve('../user-credentials-cache'),
+							scriptPath: path.resolve('../user-credentials-cache/dist/index.js'),
 							compatibilityDate: '2025-04-01',
 							compatibilityFlags: ['nodejs_compat'],
 							entrypoint: 'UserCredsCacheWorker',

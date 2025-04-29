@@ -45,7 +45,7 @@ The application is structured around two main components:
 
 The AuthX Token API integrates with the following services:
 
-- [User Credentials Cache](../user_credentials_cache/README.md) - Provides user authentication and validation services. Used to:
+- [User Credentials Cache](../user-credentials-cache/README.md) - Provides user authentication and validation services. Used to:
   - Verify user identity and permissions 
   - Validate organization membership and access rights
   - Cache user credentials to improve performance and reduce external API calls

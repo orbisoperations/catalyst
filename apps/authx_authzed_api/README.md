@@ -29,7 +29,7 @@ This service is a critical component in the Catalyst security infrastructure.
 Used by the following services:
 
 - [AuthX Token API](../authx_token_api/README.md)
-- [User Credentials Cache](../user_credentials_cache/README.md)
+- [User Credentials Cache](../user-credentials-cache/README.md)
 - [Organization Matchmaking](../organization_matchmaking/README.md)
 - [Data Channel Registrar](../data_channel_registrar/README.md)
 - [Data Channel Gateway](../data_channel_gateway/README.md)
