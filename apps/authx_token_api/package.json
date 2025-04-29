@@ -6,8 +6,7 @@
 	"scripts": {
 		"deploymentDemo": "yes | wrangler deploy --minify --keep-vars --env demo",
 		"deploymentStaging": "yes | wrangler deploy --keep-vars --env staging",
-		"dev": "wrangler dev --port 5052",
-		"start": "wrangler dev --port 5052",
+		"dev": "wrangler dev --port 5051",
 		"test": "vitest",
 		"build": "wrangler build",
 		"postinstall": "pnpm build"
