@@ -105,6 +105,9 @@ export default defineWorkersProject({
                             },
                         },
                     ],
+                    serviceBindings: {
+                        AUTHZED: 'authx_authzed_api'
+                    }
                 },
             },
         },

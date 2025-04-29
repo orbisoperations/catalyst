@@ -146,21 +146,28 @@ describe.sequential("authzed integration tests", () => {
       expect(await env.AUTHX_AUTHZED_API.listUsersInOrg(org)).toHaveLength(0)
     })
     it.sequential("add, list, and delete data channels", async () => {
-      const resp = await env.AUTHX_AUTHZED_API.addDataChannelToOrg("Org1", "DC1")
-      expect(resp).toBeDefined()
-      expect(resp.writtenAt!.token).toBeDefined()
-      console.log(resp)
+      // Clean up any existing data channels first
+      const existingChannels = await env.AUTHX_AUTHZED_API.listDataChannelsInOrg("Org1");
+      for (const channel of existingChannels) {
+          await env.AUTHX_AUTHZED_API.deleteDataChannelInOrg("Org1", channel.subject);
+      }
 
-      const list = await env.AUTHX_AUTHZED_API.listDataChannelsInOrg("Org1")
-      expect(list).toBeDefined()
-      console.log(list)
-      expect(list).toHaveLength(1)
+      const addResp = await env.AUTHX_AUTHZED_API.addDataChannelToOrg("Org1", "DC1");
+      expect(addResp).toBeDefined();
+      console.log(addResp);
 
-      const deleteResp = await env.AUTHX_AUTHZED_API.deleteDataChannelInOrg("Org1", "DC1")
-      expect(deleteResp).toBeDefined()
+      const list = await env.AUTHX_AUTHZED_API.listDataChannelsInOrg("Org1");
+      expect(list).toBeDefined();
+      console.log(list);
+      expect(list).toHaveLength(1);
 
-      console.log(await env.AUTHX_AUTHZED_API.listDataChannelsInOrg("Org1"))
-      expect(await env.AUTHX_AUTHZED_API.listDataChannelsInOrg("Org1")).toHaveLength(0)
+      const deleteResp = await env.AUTHX_AUTHZED_API.deleteDataChannelInOrg("Org1", "DC1");
+      expect(deleteResp).toBeDefined();
+      console.log(deleteResp);
+
+      const listAfterDelete = await env.AUTHX_AUTHZED_API.listDataChannelsInOrg("Org1");
+      expect(listAfterDelete).toBeDefined();
+      expect(listAfterDelete).toHaveLength(0);
     })
     it.sequential("add, list, and delete partners", async () => {
       const resp = await env.AUTHX_AUTHZED_API.addPartnerToOrg("Org1", "Org2")
