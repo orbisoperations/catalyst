@@ -15,15 +15,14 @@ export const TopBar = (props: TopBarProps) => {
   "use client";
   const { title, actions, customActions, ...boxProps } = props;
   const { user } = useUser();
-  const [orgName, setOrgName] = useState<string>(
-    typeof window !== 'undefined' ? window.localStorage.getItem("org") ?? "" : ""
-  );
+  const [orgName, setOrgName] = useState<string>("");
 
   useEffect(() => {
-    "use client";
     if (user) {
-      if (typeof window !== 'undefined') window.localStorage.setItem("org", user.custom.org);
       setOrgName(user.custom.org);
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem("org", user.custom.org);
+      }
     }
   }, [user?.custom.org]);
 
@@ -53,7 +52,7 @@ export const TopBar = (props: TopBarProps) => {
           avatarProps={{ name: user?.email ? user.email : "User email" }}
           userInfo={{
             userEmail: user?.email ? user.email : "",
-            organization: orgName ? orgName : "",
+            organization: orgName,
           }}
         ></ProfileButton>
       </Flex>
