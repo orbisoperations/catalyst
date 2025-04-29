@@ -64,11 +64,6 @@ describe('gateway integration tests', () => {
             10 * 60 * 1000
         );
 
-
-            test: ctx?.task.name,
-            signedTokenForTest: tokenResp.token,
-        });
-
         return tokenResp.token;
     };
 
@@ -178,15 +173,7 @@ describe('gateway integration tests', () => {
         );
 
         const getAvailableQueriesResponsePayload = await getAvailableQueries.text();
-
-
-
-            text: getAvailableQueriesResponsePayload,
-        });
-
         const json = JSON.parse(getAvailableQueriesResponsePayload);
-
-
 
         expect(json.data['__type'].fields).toHaveLength(3);
         // @ts-ignore
