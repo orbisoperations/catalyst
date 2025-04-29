@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { parse, buildSchema } from 'graphql';
 import { graphql } from 'graphql';
 import { fetchRemoteSchema, makeGatewaySchema } from '../src/index';
@@ -14,20 +14,29 @@ describe('Schema fetching resilience', () => {
         // Mock token
         const token = 'test-token';
 
-        // Mock fetchRemoteSchema to simulate one success and one failure
-        const originalFetchRemoteSchema = fetchRemoteSchema;
-        (global as any).fetchRemoteSchema = async (executor: any) => {
-            const result = await executor({
-                document: parse(/* GraphQL */ `{ _sdl }`),
-            });
-            
-            // Simulate failure for the failing endpoint
-            if (result.url.includes('failing-endpoint')) {
-                throw new Error('Failed to fetch schema');
+        // Mock fetch responses
+        const originalFetch = global.fetch;
+        global.fetch = vi.fn().mockImplementation((url) => {
+            if (url.includes('working-endpoint')) {
+                return Promise.resolve({
+                    ok: true,
+                    json: () => Promise.resolve({
+                        data: {
+                            _sdl: 'type Query { test: String }'
+                        }
+                    })
+                });
+            } else if (url.includes('failing-endpoint')) {
+                return Promise.resolve({
+                    ok: false,
+                    status: 500,
+                    json: () => Promise.resolve({
+                        error: 'Internal Server Error'
+                    })
+                });
             }
-            
-            return buildSchema('type Query { test: String }');
-        };
+            throw new Error('Unexpected endpoint called');
+        });
 
         try {
             const schema = await makeGatewaySchema(endpoints, token);
@@ -45,8 +54,8 @@ describe('Schema fetching resilience', () => {
             
             expect(result).toEqual({ data: { health: 'OK' } });
         } finally {
-            // Restore original function
-            (global as any).fetchRemoteSchema = originalFetchRemoteSchema;
+            // Restore original fetch
+            global.fetch = originalFetch;
         }
     });
 }); 
