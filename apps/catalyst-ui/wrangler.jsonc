@@ -1,10 +1,10 @@
 {
-  "name": "catalyst",
+  "name": "catalyst-ui-worker",
   "main": ".open-next/worker.js",
   "compatibility_date": "2025-04-01",
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": false,
-  "preview_urls": false,
+  "preview_urls": true,
   "assets": {
     "binding": "ASSETS",
     "directory": ".open-next/assets"
@@ -16,6 +16,7 @@
   "send_metrics": false,
 
   "services": [
+    { "binding": "WORKER_SELF_REFERENCE", "service": "catalyst-ui-worker" },
     { "binding": "ISSUED_JWT_WORKER", "service": "issued-jwt-registry" },
     { "binding": "CATALYST_DATA_CHANNEL_REGISTRAR_API", "service": "data_channel_registrar" },
     { "binding": "AUTHX_TOKEN_API", "service": "authx_token_api" },
@@ -26,11 +27,11 @@
 
   "env": {
     "preview": {
-      "name": "catalyst-preview",
-      "routes": [
-        { "pattern": "catalyst.devintelops.io", "custom_domain": true }
-      ],
+      // "routes": [
+      //   { "pattern": "catalyst.devintelops.io", "custom_domain": true }
+      // ],
       "services": [
+        { "binding": "WORKER_SELF_REFERENCE", "service": "catalyst-ui-worker-preview" },
         { "binding": "ISSUED_JWT_WORKER", "service": "issued-jwt-registry-staging" },
         { "binding": "CATALYST_DATA_CHANNEL_REGISTRAR_API", "service": "data_channel_registrar-staging" },
         { "binding": "AUTHX_TOKEN_API", "service": "authx_token_api-staging" },
@@ -77,11 +78,11 @@
     //   ]
     // },
     "production": {
-      "name": "catalyst-production",
-      "routes": [
-        { "pattern": "catalyst.intelops.io", "custom_domain": true }
-      ],
+      // "routes": [
+      //   { "pattern": "catalyst.intelops.io", "custom_domain": true }
+      // ],
       "services": [
+        { "binding": "WORKER_SELF_REFERENCE", "service": "catalyst-ui-worker-production" },
         { "binding": "ISSUED_JWT_WORKER", "service": "issued-jwt-registry-demo" },
         { "binding": "CATALYST_DATA_CHANNEL_REGISTRAR_API", "service": "data_channel_registrar-demo" },
         { "binding": "AUTHX_TOKEN_API", "service": "authx_token_api-demo" },

@@ -46,7 +46,7 @@ export const WarningButton = (props: ButtonProps) => {
 export const BackButton = (props: ButtonProps) => {
   return (
     <Button
-      onClick={() => window.history.back()}
+      onClick={() => typeof window !== 'undefined' ? window.history.back() : null}
       colorScheme="blue"
       borderRadius={"100%"}
       cursor={"pointer"}
@@ -120,7 +120,8 @@ export const ProfileButton = (props: ProfileButtonProps) => {
             <OrbisButton
               w="100%"
               onClick={() => {
-                window.location.href = "/cdn-cgi/auth/logout";
+                // assignment in ternary is bad, mmmkay
+                typeof window !== 'undefined' ? window.location.href = "/cdn-cgi/auth/logout" : '';
               }}
             >
               Logout
