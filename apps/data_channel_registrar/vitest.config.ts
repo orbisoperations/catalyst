@@ -10,6 +10,57 @@ logger.info('no external services used in this project');
 
 logger.info(`Setting up vite tests for the Data Channel Registrar...`);
 
+const validUsers: Record<string, any> = {
+  'admin-cf-token': {
+    id: btoa('test-user@email.com'),
+    email: 'test-user@email.com',
+    custom: {
+      'urn:zitadel:iam:org:project:roles': {
+        'data-custodian': {
+          '1234567890098765432': 'localdevorg.provider.io',
+        },
+        'org-admin': {
+          '1234567890098765432': 'localdevorg.provider.io',
+        },
+        'org-user': {
+          '1234567890098765432': 'localdevorg.provider.io',
+        },
+        'platform-admin': {
+          '1234567890098765432': 'localdevorg.provider.io',
+        },
+      },
+    },
+  },
+};
+
+const handleCloudflareAccessAuthServiceOutbound = async (req: Request) => {
+  // receives
+  // headers
+  // cookie: CF_Authorization=token
+  if (req.method != 'GET') {
+    return Response.json({ error: 'Not found' }, { status: 404 });
+  }
+
+  let token = req.headers.get('cookie');
+  if (!token) {
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  token = token.split('=')[1];
+  if (!token) {
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const userData = validUsers[token];
+
+  if (!userData) {
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  console.log('userData from cloudflare access MOCK', JSON.stringify(userData, null, 4));
+
+  return Response.json(userData);
+};
+
 export default defineWorkersProject({
   optimizeDeps: {
     entries: ['@graphql-tools/executor-http'],
@@ -69,6 +120,7 @@ export default defineWorkersProject({
               durableObjects: {
                 CACHE: 'UserCredsCache',
               },
+              outboundService: handleCloudflareAccessAuthServiceOutbound,
             },
           ],
         },

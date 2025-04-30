@@ -3,8 +3,8 @@ import { afterAll, describe, expect, it, vi } from 'vitest';
 import { User } from '../../../packages/schema_zod/types';
 
 import { UserCredsCache, getOrgFromRoles } from '../src';
- 
- 
+
+
 // Mock data for testing
 const mockUser: User = {
 	userId: 'test-user-id',
@@ -25,10 +25,7 @@ const mockCfAccessResponse = {
 	},
 };
 
-
-
 describe('UserCredsCacheWorker', () => {
-
   describe('getOrgFromRoles', () => {
 		it('should extract org and roles from valid roles object', () => {
 			const roles = mockCfAccessResponse.custom['urn:zitadel:iam:org:project:roles'];
@@ -150,13 +147,13 @@ describe('purge', () => {
   it('should remove old tokens for same user', async () => {
     const id = env.CACHE.idFromName('default');
     const stub = env.CACHE.get(id);
-    
+
     await runInDurableObject(stub, async (instance: UserCredsCache, state: DurableObjectState) => {
       // Setup multiple tokens for same user
       await state.storage.put('old-token-1', mockUser);
       await state.storage.put('old-token-2', mockUser);
       await state.storage.put('current-token', mockUser);
-      
+
       // Different user's token should not be purged
       const differentUser = { ...mockUser, userId: 'different-user' };
       await state.storage.put('different-user-token', differentUser);
@@ -176,7 +173,7 @@ describe('purge', () => {
       expect(currentToken).toEqual(mockUser);
       expect(differentToken).toEqual(differentUser);
     });
-  });   
-});         
+  });
+});
 
 });

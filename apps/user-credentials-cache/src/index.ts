@@ -74,7 +74,6 @@ export class UserCredsCache extends DurableObject<Env> {
 		});
 
 		if (!resp.ok) {
-			console.error('error validating user with cloudflare-access');
 			return undefined;
 		}
 

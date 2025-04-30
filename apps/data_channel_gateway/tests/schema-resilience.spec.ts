@@ -60,7 +60,7 @@ const createMockGraphqlEndpoint = (
                         acc[key] = dataStore[key];
                     }
                     return acc;
-                }, {}),
+                }, {} as Record<string, any>),
             };
         })
         .persist();
