@@ -8,7 +8,7 @@ export default function () {
   // list of dependencies to compile
   const dependencies = [
     "../authx_authzed_api",
-    "../user_credentials_cache",
+    "../user-credentials-cache",
   ];
 
   // compile dependencies

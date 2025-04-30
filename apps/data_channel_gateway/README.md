@@ -37,7 +37,7 @@ The Data Channel Gateway integrates with the following services:
 
 - [Data Channel Registrar](../data_channel_registrar/README.md) - Provides data channel registration and discovery
 - [AuthX]() - Provides authentication and authorization services
-- [User Credentials Cache](../user_credentials_cache/README.md) - Provides user credentials cache services
+- [User Credentials Cache](../user-credentials-cache/README.md) - Provides user credentials cache services
 - [AuthX AuthZed API]() - Provides authorization services
 - [AuthX Token API]() - Provides token validation services
 

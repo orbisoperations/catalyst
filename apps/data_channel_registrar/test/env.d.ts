@@ -5,8 +5,8 @@ declare module "cloudflare:test" {
     DO: DurableObjectNamespace<import("../src/worker").Registrar>
     AUTHZED: Service<import("../../authx_authzed_api/src").default>;
     AUTHX_TOKEN_API: Service<import("../../authx_token_api/src").default>;
-    USERCACHE: Service<import("../../user_credentials_cache/src").default>;
-    CACHE: DurableObjectNamespace<import("../../user_credentials_cache/src").UserCredsCache>;
+    USERCACHE: Service<import("../../user-credentials-cache/src").default>;
+    CACHE: DurableObjectNamespace<import("../../user-credentials-cache/src").UserCredsCache>;
   }
 
   // Ensure RPC properties and methods can be accessed with `SELF`
