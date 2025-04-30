@@ -1,26 +1,7 @@
-import { SELF } from 'cloudflare:test';
-import { describe, it } from 'vitest';
+import { env, fetchMock, SELF } from 'cloudflare:test';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { DataChannel, DataChannelActionResponse } from '../../../packages/schema_zod';
-
-async function giveMeADataChannel(): Promise<Request<DataChannelActionResponse>> {
-  return new Request('http://dcd/create', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      success: true,
-      data: [
-        {
-          id: '123',
-          name: 'Data Channel 1',
-          endpoint: 'https://example.com/data',
-          creatorOrganization: 'Fake Organization',
-          accessSwitch: true,
-          description: 'This is a test data channel',
-        },
-      ],
-    }),
-  });
-}
+import { Org } from '../../../packages/schema_zod/catalyst';
 
 function generateDataChannels(count: number = 5): DataChannel[] {
   const dataChannels: DataChannel[] = [];
@@ -38,30 +19,53 @@ function generateDataChannels(count: number = 5): DataChannel[] {
   return dataChannels;
 }
 
-// TODO: fix this test
-// Need bettet mocks for the cfToken service
+// Need bettet mocking of the clouflare acess service on the vitest.config.ts
 // Need to mock the authzed service
 describe('Data Channel Registrar as Durable Object integration tests', () => {
+  beforeEach(async () => {
+    fetchMock.activate();
+    fetchMock.disableNetConnect();
+  });
+
+  afterEach(() => {
+    fetchMock.deactivate();
+    fetchMock.assertNoPendingInterceptors();
+  });
+
   it('should create a Data Channel and return the id, also show in the DO list', async () => {
-    const createResponse = await SELF.create(
-      'default',
-      {
-        accessSwitch: true,
-        name: 'Data Channel 1',
-        endpoint: 'https://example.com/data',
-        description: 'This is a test data channel',
-        creatorOrganization: 'Fake Organization',
-      },
-      {
-        cfToken: 'test',
-      },
+    // same user as the one in the vitest.config.ts
+    const user = {
+      org: 'localdevorg',
+      email: 'test-user@email.com',
+      token: 'admin-cf-token',
+    }
+    // need to create a data custodian Role for the user
+    const addDataCustodianToOrg = await env.AUTHZED.addDataCustodianToOrg(
+      user.org,
+      user.email,
+    );
+    expect(addDataCustodianToOrg).toBeDefined();
+    // NOTE: the id that is stored for the user in SpiceDB is the b64 encoded email
+    expect(addDataCustodianToOrg.entity).toBe(
+      `orbisops_catalyst_dev/organization:${user.org}#data_custodian@orbisops_catalyst_dev/user:${btoa(user.email)}`,
     );
 
+    const createResponse: DataChannelActionResponse = await SELF.create('default1', generateDataChannels(1)[0], {
+      cfToken: user.token,
+    });
 
-    // const dataChannelId = createResponse.json<DataChannelActionResponse>();
-    // expect(dataChannelId).toMatch(
-    //   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
-    // );
+    expect(createResponse).toBeDefined();
+    expect(createResponse.success).toBe(true);
+    // @ts-ignore
+    expect(createResponse.data).toBeDefined();
+    // @ts-ignore
+    expect(createResponse.data.id).toBeDefined();
+    // @ts-ignore
+    expect(createResponse.data.name).toBe('Data Channel 0');
+    // @ts-ignore
+    expect(createResponse.data.endpoint).toBe('https://example.com/data0');
+    // @ts-ignore
+    expect(createResponse.data.creatorOrganization).toBe('Fake Organization 0');
   });
 });
 

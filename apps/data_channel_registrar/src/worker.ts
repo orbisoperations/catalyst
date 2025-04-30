@@ -144,7 +144,6 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
 
   async create(doNamespace: string, dataChannel: Omit<DataChannel, 'id'>, token: Token) {
     const checkResp = await this.CUDPerms(token);
-    console.error('checkResp', checkResp);
     if (!checkResp.success) {
       return DataChannelActionResponse.parse({
         success: false,

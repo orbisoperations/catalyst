@@ -92,15 +92,7 @@ const createMockGraphqlEndpoint = (
 };
 ```
 
-## Resilience Testing
-
-When testing gateway services that connect to multiple backend services, test for resilience by:
-
-1. Mocking some endpoints as working
-2. Mocking others as failing or timing out
-3. Verifying the gateway handles these scenarios gracefully
-
-## Resources
+### Resources for Mocking Fetch and Vitest
 
 For more information on Workers Vitest integration and request mocking:
 
@@ -111,6 +103,77 @@ For more information on Workers Vitest integration and request mocking:
 More examples and docs on `workers-sdk` repo:
 
 - [Cloudflare Workers SDK fetch-mock tests examples](https://github.com/cloudflare/workers-sdk/blob/main/fixtures/vitest-pool-workers-examples/misc/test/fetch-mock.test.ts)
+
+### Resilience Testing for the Services
+
+When testing gateway services that connect to multiple backend services, test for resilience by:
+
+1. Mocking some endpoints as working
+2. Mocking others as failing or timing out
+3. Verifying the gateway handles these scenarios gracefully
+
+## Integration Testing with permissing system (SpiceDB)
+
+When testing applications that require authorization checks, it's important to properly set up and test permission relationships. Our services use AuthZed for fine-grained permission management.
+
+You will be needing the access to the `AUTHZED` service. Defined `Service<import('../../authx_authzed_api/src').default>`;
+
+### Setting Up Permission Relationships
+
+For testing purposes, you need to create the necessary relationships between subjects (users) and resources:
+
+```typescript
+// Example: Add a user as a data custodian to an organization
+const addDataCustodianToOrg = await env.AUTHZED.addDataCustodianToOrg(
+  'localdevorg',                // organization ID
+  'test-user@email.com',        // user email
+);
+
+// Verify the relationship was created correctly
+expect(addDataCustodianToOrg).toBeDefined();
+expect(addDataCustodianToOrg.entity).toBe(
+  `orbisops_catalyst_dev/organization:localdevorg#data_custodian@orbisops_catalyst_dev/user:${btoa('test-user@email.com')}`,
+);
+```
+
+### Testing Resource Access
+
+After setting up the permissions, test access to protected resources:
+
+```typescript
+// Example: Create a channel with a user who has proper permissions
+const dataChannelPayload = {};
+const response = await SELF.create('default', dataChannelPayload, {
+  cfToken: 'admin-cf-token',  // Token associated with a user who has permissions
+});
+
+// Verify success
+expect(response.success).toBe(true);
+
+// Example: Test access denial
+const unauthorizedResponse = await SELF.create('default', dataChannelPayload, {
+  cfToken: 'user-without-permissions',
+});
+
+// Verify failure
+expect(unauthorizedResponse.success).toBe(false);
+expect(unauthorizedResponse.error).toContain('Unauthorized');
+```
+
+### Testing with Preconfigured Users
+
+Use the preconfigured user credentials from your test environment:
+
+```typescript
+const user = {
+  org: 'localdevorg',
+  email: 'test-user@email.com',
+  token: 'admin-cf-token',  // This token must match your mocked Cloudflare Access setup
+};
+
+// The test environment should recognize this token and match it with the user profile
+// that has the appropriate roles assigned
+```
 
 ## General Testing Guidelines
 

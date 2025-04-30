@@ -7,28 +7,7 @@ describe.sequential("authzed integration tests", () => {
   it.sequential("get schema",  async () => {
     console.log(env)
     const schema = await env.AUTHX_AUTHZED_API.schema()
-    expect(schema).toBeDefined()
-    /*(schema.schemaText).toEqual(`definition orbisops_catalyst_dev/data_channel {
-      \trelation organization: orbisops_catalyst_dev/organization
-      \tpermission read = organization->data_channel_read
-      }
-
-      definition orbisops_catalyst_dev/organization {
-      \trelation admin: orbisops_catalyst_dev/user
-      \trelation data_custodian: orbisops_catalyst_dev/user
-      \trelation user: orbisops_catalyst_dev/user
-      \trelation partner_organization: orbisops_catalyst_dev/organization
-      \trelation data_channel: orbisops_catalyst_dev/data_channel
-      \tpermission member = admin + data_custodian + user
-      \tpermission role_assign = admin
-      \tpermission data_channel_create = data_custodian
-      \tpermission data_channel_update = data_channel_create
-      \tpermission data_channel_delete = data_channel_create
-      \tpermission data_channel_read = admin + data_custodian + user + partner_organization->data_channel_read
-      }
-
-      // Exported from permissions system catalyst dev (orbisops_catalyst_dev) on Fri Apr 05 2024 10:16:05 GMT-0700 (Pacific Daylight Time)
-      definition orbisops_catalyst_dev/user {}`)*/
+    expect(schema).toBeDefined();
   })
 
   describe.sequential("organization tests", () => {

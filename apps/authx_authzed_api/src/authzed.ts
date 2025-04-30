@@ -299,7 +299,6 @@ export class AuthzedClient {
 	}*/
 
 	async organizationPermissionsCheck(orgId: OrgId, userId: UserId, permission: Catalyst.Org.PermissionsEnum) {
-		//zed permission check orbisops_catalyst_dev/organization:Org1  member orbisops_catalyst_dev/user:TestUser --insecure --token atoken
 		const req = this.utils.checkOrgPermission(orgId, userId, permission);
 		const { data } = await this.utils.permissionFetcher(req);
 
@@ -360,7 +359,6 @@ export class AuthzedClient {
 	}
 
 	async dataChannelPermissionsCheck(dataChannelId: DataChannelId, userId: UserId, permission: Catalyst.DataChannel.PermissionsEnum) {
-		//zed permission check orbisops_catalyst_dev/organization:Org1  member orbisops_catalyst_dev/user:TestUser --insecure --token atoken
 		const req = this.utils.checkDataChannelPermission(dataChannelId, userId, permission);
 		const { data } = await this.utils.permissionFetcher(req);
 

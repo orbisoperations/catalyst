@@ -1,26 +1,6 @@
-import { env, runInDurableObject, SELF } from 'cloudflare:test';
-import { describe, expect, it } from 'vitest';
+import { env, fetchMock, runInDurableObject, SELF } from 'cloudflare:test';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { DataChannel, DataChannelActionResponse } from '../../../packages/schema_zod';
-
-async function giveMeADataChannel(): Promise<Request<DataChannelActionResponse>> {
-  return new Request('http://dcd/create', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      success: true,
-      data: [
-        {
-          id: '123',
-          name: 'Data Channel 1',
-          endpoint: 'https://example.com/data',
-          creatorOrganization: 'Fake Organization',
-          accessSwitch: true,
-          description: 'This is a test data channel',
-        },
-      ],
-    }),
-  });
-}
 
 function generateDataChannels(count: number = 5): DataChannel[] {
   const dataChannels: DataChannel[] = [];
@@ -39,10 +19,25 @@ function generateDataChannels(count: number = 5): DataChannel[] {
 }
 
 describe('Data Channel Registrar as Durable Object integration tests', () => {
+  beforeEach(async () => {
+    fetchMock.activate();
+    fetchMock.disableNetConnect();
+    const id = env.DO.idFromName('default');
+    const stub = env.DO.get(id);
+    await runInDurableObject(stub, async (instance, state) => {
+      await state.storage.deleteAll();
+    });
+  });
+
+  afterEach(() => {
+    fetchMock.deactivate();
+    fetchMock.assertNoPendingInterceptors();
+  });
+
   it('should be able to access the RegistrarDO', async () => {
     const id = env.DO.idFromName('default');
     const stub = env.DO.get(id);
-    console.error('stub', stub);
+    console.log('stub', stub);
     expect(stub).toBeDefined();
 
     const name = stub.name;
@@ -51,7 +46,7 @@ describe('Data Channel Registrar as Durable Object integration tests', () => {
   });
 
   it('should fetch an empty list from RegistrarWorker', async () => {
-    const list = await SELF.list('default', {});
+    const list = await SELF.list('test1', {});
     const { success } = DataChannelActionResponse.safeParse(list);
     expect(success).toBe(true);
     expect(list.success).toBe(true);
@@ -66,9 +61,11 @@ describe('Data Channel Registrar as Durable Object integration tests', () => {
   });
 
   it('should be able to access USERCACHE', async () => {
-    // TODO: implement better response in user cache: when external service is down, it should return a 500
-    // TODO: brainstorm on how to better mock the USERCACHE Worker
-    await env.USERCACHE.getUser('test');
+    const nonExistentUser = await env.USERCACHE.getUser('test');
+    expect(nonExistentUser).toBeUndefined();
+
+    const existentUser = await env.USERCACHE.getUser('admin-cf-token');
+    expect(existentUser).toBeDefined();
   });
 
   //   it should be able to access AUTH_API
@@ -88,10 +85,14 @@ describe('Data Channel Registrar as Durable Object integration tests', () => {
     const id = env.DO.idFromName('default');
     const stub = env.DO.get(id);
 
+    let listResponse = await stub.list();
+    expect(listResponse).toBeInstanceOf(Array);
+    expect(listResponse.length).toBe(0);
+
     const createResponse = await stub.create(generateDataChannels(1)[0]);
     expect(createResponse).toBeDefined();
 
-    const listResponse = await stub.list();
+    listResponse = await stub.list();
     expect(listResponse).toBeInstanceOf(Array);
     expect(listResponse.length).toBe(1);
   });
@@ -99,10 +100,6 @@ describe('Data Channel Registrar as Durable Object integration tests', () => {
   it('should be able to create multiple data channels in the RegistrarDO', async () => {
     const id = env.DO.idFromName('default');
     const stub = env.DO.get(id);
-
-    await runInDurableObject(stub, async (_, state) => {
-      await state.storage.deleteAll();
-    })
 
     const dataChannels = generateDataChannels(5);
     const createResponses = await Promise.all(dataChannels.map(stub.create));
@@ -113,10 +110,6 @@ describe('Data Channel Registrar as Durable Object integration tests', () => {
     // get rpc stub
     const id = env.DO.idFromName('default');
     const stub = env.DO.get(id);
-
-    await runInDurableObject(stub, async (_, state) => {
-      await state.storage.deleteAll();
-    })
 
     await stub.create(generateDataChannels(1)[0]);
 
@@ -133,7 +126,6 @@ describe('Data Channel Registrar as Durable Object integration tests', () => {
     expect(listResponse2.length).toBe(0);
   });
 
-
   it('should be able to update a data channel in the RegistrarDO', async () => {
     const id = env.DO.idFromName('default');
     const stub = env.DO.get(id);
@@ -141,6 +133,7 @@ describe('Data Channel Registrar as Durable Object integration tests', () => {
     const dataChannel = generateDataChannels(1)[0];
 
     const createResponse = await stub.create(dataChannel);
+    expect(createResponse).toBeDefined();
 
     const updatedDataChannel = {
       ...dataChannel,

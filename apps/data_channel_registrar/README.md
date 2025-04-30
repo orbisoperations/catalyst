@@ -70,3 +70,59 @@ pnpm test
 ```
 
 For more details on the test environment setup, see [`global-setup.ts`](./global-setup.ts).
+
+### Testing with Mocked Services
+
+The test environment includes mocked services for:
+
+1. **Cloudflare Access** - Authentication is simulated with predefined tokens and user profiles
+2. **AuthZed** - Authorization service for permission checks
+
+#### User Credentials for Testing
+
+Tests utilize predefined user credentials with specific roles:
+
+```typescript
+// Example user token configuration from vitest.config.ts
+// data format returned by cloudflare access
+const validUsers = {
+  'admin-cf-token': {
+    id: btoa('test-user@email.com'),
+    email: 'test-user@email.com',
+    custom: {
+      'urn:zitadel:iam:org:project:roles': {
+        'data-custodian': {
+          '1234567890098765432': 'localdevorg.provider.io',
+        },
+        // other roles...
+      }
+    }
+  }
+}
+```
+
+When writing integration tests, use these predefined credentials to authenticate requests:
+
+```typescript
+// Example from integration.spec.ts
+const user = {
+  org: 'localdevorg',
+  email: 'test-user@email.com',
+  token: 'admin-cf-token',
+};
+
+// Create a test data channel with auth token
+const createResponse = await SELF.create('default1', dataChannel, {
+  cfToken: user.token,
+});
+```
+
+#### Local Development Environment
+
+The testing configuration (`vitest.config.ts`) sets up a complete local development environment with:
+
+- Mocked Cloudflare Workers and Durable Objects
+- Simulated AuthX services (authx_authzed_api, authx_token_api)
+- User credentials cache with mocked Cloudflare Access responses
+
+This allows for comprehensive testing without external dependencies.

@@ -12,7 +12,7 @@ catalog:
   "@chakra-ui/theme-tools": ^2.1.2
   "@cloudflare/next-on-pages": ^1.11.2
   "@cloudflare/workers-types": ^4.20250414.0
-  "@cloudflare/vitest-pool-workers": ^0.8.15
+  "@cloudflare/vitest-pool-workers": ^0.8.22
   "@emotion/react": ^11.11.4
   "@eslint/js": ^9.24.0
   "@flydotio/dockerfile": ^0.5.7
@@ -69,7 +69,7 @@ catalog:
   typescript: ^5.8.3
   unstorage: ^1.10.2
   uuid: ^9.0.1
-  vitest: 3.0.9
-  wrangler: ^4.13.1
+  vitest: ~3.0.7
+  wrangler: ^4.13.2
   xml-js: ^1.6.11
   kill-port: ^2.0.1
