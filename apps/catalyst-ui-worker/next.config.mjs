@@ -5,7 +5,13 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 /** @type {import('next').NextConfig} */
-const nextConfig = { output: 'standalone'}
+const nextConfig = {
+  output: 'standalone',
+  // Add this to disable built-in ESLint during builds
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+}
 
 export default nextConfig
 

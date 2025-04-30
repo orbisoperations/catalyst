@@ -26,7 +26,7 @@ export default class AuthzedWorker extends WorkerEntrypoint<Env> {
 	async addUserToOrg(orgId: OrgId, userId: UserId) {
 		const client = new AuthzedClient(this.env.AUTHZED_ENDPOINT, this.env.AUTHZED_KEY, this.env.AUTHZED_PREFIX);
 		const resp = await client.addUserToOrganization(orgId, emailTob64(userId));
-		console.log('synced new user', orgId, emailTob64(userId), resp);
+		// console.log('synced new user', orgId, emailTob64(userId), resp);
 		return {
 			entity: `${client.utils.schemaPrefix}organization:${orgId}#user@${client.utils.schemaPrefix}user:${emailTob64(userId)}`,
 			...resp,

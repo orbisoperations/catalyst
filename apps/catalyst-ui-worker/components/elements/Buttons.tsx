@@ -105,7 +105,7 @@ export const ProfileButton = (props: ProfileButtonProps) => {
         <MenuButton>
           <Avatar
             {...props.avatarProps}
-            as={Button}
+            // as={Button}
             bg="gray.700"
             textColor={"white"}
           />
