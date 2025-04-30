@@ -65,7 +65,6 @@ catalog:
   ts-node: ^10.9.2
   tslog: ^4.9.2
   tsx: ^4.9.4
-  turbo: ^1.13.0
   typescript: ^5.8.3
   unstorage: ^1.10.2
   uuid: ^9.0.1
