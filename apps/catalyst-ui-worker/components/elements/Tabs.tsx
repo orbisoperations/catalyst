@@ -15,17 +15,21 @@ export type OrbisTabsProps = {
 export const OrbisTabs = (props: OrbisTabsProps) => {
   return (
     <Tabs {...props.tabsProps}>
-      {props.tabs && <TabList>
-        {props.tabs.map((tab, index) => (
-          <Tab key={index}>{tab}</Tab>
-        ))}
-      </TabList>}
+      {props.tabs && (
+        <TabList>
+          {props.tabs.map((tab, index) => (
+            <Tab key={index}>{tab}</Tab>
+          ))}
+        </TabList>
+      )}
 
-      {props.content && <TabPanels>
-        {props.content.map((c, index) => {
-          return <TabPanel key={index}>{c}</TabPanel>;
-        })}
-      </TabPanels>}
+      {props.content && (
+        <TabPanels>
+          {props.content.map((c, index) => {
+            return <TabPanel key={index}>{c}</TabPanel>;
+          })}
+        </TabPanels>
+      )}
     </Tabs>
   );
 };

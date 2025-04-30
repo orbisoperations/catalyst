@@ -29,7 +29,7 @@ export async function getIJWTRegistry(token: string, id: string) {
 
 export async function createIJWTRegistry(
   token: string,
-  data: Omit<IssuedJWTRegistry, "id">
+  data: Omit<IssuedJWTRegistry, "id">,
 ) {
   const matcher = getIJWT();
   const resp = await matcher.create({ cfToken: token }, data);
@@ -41,7 +41,7 @@ export async function createIJWTRegistry(
 
 export async function updateIJWTRegistry(
   token: string,
-  data: IssuedJWTRegistry
+  data: IssuedJWTRegistry,
 ) {
   const matcher = getIJWT();
   const resp = await matcher.update({ cfToken: token }, data);

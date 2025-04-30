@@ -56,7 +56,7 @@ export async function listChannels(token: string) {
 export async function listPartnersChannels(token: string, partnerId: string) {
   const channelsResponse = await listChannels(token);
   return channelsResponse.filter(
-    (channel) => channel.creatorOrganization === partnerId
+    (channel) => channel.creatorOrganization === partnerId,
   );
 }
 
@@ -102,7 +102,7 @@ export async function updateChannel(formData: FormData, token: string) {
 export async function handleSwitch(
   channelId: string,
   accessSwitch: boolean,
-  token: string
+  token: string,
 ) {
   const api = getRegistar();
   const tokenObject = {
@@ -112,7 +112,7 @@ export async function handleSwitch(
   if (!channelResp.success) {
     throw new Error("unable to toggle datachannel");
   }
-  let channel = channelResp.data as DataChannel;
+  const channel = channelResp.data as DataChannel;
   channel.accessSwitch = accessSwitch;
   const updateOperation = await api.update("default", channel, tokenObject);
   if (!updateOperation.success) {

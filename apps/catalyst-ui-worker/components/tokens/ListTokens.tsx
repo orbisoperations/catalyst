@@ -42,7 +42,7 @@ export default function APIKeysComponent({
         .catch((e) => {
           setHasError(true);
           setErrorMessage(
-            "An error occurred while fetching the tokens. Please try again later."
+            "An error occurred while fetching the tokens. Please try again later.",
           );
           console.error(e);
         });
@@ -95,7 +95,7 @@ export default function APIKeysComponent({
                         .catch((e) => {
                           setHasError(true);
                           setErrorMessage(
-                            "An error occurred while rotating the key. Please try again later."
+                            "An error occurred while rotating the key. Please try again later.",
                           );
                           console.error("error rotating keys: ", e);
                         });
@@ -131,7 +131,7 @@ export default function APIKeysComponent({
                         new Date(jwt.expiry).toLocaleDateString(),
                         jwt.organization,
                       ];
-                    }
+                    },
                   )}
                 />
               </Card>

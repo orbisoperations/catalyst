@@ -23,13 +23,13 @@ export async function listInvites(token: string) {
 export async function sendInvite(
   receivingOrg: string,
   token: string,
-  message: string
+  message: string,
 ) {
   const matcher = getMatcher();
   const result = await matcher.sendInvite(
     receivingOrg,
     { cfToken: token },
-    message
+    message,
   );
   if (!result.success) {
     throw new Error("Sending Invite Failed");

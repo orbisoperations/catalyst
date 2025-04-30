@@ -1,7 +1,7 @@
 This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
-
 ## Orbis UI
+
 This project uses [Orbis UI](ui.devintelops.io) as a component library. Orbis UI is a design system and component library for building modern web applications. It is a collection of reusable components and styles that can be used to build web applications. It is built with React and TypeScript and is available as a Github Repository. A general guide on how to use them can be found [here](https://ui.devintelops.io/) as a Storybook.
 
 ## Getting Started

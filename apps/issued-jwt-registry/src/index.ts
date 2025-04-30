@@ -1,3 +1,4 @@
+/// <reference types="./env" />
 import { IssuedJWTRegistry, JWTRegisterStatus, Token, User, UserCheckActionResponse, zIssuedJWTRegistry } from '@catalyst/schema_zod';
 import { DurableObject, WorkerEntrypoint } from 'cloudflare:workers';
 

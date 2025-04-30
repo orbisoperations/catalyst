@@ -19,7 +19,7 @@ import { Text } from "@chakra-ui/layout";
 type PartnerDetailedComponentProps = {
   listPartnersChannels: (
     token: string,
-    partnerId: string
+    partnerId: string,
   ) => Promise<DataChannel[]>;
 };
 export default function PartnerDetailedComponent({

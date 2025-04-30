@@ -40,12 +40,12 @@ type CreateTokensFormProps = {
       value: number;
       unit: "days" | "weeks";
     },
-    cfToken: string
+    cfToken: string,
   ) => Promise<JWTSigningResponse>;
   listChannels: (token: string) => Promise<DataChannel[]>;
   createIJWTRegistry: (
     token: string,
-    data: Omit<IssuedJWTRegistry, "id">
+    data: Omit<IssuedJWTRegistry, "id">,
   ) => Promise<IssuedJWTRegistry | undefined>;
 };
 
@@ -75,14 +75,14 @@ export default function CreateTokensForm({
       listChannels(cfToken)
         .then((channels) => {
           setChannels(
-            channels.map((channel) => [channel.name, channel.description])
+            channels.map((channel) => [channel.name, channel.description]),
           );
           setChannelsResponse(channels);
         })
         .catch((e) => {
           setHasError(true);
           setErrorMessage(
-            "An error occurred while fetching the channels. Please try again later."
+            "An error occurred while fetching the channels. Please try again later.",
           );
         });
     }
@@ -121,11 +121,11 @@ export default function CreateTokensForm({
           } as Omit<IssuedJWTRegistry, "id">;
           const iJWTRegistryEntry = await createIJWTRegistry(
             cfToken,
-            issuedJWTRegistryEntry
+            issuedJWTRegistryEntry,
           ).catch((e) => {
             setHasError(true);
             setErrorMessage(
-              "An error occurred while creating the token. Please try again later."
+              "An error occurred while creating the token. Please try again later.",
             );
           });
           if (iJWTRegistryEntry) {
@@ -136,7 +136,7 @@ export default function CreateTokensForm({
       .catch((err) => {
         setHasError(true);
         setErrorMessage(
-          "An error occurred while creating the token. Please try again later."
+          "An error occurred while creating the token. Please try again later.",
         );
       });
   }

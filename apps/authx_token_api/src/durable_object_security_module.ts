@@ -4,8 +4,7 @@ import { DurableObject } from 'cloudflare:workers';
 import { DEFAULT_STANDARD_DURATIONS, JWTParsingResponse, JWTSigningRequest } from '../../../packages/schema_zod';
 import { JWT } from './jwt';
 import { KeyState, KeyStateSerialized } from './keystate';
-import { e } from 'vitest/dist/reporters-QGe8gs4b.js';
-import exp from 'constants';
+
 
 export class JWTKeyProvider extends DurableObject {
 	currentKey: KeyState | undefined;

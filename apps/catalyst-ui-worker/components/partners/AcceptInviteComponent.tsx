@@ -50,13 +50,13 @@ export default function AcceptInviteComponent({
         .catch((e) => {
           setHasError(true);
           setErrorMessage(
-            "An error occurred while fetching the invite. Please try again later."
+            "An error occurred while fetching the invite. Please try again later.",
           );
         });
     } else {
       setHasError(true);
       setErrorMessage(
-        "An error occurred while fetching the invite. Please try again later."
+        "An error occurred while fetching the invite. Please try again later.",
       );
     }
   }
@@ -117,7 +117,7 @@ export default function AcceptInviteComponent({
                               onClose();
                               setHasError(true);
                               setErrorMessage(
-                                `An error occurred while ${orgIsSender ? "cancelling" : "rejecting"} the invite. Please try again later.`
+                                `An error occurred while ${orgIsSender ? "cancelling" : "rejecting"} the invite. Please try again later.`,
                               );
                             });
                         }
@@ -148,7 +148,7 @@ export default function AcceptInviteComponent({
                         .catch((e) => {
                           setHasError(true);
                           setErrorMessage(
-                            "An error occurred while accepting the invite. Please try again later."
+                            "An error occurred while accepting the invite. Please try again later.",
                           );
                         });
                   }}

@@ -18,7 +18,7 @@ type CreateInviteProps = {
   sendInvite: (
     receivingOrg: string,
     token: string,
-    message: string
+    message: string,
   ) => Promise<any>;
 };
 export default function CreateInviteComponent({
@@ -65,7 +65,7 @@ export default function CreateInviteComponent({
               token ?? "",
               message.trim() === ""
                 ? user?.custom.org + " invited you to partner with them"
-                : message
+                : message,
             )
               .then(router.back)
               .catch((e) => {

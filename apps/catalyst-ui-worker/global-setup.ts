@@ -27,7 +27,7 @@ export default function () {
   console.timeEnd(label);
 
   // build org matchmaking
-  label = "Compiled organization_matchmaking"
+  label = "Compiled organization_matchmaking";
   console.time(label);
   childProcess.execSync("pnpm wrangler deploy --dry-run --outdir dist ", {
     cwd: path.join("../organization_matchmaking"),
