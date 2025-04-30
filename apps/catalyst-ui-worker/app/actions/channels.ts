@@ -1,7 +1,7 @@
 "use server";
 import { CloudflareEnv } from "@/env";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { DataChannel } from "../../../../packages/schema_zod";
+import { DataChannel } from "@catalyst/schema_zod";
 
 function getEnv() {
   return getCloudflareContext().env as CloudflareEnv;

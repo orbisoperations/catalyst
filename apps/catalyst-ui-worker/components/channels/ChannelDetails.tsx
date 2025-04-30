@@ -38,7 +38,7 @@ import {
 } from "@chakra-ui/react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { DataChannel } from "../../../../packages/schema_zod";
+import { DataChannel } from "@catalyst/schema_zod";
 import { useUser } from "../contexts/User/UserContext";
 
 type DataChannelDetailsProps = {
