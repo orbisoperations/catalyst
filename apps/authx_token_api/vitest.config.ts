@@ -1,19 +1,85 @@
 import { defineWorkersConfig } from '@cloudflare/vitest-pool-workers/config';
 import path from 'path';
 
+const validUsers: Record<string, any> = {
+	'admin-cf-token': {
+		email: 'email@example.com',
+		custom: {
+			'urn:zitadel:iam:org:project:roles': {
+				'data-custodian': {
+					'YES': 'auth.provider.io',
+				},
+				'org-admin': {
+					'YES': 'auth.provider.io',
+				},
+				'org-user': {
+					'YES': 'auth.provider.io',
+				},
+				'platform-admin': {
+					'YES': 'auth.provider.io',
+				},
+			},
+		},
+	},
+	'org-user-cf-token': {
+		email: 'TestUser',
+		custom: {
+			'urn:zitadel:iam:org:project:roles': {
+				'data-custodian': {
+					'YES': 'auth.provider.io',
+				},
+				'org-user': {
+					'YES': 'auth.provider.io',
+				},
+			},
+		},
+	},
+};
+
+const handleCloudflareAccessAuthServiceOutbound = async (req: Request) => {
+	// receives
+	// headers
+	// cookie: CF_Authorization=token
+	if (req.method != 'GET') {
+		return Response.json({ error: 'Not found' }, { status: 404 });
+	}
+
+	let token = req.headers.get('cookie');
+	if (!token) {
+		return Response.json({ error: 'Unauthorized' }, { status: 401 });
+	}
+	token = token.split('=')[1];
+	if (!token) {
+		return Response.json({ error: 'Unauthorized' }, { status: 401 });
+	}
+
+	const userData = validUsers[token];
+
+	if (!userData) {
+		return Response.json({ error: 'Unauthorized' }, { status: 401 });
+	}
+
+	console.log('userData', userData);
+
+	return Response.json(userData);
+};
+
 export default defineWorkersConfig({
-  logLevel: 'info',
+	logLevel: 'info',
 	test: {
-    globalSetup: './global-setup.ts',
+		globalSetup: './global-setup.ts',
 		poolOptions: {
 			workers: {
-        wrangler: { configPath: './wrangler.jsonc' },
-        main: 'src/worker.ts',
+				wrangler: { configPath: './wrangler.jsonc' },
+				main: 'src/index.ts',
 				singleWorker: true,
 				isolatedStorage: false,
 				miniflare: {
-          compatibilityDate: '2025-04-01',
-          compatibilityFlags: ['nodejs_compat'],
+					compatibilityDate: '2025-04-01',
+					compatibilityFlags: ['nodejs_compat'],
+					durableObjects: {
+						KEY_PROVIDER: 'JWTKeyProvider',
+					},
 					workers: [
 						{
 							name: 'authx_authzed_api',
@@ -40,6 +106,23 @@ export default defineWorkersConfig({
 							unsafeEphemeralDurableObjects: true,
 							durableObjects: {
 								CACHE: 'UserCredsCache',
+							},
+							outboundService: handleCloudflareAccessAuthServiceOutbound,
+						},
+						// add issued-jwt-registry
+						{
+							name: 'issued-jwt-registry',
+							modules: true,
+							modulesRoot: path.resolve('../issued-jwt-registry'),
+							scriptPath: path.resolve('../issued-jwt-registry/dist/index.js'),
+							compatibilityDate: '2025-04-01',
+							compatibilityFlags: ['nodejs_compat'],
+							entrypoint: 'IssuedJWTRegistryWorker',
+							durableObjects: {
+								ISSUED_JWT_REGISTRY_DO: 'I_JWT_Registry_DO',
+							},
+							serviceBindings: {
+								USERCACHE: 'user-credentials-cache',
 							},
 						},
 					],

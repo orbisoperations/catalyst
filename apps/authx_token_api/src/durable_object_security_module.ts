@@ -5,7 +5,6 @@ import { DEFAULT_STANDARD_DURATIONS, JWTParsingResponse, JWTSigningRequest } fro
 import { JWT } from './jwt';
 import { KeyState, KeyStateSerialized } from './keystate';
 
-
 export class JWTKeyProvider extends DurableObject {
 	currentKey: KeyState | undefined;
 	currentSerializedKey: KeyStateSerialized | undefined;
@@ -66,7 +65,7 @@ export class JWTKeyProvider extends DurableObject {
 		};
 	}
 
-	async validateToken(token: string) {
+	async validateToken(token: string): Promise<JWTParsingResponse> {
 		await this.key();
 		try {
 			const pub = this.currentSerializedKey?.public;
