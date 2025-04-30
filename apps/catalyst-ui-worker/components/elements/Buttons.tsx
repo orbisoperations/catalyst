@@ -116,16 +116,12 @@ export const ProfileButton = (props: ProfileButtonProps) => {
               {action.displayName}
             </MenuItem>
           ))}
-          <MenuItem>
-            <OrbisButton
-              w="100%"
-              onClick={() => {
-                // assignment in ternary is bad, mmmkay
-                typeof window !== 'undefined' ? window.location.href = "/cdn-cgi/auth/logout" : '';
-              }}
-            >
-              Logout
-            </OrbisButton>
+          <MenuItem
+            onClick={() => {
+              typeof window !== 'undefined' ? window.location.href = "/cdn-cgi/auth/logout" : '';
+            }}
+          >
+            Logout
           </MenuItem>
         </MenuList>
       </Menu>
@@ -240,11 +236,12 @@ export const DisplayButton = (
       size={"sm"}
       {...rest}
       padding={".5em"}
+      onClick={onCLick}
     >
       {visibleStatus ? (
-        <Icon as={EyeIcon} onClick={onCLick} />
+        <Icon as={EyeIcon} />
       ) : (
-        <Icon as={EyeSlashIcon} onClick={onCLick} />
+        <Icon as={EyeSlashIcon} />
       )}
     </Button>
   );
