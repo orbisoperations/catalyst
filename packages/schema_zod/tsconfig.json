@@ -1,12 +1,12 @@
 {
-  "compilerOptions": {
-    "esModuleInterop": true,
-    "module": "ESNext",
-    "target": "ESNext",
-    "moduleResolution": "Node",
-    "strict": true,
-    "types": ["@cloudflare/workers-types/experimental"],
-  },
-  "include": ["./authzed/**/*", "./catalyst/**/*", "index.ts"],
-  "exclude": []
+    "compilerOptions": {
+        "esModuleInterop": true,
+        "module": "ESNext",
+        "target": "ESNext",
+        "moduleResolution": "Node",
+        "strict": true,
+        "types": []
+    },
+    "include": ["./authzed/**/*", "./catalyst/**/*", "index.ts"],
+    "exclude": []
 }

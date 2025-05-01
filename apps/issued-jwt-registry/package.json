@@ -1,30 +1,31 @@
 {
-  "name": "@catalyst/issued-jwt-registry",
-  "version": "0.0.1",
-  "main": "index.ts",
-  "type": "module",
-  "scripts": {
-    "deploymentDemo": "yes | wrangler deploy --minify --keep-vars --env demo",
-    "deploymentStaging": "yes | wrangler deploy --keep-vars --env staging",
-    "dev": "wrangler dev --port 5054",
-    "test": "vitest",
-    "build": "wrangler build"
-  },
-  "devDependencies": {
-    "@cloudflare/vitest-pool-workers": "catalog:",
-    "@cloudflare/workers-types": "catalog:",
-    "@eslint/js": "catalog:",
-    "@typescript-eslint/eslint-plugin": "^8.29.1",
-    "@typescript-eslint/parser": "^8.29.1",
-    "eslint": "catalog:",
-    "prettier": "catalog:",
-    "tsx": "catalog:",
-    "typescript": "catalog:",
-    "vitest": "catalog:",
-    "wrangler": "catalog:"
-  },
-  "dependencies": {
-    "@catalyst/schema_zod": "workspace:*",
-    "@catalyst/user-credentials-cache": "workspace:*"
-  }
+	"name": "@catalyst/issued-jwt-registry",
+	"version": "0.0.1",
+	"main": "index.ts",
+	"type": "module",
+	"scripts": {
+		"deploymentDemo": "yes | wrangler deploy --minify --keep-vars --env demo",
+		"deploymentStaging": "yes | wrangler deploy --keep-vars --env staging",
+		"dev": "wrangler dev --port 5054",
+		"test": "vitest",
+		"test:workspace": "vitest run --silent",
+		"build": "wrangler build"
+	},
+	"devDependencies": {
+		"@cloudflare/vitest-pool-workers": "catalog:",
+		"@cloudflare/workers-types": "catalog:",
+		"@eslint/js": "catalog:",
+		"@typescript-eslint/eslint-plugin": "^8.29.1",
+		"@typescript-eslint/parser": "^8.29.1",
+		"eslint": "catalog:",
+		"prettier": "catalog:",
+		"tsx": "catalog:",
+		"typescript": "catalog:",
+		"vitest": "catalog:",
+		"wrangler": "catalog:"
+	},
+	"dependencies": {
+		"@catalyst/schema_zod": "workspace:*",
+		"@catalyst/user-credentials-cache": "workspace:*"
+	}
 }

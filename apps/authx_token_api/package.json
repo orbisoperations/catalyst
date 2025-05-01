@@ -8,6 +8,7 @@
 		"deploymentStaging": "yes | wrangler deploy --keep-vars --env staging",
 		"dev": "wrangler dev --port 5051",
 		"test": "vitest",
+		"test:workspace": "vitest run --silent",
 		"build": "wrangler build",
 		"postinstall": "pnpm build"
 	},
