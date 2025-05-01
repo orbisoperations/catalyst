@@ -304,8 +304,8 @@ export class AuthzedClient {
 
 		const permissionResp = Authzed.Permissions.Response.parse(data);
 		if (typeof permissionResp === typeof Authzed.Permissions.CheckReponse) {
-			const success = Authzed.Permissions.CheckReponse.parse(permissionResp);
-			return success.permissionship === Authzed.Permissions.PermissionValues.enum.PERMISSIONSHIP_HAS_PERMISSION;
+			const response = Authzed.Permissions.CheckReponse.safeParse(permissionResp);
+			return response.success && response.data.permissionship === Authzed.Permissions.PermissionValues.enum.PERMISSIONSHIP_HAS_PERMISSION;
 		}
 		return false;
 	}
