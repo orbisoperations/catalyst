@@ -76,51 +76,6 @@ Catalyst implements a zero trust approach to security, where identity verificati
 3. **Data Channel Sharing**: Data custodians enable access to specific channels
 4. **Access Control**: Users from partner organizations can access shared channels   
 
-
-
-## DEPLOYMENT
-
-Catalyst is developed and deployed using Cloudflare Workers with Durable Objects and a Cloudflare Pages project using Nextjs.
-
-### General Deployment Arrangement
-Each Orbis customer who has purchased Catalyst will have their own instance of Catalyst deployed on the Cloudflare platform.
-Orbis will treat itself as a customer and have its own instance of Catalyst deployed on the Cloudflare platform in the same way a customer would.
-
-Due to the limitations of the Cloudflare Pages platform, the deployment of Catalyst is limited to two environments:
-`staging` and `production` (Actually termed `preview` and `production` in the Cloudflare Pages platform, respectively).
-
-The `staging` environment is used for testing and acceptance purposes. `staging` instances will be subdomained to the
-`demointelops.io` domain.  In the case of the Orbis customer, the `staging` instance will be subdomained as
-`orbis.demointelops.io`.
-
-The `production` environment is used for the live deployment of Catalyst. `production` instances will be subdomained to
-the `intelops.io` domain. In the case of the Orbis customer, the `production` instance will be subdomained as
-`orbis.intelops.io`.
-
-
-### Deployment Process
-***To deploy Catalyst to `staging` you will need:***
-* Access to the Catalyst Cloudflare account
-* Access to the Catalyst Github repository - https://github.com/orbisoperations/catalyst
-
-1. Checkout a new branch from the `staging` branch.
-2. Make your changes.
-3. Push your changes to the repository.
-4. Create a pull request to merge your branch into the `staging` branch.
-5. Once the pull request is approved and merged, the changes will be automatically deployed to the `staging` environment
-   for the routes defined in the `wrangler.toml` file.
-6. Test your changes on the `staging` environment at the subdomain `orbis.demointelops.io`.(or `customer.demointelops.io`)
-
-***To deploy Catalyst to `production` you will need:***
-* Access to the Catalyst Cloudflare account 
-* Access to the Catalyst Github repository - https://github.com/orbisoperations/catalyst
-
-7. Perform steps 1-6 for the `staging` environment deployment as stated above.
-8. Login to the Github repository and navigate to the `Actions` tab. Select the `Deploy to Production` workflow.
-9. Use the `Run workflow` button to trigger the workflow.
-10. Test your changes on the `production` environment at the subdomain `orbis.intelops.io`.(or `customer.intelops.io`)
-
-
 ## Security Considerations
 
 Catalyst is built with security as a foundational principle:

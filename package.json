@@ -7,9 +7,7 @@
     "test": "pnpm run -r test",
     "sim": "pnpm run -r sim",
     "ls": "pnpm ls -r --json --long --depth 6 --prod >> ./pnpmls.json",
-    "dev": "turbo dev",
-    "deploymentPreview": "pnpm run -r deploymentPreview",
-    "seed-partners": "tsx scripts/seed-dev-data.ts"
+    "dev": "turbo dev"
   },
   "keywords": [],
   "author": "",
