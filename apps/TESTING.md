@@ -1,5 +1,14 @@
 # Testing Best Practices and Guidelines
 
+## Local Development Setup
+
+Before running tests or developing locally, make sure to start the local development environment by running:
+```bash
+./run_local_dev.sh
+```
+
+This script starts the necessary services including the Authzed container required for testing and development. The Authzed container is essential for running tests that involve permissions and authorization.
+
 ## Decalarative Request Mocking
 
 When testing applications that make HTTP requests to external services, it's important to mock these requests to ensure tests are predictable, fast, and don't rely on external dependencies.
