@@ -48,17 +48,11 @@ pnpm install
 pnpm run dev
 ```
 
-### Running Tests
-
-Before running tests, make sure to start the local development environment by running:
-```bash
-./run_local_dev.sh
-```
-
-This script starts the necessary services including the Authzed container required for testing.
 
 ## Deployment
 
 ```
 pnpm run deploy
 ```
+
+
