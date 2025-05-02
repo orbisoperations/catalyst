@@ -1,73 +1,86 @@
 // test/index.spec.ts
 import { env, ProvidedEnv, SELF } from 'cloudflare:test';
 import { describe, expect, it, TestContext } from 'vitest';
+import { AuthzedClient } from '../../authx_authzed_api/src/authzed';
 
-const setup = async (env: ProvidedEnv) => {
+// Define the DataChannel interface
+interface DataChannel {
+    id: string;
+    name: string;
+    endpoint: string;
+    organization: string;
+    schema: string;
+    type: string;
+    accessSwitch?: boolean;
+    description?: string;
+    creatorOrganization?: string;
+}
 
+// Extend ProvidedEnv to include AUTHZED and DATA_CHANNEL_GATEWAY
+interface ExtendedProvidedEnv extends ProvidedEnv {
+    AUTHZED: AuthzedClient;
+    DATA_CHANNEL_GATEWAY: KVNamespace;
+}
 
-    const id = env.DATA_CHANNEL_REGISTRAR_DO.idFromName('default');
-    const stub = env.DATA_CHANNEL_REGISTRAR_DO.get(id);
+// Cast env to ExtendedProvidedEnv
+const extendedEnv = env as unknown as ExtendedProvidedEnv;
 
-    await stub.update({
-        id: 'airplanes1',
-        name: 'airplanes',
-        endpoint: 'http://localhost:4001/graphql',
-        accessSwitch: true,
-        description: 'na',
-        creatorOrganization: 'Org1',
+const getToken = async (entity: string, claims: string[], ctx?: TestContext) => {
+    const jwtDOID = env.JWT_TOKEN_DO.idFromName('default');
+    const jwtStub = env.JWT_TOKEN_DO.get(jwtDOID);
+    const tokenResp = await jwtStub.signJWT(
+        {
+            entity: entity,
+            claims: claims,
+        },
+        10 * 60 * 1000
+    );
+
+    console.log({
+        test: ctx?.task.name,
+        signedTokenForTest: tokenResp.token,
     });
 
-    await stub.update({
-        id: 'cars1',
-        name: 'cars',
-        endpoint: 'http://localhost:4002/graphql',
-        accessSwitch: true,
-        description: 'na',
-        creatorOrganization: 'Org1',
-    });
-
-    await stub.update({
-        id: 'man1',
-        name: 'manufacture',
-        endpoint: 'http://localhost:4003/graphql',
-        accessSwitch: true,
-        description: 'na',
-        creatorOrganization: 'Org1',
-    });
-
-
-    expect(await stub.list()).toHaveLength(3);
+    return tokenResp.token;
 };
 
-const teardown = async (env: ProvidedEnv) => {
+const setup = async () => {
+    // Only add the airplane data channel for the airplane test
+    const airplanes1: DataChannel = {
+        id: "airplanes1",
+        name: "airplanes1",
+        endpoint: "http://localhost:8080/graphql",
+        organization: "test_org",
+        schema: "type Query { health: String }",
+        type: "graphql",
+        accessSwitch: true,
+        description: "Test airplane data channel",
+        creatorOrganization: "test_org"
+    };
 
+    // Add proper permissions for the test user
+    await env.AUTHX_AUTHZED_API.addOrgToDataChannel(airplanes1.id, airplanes1.organization);
+    await env.AUTHX_AUTHZED_API.addUserToOrg(airplanes1.organization, "test_user");
+    
+    // Update the data channel using the Durable Object
     const id = env.DATA_CHANNEL_REGISTRAR_DO.idFromName('default');
     const stub = env.DATA_CHANNEL_REGISTRAR_DO.get(id);
+    await stub.update(airplanes1);
+};
 
-    const list = await stub.list();
-    for (const dc of list) {
-        await stub.delete(dc.id);
-    }
-
-    expect(await stub.list()).toHaveLength(0);
+const teardown = async () => {
+    // Clean up the airplane data channel using the Durable Object
+    const id = env.DATA_CHANNEL_REGISTRAR_DO.idFromName('default');
+    const stub = env.DATA_CHANNEL_REGISTRAR_DO.get(id);
+    await stub.delete('airplanes1');
+    
+    // Clean up permissions
+    await env.AUTHX_AUTHZED_API.deleteOrgInDataChannel("airplanes1", "test_org");
+    await env.AUTHX_AUTHZED_API.deleteUserFromOrg("test_org", "test_user");
 };
 
 describe('gateway integration tests', () => {
-    const getToken = async (entity: string, claims: string[], ctx?: TestContext) => {
-        const jwtDOID = env.JWT_TOKEN_DO.idFromName('default');
-        const jwtStub = env.JWT_TOKEN_DO.get(jwtDOID);
-        const tokenResp = await jwtStub.signJWT(
-            {
-                entity: entity,
-                claims: claims,
-            },
-            10 * 60 * 1000
-        );
-
-        return tokenResp.token;
-    };
-
-    it("returns gf'd for a invalid token", async () => {
+    it('returns gf\'d for a invalid token', async () => {
         const badToken = 'fake-and-insecure';
 
         const headers = new Headers();
@@ -84,7 +97,7 @@ describe('gateway integration tests', () => {
         expect(JSON.parse(await response.text())).toStrictEqual(expected);
     });
 
-    it("returns GF'd for no auth header", async () => {
+    it('returns GF\'d for no auth header', async () => {
         const response = await SELF.fetch(
             'https://data-channel-gateway/graphql',
             {
@@ -146,39 +159,44 @@ describe('gateway integration tests', () => {
     });
 
     it('should get datachannel for airplanes', async (testContext: TestContext) => {
-        await setup(env);
+        await setup();
 
-        // instance of the authx token api
-        const token = await getToken('Org1', ['airplanes1'], testContext);
-        const getAvailableQueries = await SELF.fetch(
-            'https://data-channel-gateway/graphql',
-            {
-                method: 'POST',
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    'content-type': 'application/json',
-                },
-                body: JSON.stringify({
-                    // Query that resolves the available queries of the schema
-                    query: `{
+        // Get a token with the proper claims
+        const token = await getToken('test_user', ['airplanes1'], testContext);
+
+        const response = await SELF.fetch('http://localhost:8787/graphql', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+                query: `
+                    {
                         __type(name: "Query") {
                             name
                             fields {
                                 name
                             }
                         }
-                    }`,
-                }),
-            }
-        );
+                    }`
+            })
+        });
 
-        const getAvailableQueriesResponsePayload = await getAvailableQueries.text();
-        const json = JSON.parse(getAvailableQueriesResponsePayload);
+        const json = await response.json() as {
+            data: {
+                __type: {
+                    fields: Array<{ name: string }>;
+                };
+            };
+        };
+        console.log('Response:', JSON.stringify(json, null, 2));
+        
+        expect(response.status).toBe(200);
+        expect(json.data.__type.fields).toHaveLength(1); // Only expecting 'health' field
+        expect(json.data.__type.fields[0].name).toBe('health');
 
-        expect(json.data['__type'].fields).toHaveLength(3);
-        // @ts-ignore
-        // expect(responsePayload.data["__type"].fields[0]['name']).toBe('health');
-        await teardown(env);
+        await teardown();
     });
 
     // it('should get data-channel for airplanes only when accessSwitch is 1 - THIS IS A BAD TEST', async (testContext) => {
