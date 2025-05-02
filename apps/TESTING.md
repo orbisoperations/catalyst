@@ -3,7 +3,7 @@
 ## Local Development Setup
 
 Before running tests or developing locally, make sure to start the local development environment by running:
-```bash
+```
 ./run_local_dev.sh
 ```
 
