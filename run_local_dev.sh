@@ -103,6 +103,22 @@ progress_bar() {
 
 # --- Configuration ---
 APPS_DIR="apps"
+NO_UI=false
+
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --no-ui)
+      NO_UI=true
+      shift
+      ;;
+    *)
+      print_error "Unknown option: $1"
+      print_error "Usage: $0 [--no-ui]"
+      exit 1
+      ;;
+  esac
+done
 
 # Define the startup order based on dependencies (Management -> Control -> Data -> UI/CLI)
 APP_ORDER=(
@@ -113,10 +129,14 @@ APP_ORDER=(
   "data_channel_registrar"   # Control: Manages data channel discovery
   "organization_matchmaking" # Control: Manages organization partnerships
   "data_channel_gateway"     # Data: Federates data channels
-  # "catalyst-ui-worker"       # Management: Web interface
   # "datachannel-next"       # Data: Example data channel implementation
   # "catalyst_cli"           # Management: CLI tool (usually not run continuously in dev)
 )
+
+# Add UI worker if --no-ui flag is not set
+if [ "$NO_UI" = false ]; then
+  APP_ORDER+=("catalyst-ui-worker")  # Management: Web interface
+fi
 
 DEFAULT_DEV_COMMAND="pnpm run dev"
 SLEEP_DURATION=2 # Seconds to wait between starting apps
