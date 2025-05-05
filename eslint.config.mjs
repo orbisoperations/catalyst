@@ -1,7 +1,7 @@
-import pluginJs from '@eslint/js'
-import tseslint from 'typescript-eslint'
-import pluginReact from 'eslint-plugin-react'
-import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
+import pluginJs from '@eslint/js';
+import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
+import pluginReact from 'eslint-plugin-react';
+import tseslint from 'typescript-eslint';
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [
@@ -23,14 +23,7 @@ export default [
         },
     },
     {
-        ignores: [
-            'coverage',
-            '**/public',
-            '**/dist',
-            'pnpm-lock.yaml',
-            'pnpm-workspace.yaml',
-            '**/.wrangler/**',
-        ],
+        ignores: ['coverage', '**/public', '**/dist', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', '**/.wrangler/**'],
     },
     eslintPluginPrettierRecommended,
-]
+];

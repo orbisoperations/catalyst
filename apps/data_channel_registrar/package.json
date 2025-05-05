@@ -8,6 +8,7 @@
     "deploymentDemo": "yes | wrangler deploy --minify --keep-vars --env demo",
     "deploymentStaging": "yes | wrangler deploy --keep-vars --env staging",
     "test": "vitest",
+    "test:workspace": "vitest run --silent",
     "dev": "pnpm wrangler dev --port 5053",
     "deploy": "wrangler deploy --minify src/worker.ts",
     "fmt": "prettier --write .",

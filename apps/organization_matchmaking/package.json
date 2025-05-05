@@ -1,21 +1,22 @@
 {
-  "name": "@catalyst/organization-matchmaking",
-  "version": "0.0.0",
-  "private": true,
-  "scripts": {
-    "deploymentDemo": "yes | wrangler deploy --minify --keep-vars --env demo",
-    "deploymentStaging": "yes | wrangler deploy --keep-vars --env staging",
-    "dev": "wrangler dev",
-    "start": "wrangler dev",
-    "test": "vitest",
-    "cf-typegen": "wrangler types"
-  },
-  "devDependencies": {
-    "@cloudflare/vitest-pool-workers": "catalog:",
-    "@cloudflare/workers-types": "catalog:",
-    "@eslint/js": "catalog:",
-    "typescript": "catalog:",
-    "vitest": "catalog:",
-    "wrangler": "catalog:"
-  }
+	"name": "@catalyst/organization-matchmaking",
+	"version": "0.0.0",
+	"private": true,
+	"scripts": {
+		"deploymentDemo": "yes | wrangler deploy --minify --keep-vars --env demo",
+		"deploymentStaging": "yes | wrangler deploy --keep-vars --env staging",
+		"dev": "wrangler dev",
+		"start": "wrangler dev",
+		"test": "vitest",
+		"test:workspace": "vitest run --silent",
+		"cf-typegen": "wrangler types"
+	},
+	"devDependencies": {
+		"@cloudflare/vitest-pool-workers": "catalog:",
+		"@cloudflare/workers-types": "catalog:",
+		"@eslint/js": "catalog:",
+		"typescript": "catalog:",
+		"vitest": "catalog:",
+		"wrangler": "catalog:"
+	}
 }

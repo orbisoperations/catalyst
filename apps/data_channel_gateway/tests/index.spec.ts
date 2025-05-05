@@ -1,7 +1,6 @@
 // test/index.spec.ts
-import { env, ProvidedEnv, SELF } from 'cloudflare:test';
+import { env, SELF } from 'cloudflare:test';
 import { describe, expect, it, TestContext } from 'vitest';
-import { AuthzedClient } from '../../authx_authzed_api/src/authzed';
 
 // Define the DataChannel interface
 interface DataChannel {
@@ -15,15 +14,6 @@ interface DataChannel {
     description?: string;
     creatorOrganization?: string;
 }
-
-// Extend ProvidedEnv to include AUTHZED and DATA_CHANNEL_GATEWAY
-interface ExtendedProvidedEnv extends ProvidedEnv {
-    AUTHZED: AuthzedClient;
-    DATA_CHANNEL_GATEWAY: KVNamespace;
-}
-
-// Cast env to ExtendedProvidedEnv
-const extendedEnv = env as unknown as ExtendedProvidedEnv;
 
 const getToken = async (entity: string, claims: string[], ctx?: TestContext) => {
     const jwtDOID = env.JWT_TOKEN_DO.idFromName('default');
@@ -47,21 +37,21 @@ const getToken = async (entity: string, claims: string[], ctx?: TestContext) => 
 const setup = async () => {
     // Only add the airplane data channel for the airplane test
     const airplanes1: DataChannel = {
-        id: "airplanes1",
-        name: "airplanes1",
-        endpoint: "http://localhost:8080/graphql",
-        organization: "test_org",
-        schema: "type Query { health: String }",
-        type: "graphql",
+        id: 'airplanes1',
+        name: 'airplanes1',
+        endpoint: 'http://localhost:8080/graphql',
+        organization: 'test_org',
+        schema: 'type Query { health: String }',
+        type: 'graphql',
         accessSwitch: true,
-        description: "Test airplane data channel",
-        creatorOrganization: "test_org"
+        description: 'Test airplane data channel',
+        creatorOrganization: 'test_org',
     };
 
     // Add proper permissions for the test user
     await env.AUTHX_AUTHZED_API.addOrgToDataChannel(airplanes1.id, airplanes1.organization);
-    await env.AUTHX_AUTHZED_API.addUserToOrg(airplanes1.organization, "test_user");
-    
+    await env.AUTHX_AUTHZED_API.addUserToOrg(airplanes1.organization, 'test_user');
+
     // Update the data channel using the Durable Object
     const id = env.DATA_CHANNEL_REGISTRAR_DO.idFromName('default');
     const stub = env.DATA_CHANNEL_REGISTRAR_DO.get(id);
@@ -73,57 +63,47 @@ const teardown = async () => {
     const id = env.DATA_CHANNEL_REGISTRAR_DO.idFromName('default');
     const stub = env.DATA_CHANNEL_REGISTRAR_DO.get(id);
     await stub.delete('airplanes1');
-    
+
     // Clean up permissions
-    await env.AUTHX_AUTHZED_API.deleteOrgInDataChannel("airplanes1", "test_org");
-    await env.AUTHX_AUTHZED_API.deleteUserFromOrg("test_org", "test_user");
+    await env.AUTHX_AUTHZED_API.deleteOrgInDataChannel('airplanes1', 'test_org');
+    await env.AUTHX_AUTHZED_API.deleteUserFromOrg('test_org', 'test_user');
 };
 
 describe('gateway integration tests', () => {
-    it('returns gf\'d for a invalid token', async () => {
+    it("returns gf'd for a invalid token", async () => {
         const badToken = 'fake-and-insecure';
 
         const headers = new Headers();
         headers.set('Authorization', `Bearer ${badToken}`);
 
-        const response = await SELF.fetch(
-            'https://data-channel-gateway/graphql',
-            {
-                method: 'GET',
-                headers,
-            }
-        );
+        const response = await SELF.fetch('https://data-channel-gateway/graphql', {
+            method: 'GET',
+            headers,
+        });
         const expected = { message: 'Token validation failed' };
         expect(JSON.parse(await response.text())).toStrictEqual(expected);
     });
 
-    it('returns GF\'d for no auth header', async () => {
-        const response = await SELF.fetch(
-            'https://data-channel-gateway/graphql',
-            {
-                method: 'GET',
-            }
-        );
+    it("returns GF'd for no auth header", async () => {
+        const response = await SELF.fetch('https://data-channel-gateway/graphql', {
+            method: 'GET',
+        });
 
-        expect(await response.text()).toMatchInlineSnapshot(
-            `"{"error":"No Credenetials Supplied"}"`
-        );
+        expect(await response.text()).toMatchInlineSnapshot(`"{"error":"No Credenetials Supplied"}"`);
     });
 
     it('should return health a known good token no claims', async (textCtx) => {
         const token = await getToken('test', [], textCtx);
-        const response = await SELF.fetch(
-            'https://data-channel-gateway/graphql',
-            {
-                method: 'POST',
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    'content-type': 'application/json',
-                    Accepts: 'application/json',
-                },
-                body: JSON.stringify({
-                    // Get the possible queries from the schema
-                    query: `{
+        const response = await SELF.fetch('https://data-channel-gateway/graphql', {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'content-type': 'application/json',
+                Accepts: 'application/json',
+            },
+            body: JSON.stringify({
+                // Get the possible queries from the schema
+                query: `{
             __type(name: "Query") {
                 name
                 fields {
@@ -139,9 +119,8 @@ describe('gateway integration tests', () => {
                 }
               }
           }`,
-                }),
-            }
-        );
+            }),
+        });
 
         const responsePayload = await response.json<{
             data: {
@@ -154,7 +133,7 @@ describe('gateway integration tests', () => {
 
         // Since we did not provide claims when the token was created, this will only return the health query in the list of fields
         expect(responsePayload.data['__type'].fields).toHaveLength(1);
-        // @ts-ignore
+        // @ts-expect-error: ts complains
         expect(responsePayload.data['__type'].fields[0]['name']).toBe('health');
     });
 
@@ -168,7 +147,7 @@ describe('gateway integration tests', () => {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
+                Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify({
                 query: `
@@ -179,11 +158,11 @@ describe('gateway integration tests', () => {
                                 name
                             }
                         }
-                    }`
-            })
+                    }`,
+            }),
         });
 
-        const json = await response.json() as {
+        const json = (await response.json()) as {
             data: {
                 __type: {
                     fields: Array<{ name: string }>;
@@ -191,7 +170,7 @@ describe('gateway integration tests', () => {
             };
         };
         console.log('Response:', JSON.stringify(json, null, 2));
-        
+
         expect(response.status).toBe(200);
         expect(json.data.__type.fields).toHaveLength(1); // Only expecting 'health' field
         expect(json.data.__type.fields[0].name).toBe('health');
