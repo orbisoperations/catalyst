@@ -12,30 +12,30 @@ While `fetch` never took off, we are hoping that our design tenets do.
 
 Our design tenets are:
 
-* **Secure**: Built with security-first principles using zero trust architecture
-* **Industry standard and open protocols**: Using proven technologies like GraphQL and JWT
-* **Interoperability**: Works across systems, databases, and tech organizations
-* **Open source**: Transparent and extensible
-* **Internet scale**: Designed to run globally at the edge
+- **Secure**: Built with security-first principles using zero trust architecture
+- **Industry standard and open protocols**: Using proven technologies like GraphQL and JWT
+- **Interoperability**: Works across systems, databases, and tech organizations
+- **Open source**: Transparent and extensible
+- **Internet scale**: Designed to run globally at the edge
 
 To achieve this we use:
 
-* **GraphQL** - A flexible, well understood, data schema and API pattern
-* **GraphQL Stitching** - Create a single endpoint to access all data without having to move the data
-* **Cloudflare Workers** - Code designed to be distributed running all over the world at once
-* **Zanzibar-inspired RelBAC** - Real-time data sharing security model
-* **Asymmetric JWTs** - Create secrets at the core and validate at the edge
-* **Zero Trust Architecture** - Never trust, always verify approach to security at every level
+- **GraphQL** - A flexible, well understood, data schema and API pattern
+- **GraphQL Stitching** - Create a single endpoint to access all data without having to move the data
+- **Cloudflare Workers** - Code designed to be distributed running all over the world at once
+- **Zanzibar-inspired RelBAC** - Real-time data sharing security model
+- **Asymmetric JWTs** - Create secrets at the core and validate at the edge
+- **Zero Trust Architecture** - Never trust, always verify approach to security at every level
 
 ## How Does the Federated Data Grid Work
 
 Catalyst is a stack of tightly coupled technologies that can be deployed on any platform. Catalyst provides:
 
-* Patterns for exposing local data sets and workloads to a (logically) central place
-* Identity and access control patterns that are used across the platform
-* Technology anyone can deploy
+- Patterns for exposing local data sets and workloads to a (logically) central place
+- Identity and access control patterns that are used across the platform
+- Technology anyone can deploy
 
-Catalyst works by having a (logically) central gateway and identity/access control stack that is operated by a trusted entity (the hub). 
+Catalyst works by having a (logically) central gateway and identity/access control stack that is operated by a trusted entity (the hub).
 
 Organizations are enrolled by the Catalyst operator and once onboarded org admins have complete control of their org which includes provisioning new data channels and minting API keys.
 
@@ -47,9 +47,9 @@ When setting up a data channel, a data custodian runs through the connection set
 
 Catalyst is an organization-based platform with clear role definitions:
 
-* **Users**: Can access data channels and create API keys
-* **Data Custodians**: Can create/manage data channels and partnership sharing
-* **Org Admins**: Can manage roles and invite users to the organization
+- **Users**: Can access data channels and create API keys
+- **Data Custodians**: Can create/manage data channels and partnership sharing
+- **Org Admins**: Can manage roles and invite users to the organization
 
 ### Authentication and Authorization Flow
 
@@ -74,7 +74,7 @@ Catalyst implements a zero trust approach to security, where identity verificati
 1. **Partnership Request**: One organization sends an invitation to another
 2. **Partnership Acceptance**: The receiving organization accepts the invitation
 3. **Data Channel Sharing**: Data custodians enable access to specific channels
-4. **Access Control**: Users from partner organizations can access shared channels   
+4. **Access Control**: Users from partner organizations can access shared channels
 
 ## Security Considerations
 
@@ -87,6 +87,12 @@ Catalyst is built with security as a foundational principle:
 - **Access Control**: Fine-grained permissions based on user roles
 - **Transport Security**: All communication over HTTPS
 - **Edge Security**: Validation at the edge through Cloudflare Workers
+
+## Startup
+
+To spin the app up, it's recommended to use the `run_local_dev.sh` script found in the root of the repository. This will loop through the various containers found in the apps directory and spin each one up via podman. The script can be run with the following flags:
+
+- `--no-ui`: avoids running the client and instead run all of the backend services standalone.
 
 ## Learn More
 
