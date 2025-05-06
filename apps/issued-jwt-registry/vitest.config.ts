@@ -1,8 +1,7 @@
-// @ts-ignore
-import { defineWorkersProject } from '@cloudflare/vitest-pool-workers/config';
+import { defineWorkersConfig } from '@cloudflare/vitest-pool-workers/config';
 import path from 'node:path';
 
-export default defineWorkersProject({
+export default defineWorkersConfig({
 	esbuild: {
 		target: 'ES2022',
 	},
@@ -36,6 +35,25 @@ export default defineWorkersProject({
 					],
 				},
 			},
+		},
+		coverage: {
+			provider: 'istanbul', // Specified istanbul
+			reporter: ['text', 'html', 'json-summary', 'lcov'], // Added lcov for external services
+			reportsDirectory: './coverage', // Default output directory
+			include: ['src/**/*.{ts,js}'], // Adjust if your source files are elsewhere
+			exclude: [
+				// Common exclusions
+				'**/node_modules/**',
+				'**/dist/**',
+				'**/test/**',
+				'**/tests/**',
+				'**/*.{test,spec}.?(c|m)[jt]s?(x)', // Exclude test file patterns
+				'**/wrangler.jsonc',
+				'**/vitest.config.*',
+				'**/.wrangler/**',
+				'**/env.d.ts',
+				'**/global-setup.ts',
+			],
 		},
 	},
 });
