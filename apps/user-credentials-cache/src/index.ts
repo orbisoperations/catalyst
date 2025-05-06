@@ -3,18 +3,14 @@ import { User } from '../../../packages/schema_zod';
 import { Env } from './env';
 
 /**
- * Welcome to Cloudflare Workers! This is your first Durable Objects application.
- *
- * - Run `npm run dev` in your terminal to start a development server
- * - Open a browser tab at http://localhost:8787/ to see your Durable Object in action
- * - Run `npm run deploy` to publish your application
- *
- * Bind resources to your worker in `wrangler.toml`. After adding bindings, a type definition for the
- * `Env` object can be regenerated with `npm run cf-typegen`.
- *
- * Learn more at https://developers.cloudflare.com/durable-objects
+ * Type definition for the nested role structure within the Cloudflare Access identity response.
+ * Example:
+ * {
+ *   'platform-admin': { 'org-id': 'org-id.domain' },
+ *   'org-admin': { 'org-id': 'org-id.domain' },
+ *   ...
+ * }
  */
-
 type Roles = Record<string, Record<string, string>>;
 
 type OrganizationWithRoles = {
@@ -25,7 +21,7 @@ type OrganizationWithRoles = {
 export function getOrgFromRoles(roles: Roles): OrganizationWithRoles | undefined {
 	const adminRoles = ['platform-admin', 'org-admin', 'org-user', 'data-custodian'];
 	const roleKeys = Object.keys(roles);
-	let rolesList = roleKeys.filter((key) => adminRoles.includes(key));
+	const rolesList = roleKeys.filter((key) => adminRoles.includes(key));
 	const adminRoleKey = roleKeys.find((key) => adminRoles.includes(key));
 
 	if (!adminRoleKey) return undefined;
@@ -90,11 +86,13 @@ export class UserCredsCache extends DurableObject<Env> {
 			console.log('verified user attribs', user, org);
 
 			if (user && org) {
-				const parseUser = User.safeParse({
+				const objectToParse = {
 					userId: user,
 					orgId: org,
 					zitadelRoles: roles,
-				});
+				};
+
+				const parseUser = User.safeParse(objectToParse);
 				if (!parseUser.success) {
 					return undefined;
 				}
@@ -110,6 +108,20 @@ export class UserCredsCache extends DurableObject<Env> {
 		}
 	}
 
+	/**
+	 * Purges old tokens associated with the same user from the Durable Object storage.
+	 * This is called as a background task (`ctx.waitUntil`) after a successful `getUser`
+	 * operation (either cache hit or cache miss/validation) to ensure that only the
+	 * most recently used token for a given user identity potentially remains.
+	 *
+	 * It iterates through all stored key-value pairs, comparing the `userId` and `orgId`
+	 * of the stored user (`oUser`) with the provided `user`. If they match, but the
+	 * stored token (`oToken`) is different from the current `token`, the old entry is deleted.
+	 *
+	 * @param token - The current, validated token that triggered the purge.
+	 * @param user - The user object associated with the current `token`.
+	 * @returns A Promise that resolves when the purge operation is complete.
+	 */
 	async purge(token: string, user: User) {
 		const users = await this.ctx.storage.list<User>();
 		for (const [oToken, oUser] of Array.from(users.entries())) {
@@ -121,14 +133,22 @@ export class UserCredsCache extends DurableObject<Env> {
 	}
 }
 
+/**
+ * Default export for the Worker, extending WorkerEntrypoint for type safety with Env.
+ * This worker primarily acts as an entry point to interact with the UserCredsCache Durable Object.
+ */
 export default class UserCredsCacheWorker extends WorkerEntrypoint<Env> {
 	/**
-	 * This is the standard fetch handler for a Cloudflare Worker
+	 * Retrieves user information by interacting with the UserCredsCache Durable Object.
+	 * This method is intended to be called from other Workers or services that need
+	 * to resolve a Cloudflare Access token to user details.
 	 *
-	 * @param request - The request submitted to the Worker from the client
-	 * @param env - The interface to reference bindings declared in wrangler.toml
-	 * @param ctx - The execution context of the Worker
-	 * @returns The response to be sent back to the client
+	 * It gets a stub for the appropriate Durable Object instance (based on `cacheNamespace`)
+	 * and calls the `getUser` method on that stub.
+	 *
+	 * @param token - The Cloudflare Access token (`CF_Authorization` cookie value) to look up.
+	 * @param cacheNamespace - A namespace string to determine which Durable Object instance to use. Defaults to 'default'.
+	 * @returns A Promise resolving to the `User` object if found/validated, or `undefined`.
 	 */
 	async getUser(token: string, cacheNamespace: string = 'default') {
 		const id = this.env.CACHE.idFromName(cacheNamespace);
