@@ -1,4 +1,3 @@
 pnpm lint-staged
 
-# TODO: Uncomment this once we get the tests working
 pnpm test
