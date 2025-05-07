@@ -1,14 +1,11 @@
-// @ts-ignore
-import { defineWorkersProject } from '@cloudflare/vitest-pool-workers/config';
+import { defineWorkersConfig } from '@cloudflare/vitest-pool-workers/config';
 import path from 'node:path';
 import { Logger } from 'tslog';
 
 const logger = new Logger({});
 
 const authxServicePath = path.resolve('../authx_token_api/dist/index.js');
-const dataChannelRegistrarPath = path.resolve(
-    '../data_channel_registrar/dist/worker.js'
-);
+const dataChannelRegistrarPath = path.resolve('../data_channel_registrar/dist/worker.js');
 const authzedServicePath = path.resolve('../authx_authzed_api/dist/index.js');
 const jwtRegistryPath = path.resolve('../issued-jwt-registry/dist/index.js');
 
@@ -21,7 +18,7 @@ logger.info({
 });
 
 logger.info(`Setting up vite tests for the gateway...`);
-export default defineWorkersProject({
+export default defineWorkersConfig({
     test: {
         maxConcurrency: 1,
         globalSetup: './global-setup.ts',
@@ -63,9 +60,7 @@ export default defineWorkersProject({
                         {
                             name: 'data_channel_registrar',
                             modules: true,
-                            modulesRoot: path.resolve(
-                                '../data_channel_registrar'
-                            ),
+                            modulesRoot: path.resolve('../data_channel_registrar'),
                             scriptPath: dataChannelRegistrarPath,
                             compatibilityDate: '2025-04-01',
                             compatibilityFlags: ['nodejs_compat'],
@@ -76,7 +71,7 @@ export default defineWorkersProject({
                             },
                             serviceBindings: {
                                 AUTHX_TOKEN_API: 'authx_token_api',
-                                AUTHZED: 'authx_authzed_api'
+                                AUTHZED: 'authx_authzed_api',
                             },
                         },
                         {
@@ -106,10 +101,29 @@ export default defineWorkersProject({
                         },
                     ],
                     serviceBindings: {
-                        AUTHZED: 'authx_authzed_api'
-                    }
+                        AUTHZED: 'authx_authzed_api',
+                    },
                 },
             },
+        },
+        coverage: {
+            provider: 'istanbul',
+            reporter: ['text', 'html', 'json-summary'],
+            reportsDirectory: './coverage',
+            include: ['src/**/*.{ts,js}'], // Adjust if your source files are elsewhere
+            exclude: [
+                // Common exclusions
+                '**/node_modules/**',
+                '**/dist/**',
+                '**/test/**',
+                '**/tests/**',
+                '**/*.{test,spec}.?(c|m)[jt]s?(x)', // Exclude test file patterns
+                '**/wrangler.jsonc',
+                '**/vitest.config.*',
+                '**/.wrangler/**',
+                '**/env.d.ts',
+                '**/global-setup.ts',
+            ],
         },
     },
 });
