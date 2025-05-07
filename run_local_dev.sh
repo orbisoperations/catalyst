@@ -1,16 +1,35 @@
 #!/bin/bash
 # Script to run Catalyst applications locally in dependency order.
 
-# --- Functions ---
+# --- Cleanup after Ctrl+C ---
 cleanup() {
-  printf "\n\033[1;31m⚠️  Caught interrupt signal. Shutting down services...\033[0m\n"
-  # Kill all processes in the current process group (jobs started by this script)
-  kill 0
+  printf "\n\033[1;31m⚠️ Caught interrupt signal. Shutting down services...\033[0m\n"
+
+  print_step " Terminating ${#pids[@]} services..." "${YELLOW}"
+    for pid in "${pids[@]}"; do
+      if kill "$pid" 2>/dev/null; then
+        printf "  ${GREEN}✓ Terminated process ${YELLOW}(PID: ${pid})${RESET}\n"
+      else
+        printf "  ${RED}✗ Failed to terminate process ${YELLOW}(PID: ${pid})${RESET}\n"
+      fi
+    done
+    print_success "All services terminated"
+
+  # Stop the authzed container
+  print_step "Stopping authzed container..." "${YELLOW}"
+  if podman stop authzed-container &>/dev/null; then
+    print_success "Authzed container stopped successfully"
+  else
+    print_warn "Failed to stop authzed container - it may not be running"
+  fi
+
+  print_box "🛑 Cleanup completed" "${RED}"
+
   exit 1
 }
 
-# Trap SIGINT (Ctrl+C) and call cleanup
-trap cleanup SIGINT
+# Trap SIGINT (Ctrl+C) and error exit code
+trap cleanup INT # callback
 
 # Color definitions
 BOLD="\033[1m"
@@ -83,20 +102,6 @@ print_service_header() {
   printf "${BOLD}  ${CYAN}$progress${RESET} App Path: ${YELLOW}%s${RESET}\n" "$app_path"
   printf "${BOLD}  ${CYAN}$progress${RESET} Command:  ${YELLOW}%s${RESET}\n" "$DEV_COMMAND"
   printf "  ${CYAN}%s${RESET}\n" "$(printf "%68s" | tr ' ' '─')"
-}
-
-progress_bar() {
-  for i in {1..30}; do
-    printf "\r  ${CYAN}[${RESET}"
-    for ((j=0; j<i; j++)); do
-      printf "▓"
-    done
-    for ((j=i; j<30; j++)); do
-      printf "░"
-    done
-    printf "${CYAN}] %d%%${RESET}" $((i * 100 / 30))
-    sleep $(echo "scale=2; $SLEEP_DURATION/30" | bc)
-  done
 }
 
 # --- Main Execution ---
@@ -191,8 +196,6 @@ for app_name in "${APP_ORDER[@]}"; do
       sleep 0.5
       printf "\r  ${GREEN}✓ Started $app_name ${RESET}${YELLOW}(PID: ${process_pid})${RESET}\n"
 
-      # printf "  ${CYAN}⏳ Waiting for service initialization...${RESET}\n"
-
       # Display a spinner animation while waiting for service initialization
       spinner="/-\|"
       # Calculate iterations based on sleep duration
@@ -233,7 +236,6 @@ pushd ./apps > /dev/null
       print_success "Authzed container already running"
   elif [[ "$podman_exit_code" -ne 0 ]]; then
       print_error "Failed to start authzed container: $AUTHZED_OUTPUT"
-      exit 1
   else
       print_success "Started authzed container successfully"
   fi
@@ -256,6 +258,7 @@ printf "${RED}3.${RESET} Or kill all Node.js development processes (use with cau
 printf "   ${BOLD}pkill -f 'node .* dev'${RESET}\n"
 
 printf "\n${MAGENTA}${BOLD}[LISTENING]${RESET} Press ${BOLD}Ctrl+C${RESET} to stop all services...\n"
+
 
 # Wait for all background jobs to complete (they won't, unless they crash or are killed)
 # The 'wait' command without arguments waits for all background jobs of the current shell.

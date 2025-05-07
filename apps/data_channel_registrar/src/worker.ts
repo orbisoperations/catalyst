@@ -43,7 +43,7 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
       parsedUser.data.userId,
     );
     if (!canCreate) {
-      console.log("cannot create: ", parsedUser.data.orgId, parsedUser.data.userId, canCreate);
+      console.log('cannot create: ', parsedUser.data.orgId, parsedUser.data.userId, canCreate);
       return PermissionCheckResponse.parse({
         success: false,
         error:
@@ -97,7 +97,7 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
       if (channel && channel.accessSwitch === false) {
         return PermissionCheckResponse.parse({
           success: false,
-          error: "catalyst cannot access disabled data channels",
+          error: 'catalyst cannot access disabled data channels',
         });
       }
       // validate JWT here

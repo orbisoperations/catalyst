@@ -44,6 +44,9 @@ export default defineWorkersConfig({
                         },
                     },
                     unsafeEphemeralDurableObjects: true,
+                    serviceBindings: {
+                        AUTHZED: 'authx_authzed_api',
+                    },
                     workers: [
                         {
                             name: 'authx_token_api',
@@ -55,6 +58,9 @@ export default defineWorkersConfig({
                             unsafeEphemeralDurableObjects: true,
                             durableObjects: {
                                 KEY_PROVIDER: 'JWTKeyProvider',
+                            },
+                            serviceBindings: {
+                                DATA_CHANNEL_REGISTRAR: 'data_channel_registrar',
                             },
                         },
                         {
@@ -100,9 +106,6 @@ export default defineWorkersConfig({
                             },
                         },
                     ],
-                    serviceBindings: {
-                        AUTHZED: 'authx_authzed_api',
-                    },
                 },
             },
         },

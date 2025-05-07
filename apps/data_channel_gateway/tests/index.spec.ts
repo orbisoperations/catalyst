@@ -1,26 +1,17 @@
 // test/index.spec.ts
+import { DataChannel } from '@catalyst/schema_zod';
 import { env, SELF } from 'cloudflare:test';
 import { describe, expect, it, TestContext } from 'vitest';
 
-// Define the DataChannel interface
-interface DataChannel {
-    id: string;
-    name: string;
-    endpoint: string;
-    organization: string;
-    schema: string;
-    type: string;
-    accessSwitch?: boolean;
-    description?: string;
-    creatorOrganization?: string;
-}
+const TEST_USER = 'test_user@mail.com';
+const TEST_ORG = 'test_org';
 
 const getToken = async (entity: string, claims: string[], ctx?: TestContext) => {
     const jwtDOID = env.JWT_TOKEN_DO.idFromName('default');
     const jwtStub = env.JWT_TOKEN_DO.get(jwtDOID);
     const tokenResp = await jwtStub.signJWT(
         {
-            entity: entity,
+            entity: `${entity}/${TEST_USER}`,
             claims: claims,
         },
         10 * 60 * 1000
@@ -40,17 +31,14 @@ const setup = async () => {
         id: 'airplanes1',
         name: 'airplanes1',
         endpoint: 'http://localhost:8080/graphql',
-        organization: 'test_org',
-        schema: 'type Query { health: String }',
-        type: 'graphql',
         accessSwitch: true,
         description: 'Test airplane data channel',
-        creatorOrganization: 'test_org',
+        creatorOrganization: TEST_ORG,
     };
 
     // Add proper permissions for the test user
-    await env.AUTHX_AUTHZED_API.addOrgToDataChannel(airplanes1.id, airplanes1.organization);
-    await env.AUTHX_AUTHZED_API.addUserToOrg(airplanes1.organization, 'test_user');
+    await env.AUTHX_AUTHZED_API.addOrgToDataChannel(airplanes1.id, TEST_ORG);
+    await env.AUTHX_AUTHZED_API.addUserToOrg(TEST_ORG, TEST_USER);
 
     // Update the data channel using the Durable Object
     const id = env.DATA_CHANNEL_REGISTRAR_DO.idFromName('default');
@@ -65,8 +53,8 @@ const teardown = async () => {
     await stub.delete('airplanes1');
 
     // Clean up permissions
-    await env.AUTHX_AUTHZED_API.deleteOrgInDataChannel('airplanes1', 'test_org');
-    await env.AUTHX_AUTHZED_API.deleteUserFromOrg('test_org', 'test_user');
+    await env.AUTHX_AUTHZED_API.deleteOrgInDataChannel('airplanes', TEST_ORG);
+    await env.AUTHX_AUTHZED_API.deleteUserFromOrg(TEST_ORG, TEST_USER);
 };
 
 describe('gateway integration tests', () => {
@@ -141,7 +129,10 @@ describe('gateway integration tests', () => {
         await setup();
 
         // Get a token with the proper claims
-        const token = await getToken('test_user', ['airplanes1'], testContext);
+        const token = await getToken(TEST_ORG, ['airplanes1'], testContext);
+        // add channel to org
+        await env.AUTHX_AUTHZED_API.addOrgToDataChannel('airplanes1', TEST_ORG);
+        await env.AUTHX_AUTHZED_API.addDataChannelToOrg(TEST_ORG, 'airplanes1');
 
         const response = await SELF.fetch('http://localhost:8787/graphql', {
             method: 'POST',
