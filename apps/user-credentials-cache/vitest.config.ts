@@ -9,5 +9,9 @@ export default defineWorkersConfig({
 				isolatedStorage: false,
 			},
 		},
+		coverage: {
+			provider: 'istanbul',
+			reporter: ['text', 'json', 'html'],
+		},
 	},
 });

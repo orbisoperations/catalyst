@@ -7,5 +7,5 @@ declare module 'cloudflare:test' {
 	}
 
 	// Ensure RPC properties and methods can be accessed with `SELF`
-	export const SELF: Service<import("../src/index").default>;
+	export const SELF: Service<import('../src/index').default>;
 }
