@@ -155,7 +155,7 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 		if (claims?.length === 0) {
 			return JWTSigningResponse.parse({
 				success: false,
-				error: 'invalid claimes error: JWT creating request must contain at least one claim',
+				error: 'invalid claims error: JWT creating request must contain at least one claim',
 			});
 		}
 
