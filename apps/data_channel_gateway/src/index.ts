@@ -170,7 +170,7 @@ app.use('/graphql', async (ctx) => {
     if (!dataChannelsSingleUseTokens.success) {
         return ctx.json(
             {
-                error: 'not resources found',
+                error: 'no resources found',
             },
             403
         );
