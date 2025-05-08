@@ -1,5 +1,6 @@
 import { defineWorkersConfig } from '@cloudflare/vitest-pool-workers/config';
 import path from 'path';
+import { validUsers } from './test/testUtils';
 
 import { Logger } from 'tslog';
 
@@ -9,74 +10,6 @@ logger.info('Using built services from other workspaces within @catalyst');
 logger.info('no external services used in this project');
 
 logger.info(`Setting up vite tests for the Data Channel Registrar...`);
-const validUsers: Record<
-  string,
-  {
-    id: string;
-    email: string;
-    custom: {
-      'urn:zitadel:iam:org:project:roles': {
-        [key: string]: {
-          [key: string]: string;
-        };
-      };
-    };
-  }
-> = {
-  'admin-cf-token': {
-    id: btoa('test-user@email.com'),
-    email: 'test-user@email.com',
-    custom: {
-      'urn:zitadel:iam:org:project:roles': {
-        'data-custodian': {
-          '1234567890098765432': 'localdevorg.provider.io',
-        },
-        'org-admin': {
-          '1234567890098765432': 'localdevorg.provider.io',
-        },
-        'org-user': {
-          '1234567890098765432': 'localdevorg.provider.io',
-        },
-        'platform-admin': {
-          '1234567890098765432': 'localdevorg.provider.io',
-        },
-      },
-    },
-  },
-  'data-custodian-cf-token': {
-    id: btoa('test-user@email.com'),
-    email: 'test-user@email.com',
-    custom: {
-      'urn:zitadel:iam:org:project:roles': {
-        'data-custodian': {
-          '1234567890098765432': 'localdevorg.provider.io',
-        },
-      },
-    },
-  },
-  'org-admin-cf-token': {
-    id: btoa('test-user@email.com'),
-    email: 'test-user@email.com',
-    custom: {
-      'urn:zitadel:iam:org:project:roles': {
-        'org-admin': {
-          '1234567890098765432': 'localdevorg.provider.io',
-        },
-      },
-    },
-  },
-  'org-user-cf-token': {
-    id: btoa('test-user@email.com'),
-    email: 'test-user@email.com',
-    custom: {
-      'urn:zitadel:iam:org:project:roles': {
-        'org-user': {
-          '1234567890098765432': 'localdevorg.provider.io',
-        },
-      },
-    },
-  },
-};
 
 const handleCloudflareAccessAuthServiceOutbound = async (req: Request) => {
   // receives
@@ -113,10 +46,29 @@ export default defineWorkersConfig({
   logLevel: 'info',
   clearScreen: false,
   test: {
+    coverage: {
+      provider: 'istanbul',
+      reporter: ['text', 'html', 'json-summary', 'lcov'],
+      reportsDirectory: './coverage',
+      include: ['src/**/*.{ts,js}'],
+      exclude: [
+        // Common exclusions
+        '**/node_modules/**',
+        '**/dist/**',
+        '**/test/**',
+        '**/tests/**',
+        '**/*.{test,spec}.?(c|m)[jt]s?(x)', // Exclude test file patterns
+        '**/wrangler.jsonc',
+        '**/vitest.config.*',
+        '**/.wrangler/**',
+        '**/env.d.ts',
+        '**/global-setup.ts',
+      ],
+    },
     globalSetup: './global-setup.ts',
     poolOptions: {
       workers: {
-        isolatedStorage: false,
+        isolatedStorage: true,
         singleWorker: true,
         main: 'src/worker.ts',
         wrangler: { configPath: './wrangler.jsonc' },
@@ -187,25 +139,6 @@ export default defineWorkersConfig({
           ],
         },
       },
-    },
-    coverage: {
-      provider: 'istanbul',
-      reporter: ['text', 'html', 'json-summary'],
-      reportsDirectory: './coverage',
-      include: ['src/**/*.{ts,js}'], // Adjust if your source files are elsewhere
-      exclude: [
-        // Common exclusions
-        '**/node_modules/**',
-        '**/dist/**',
-        '**/test/**',
-        '**/tests/**',
-        '**/*.{test,spec}.?(c|m)[jt]s?(x)', // Exclude test file patterns
-        '**/wrangler.jsonc',
-        '**/vitest.config.*',
-        '**/.wrangler/**',
-        '**/env.d.ts',
-        '**/global-setup.ts',
-      ],
     },
   },
 });
