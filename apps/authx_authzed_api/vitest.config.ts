@@ -21,5 +21,23 @@ export default defineWorkersConfig({
 				},
 			},
 		},
+		coverage: {
+			provider: 'istanbul',
+			reporter: ['text', 'html', 'json-summary'],
+			reportsDirectory: './coverage',
+			include: ['src/**/*.{ts,js}'],
+			exclude: [
+				'**/node_modules/**',
+				'**/dist/**',
+				'**/test/**',
+				'**/tests/**',
+				'**/*.{test,spec}.?(c|m)[jt]s?(x)',
+				'**/wrangler.jsonc',
+				'**/vitest.config.*',
+				'**/.wrangler/**',
+				'**/env.d.ts',
+				'**/global-setup.ts',
+			],
+		},
 	},
 });
