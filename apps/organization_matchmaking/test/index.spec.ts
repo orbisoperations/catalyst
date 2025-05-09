@@ -195,8 +195,8 @@ describe('organization matchmaking worker', () => {
 
 		const inviteToSend = generateInvites(1)[0];
 
-		const inviteSentRespone: OrgInviteResponse = await stub.send(inviteToSend.sender, inviteToSend.receiver, inviteToSend.message);
-		expect(inviteSentRespone.success).toBe(true);
+		const inviteSentResponse: OrgInviteResponse = await stub.send(inviteToSend.sender, inviteToSend.receiver, inviteToSend.message);
+		expect(inviteSentResponse.success).toBe(true);
 
 		// @ts-expect-error: ts complains about the type of the invite because no check before
 		const inviteResponse = inviteSentRespone.invite;
