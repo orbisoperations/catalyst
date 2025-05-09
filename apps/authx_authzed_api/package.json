@@ -3,24 +3,24 @@
 	"version": "0.0.0",
 	"private": true,
 	"scripts": {
-		"deploymentDemo": "yes | wrangler deploy --minify --keep-vars --env demo",
-		"deploymentStaging": "yes | wrangler deploy --keep-vars --env staging",
 		"dev": "wrangler dev --port 5050",
 		"test": "vitest",
 		"test:workspace": "vitest run --silent",
+		"test:coverage": "vitest --coverage",
 		"build": "wrangler build"
 	},
 	"devDependencies": {
-		"@cloudflare/vitest-pool-workers": "catalog:",
-		"@cloudflare/workers-types": "catalog:",
-		"@eslint/js": "catalog:",
-		"typescript": "catalog:",
-		"vitest": "catalog:",
-		"wrangler": "catalog:"
+		"@cloudflare/vitest-pool-workers": "^0.8.23",
+		"@cloudflare/workers-types": "^4.20250430.0",
+		"@eslint/js": "^9.25.1",
+		"@vitest/coverage-istanbul": "^3.1.3",
+		"typescript": "^5.5.4",
+		"vitest": "^3.1.3",
+		"wrangler": "^4.14.0"
 	},
 	"dependencies": {
 		"@catalyst/schema_zod": "workspace:^",
-		"tslog": "catalog:",
+		"tslog": "^4.9.3",
 		"zod": "^3.22.4"
 	}
 }

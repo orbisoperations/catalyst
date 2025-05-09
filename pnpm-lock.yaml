@@ -12,9 +12,6 @@ catalogs:
     '@chakra-ui/react':
       specifier: ^2.8.2
       version: 2.10.7
-    '@cloudflare/vitest-pool-workers':
-      specifier: ^0.8.22
-      version: 0.8.23
     '@cloudflare/workers-types':
       specifier: ^4.20250414.0
       version: 4.20250430.0
@@ -54,15 +51,9 @@ catalogs:
     '@types/mocha':
       specifier: ^10
       version: 10.0.10
-    '@types/uuid':
-      specifier: ^9.0.8
-      version: 9.0.8
     '@urql/core':
       specifier: ^4.3.0
       version: 4.3.0
-    base64url:
-      specifier: ^3.0.1
-      version: 3.0.1
     chai:
       specifier: ^4
       version: 4.5.0
@@ -141,12 +132,6 @@ catalogs:
     unstorage:
       specifier: ^1.10.2
       version: 1.16.0
-    uuid:
-      specifier: ^9.0.1
-      version: 9.0.1
-    vitest:
-      specifier: ~3.0.7
-      version: 3.0.9
     wrangler:
       specifier: ^4.13.2
       version: 4.13.2
@@ -210,30 +195,33 @@ importers:
         specifier: workspace:^
         version: link:../../packages/schema_zod
       tslog:
-        specifier: 'catalog:'
+        specifier: ^4.9.3
         version: 4.9.3
       zod:
         specifier: ^3.22.4
         version: 3.24.3
     devDependencies:
       '@cloudflare/vitest-pool-workers':
-        specifier: 'catalog:'
-        version: 0.8.23(@cloudflare/workers-types@4.20250430.0)(@vitest/runner@3.1.3)(@vitest/snapshot@3.1.3)(vitest@3.0.9(@types/debug@4.1.12)(@types/node@22.15.3)(jiti@2.4.2)(terser@5.16.9)(tsx@4.19.4)(yaml@2.7.1))
+        specifier: ^0.8.23
+        version: 0.8.23(@cloudflare/workers-types@4.20250430.0)(@vitest/runner@3.1.3)(@vitest/snapshot@3.1.3)(vitest@3.1.3(@types/debug@4.1.12)(@types/node@22.15.3)(jiti@2.4.2)(terser@5.16.9)(tsx@4.19.4)(yaml@2.7.1))
       '@cloudflare/workers-types':
-        specifier: 'catalog:'
+        specifier: ^4.20250430.0
         version: 4.20250430.0
       '@eslint/js':
-        specifier: 'catalog:'
+        specifier: ^9.25.1
         version: 9.25.1
+      '@vitest/coverage-istanbul':
+        specifier: ^3.1.3
+        version: 3.1.3(vitest@3.1.3(@types/debug@4.1.12)(@types/node@22.15.3)(jiti@2.4.2)(terser@5.16.9)(tsx@4.19.4)(yaml@2.7.1))
       typescript:
-        specifier: 'catalog:'
+        specifier: ^5.5.4
         version: 5.8.3
       vitest:
-        specifier: 'catalog:'
-        version: 3.0.9(@types/debug@4.1.12)(@types/node@22.15.3)(jiti@2.4.2)(terser@5.16.9)(tsx@4.19.4)(yaml@2.7.1)
+        specifier: ^3.1.3
+        version: 3.1.3(@types/debug@4.1.12)(@types/node@22.15.3)(jiti@2.4.2)(terser@5.16.9)(tsx@4.19.4)(yaml@2.7.1)
       wrangler:
-        specifier: 'catalog:'
-        version: 4.13.2(@cloudflare/workers-types@4.20250430.0)
+        specifier: ^4.14.0
+        version: 4.14.0(@cloudflare/workers-types@4.20250430.0)
 
   apps/authx_token_api:
     devDependencies:
@@ -241,38 +229,41 @@ importers:
         specifier: workspace:*
         version: link:../../packages/schema_zod
       '@cloudflare/vitest-pool-workers':
-        specifier: 'catalog:'
-        version: 0.8.23(@cloudflare/workers-types@4.20250430.0)(@vitest/runner@3.1.3)(@vitest/snapshot@3.1.3)(vitest@3.0.9(@types/debug@4.1.12)(@types/node@22.15.3)(jiti@2.4.2)(terser@5.16.9)(tsx@4.19.4)(yaml@2.7.1))
+        specifier: ^0.8.23
+        version: 0.8.23(@cloudflare/workers-types@4.20250430.0)(@vitest/runner@3.1.3)(@vitest/snapshot@3.1.3)(vitest@3.1.3(@types/debug@4.1.12)(@types/node@22.15.3)(jiti@2.4.2)(terser@5.16.9)(tsx@4.19.4)(yaml@2.7.1))
       '@cloudflare/workers-types':
-        specifier: 'catalog:'
+        specifier: ^4.20250430.0
         version: 4.20250430.0
       '@eslint/js':
-        specifier: 'catalog:'
+        specifier: ^9.25.1
         version: 9.25.1
       '@types/uuid':
-        specifier: 'catalog:'
+        specifier: ^9.0.8
         version: 9.0.8
+      '@vitest/coverage-istanbul':
+        specifier: ^3.1.3
+        version: 3.1.3(vitest@3.1.3(@types/debug@4.1.12)(@types/node@22.15.3)(jiti@2.4.2)(terser@5.16.9)(tsx@4.19.4)(yaml@2.7.1))
       base64url:
-        specifier: 'catalog:'
+        specifier: ^3.0.1
         version: 3.0.1
       bun:
         specifier: ^1.1.7
         version: 1.2.11
       jose:
-        specifier: ^5.2.4
+        specifier: ^5.10.0
         version: 5.10.0
       typescript:
-        specifier: 'catalog:'
+        specifier: ^5.8.3
         version: 5.8.3
       uuid:
-        specifier: 'catalog:'
+        specifier: ^9.0.1
         version: 9.0.1
       vitest:
-        specifier: 'catalog:'
-        version: 3.0.9(@types/debug@4.1.12)(@types/node@22.15.3)(jiti@2.4.2)(terser@5.16.9)(tsx@4.19.4)(yaml@2.7.1)
+        specifier: ^3.1.3
+        version: 3.1.3(@types/debug@4.1.12)(@types/node@22.15.3)(jiti@2.4.2)(terser@5.16.9)(tsx@4.19.4)(yaml@2.7.1)
       wrangler:
-        specifier: 'catalog:'
-        version: 4.13.2(@cloudflare/workers-types@4.20250430.0)
+        specifier: ^4.14.0
+        version: 4.14.0(@cloudflare/workers-types@4.20250430.0)
 
   apps/catalyst-ui-worker:
     dependencies:
@@ -11449,23 +11440,6 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  '@cloudflare/vitest-pool-workers@0.8.23(@cloudflare/workers-types@4.20250430.0)(@vitest/runner@3.1.3)(@vitest/snapshot@3.1.3)(vitest@3.0.9(@types/debug@4.1.12)(@types/node@22.15.3)(jiti@2.4.2)(terser@5.16.9)(tsx@4.19.4)(yaml@2.7.1))':
-    dependencies:
-      '@vitest/runner': 3.1.3
-      '@vitest/snapshot': 3.1.3
-      birpc: 0.2.14
-      cjs-module-lexer: 1.4.3
-      devalue: 4.3.3
-      miniflare: 4.20250428.0
-      semver: 7.7.1
-      vitest: 3.0.9(@types/debug@4.1.12)(@types/node@22.15.3)(jiti@2.4.2)(terser@5.16.9)(tsx@4.19.4)(yaml@2.7.1)
-      wrangler: 4.14.0(@cloudflare/workers-types@4.20250430.0)
-      zod: 3.24.3
-    transitivePeerDependencies:
-      - '@cloudflare/workers-types'
-      - bufferutil
-      - utf-8-validate
-
   '@cloudflare/vitest-pool-workers@0.8.23(@cloudflare/workers-types@4.20250430.0)(@vitest/runner@3.1.3)(@vitest/snapshot@3.1.3)(vitest@3.1.3(@types/debug@4.1.12)(@types/node@22.15.3)(jiti@2.4.2)(terser@5.16.9)(tsx@4.19.4)(yaml@2.7.1))':
     dependencies:
       '@vitest/runner': 3.1.3
@@ -14560,14 +14534,6 @@ snapshots:
       magic-string: 0.30.17
     optionalDependencies:
       vite: 6.3.4(@types/node@20.17.32)(jiti@2.4.2)(terser@5.16.9)(tsx@4.19.4)(yaml@2.7.1)
-
-  '@vitest/mocker@3.0.9(vite@6.3.4(@types/node@22.15.3)(jiti@2.4.2)(terser@5.16.9)(tsx@4.19.4)(yaml@2.7.1))':
-    dependencies:
-      '@vitest/spy': 3.0.9
-      estree-walker: 3.0.3
-      magic-string: 0.30.17
-    optionalDependencies:
-      vite: 6.3.4(@types/node@22.15.3)(jiti@2.4.2)(terser@5.16.9)(tsx@4.19.4)(yaml@2.7.1)
 
   '@vitest/mocker@3.1.3(vite@6.3.4(@types/node@22.15.3)(jiti@2.4.2)(terser@5.16.9)(tsx@4.19.4)(yaml@2.7.1))':
     dependencies:
@@ -20244,27 +20210,6 @@ snapshots:
       - tsx
       - yaml
 
-  vite-node@3.0.9(@types/node@22.15.3)(jiti@2.4.2)(terser@5.16.9)(tsx@4.19.4)(yaml@2.7.1):
-    dependencies:
-      cac: 6.7.14
-      debug: 4.4.0(supports-color@8.1.1)
-      es-module-lexer: 1.7.0
-      pathe: 2.0.3
-      vite: 6.3.4(@types/node@22.15.3)(jiti@2.4.2)(terser@5.16.9)(tsx@4.19.4)(yaml@2.7.1)
-    transitivePeerDependencies:
-      - '@types/node'
-      - jiti
-      - less
-      - lightningcss
-      - sass
-      - sass-embedded
-      - stylus
-      - sugarss
-      - supports-color
-      - terser
-      - tsx
-      - yaml
-
   vite-node@3.1.3(@types/node@22.15.3)(jiti@2.4.2)(terser@5.16.9)(tsx@4.19.4)(yaml@2.7.1):
     dependencies:
       cac: 6.7.14
@@ -20343,45 +20288,6 @@ snapshots:
     optionalDependencies:
       '@types/debug': 4.1.12
       '@types/node': 20.17.32
-    transitivePeerDependencies:
-      - jiti
-      - less
-      - lightningcss
-      - msw
-      - sass
-      - sass-embedded
-      - stylus
-      - sugarss
-      - supports-color
-      - terser
-      - tsx
-      - yaml
-
-  vitest@3.0.9(@types/debug@4.1.12)(@types/node@22.15.3)(jiti@2.4.2)(terser@5.16.9)(tsx@4.19.4)(yaml@2.7.1):
-    dependencies:
-      '@vitest/expect': 3.0.9
-      '@vitest/mocker': 3.0.9(vite@6.3.4(@types/node@22.15.3)(jiti@2.4.2)(terser@5.16.9)(tsx@4.19.4)(yaml@2.7.1))
-      '@vitest/pretty-format': 3.1.2
-      '@vitest/runner': 3.0.9
-      '@vitest/snapshot': 3.0.9
-      '@vitest/spy': 3.0.9
-      '@vitest/utils': 3.0.9
-      chai: 5.2.0
-      debug: 4.4.0(supports-color@8.1.1)
-      expect-type: 1.2.1
-      magic-string: 0.30.17
-      pathe: 2.0.3
-      std-env: 3.9.0
-      tinybench: 2.9.0
-      tinyexec: 0.3.2
-      tinypool: 1.0.2
-      tinyrainbow: 2.0.0
-      vite: 6.3.4(@types/node@22.15.3)(jiti@2.4.2)(terser@5.16.9)(tsx@4.19.4)(yaml@2.7.1)
-      vite-node: 3.0.9(@types/node@22.15.3)(jiti@2.4.2)(terser@5.16.9)(tsx@4.19.4)(yaml@2.7.1)
-      why-is-node-running: 2.3.0
-    optionalDependencies:
-      '@types/debug': 4.1.12
-      '@types/node': 22.15.3
     transitivePeerDependencies:
       - jiti
       - less

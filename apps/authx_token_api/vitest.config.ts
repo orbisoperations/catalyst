@@ -1,22 +1,23 @@
 import { defineWorkersConfig } from '@cloudflare/vitest-pool-workers/config';
 import path from 'path';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const validUsers: Record<string, any> = {
 	'admin-cf-token': {
 		email: 'email@example.com',
 		custom: {
 			'urn:zitadel:iam:org:project:roles': {
 				'data-custodian': {
-					'YES': 'auth.provider.io',
+					YES: 'auth.provider.io',
 				},
 				'org-admin': {
-					'YES': 'auth.provider.io',
+					YES: 'auth.provider.io',
 				},
 				'org-user': {
-					'YES': 'auth.provider.io',
+					YES: 'auth.provider.io',
 				},
 				'platform-admin': {
-					'YES': 'auth.provider.io',
+					YES: 'auth.provider.io',
 				},
 			},
 		},
@@ -26,10 +27,10 @@ const validUsers: Record<string, any> = {
 		custom: {
 			'urn:zitadel:iam:org:project:roles': {
 				'data-custodian': {
-					'YES': 'auth.provider.io',
+					YES: 'auth.provider.io',
 				},
 				'org-user': {
-					'YES': 'auth.provider.io',
+					YES: 'auth.provider.io',
 				},
 			},
 		},
@@ -128,6 +129,25 @@ export default defineWorkersConfig({
 					],
 				},
 			},
+		},
+		coverage: {
+			provider: 'istanbul',
+			reporter: ['text', 'html', 'json-summary'],
+			reportsDirectory: './coverage',
+			include: ['src/**/*.{ts,js}'], // Adjust if your source files are elsewhere
+			exclude: [
+				// Common exclusions
+				'**/node_modules/**',
+				'**/dist/**',
+				'**/test/**',
+				'**/tests/**',
+				'**/*.{test,spec}.?(c|m)[jt]s?(x)', // Exclude test file patterns
+				'**/wrangler.jsonc',
+				'**/vitest.config.*',
+				'**/.wrangler/**',
+				'**/env.d.ts',
+				'**/global-setup.ts',
+			],
 		},
 	},
 });
