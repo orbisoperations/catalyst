@@ -264,7 +264,7 @@ export default class OrganizationMatchmakingWorker extends WorkerEntrypoint<Env>
 		if (!permCheck) {
 			return OrgInviteResponse.parse({
 				success: false,
-				error: 'catalyst rejects users abiltiy to add an org partner',
+				error: 'catalyst rejects users ability to add an org partner',
 			});
 		}
 		const id = this.env.ORG_MATCHMAKING.idFromName(doNamespace);
@@ -291,7 +291,7 @@ export default class OrganizationMatchmakingWorker extends WorkerEntrypoint<Env>
 		if (!permCheck) {
 			return OrgInviteResponse.parse({
 				success: false,
-				error: 'catalyst rejects users abiltiy to add an org partner',
+				error: 'catalyst rejects users ability to add an org partner',
 			});
 		}
 		const id = this.env.ORG_MATCHMAKING.idFromName(doNamespace);

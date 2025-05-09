@@ -199,7 +199,7 @@ describe('organization matchmaking worker', () => {
 		expect(inviteSentResponse.success).toBe(true);
 
 		// @ts-expect-error: ts complains about the type of the invite because no check before
-		const inviteResponse = inviteSentRespone.invite;
+		const inviteResponse = inviteSentResponse.invite;
 		expect(inviteResponse).toBeDefined();
 
 		const response: OrgInviteResponse = await stub.respond(inviteToSend.receiver, inviteResponse.id, OrgInviteStatus.enum.accepted);
@@ -636,7 +636,7 @@ describe('organization matchmaking worker', () => {
 
 			expect(response.success).toBe(false);
 			if (!response.success) {
-				expect(response.error).toBe('catalyst rejects users abiltiy to add an org partner');
+				expect(response.error).toBe('catalyst rejects users ability to add an org partner');
 			}
 		});
 	});
