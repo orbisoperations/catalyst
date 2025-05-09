@@ -743,7 +743,7 @@ describe('organization matchmaking worker', () => {
 
 			expect(response.success).toBe(false);
 			if (!response.success) {
-				expect(response.error).toBe('catalyst rejects users abiltiy to add an org partner');
+				expect(response.error).toBe('catalyst rejects users ability to add an org partner');
 			}
 		});
 
