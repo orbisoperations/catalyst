@@ -114,12 +114,32 @@ export class OrganizationMatchmakingDO extends DurableObject {
 		}
 		// toggle invite value
 		const invite = filteredInvites[0];
+		const otherOrg = invite.sender == orgId ? invite.receiver : invite.sender;
+		const otherMailbox = (await this.ctx.storage.get<OrgInvite[]>(otherOrg)) ?? new Array<OrgInvite>();
+
+		if (otherMailbox.filter((invite) => invite.id == inviteId).length != 1) {
+			return OrgInviteResponse.parse({
+				success: false,
+				error: 'catalyst cannot find the other invite',
+			});
+		}
+
 		invite.isActive = !invite.isActive;
 		await this.ctx.blockConcurrencyWhile(async () => {
-			// update org mailbox
+			// update both mailboxes
 			await this.ctx.storage.put(
 				orgId,
 				orgMailbox.map((inviteF) => {
+					if (inviteF.id == inviteId) {
+						return invite;
+					} else {
+						return inviteF;
+					}
+				}),
+			);
+			await this.ctx.storage.put(
+				otherOrg,
+				otherMailbox.map((inviteF) => {
 					if (inviteF.id == inviteId) {
 						return invite;
 					} else {
@@ -176,7 +196,7 @@ export class OrganizationMatchmakingDO extends DurableObject {
 			});
 			return OrgInviteResponse.parse({
 				success: true,
-				invite: invite,
+				invite: Object.assign(invite, { status: status }),
 			});
 		} else if (status == OrgInviteStatus.enum.accepted) {
 			// only the receiver can accept
@@ -244,7 +264,7 @@ export default class OrganizationMatchmakingWorker extends WorkerEntrypoint<Env>
 		if (!permCheck) {
 			return OrgInviteResponse.parse({
 				success: false,
-				error: 'catalyst rejects users abiltiy to add an org partner',
+				error: 'catalyst rejects users ability to add an org partner',
 			});
 		}
 		const id = this.env.ORG_MATCHMAKING.idFromName(doNamespace);
@@ -271,7 +291,7 @@ export default class OrganizationMatchmakingWorker extends WorkerEntrypoint<Env>
 		if (!permCheck) {
 			return OrgInviteResponse.parse({
 				success: false,
-				error: 'catalyst rejects users abiltiy to add an org partner',
+				error: 'catalyst rejects users ability to add an org partner',
 			});
 		}
 		const id = this.env.ORG_MATCHMAKING.idFromName(doNamespace);
