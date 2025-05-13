@@ -7,8 +7,6 @@ import { buildSchema, parse, print } from 'graphql';
 import { createYoga } from 'graphql-yoga';
 import { Hono } from 'hono';
 import { Env } from './env';
-import { Variables } from './types';
-import { generateSingleUseCatalystTokens } from './tokenGenerators';
 
 // // https://github.com/ardatan/schema-stitching/blob/master/examples/stitching-directives-sdl/src/gateway.ts
 export async function fetchRemoteSchema(executor: Executor) {
@@ -27,30 +25,31 @@ export async function fetchRemoteSchema(executor: Executor) {
 }
 
 // https://github.com/ardatan/schema-stitching/blob/master/examples/combining-local-and-remote-schemas/src/gateway.ts
-export async function makeGatewaySchema(endpointsInfo: { endpoint: string; singleUseToken: string }[]) {
+export async function makeGatewaySchema(endpoints: { token: string; endpoint: string }[]) {
     console.log('makeGatewaySchema');
 
     const { stitchingDirectivesTransformer } = stitchingDirectives();
     // Make remote executors:
     // these are simple functions that query a remote GraphQL API for JSON.
-    const remoteExecutors = endpointsInfo.map(({ endpoint, singleUseToken }) => {
-        // generate a single use token for the data channel
-        const executor: AsyncExecutor = async ({ document, variables, operationName, extensions }) => {
-            const query = print(document);
-            const fetchResult = await fetch(endpoint, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Accept: 'application/json',
-                    Authorization: `Bearer ${singleUseToken}`,
-                    //  Authorization: executorRequest?.context?.authHeader,
-                },
-                body: JSON.stringify({ query, variables, operationName, extensions }),
-            });
-            return fetchResult.json();
-        };
-        return executor;
-    });
+    const remoteExecutors = endpoints
+        .map(({ endpoint, token }) => {
+            const executor: AsyncExecutor = async ({ document, variables, operationName, extensions }) => {
+                const query = print(document);
+                const fetchResult = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Accept: 'application/json',
+                        Authorization: `Bearer ${token}`,
+                        //  Authorization: executorRequest?.context?.authHeader,
+                    },
+                    body: JSON.stringify({ query, variables, operationName, extensions }),
+                });
+                return fetchResult.json();
+            };
+            return executor;
+        })
+        .filter((executor) => executor !== null);
     //
     console.log('before promise all');
     const subschemas = Promise.allSettled(
@@ -64,7 +63,14 @@ export async function makeGatewaySchema(endpointsInfo: { endpoint: string; singl
         // Filter out failed producers and only use successful ones
         return (
             results
-                .filter((result) => result.status === 'fulfilled')
+                .filter((result) => {
+                    if (result.status === 'fulfilled') {
+                        return true;
+                    }
+                    // added for tracing on CF observability
+                    console.error('error fetching remote schema:', result.reason);
+                    return false;
+                })
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 .map((result) => (result as PromiseFulfilledResult<any>).value)
         );
@@ -80,7 +86,11 @@ export async function makeGatewaySchema(endpointsInfo: { endpoint: string; singl
         },
     });
 }
-//
+
+export type Variables = {
+    claims: string[];
+    'catalyst-token': string;
+};
 
 const app = new Hono<{
     Bindings: Env;
@@ -126,11 +136,13 @@ app.use(async (c, next) => {
 
     const { valid, entity, claims, jwtId, error: ValidError } = await c.env.AUTHX_TOKEN_API.validateToken(token);
     console.log(valid, entity, claims, jwtId, error);
-    if (!valid || ValidError) {
+    if (!valid || ValidError || !jwtId) {
         return c.json({ message: 'Token validation failed' }, 403);
     }
 
-    if (!jwtId && !(await c.env.JWT_REGISTRY.isOnRevocationList(jwtId))) {
+    // if token is not on the revocation list, this function will return false
+    // else it checks the status agains ENUM.revoked
+    if (await c.env.ISSUED_JWT_REGISTRY.isOnRevocationList(jwtId)) {
         return c.json({ message: 'Token has been revoked' }, 403);
     }
 
@@ -168,17 +180,32 @@ app.use('/graphql', async (ctx) => {
             403
         );
     }
-    const dataChannelsSingleUseTokens = await generateSingleUseCatalystTokens(claims, token.data.catalystToken!, ctx);
-    if (!dataChannelsSingleUseTokens.success) {
+
+    const channelAccessPermissions = await ctx.env.AUTHX_TOKEN_API.splitTokenIntoSingleUseTokens(
+        token.data.catalystToken!,
+        'default'
+    );
+
+    if (!channelAccessPermissions.success) {
         return ctx.json(
             {
-                error: 'no resources found',
+                error: channelAccessPermissions.error,
             },
             403
         );
     }
+
+    // filter out failed signed tokens
+    // map to endpoints
+    const endpoints = channelAccessPermissions.channelPermissions
+        .filter((dataChannelPermission) => dataChannelPermission.success)
+        .map(({ dataChannel, singleUseToken }) => ({
+            token: singleUseToken,
+            endpoint: dataChannel.endpoint,
+        }));
+
     const yoga = createYoga({
-        schema: await makeGatewaySchema(dataChannelsSingleUseTokens.data),
+        schema: await makeGatewaySchema(endpoints),
     });
 
     // @ts-expect-error: for some reason TS is not happy with the yoga function receiving the raw request

@@ -1,6 +1,8 @@
 import { WorkerEntrypoint } from 'cloudflare:workers';
 import {
 	DataChannel,
+	DataChannelAccessToken,
+	DataChannelMultiAccessResponse,
 	DEFAULT_STANDARD_DURATIONS,
 	JWTRotateResponse,
 	JWTSigningRequest,
@@ -13,19 +15,35 @@ import { JWTPayload } from 'jose';
 export { JWTKeyProvider } from './durable_object_security_module';
 
 export default class JWTWorker extends WorkerEntrypoint<Env> {
+	/**
+	 * Retrieves the public key for JWT verification
+	 * @param keyNamespace The namespace to fetch the key from (defaults to 'default')
+	 * @returns Promise containing the public key
+	 */
 	async getPublicKey(keyNamespace: string = 'default') {
 		const id = this.env.KEY_PROVIDER.idFromName(keyNamespace);
 		const stub = this.env.KEY_PROVIDER.get(id);
 		return await stub.getPublicKey();
 	}
 
+	/**
+	 * Retrieves the public key in JWK (JSON Web Key) format
+	 * @param keyNamespace The namespace to fetch the key from (defaults to 'default')
+	 * @returns Promise containing the JWK set
+	 */
 	async getPublicKeyJWK(keyNamespace: string = 'default') {
 		const id = this.env.KEY_PROVIDER.idFromName(keyNamespace);
 		const stub = this.env.KEY_PROVIDER.get(id);
 		return await stub.getJWKS();
 	}
 
-	// rotate requires a token to ensure this is only done by platform admins
+	/**
+	 * Rotates the JWT signing key
+	 * Only platform administrators can perform this operation
+	 * @param token The user's authentication token
+	 * @param keyNamespace The namespace of the key to rotate (defaults to 'default')
+	 * @returns Promise containing the rotation response
+	 */
 	async rotateKey(token: Token, keyNamespace: string = 'default') {
 		if (!token.cfToken) {
 			return JWTRotateResponse.parse({
@@ -67,7 +85,15 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 		}
 	}
 
-	// ensure all claims in the request are valid before signing
+	/**
+	 * Signs a JWT with provided claims after validating user permissions
+	 * Ensures the user has access to all requested claims before signing
+	 * @param jwtRequest Request containing entity and claims for the JWT
+	 * @param expiresIn Duration in milliseconds until the token expires
+	 * @param token The user's authentication token
+	 * @param keyNamespace The namespace for signing keys (defaults to 'default')
+	 * @returns Promise containing the signed JWT response
+	 */
 	async signJWT(jwtRequest: JWTSigningRequest, expiresIn: number, token: Token, keyNamespace: string = 'default') {
 		if (!token.cfToken) {
 			console.error('need a cf token to sign a JWT');
@@ -123,16 +149,21 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 	}
 
 	/**
-	 * Sign a single use JWT for a data channel
-	 * @param jwtRequest
-	 * @param expiresIn
-	 * @param token
-	 * @param keyNamespace
-	 * @returns
+	 * Signs a single-use JWT for a specific data channel using a catalyst token
+	 * This creates a short-lived token for a single data channel access
+	 * Intended for a single use token for a single data channel given a catalyst token was provided
+	 * Not intended for Long Lived Tokens as can be created by users.
+	 *
+	 * This relies only on catalyst token token. This function assumes that the catalyst token has already been validated.
+	 *
+	 * @param claim The data channel claim to include in the token
+	 * @param token The Token object containing the catalyst token
+	 * @param keyNamespace The namespace for signing keys (defaults to 'default')
+	 * @returns Promise containing the JWT signing response
 	 */
 	async signSingleUseJWT(claim: string, token: Token, keyNamespace: string = 'default'): Promise<JWTSigningResponse> {
 		if (!token.catalystToken) {
-			console.error('need a catalyst token to sign a JWT');
+			console.error('error signing single use JWT: did not recieve a catalyst token');
 			return JWTSigningResponse.parse({
 				success: false,
 				error: 'catalyst did not recieve a catalyst token',
@@ -159,37 +190,11 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 			});
 		}
 
-		// TODO: check  against the data channel registrar??? Ask team,
-		// Note: introduces new dependency on AUTH TOKEN API, removes it from the data channel gateway tho
-
-		// data channels that this Catalyst Token Has Access to
-		const validDataChannels = await this.env.DATA_CHANNEL_REGISTRAR.list(keyNamespace, token);
-
-		if (!validDataChannels.success) {
-			console.error(validDataChannels.error);
-			// return a vague error message for security purposes
-			return { success: false, error: 'no resources found' };
-		}
-
-		// data channels that this Catalyst Token Has Access to
-		const readableDataChannels = DataChannel.safeParse(validDataChannels.data).success
-			? [DataChannel.parse(validDataChannels.data)]
-			: DataChannel.array().parse(validDataChannels.data);
-
-		const dataChannel = readableDataChannels.find((dataChannel) => dataChannel.id === claim);
-
-		if (!dataChannel) {
-			return JWTSigningResponse.parse({
-				success: false,
-				error: 'no resources found',
-			});
-		}
-
 		// create a single use JWT for this specific data channel
 		const singleUseJWTs = await stub.signJWT(
 			{
 				entity: decodedToken.payload.sub!,
-				claims: [dataChannel.id],
+				claims: [claim],
 				expiresIn: 5 * DEFAULT_STANDARD_DURATIONS.M,
 			},
 			5 * DEFAULT_STANDARD_DURATIONS.M,
@@ -202,6 +207,101 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 		});
 	}
 
+	/**
+	 * Splits a catalyst token into multiple single-use tokens for individual data channels
+	 * This allows for more granular access control by creating separate tokens for each claim.
+	 *
+	 * This function will:
+	 * - Validate the catalyst token before proceeding with token splitting
+	 * - Only processes data channels the token has valid claims for as specifed by DATA_CHANNEL_REGISTRAR
+	 * - Creates separate single-use JWTs with shorter expiration times (5 minutes)
+	 * - Continues processing remaining claims even if some fail
+	 *
+	 * @param catalystToken The catalyst token to split into separate tokens
+	 * @param keyNamespace The namespace for signing keys (defaults to 'default')
+	 * @returns Promise containing a response with access tokens for each data channel
+	 */
+	async splitTokenIntoSingleUseTokens(catalystToken: string, keyNamespace: string = 'default'): Promise<DataChannelMultiAccessResponse> {
+		const parsedTokenResult = await this.validateToken(catalystToken, keyNamespace);
+		// only propagate the error if the catalyst token is invalid
+		if (!parsedTokenResult.valid) {
+			return {
+				success: false,
+				error: parsedTokenResult.error,
+			};
+		}
+
+		// data channels that this Catalyst Token Has Access to
+		const validDataChannels = await this.env.DATA_CHANNEL_REGISTRAR.list(keyNamespace, { catalystToken });
+		if (!validDataChannels.success) {
+			console.error(validDataChannels.error);
+			// return a vague error message for security purposes
+			return { success: false, error: 'no resources found' };
+		}
+
+		// map this the validDataChannels to a list of DataChannel objects and fail if
+		// any of the data channels are not valid form of DataChannel
+		let readableDataChannels: DataChannel[] = [];
+		if (Array.isArray(validDataChannels.data)) {
+			const result = DataChannel.array().safeParse(validDataChannels.data);
+			if (!result.success) {
+				console.error('Failed to parse array of data channels:', result.error.format());
+				return DataChannelMultiAccessResponse.parse({ success: false, error: 'internal error processing channel information' });
+			}
+			readableDataChannels = result.data;
+		} else {
+			const result = DataChannel.safeParse(validDataChannels.data);
+			if (!result.success) {
+				console.error('Failed to parse single data channel:', result.error.format());
+				return DataChannelMultiAccessResponse.parse({ success: false, error: 'internal error processing channel information' });
+			}
+			readableDataChannels = [result.data];
+		}
+
+		// NOTE: claims are channel.id
+		// filter out readable channels that are not in the claims
+		const claims = parsedTokenResult.claims;
+		const dataChannels = readableDataChannels.filter((dataChannel) => claims.includes(dataChannel.id));
+		if (dataChannels.length === 0) {
+			// no resources found
+			return DataChannelMultiAccessResponse.parse({
+				success: false,
+				error: 'no resources found',
+			});
+		}
+
+		const singleUseTokens: DataChannelAccessToken[] = [];
+		for (const claim of parsedTokenResult.claims) {
+			const singleUseToken = await this.signSingleUseJWT(claim, { catalystToken }, 'default');
+			// fail and log the error on a per claim basis, but continue to sign other claims
+			// intended for silent failing when not able to sign a single use token
+			if (!singleUseToken.success) {
+				singleUseTokens.push({
+					success: false,
+					error: singleUseToken.error,
+				});
+			} else {
+				singleUseTokens.push({
+					success: true,
+					claim: claim,
+					dataChannel: dataChannels.find((dataChannel) => dataChannel.id === claim)!,
+					singleUseToken: singleUseToken.token,
+				});
+			}
+		}
+
+		return {
+			success: true,
+			channelPermissions: singleUseTokens,
+		};
+	}
+
+	/**
+	 * Validates a JWT token using the key provider
+	 * @param token The JWT token string to validate
+	 * @param keyNamespace The namespace for verification keys (defaults to 'default')
+	 * @returns Promise containing the token validation result
+	 */
 	async validateToken(token: string, keyNamespace: string = 'default') {
 		const id = this.env.KEY_PROVIDER.idFromName(keyNamespace);
 		const stub = this.env.KEY_PROVIDER.get(id);
