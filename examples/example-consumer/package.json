@@ -1,0 +1,21 @@
+{
+    "name": "example-consumer",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "start": "pnpm run build && node dist/index.js",
+        "build": "tsc",
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "packageManager": "pnpm@10.8.1",
+    "dependencies": {
+        "jose": "^6.0.11",
+        "lodash": "^4.17.21",
+        "tomi": "^1.0.3",
+        "toml": "^3.0.0"
+    }
+}
