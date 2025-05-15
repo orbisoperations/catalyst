@@ -252,7 +252,7 @@ export async function verifyJwtWithRemoteJwks(
     if (!dataChannelClaims.includes(dataChannelId)) {
         return {
             errorCode: 'JWT_CLAIMS_DO_NOT_ALIGN',
-            message: `JWT Data Channel Claims Does not caontain current ChannelId`,
+            message: `JWT Data Channel Claims Does not contain current ChannelId`,
             verified: false,
         };
     }

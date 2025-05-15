@@ -78,7 +78,7 @@ app.use(async (c, next) => {
     );
 
     if (verificationResult.verified === false) {
-        console.error('JWT Verfication Error Code: ', verificationResult.errorCode, verificationResult.message);
+        console.error('JWT Verification Error Code: ', verificationResult.errorCode, verificationResult.message);
 
         // handle errors
         // jwt error library
