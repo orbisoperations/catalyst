@@ -1,7 +1,7 @@
 {
     "name": "@catalyst-examples/datachannel_cars",
     "scripts": {
-        "dev": "pnpm kill-port 4002 && wrangler dev src/index.ts",
+        "dev": "pnpm kill-port 4002 && wrangler dev src/index.ts --port 4002",
         "deploy": "wrangler deploy --minify src/index.ts",
         "dist": "npx wrangler deploy --dry-run --outdir dist",
         "sim": "pnpm dev"

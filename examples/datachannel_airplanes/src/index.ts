@@ -1,10 +1,9 @@
 import { Hono } from 'hono';
 import { createYoga } from 'graphql-yoga';
 import { printSchema, lexicographicSortSchema } from 'graphql';
-import { grabTokenInHeader } from '@catalyst/jwt';
+import { JWTValidationResult, grabTokenInHeader, verifyJwtWithRemoteJwks } from '@catalyst/jwt';
 
 import SchemaBuilder from '@pothos/core';
-import { ContentfulStatusCode } from 'hono/utils/http-status';
 
 const builder = new SchemaBuilder({});
 
@@ -46,37 +45,76 @@ const yoga = createYoga({
     schema: schema,
 });
 
-const app = new Hono();
+const app = new Hono<{ Bindings: Env }>();
 
 app.use(async (c, next) => {
-    const [, tokenError] = grabTokenInHeader(c.req.header('Authorization'));
+    console.log('schema: ', printSchema(schema));
+    console.log('c.env: ', c.env);
+    if (c.env.CATALYST_GATEWAY_URL == undefined || c.env.CATALYST_DC_ID == undefined) {
+        console.error('CATALYST_GATEWAY_URL or CATALYST_DC_ID is undefined: set variables properly in environment');
+        return c.json(
+            {
+                error: 'Internal Server Error',
+            },
+            500
+        );
+    }
+
+    const [token, tokenError] = grabTokenInHeader(c.req.header('Authorization'));
     if (tokenError) {
         return c.json(
             {
                 error: tokenError.msg,
             },
-            tokenError.status as ContentfulStatusCode
+            tokenError.status
         );
     }
 
-    // const [verified, error] = await verifier.verify(token, issuer, [
-    //   "airplanes"
-    // ])
-    //
-    // if (error) {
-    //   return  c.json({
-    //     error: error.msg
-    //   }, error.status)
-    // }
+    const verificationResult: JWTValidationResult = await verifyJwtWithRemoteJwks(
+        token,
+        c.env.ISSUER,
+        c.env.CATALYST_DC_ID,
+        c.env.CATALYST_GATEWAY_URL.replace('graphql', '.well-known/jwks.json')
+    );
 
-    // if (!verified) {
-    //   return c.json({
-    //     error: "JWT Invalid"
-    //   }, 401)
-    // }
+    if (verificationResult.verified === false) {
+        console.error('JWT Verfication Error Code: ', verificationResult.errorCode, verificationResult.message);
 
-    // we good
-    await next();
+        // handle errors
+        // jwt error library
+        if (verificationResult.jwtError) {
+            console.error('JWT Verfication Internal Error: ', verificationResult.jwtError);
+            return c.json(
+                {
+                    error: 'Error Verifying JWT',
+                },
+                401
+            );
+        }
+
+        if (
+            verificationResult.errorCode === 'JWT_CLAIMS_MISSING' ||
+            verificationResult.errorCode === 'JWT_CLAIMS_DO_NOT_ALIGN' ||
+            verificationResult.errorCode === 'JWT_ISSUER_INVALID'
+        ) {
+            return c.json(
+                {
+                    error: verificationResult.message,
+                },
+                401
+            );
+        }
+
+        // assume unexpected error
+        return c.json(
+            {
+                error: 'Unexpected Error Verifying JWT',
+            },
+            500
+        );
+    }
+
+    return await next();
 });
 
 app.get('/', (c) => {
