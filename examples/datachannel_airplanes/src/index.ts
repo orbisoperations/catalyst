@@ -83,7 +83,7 @@ app.use(async (c, next) => {
         // handle errors
         // jwt error library
         if (verificationResult.jwtError) {
-            console.error('JWT Verfication Internal Error: ', verificationResult.jwtError);
+            console.error('JWT Verification Internal Error: ', verificationResult.jwtError);
             return c.json(
                 {
                     error: 'Error Verifying JWT',
