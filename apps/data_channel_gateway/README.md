@@ -24,12 +24,10 @@ This service is built using:
 
 ## Features
 
-
 ### GraphQL Federation
 
 - **Dynamic Schema Stitching**: Combines multiple GraphQL schemas into a single unified API
 - **Remote Schema Fetching**: Retrieves schemas from registered data channels
-
 
 ## Integration
 
@@ -48,11 +46,18 @@ pnpm install
 pnpm run dev
 ```
 
+## Testing
+
+Before running tests, ensure you have [Podman](https://podman.io/docs/installation) installed on your system. The test suite uses Podman to automatically launch an AuthZed container during test execution.
+
+```
+pnpm test
+```
+
+If tests fail with container errors, verify your Podman installation with `podman --version`.
 
 ## Deployment
 
 ```
 pnpm run deploy
 ```
-
-

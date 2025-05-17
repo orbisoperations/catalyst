@@ -3,11 +3,51 @@
 ## Local Development Setup
 
 Before running tests or developing locally, make sure to start the local development environment by running:
+
 ```bash
 ./run_local_dev.sh
 ```
 
 This script starts the necessary services including the Authzed container required for testing and development. The Authzed container is essential for running tests that involve permissions and authorization.
+
+**Requirements:**
+
+- [Podman](https://podman.io/docs/installation) must be installed on your system to run the AuthZed containers
+- Running `pnpm test` for any app requires Podman to be installed and functioning correctly
+
+## Global App Setup and Podman Automation
+
+Each app in our system uses a `global-setup.ts` file to configure the test environment before running tests. This file serves several important purposes:
+
+1. **Dependency Compilation**: Automatically builds required dependencies for the app under test
+2. **Container Management**: Spins up necessary services in containers using Podman
+3. **Environment Initialization**: Sets up any other requirements for testing
+
+### Dependency Compilation
+
+The global setup automatically compiles all dependencies needed by the application.
+
+### Automated Podman Container Setup
+
+The global setup automatically handles spinning up the Authzed container using Podman for permission testing.
+
+This automation:
+
+1. Mounts the schema.zaml file from the authx_authzed_api directory into the container
+2. Exposes the HTTP endpoint on port 8443
+3. Runs SpiceDB in testing mode with HTTP enabled
+4. Handles errors gracefully, including cases where the container is already running
+
+> **Important**: Podman must be installed on your system for the unit tests to run successfully with `pnpm test`. If you see errors about container creation failures, verify your Podman installation with `podman --version` and ensure it's running correctly.
+
+### Benefits of the Global Setup
+
+- **Consistency**: Ensures all tests run in a standardized environment
+- **Simplicity**: No manual setup required before running tests
+- **Efficiency**: Automatically handles compilation and dependency management
+- **Isolation**: Each test suite gets a clean, isolated testing environment
+
+For full examples, refer to individual app's `global-setup.ts` files in their respective directories.
 
 ## Decalarative Request Mocking
 
@@ -38,17 +78,21 @@ afterEach(() => {
 // Example of mocking a fetch request
 // will interecpt a fetch call if and only if all the params
 // exactly match or if the callback function returns true
-fetchMock.get('https://api.example.com')
-  .intercept({ path: '/data' })
-  .reply(200, { success: true, data: [1, 2, 3] });
+fetchMock
+    .get('https://api.example.com')
+    .intercept({ path: '/data' })
+    .reply(200, { success: true, data: [1, 2, 3] });
 
 // callback
-fetchMock.get('https://api.example.com')
-  .intercept({ path: (body: string) => {
-      const parsedBody = JSON.parse(body);
-      return 'key' in parsedBody;
-  }})
-  .reply(200, { success: true, data: [1, 2, 3] });
+fetchMock
+    .get('https://api.example.com')
+    .intercept({
+        path: (body: string) => {
+            const parsedBody = JSON.parse(body);
+            return 'key' in parsedBody;
+        },
+    })
+    .reply(200, { success: true, data: [1, 2, 3] });
 ```
 
 ### Mocking GraphQL Endpoints
@@ -56,11 +100,7 @@ fetchMock.get('https://api.example.com')
 For testing services that connect to GraphQL endpoints, use the pattern from our resilience tests:
 
 ```typescript
-const createMockGraphqlEndpoint = (
-    endpoint: string,
-    typeDefs: string,
-    dataStore: Record<string, any>
-) => {
+const createMockGraphqlEndpoint = (endpoint: string, typeDefs: string, dataStore: Record<string, any>) => {
     // Mock SDL introspection queries
     fetchMock
         .get(endpoint)
@@ -81,9 +121,7 @@ const createMockGraphqlEndpoint = (
             body: (body) => {
                 return (
                     !body.toString().includes('_sdl') &&
-                    Object.keys(dataStore).some((key) =>
-                        body.toString().includes(key)
-                    )
+                    Object.keys(dataStore).some((key) => body.toString().includes(key))
                 );
             },
         })
@@ -134,14 +172,14 @@ For testing purposes, you need to create the necessary relationships between sub
 ```typescript
 // Example: Add a user as a data custodian to an organization
 const addDataCustodianToOrg = await env.AUTHZED.addDataCustodianToOrg(
-  'localdevorg',                // organization ID
-  'test-user@email.com',        // user email
+    'localdevorg', // organization ID
+    'test-user@email.com' // user email
 );
 
 // Verify the relationship was created correctly
 expect(addDataCustodianToOrg).toBeDefined();
 expect(addDataCustodianToOrg.entity).toBe(
-  `orbisops_catalyst_dev/organization:localdevorg#data_custodian@orbisops_catalyst_dev/user:${btoa('test-user@email.com')}`,
+    `orbisops_catalyst_dev/organization:localdevorg#data_custodian@orbisops_catalyst_dev/user:${btoa('test-user@email.com')}`
 );
 ```
 
@@ -153,7 +191,7 @@ After setting up the permissions, test access to protected resources:
 // Example: Create a channel with a user who has proper permissions
 const dataChannelPayload = {};
 const response = await SELF.create('default', dataChannelPayload, {
-  cfToken: 'admin-cf-token',  // Token associated with a user who has permissions
+    cfToken: 'admin-cf-token', // Token associated with a user who has permissions
 });
 
 // Verify success
@@ -161,7 +199,7 @@ expect(response.success).toBe(true);
 
 // Example: Test access denial
 const unauthorizedResponse = await SELF.create('default', dataChannelPayload, {
-  cfToken: 'user-without-permissions',
+    cfToken: 'user-without-permissions',
 });
 
 // Verify failure
@@ -175,9 +213,9 @@ Use the preconfigured user credentials from your test environment:
 
 ```typescript
 const user = {
-  org: 'localdevorg',
-  email: 'test-user@email.com',
-  token: 'admin-cf-token',  // This token must match your mocked Cloudflare Access setup
+    org: 'localdevorg',
+    email: 'test-user@email.com',
+    token: 'admin-cf-token', // This token must match your mocked Cloudflare Access setup
 };
 
 // The test environment should recognize this token and match it with the user profile

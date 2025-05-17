@@ -2,6 +2,7 @@ import { fetchMock } from 'cloudflare:test';
 import { graphql } from 'graphql';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { makeGatewaySchema } from '../src/index';
+import { createMockGraphqlEndpoint, generateCatalystToken } from './testUtils';
 
 // Docs for fetchMock and request mocking:
 // https://blog.cloudflare.com/workers-vitest-integration/
@@ -21,63 +22,14 @@ afterEach(() => {
     fetchMock.assertNoPendingInterceptors();
 });
 
-const createMockGraphqlEndpoint = (
-    endpoint: string,
-    typeDefs: string,
-    dataStore: Record<string, any>
-) => {
-    fetchMock
-        .get(endpoint)
-        .intercept({
-            path: '/graphql',
-            method: 'POST',
-            body: (body) => {
-                return body.toString().includes('_sdl');
-            },
-        })
-        .reply(200, { data: { _sdl: typeDefs } })
-        .persist();
-
-    fetchMock
-        .get(endpoint)
-        .intercept({
-            path: '/graphql',
-            method: 'POST',
-            body: (body) => {
-                // if body includes any of the keys in the dataStore, return true
-                return (
-                    !body.toString().includes('_sdl') &&
-                    Object.keys(dataStore).some((key) =>
-                        body.toString().includes(key)
-                    )
-                );
-            },
-        })
-        .reply(200, ({ body }) => {
-            return {
-                data: Object.keys(dataStore).reduce((acc, key) => {
-                    if (body?.toString().includes(key)) {
-                        acc[key] = dataStore[key];
-                    }
-                    return acc;
-                }, {} as Record<string, any>),
-            };
-        })
-        .persist();
-};
-
 describe('Schema fetching resilience', () => {
-    it('should handle partial failures with Promise.allSettled', async () => {
-        // Mock endpoints - one working, one failing
-        const endpoints = [
-            { endpoint: 'http://failing-endpoint/graphql' },
-            { endpoint: 'http://working-endpoint/graphql' },
-        ];
-
-        // Mock token
-        const token = 'test-token';
-
+    it('should handle partial failures with Promise.allSettled', async (ctx) => {
         // create mock graphql endpoint for working endpoint
+        const token = await generateCatalystToken('test', ['test-claim'], ctx, 'test_user@mail.com');
+        const endpoints = [
+            { token, endpoint: 'http://failing-endpoint/graphql' },
+            { token, endpoint: 'http://working-endpoint/graphql' },
+        ];
         createMockGraphqlEndpoint(
             'http://working-endpoint',
             '"""Working GraphQL Server""" type Query { workingGraphqlField: String! }',
@@ -85,10 +37,10 @@ describe('Schema fetching resilience', () => {
                 workingGraphqlField: 'dummy-value',
             }
         );
+        // Mock endpoints - one working, one failing
+        const schema = await makeGatewaySchema(endpoints);
 
-        const schema = await makeGatewaySchema(endpoints, token);
-
-        // @ts-ignore: stiching info is not typed
+        // @ts-expect-error: stiching info is not typed
         expect(schema.extensions.stitchingInfo.subschemaMap.size).toBe(1);
 
         // Verify the schema was created (should have the health query)
@@ -107,16 +59,13 @@ describe('Schema fetching resilience', () => {
         });
     });
 
-    it('should handle no failures with Promise.allSettled', async () => {
+    it('should handle no failures with Promise.allSettled', async (ctx) => {
         // Mock endpoints - one working, one failing
+        const token = await generateCatalystToken('test', ['test-claim'], ctx, 'test_user@mail.com');
         const endpoints = [
-            { endpoint: 'http://working-endpoint-1/graphql' },
-            { endpoint: 'http://working-endpoint-2/graphql' },
+            { token, endpoint: 'http://working-endpoint-1/graphql' },
+            { token, endpoint: 'http://working-endpoint-2/graphql' },
         ];
-
-        // Mock token
-        const token = 'test-token';
-
         // create mock graphql endpoint for working endpoint
         createMockGraphqlEndpoint(
             'http://working-endpoint-1',
@@ -125,7 +74,6 @@ describe('Schema fetching resilience', () => {
                 workingGraphqlField: 'dummy-value',
             }
         );
-
         // create mock graphql endpoint for working endpoint
         createMockGraphqlEndpoint(
             'http://working-endpoint-2',
@@ -136,9 +84,11 @@ describe('Schema fetching resilience', () => {
             }
         );
 
-        const schema = await makeGatewaySchema(endpoints, token);
+        const schema = await makeGatewaySchema(endpoints);
+        // @ts-expect-error: stiching info is not typed
+        console.log('schema from test', schema.extensions.stitchingInfo.subschemaMap);
 
-        // @ts-ignore: stiching info is not typed
+        // @ts-expect-error: stiching info is not typed
         expect(schema.extensions.stitchingInfo.subschemaMap.size).toBe(2);
 
         // Verify the schema was created (should have the health query)
@@ -162,19 +112,17 @@ describe('Schema fetching resilience', () => {
         });
     });
 
-    it('should handle all failures with Promise.allSettled', async () => {
+    it('should handle all failures with Promise.allSettled', async (ctx) => {
         // Mock endpoints - one working, one failing
+        const token = await generateCatalystToken('test', ['test-claim'], ctx, 'test_user@mail.com');
         const endpoints = [
-            { endpoint: 'http://failing-endpoint/graphql' },
-            { endpoint: 'http://failing-endpoint-2/graphql' },
+            { token, endpoint: 'http://failing-endpoint/graphql' },
+            { token, endpoint: 'http://failing-endpoint-2/graphql' },
         ];
 
-        // Mock token
-        const token = 'test-token';
+        const schema = await makeGatewaySchema(endpoints);
 
-        const schema = await makeGatewaySchema(endpoints, token);
-
-        // @ts-ignore: stiching info is not typed
+        // @ts-expect-error: stiching info is not typed
         expect(schema.extensions.stitchingInfo.subschemaMap.size).toBe(0);
 
         // Verify the schema was created (should have the health query)

@@ -40,18 +40,17 @@ The application is structured around two main components:
 - **Key Rotation**: Controlled rotation of signing keys
 - **JWKS Endpoint**: JSON Web Key Set for public key distribution
 
-
 ## Integration
 
 The AuthX Token API integrates with the following services:
 
 - [User Credentials Cache](../user-credentials-cache/README.md) - Provides user authentication and validation services. Used to:
-  - Verify user identity and permissions 
+
+  - Verify user identity and permissions
   - Validate organization membership and access rights
   - Cache user credentials to improve performance and reduce external API calls
 
 - [Authzed API](../authx_authzed_api/README.md)
-
 
 ## Development
 
@@ -62,9 +61,12 @@ pnpm run dev
 
 ## Testing
 
+Before running tests, ensure you have [Podman](https://podman.io/docs/installation) installed on your system. The test suite uses Podman to automatically launch an AuthZed container during test execution.
+
 ```
 pnpm test
 ```
 
-## Deployment
+If tests fail with container errors, verify your Podman installation with `podman --version`.
 
+## Deployment

@@ -45,3 +45,19 @@ The application is structured around two main components:
 - **Permission-based Control**: Only authorized users can manage partnerships
 - **Organization Isolation**: Organizations can only manage their own invitations
 
+## Development
+
+```
+pnpm install
+pnpm run dev
+```
+
+## Testing
+
+Before running tests, ensure you have [Podman](https://podman.io/docs/installation) installed on your system. The test suite uses Podman to automatically launch an AuthZed container during test execution.
+
+```
+pnpm test
+```
+
+If tests fail with container errors, verify your Podman installation with `podman --version`.

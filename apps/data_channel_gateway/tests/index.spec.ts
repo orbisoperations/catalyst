@@ -1,49 +1,42 @@
 // test/index.spec.ts
 import { DataChannel, DEFAULT_STANDARD_DURATIONS } from '@catalyst/schema_zod';
-import { env, SELF } from 'cloudflare:test';
+import { env, fetchMock, SELF } from 'cloudflare:test';
 import { afterEach, beforeEach, describe, expect, it, TestContext } from 'vitest';
-import { isWithinRange } from './testUtils';
-const TEST_USER = 'test_user@mail.com';
-const TEST_ORG = 'test_org';
+import { isWithinRange, TEST_ORG, TEST_USER, generateCatalystToken, createMockGraphqlEndpoint } from './testUtils';
 
-const getToken = async (entity: string, claims: string[], ctx?: TestContext) => {
-    const jwtDOID = env.JWT_TOKEN_DO.idFromName('default');
-    const jwtStub = env.JWT_TOKEN_DO.get(jwtDOID);
-    const tokenResp = await jwtStub.signJWT(
-        {
-            entity: `${entity}/${TEST_USER}`,
-            claims: claims,
-        },
-        10 * 60 * 1000
-    );
-
-    console.log({
-        test: ctx?.task.name,
-        signedTokenForTest: tokenResp.token,
-    });
-
-    return tokenResp.token;
-};
-
-const setup = async () => {
-    // Only add the airplane data channel for the airplane test
-    const airplanes1: DataChannel = {
+const DUMMY_DATA_CHANNELS: DataChannel[] = [
+    {
         id: 'airplanes1',
         name: 'airplanes1',
         endpoint: 'http://localhost:8080/graphql',
         accessSwitch: true,
-        description: 'Test airplane data channel',
+        description: 'Test airplane data channel 1',
         creatorOrganization: TEST_ORG,
-    };
+    },
+    {
+        id: 'airplanes2',
+        name: 'airplanes2',
+        endpoint: 'http://localhost:8081/graphql',
+        accessSwitch: true,
+        description: 'Test airplane data channel 2',
+        creatorOrganization: TEST_ORG,
+    },
+];
 
-    // Add proper permissions for the test user
-    await env.AUTHX_AUTHZED_API.addOrgToDataChannel(airplanes1.id, TEST_ORG);
-    await env.AUTHX_AUTHZED_API.addUserToOrg(TEST_ORG, TEST_USER);
+const setup = async () => {
+    // Only add the airplane data channel for the airplane test
 
-    // Update the data channel using the Durable Object
-    const id = env.DATA_CHANNEL_REGISTRAR_DO.idFromName('default');
-    const stub = env.DATA_CHANNEL_REGISTRAR_DO.get(id);
-    await stub.update(airplanes1);
+    for (const dataChannel of DUMMY_DATA_CHANNELS) {
+        // Add proper permissions for the test user
+        await env.AUTHX_AUTHZED_API.addOrgToDataChannel(dataChannel.id, TEST_ORG);
+        await env.AUTHX_AUTHZED_API.addDataChannelToOrg(TEST_ORG, dataChannel.id);
+        await env.AUTHX_AUTHZED_API.addUserToOrg(TEST_ORG, TEST_USER);
+
+        // Update the data channel using the Durable Object
+        const id = env.DATA_CHANNEL_REGISTRAR_DO.idFromName('default');
+        const stub = env.DATA_CHANNEL_REGISTRAR_DO.get(id);
+        await stub.update(dataChannel);
+    }
 };
 
 const teardown = async () => {
@@ -93,7 +86,7 @@ describe('gateway integration tests', () => {
     });
 
     it('should return health a known good token no claims', async (textCtx) => {
-        const token = await getToken('test', [], textCtx);
+        const token = await generateCatalystToken('airplanes1', ['airplanes1'], textCtx);
         const response = await SELF.fetch('https://data-channel-gateway/graphql', {
             method: 'POST',
             headers: {
@@ -130,7 +123,8 @@ describe('gateway integration tests', () => {
                 };
             };
         }>();
-
+        expect(response.status).toBe(200);
+        console.log('responsePayload', responsePayload);
         // Since we did not provide claims when the token was created, this will only return the health query in the list of fields
         expect(responsePayload.data['__type'].fields).toHaveLength(1);
         // @ts-expect-error: ts complains
@@ -141,7 +135,7 @@ describe('gateway integration tests', () => {
         await setup();
 
         // Get a token with the proper claims
-        const token = await getToken(TEST_ORG, ['airplanes1'], testContext);
+        const token = await generateCatalystToken(TEST_ORG, ['airplanes1'], testContext);
         // add channel to org
         await env.AUTHX_AUTHZED_API.addOrgToDataChannel('airplanes1', TEST_ORG);
         await env.AUTHX_AUTHZED_API.addDataChannelToOrg(TEST_ORG, 'airplanes1');
@@ -193,7 +187,7 @@ describe('gateway integration tests', () => {
             creatorOrganization: TEST_ORG,
         };
 
-        const token = await getToken(TEST_ORG, [dataChannel.id], testContext); // token with claims for all data channels
+        const token = await generateCatalystToken(TEST_ORG, [dataChannel.id], testContext); // token with claims for all data channels
 
         // get data channel registry
         const dChannelRegistryId = env.DATA_CHANNEL_REGISTRAR_DO.idFromName('default');
@@ -228,33 +222,15 @@ describe('gateway integration tests', () => {
     it('should create a single use from a valid token with multiple claims', async (testContext) => {
         // add two data channels
         // in an array
-        const dataChannels: DataChannel[] = [
-            {
-                id: 'airplanes1',
-                name: 'airplanes1',
-                endpoint: 'http://localhost:8080/graphql',
-                accessSwitch: true,
-                description: 'Test airplane data channel',
-                creatorOrganization: TEST_ORG,
-            },
-            {
-                id: 'airplanes2',
-                name: 'airplanes2',
-                endpoint: 'http://localhost:8080/graphql',
-                accessSwitch: true,
-                description: 'Test airplane data channel',
-                creatorOrganization: TEST_ORG,
-            },
-        ];
 
-        const ids = dataChannels.map((dataChannel) => dataChannel.id);
-        const token = await getToken(TEST_ORG, ids, testContext); // token with claims for all data channels
+        const ids = DUMMY_DATA_CHANNELS.map((dataChannel) => dataChannel.id);
+        const token = await generateCatalystToken(TEST_ORG, ids, testContext); // token with claims for all data channels
 
         // get data channel registry
         const dChannelRegistryId = env.DATA_CHANNEL_REGISTRAR_DO.idFromName('default');
         const dChannelRegistryStub = env.DATA_CHANNEL_REGISTRAR_DO.get(dChannelRegistryId);
 
-        for (const dataChannel of dataChannels) {
+        for (const dataChannel of DUMMY_DATA_CHANNELS) {
             // add persmissions
             await env.AUTHX_AUTHZED_API.addOrgToDataChannel(dataChannel.id, TEST_ORG);
             await env.AUTHX_AUTHZED_API.addDataChannelToOrg(TEST_ORG, dataChannel.id);
@@ -296,5 +272,51 @@ describe('gateway integration tests', () => {
 
         expect(singleUseToken).toBeDefined();
         expect(singleUseToken.success).toBe(false);
+    });
+
+    it('should be able to access multiple data channels with a single use token', async (testContext) => {
+        // create mock graphql endpoint for working endpoint
+        fetchMock.activate();
+        fetchMock.disableNetConnect();
+
+        DUMMY_DATA_CHANNELS.forEach((dataChannel) => {
+            createMockGraphqlEndpoint(
+                dataChannel.endpoint,
+                `"""Working GraphQL Server for ${dataChannel.id}""" type Query { workingGraphqlField_${dataChannel.id}: String! }`,
+                {
+                    [`workingGraphqlField_${dataChannel.id}`]: `dummy-value-${dataChannel.id}`,
+                }
+            );
+        });
+
+        const ids = DUMMY_DATA_CHANNELS.map((dataChannel) => dataChannel.id);
+        const token = await generateCatalystToken(TEST_ORG, ids, testContext); // token with claims for all data channels
+
+        const gatewayResponse = await SELF.fetch('http://dummy-endpoint/graphql', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+                query: `{ workingGraphqlField_${ids[0]}\nworkingGraphqlField_${ids[1]}\nhealth }`,
+            }),
+        });
+
+        const gateWayResponsePayload: {
+            data: {
+                workingGraphqlField_airplanes1: string;
+                workingGraphqlField_airplanes2: string;
+                health: string;
+            };
+        } = await gatewayResponse.json();
+        expect(gatewayResponse.status).toBe(200);
+        expect(gateWayResponsePayload.data.workingGraphqlField_airplanes1).toBe('dummy-value-airplanes1');
+        expect(gateWayResponsePayload.data.workingGraphqlField_airplanes2).toBe('dummy-value-airplanes2');
+        expect(gateWayResponsePayload.data.health).toBe('OK');
+
+        fetchMock.deactivate();
+        fetchMock.assertNoPendingInterceptors();
+        fetchMock.enableNetConnect();
     });
 });
