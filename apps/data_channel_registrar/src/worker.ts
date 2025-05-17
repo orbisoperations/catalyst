@@ -43,7 +43,6 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
       parsedUser.data.userId,
     );
     if (!canCreate) {
-      console.log('cannot create: ', parsedUser.data.orgId, parsedUser.data.userId, canCreate);
       return PermissionCheckResponse.parse({
         success: false,
         error:
@@ -59,7 +58,6 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
   async RPerms(token: Token, dataChannelId: string, channel?: DataChannel) {
     if (token.cfToken) {
       const user: User | undefined = await this.env.USERCACHE.getUser(token.cfToken);
-
       const parsedUser = User.safeParse(user);
       if (!parsedUser.success) {
         return PermissionCheckResponse.parse({
@@ -194,6 +192,13 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
     const stub = this.env.DO.get(doId);
     const channel = await stub.get(dataChannelId);
     console.log('found dc: ', channel);
+    if (!channel) {
+      return DataChannelActionResponse.parse({
+        success: false,
+        error: 'catalyst unable to find data channel',
+      });
+    }
+
     return DataChannelActionResponse.parse({
       success: true,
       data: channel,
@@ -203,7 +208,7 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
   async list(doNamespace: string, token: Token) {
     const { DO } = this.env;
     const doId = DO.idFromName(doNamespace);
-    const stub: Registrar = DO.get(doId);
+    const stub: DurableObjectStub<Registrar> = DO.get(doId);
     const list: DataChannel[] = await stub.list();
 
     const listWithPerms = (

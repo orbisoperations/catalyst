@@ -1,4 +1,4 @@
-import { env, fetchMock, runInDurableObject, SELF } from 'cloudflare:test';
+import { env, fetchMock, SELF } from 'cloudflare:test';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { DataChannel, DataChannelActionResponse } from '../../../packages/schema_zod';
 
@@ -22,11 +22,6 @@ describe('Data Channel Registrar as Durable Object integration tests', () => {
   beforeEach(async () => {
     fetchMock.activate();
     fetchMock.disableNetConnect();
-    const id = env.DO.idFromName('default');
-    const stub = env.DO.get(id);
-    await runInDurableObject(stub, async (instance, state) => {
-      await state.storage.deleteAll();
-    });
   });
 
   afterEach(() => {
@@ -37,7 +32,7 @@ describe('Data Channel Registrar as Durable Object integration tests', () => {
   it('should be able to access the RegistrarDO', async () => {
     const id = env.DO.idFromName('default');
     const stub = env.DO.get(id);
-    console.log('stub', stub);
+
     expect(stub).toBeDefined();
 
     const name = stub.name;
@@ -64,16 +59,16 @@ describe('Data Channel Registrar as Durable Object integration tests', () => {
     const nonExistentUser = await env.USERCACHE.getUser('test');
     expect(nonExistentUser).toBeUndefined();
 
-    const existentUser = await env.USERCACHE.getUser('admin-cf-token');
+    const existentUser = await env.USERCACHE.getUser('cf-org-admin-token');
     expect(existentUser).toBeDefined();
   });
 
   //   it should be able to access AUTH_API
   it('should be able to access AUTH_API', async () => {
-    const authapi = env.AUTHX_TOKEN_API.getPublicKey('test');
+    const authapi = await env.AUTHX_TOKEN_API.getPublicKey('test');
     expect(authapi).toBeDefined();
-    const authapi2 = env.AUTHX_TOKEN_API.getPublicKeyJWK('test');
-    expect(authapi2).toBeDefined;
+    const authapi2 = await env.AUTHX_TOKEN_API.getPublicKeyJWK('test');
+    expect(authapi2).toBeDefined();
   });
 
   it('should be able to access the RegistrarWorker', async () => {
