@@ -1,14 +1,16 @@
-import { DurableObjectNamespace } from '@cloudflare/workers-types';
 import { WorkerEntrypoint } from 'cloudflare:workers';
-import { JWTRotateResponse, JWTSigningRequest, JWTSigningResponse, Token, User } from '../../../packages/schema_zod';
-import { JWTKeyProvider } from './durable_object_security_module';
+import {
+	DataChannel,
+	DEFAULT_STANDARD_DURATIONS,
+	JWTRotateResponse,
+	JWTSigningRequest,
+	JWTSigningResponse,
+	Token,
+	User,
+} from '../../../packages/schema_zod';
 import { Env } from './env';
+import { JWTPayload } from 'jose';
 export { JWTKeyProvider } from './durable_object_security_module';
-
-type Bindings = {
-	// @ts-ignore
-	KEY_PROVIDER: DurableObjectNamespace<JWTKeyProvider>;
-};
 
 export default class JWTWorker extends WorkerEntrypoint<Env> {
 	async getPublicKey(keyNamespace: string = 'default') {
@@ -117,6 +119,86 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 			success: true,
 			token: jwt.token,
 			expiration: jwt.expiration,
+		});
+	}
+
+	/**
+	 * Sign a single use JWT for a data channel
+	 * @param jwtRequest
+	 * @param expiresIn
+	 * @param token
+	 * @param keyNamespace
+	 * @returns
+	 */
+	async signSingleUseJWT(claim: string, token: Token, keyNamespace: string = 'default'): Promise<JWTSigningResponse> {
+		if (!token.catalystToken) {
+			console.error('need a catalyst token to sign a JWT');
+			return JWTSigningResponse.parse({
+				success: false,
+				error: 'catalyst did not recieve a catalyst token',
+			});
+		}
+		const id = this.env.KEY_PROVIDER.idFromName(keyNamespace);
+		const stub = this.env.KEY_PROVIDER.get(id);
+
+		// decode the CT token
+		const decodedToken: { success: boolean; payload: JWTPayload } = await stub.decodeToken(token.catalystToken);
+		if (!decodedToken?.payload || !decodedToken.payload.claims) {
+			return JWTSigningResponse.parse({
+				success: false,
+				error: 'error decoding catalyst token',
+			});
+		}
+
+		const claims = decodedToken.payload.claims;
+		// @ts-expect-error: claims is not typed, but exists in the JWT payload
+		if (claims?.length === 0) {
+			return JWTSigningResponse.parse({
+				success: false,
+				error: 'invalid claims error: JWT creating request must contain at least one claim',
+			});
+		}
+
+		// TODO: check  against the data channel registrar??? Ask team,
+		// Note: introduces new dependency on AUTH TOKEN API, removes it from the data channel gateway tho
+
+		// data channels that this Catalyst Token Has Access to
+		const validDataChannels = await this.env.DATA_CHANNEL_REGISTRAR.list(keyNamespace, token);
+
+		if (!validDataChannels.success) {
+			console.error(validDataChannels.error);
+			// return a vague error message for security purposes
+			return { success: false, error: 'no resources found' };
+		}
+
+		// data channels that this Catalyst Token Has Access to
+		const readableDataChannels = DataChannel.safeParse(validDataChannels.data).success
+			? [DataChannel.parse(validDataChannels.data)]
+			: DataChannel.array().parse(validDataChannels.data);
+
+		const dataChannel = readableDataChannels.find((dataChannel) => dataChannel.id === claim);
+
+		if (!dataChannel) {
+			return JWTSigningResponse.parse({
+				success: false,
+				error: 'no resources found',
+			});
+		}
+
+		// create a single use JWT for this specific data channel
+		const singleUseJWTs = await stub.signJWT(
+			{
+				entity: decodedToken.payload.sub!,
+				claims: [dataChannel.id],
+				expiresIn: 5 * DEFAULT_STANDARD_DURATIONS.M,
+			},
+			5 * DEFAULT_STANDARD_DURATIONS.M,
+		);
+
+		return JWTSigningResponse.parse({
+			success: true,
+			token: singleUseJWTs.token,
+			expiration: singleUseJWTs.expiration,
 		});
 	}
 

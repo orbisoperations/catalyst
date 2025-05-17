@@ -6,7 +6,7 @@ export default function () {
 	// Build `api-service`'s dependencies
 
 	// list of dependencies to compile
-	const dependencies = ['../authx_authzed_api', '../user-credentials-cache', '../issued-jwt-registry'];
+	const dependencies = ['../authx_authzed_api', '../user-credentials-cache', '../issued-jwt-registry', '../data_channel_registrar'];
 
 	// compile dependencies
 	for (const dependency of dependencies) {

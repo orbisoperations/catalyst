@@ -1,5 +1,4 @@
-import { JSONWebKeySet, createLocalJWKSet, decodeJwt, jwtVerify } from 'jose';
-// @ts-ignore
+import { JSONWebKeySet, JWTPayload, createLocalJWKSet, decodeJwt, jwtVerify } from 'jose';
 import { DurableObject } from 'cloudflare:workers';
 import { DEFAULT_STANDARD_DURATIONS, JWTParsingResponse, JWTSigningRequest } from '../../../packages/schema_zod';
 import { JWT } from './jwt';
@@ -65,6 +64,20 @@ export class JWTKeyProvider extends DurableObject {
 		};
 	}
 
+	async decodeToken(token: string): Promise<{ success: boolean; payload: JWTPayload }> {
+		const decodedToken = decodeJwt(token);
+		if (!decodedToken) {
+			return {
+				success: false,
+				payload: decodedToken,
+			};
+		}
+		return {
+			success: true,
+			payload: decodedToken,
+		};
+	}
+
 	async validateToken(token: string): Promise<JWTParsingResponse> {
 		await this.key();
 		try {
@@ -80,16 +93,18 @@ export class JWTKeyProvider extends DurableObject {
 				return resp;
 			}
 			const jwkPub = createLocalJWKSet(await this.getJWKS());
-			const { payload, protectedHeader } = await jwtVerify(token, jwkPub, {clockTolerance: "5 minutes"});
+
+			// eslint-disable-next-line @typescript-eslint/no-unused-vars
+			const { payload, protectedHeader } = await jwtVerify(token, jwkPub, { clockTolerance: '5 minutes' });
 			const resp = JWTParsingResponse.parse({
 				valid: true,
 				entity: payload.sub,
 				claims: payload.claims,
-				jwtId: payload.jti
+				jwtId: payload.jti,
 			});
 			console.log({ resp });
 			return resp;
-		} catch (e: any) {
+		} catch (e: unknown) {
 			console.log('error validating token', e);
 			return JWTParsingResponse.parse({
 				valid: false,
