@@ -1,8 +1,8 @@
 // test/index.spec.ts
-import { DataChannel } from '@catalyst/schema_zod';
+import { DataChannel, DEFAULT_STANDARD_DURATIONS } from '@catalyst/schema_zod';
 import { env, SELF } from 'cloudflare:test';
-import { describe, expect, it, TestContext } from 'vitest';
-
+import { afterEach, beforeEach, describe, expect, it, TestContext } from 'vitest';
+import { isWithinRange } from './testUtils';
 const TEST_USER = 'test_user@mail.com';
 const TEST_ORG = 'test_org';
 
@@ -51,13 +51,25 @@ const teardown = async () => {
     const id = env.DATA_CHANNEL_REGISTRAR_DO.idFromName('default');
     const stub = env.DATA_CHANNEL_REGISTRAR_DO.get(id);
     await stub.delete('airplanes1');
+    await stub.delete('airplanes2');
 
     // Clean up permissions
-    await env.AUTHX_AUTHZED_API.deleteOrgInDataChannel('airplanes', TEST_ORG);
+    await env.AUTHX_AUTHZED_API.deleteOrgInDataChannel('airplanes1', TEST_ORG);
+    await env.AUTHX_AUTHZED_API.deleteOrgInDataChannel('airplanes2', TEST_ORG);
+    await env.AUTHX_AUTHZED_API.deleteDataChannelInOrg(TEST_ORG, 'airplanes1');
+    await env.AUTHX_AUTHZED_API.deleteDataChannelInOrg(TEST_ORG, 'airplanes2');
     await env.AUTHX_AUTHZED_API.deleteUserFromOrg(TEST_ORG, TEST_USER);
 };
 
 describe('gateway integration tests', () => {
+    beforeEach(async () => {
+        await setup();
+    });
+
+    afterEach(async () => {
+        await teardown();
+    });
+
     it("returns gf'd for a invalid token", async () => {
         const badToken = 'fake-and-insecure';
 
@@ -169,65 +181,120 @@ describe('gateway integration tests', () => {
         await teardown();
     });
 
-    // it('should get data-channel for airplanes only when accessSwitch is 1 - THIS IS A BAD TEST', async (testContext) => {
-    //     await setup(env);
-    //     const id = env.DATA_CHANNEL_REGISTRAR_DO.idFromName('default');
-    //     const stub = env.DATA_CHANNEL_REGISTRAR_DO.get(id);
-    //     await stub.update({
-    //         id: 'airplanes1',
-    //         name: 'airplanes',
-    //         endpoint: 'http://localhost:4001/graphql',
-    //         accessSwitch: false,
-    //         description: 'na',
-    //         creatorOrganization: 'Org1',
-    //     });
+    it('should create a single use from a valid token with single claim', async (testContext) => {
+        // add two data channels
+        // in an array
+        const dataChannel: DataChannel = {
+            id: 'airplanes1',
+            name: 'airplanes1',
+            endpoint: 'http://localhost:8080/graphql',
+            accessSwitch: true,
+            description: 'Test airplane data channel',
+            creatorOrganization: TEST_ORG,
+        };
 
-    //     const token = await getToken('Org1', ['airplanes'], testContext);
+        const token = await getToken(TEST_ORG, [dataChannel.id], testContext); // token with claims for all data channels
 
-    //     // checks that airplanes is disabled
-    //     const dataChannelList = await env.DATA_CHANNEL_REGISTRAR.list(
-    //         'default',
-    //         {
-    //             catalystToken: token,
-    //         }
-    //     );
-    //
-    //     expect((await stub.list()).length).toBe(2);
+        // get data channel registry
+        const dChannelRegistryId = env.DATA_CHANNEL_REGISTRAR_DO.idFromName('default');
+        const dChannelRegistryStub = env.DATA_CHANNEL_REGISTRAR_DO.get(dChannelRegistryId);
 
-    //     const getAvailableQueries = await SELF.fetch(
-    //         'https://data-channel-gateway/graphql',
-    //         {
-    //             method: 'POST',
-    //             headers: {
-    //                 Authorization: `Bearer ${token}`,
-    //                 'content-type': 'application/json',
-    //             },
-    //             body: JSON.stringify({
-    //                 // Query that resolves the available queries of the schema
-    //                 query: `{
-    //         __type(name: "Query") {
-    //             name
-    //             fields {
-    //               name
-    //             }
-    //           }
-    //       }`,
-    //             }),
-    //         }
-    //     );
+        // add persmissions
+        await env.AUTHX_AUTHZED_API.addOrgToDataChannel(dataChannel.id, TEST_ORG);
+        await env.AUTHX_AUTHZED_API.addDataChannelToOrg(TEST_ORG, dataChannel.id);
 
-    //     const getAvailableQueriesResponsePayload = await getAvailableQueries.text();
+        // Update the data channel using the Durable Object
+        await dChannelRegistryStub.update(dataChannel);
 
-    //
+        // should sign a single use token for airplanes1
+        // expire in 5 minutes
+        const singleUseToken = await env.AUTHX_TOKEN_API.signSingleUseJWT(
+            dataChannel.id,
+            { catalystToken: token },
+            'default'
+        );
+        console.log('singleUseToken', singleUseToken);
 
-    //     const json = JSON.parse(getAvailableQueriesResponsePayload);
+        expect(singleUseToken).toBeDefined();
+        expect(singleUseToken.success).toBe(true);
+        if (singleUseToken.success) {
+            expect(
+                isWithinRange(singleUseToken.expiration, Date.now(), Date.now() + 5 * DEFAULT_STANDARD_DURATIONS.M)
+            ).toBe(true);
+            expect(singleUseToken.token).toBeDefined();
+        }
+    });
 
-    //
+    it('should create a single use from a valid token with multiple claims', async (testContext) => {
+        // add two data channels
+        // in an array
+        const dataChannels: DataChannel[] = [
+            {
+                id: 'airplanes1',
+                name: 'airplanes1',
+                endpoint: 'http://localhost:8080/graphql',
+                accessSwitch: true,
+                description: 'Test airplane data channel',
+                creatorOrganization: TEST_ORG,
+            },
+            {
+                id: 'airplanes2',
+                name: 'airplanes2',
+                endpoint: 'http://localhost:8080/graphql',
+                accessSwitch: true,
+                description: 'Test airplane data channel',
+                creatorOrganization: TEST_ORG,
+            },
+        ];
 
-    //     // Since we did not provide claims when the token was created, this will only return the health query in the list of fields
-    //     expect(json.data['__type'].fields).toHaveLength(1);
+        const ids = dataChannels.map((dataChannel) => dataChannel.id);
+        const token = await getToken(TEST_ORG, ids, testContext); // token with claims for all data channels
 
-    //     expect(json.data['__type'].fields[0]['name']).toBe('health');
-    //     await teardown(env);
-    // });
+        // get data channel registry
+        const dChannelRegistryId = env.DATA_CHANNEL_REGISTRAR_DO.idFromName('default');
+        const dChannelRegistryStub = env.DATA_CHANNEL_REGISTRAR_DO.get(dChannelRegistryId);
+
+        for (const dataChannel of dataChannels) {
+            // add persmissions
+            await env.AUTHX_AUTHZED_API.addOrgToDataChannel(dataChannel.id, TEST_ORG);
+            await env.AUTHX_AUTHZED_API.addDataChannelToOrg(TEST_ORG, dataChannel.id);
+
+            // Update the data channel using the Durable Object
+            await dChannelRegistryStub.update(dataChannel);
+
+            // should sign a single use token for airplanes1
+            // expire in 5 minutes
+            const singleUseToken = await env.AUTHX_TOKEN_API.signSingleUseJWT(
+                dataChannel.id,
+                { catalystToken: token },
+                'default'
+            );
+            console.log('singleUseToken', singleUseToken);
+
+            expect(singleUseToken).toBeDefined();
+            expect(singleUseToken.success).toBe(true);
+            if (singleUseToken.success) {
+                expect(
+                    isWithinRange(singleUseToken.expiration, Date.now(), Date.now() + 5 * DEFAULT_STANDARD_DURATIONS.M)
+                ).toBe(true);
+                expect(singleUseToken.token).toBeDefined();
+            }
+        }
+    });
+
+    it('should not be able to create a singleUse catalyst token', async () => {
+        // cannot create a single use token from undefined CT Token
+
+        // should sign a single use token for airplanes1
+        // expire in 5 minutes
+        const singleUseToken = await env.AUTHX_TOKEN_API.signSingleUseJWT(
+            'dummy-data-channel-id',
+            { catalystToken: undefined },
+            'default'
+        );
+        console.log('singleUseToken', singleUseToken);
+
+        expect(singleUseToken).toBeDefined();
+        expect(singleUseToken.success).toBe(false);
+    });
 });

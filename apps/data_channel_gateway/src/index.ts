@@ -110,6 +110,8 @@ app.use(async (c, next) => {
             {
                 error: error.msg,
             },
+            // @ts-expect-error:  Argument of type 'StatusCode' is not assignable to parameter of type 'ContentfulStatusCode | undefined'.
+            //                    Type '101' is not assignable to type 'ContentfulStatusCode | undefined'.‘
             error.status
         );
     }
