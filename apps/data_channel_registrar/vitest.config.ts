@@ -1,6 +1,6 @@
 import { defineWorkersConfig } from '@cloudflare/vitest-pool-workers/config';
 import path from 'path';
-import { validUsers } from './test/testUtils';
+import { validUsers } from './test/utils/authUtils';
 
 import { Logger } from 'tslog';
 
@@ -33,8 +33,6 @@ const handleCloudflareAccessAuthServiceOutbound = async (req: Request) => {
   if (!userData) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
-
-  console.log('userData from cloudflare access MOCK', JSON.stringify(userData, null, 4));
 
   return Response.json(userData);
 };
@@ -75,6 +73,10 @@ export default defineWorkersConfig({
         miniflare: {
           durableObjects: {
             DO: 'Registrar',
+            KEY_PROVIDER: {
+              className: 'JWTKeyProvider',
+              scriptName: 'authx_token_api',
+            },
           },
           compatibilityDate: '2025-04-01',
           compatibilityFlags: ['nodejs_compat'],

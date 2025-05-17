@@ -1,6 +1,7 @@
 import { env, fetchMock, SELF } from 'cloudflare:test';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { DataChannel, DataChannelActionResponse } from '../../../packages/schema_zod';
+import { TEST_ORG_ID, validUsers } from './utils/authUtils';
 
 function generateDataChannels(count: number = 5): DataChannel[] {
   const dataChannels: DataChannel[] = [];
@@ -143,5 +144,43 @@ describe('Data Channel Registrar as Durable Object integration tests', () => {
 
     const getResponse = await stub.get(updatedDataChannel.id);
     expect(getResponse).toStrictEqual(updatedDataChannel);
+  });
+
+  it('invalid user token', async () => {
+    const removeResult = await SELF.remove('default', 'dummy-data-channel-id', {
+      cfToken: 'bad-cftoken',
+    });
+    expect(removeResult.success).toBe(false);
+    if (!removeResult.success) {
+      expect(removeResult.error).toBe('catalyst unable to validate user token');
+    }
+  });
+
+  it('accessing non existent data channel: exists in authzed but not in DO', async () => {
+    // add user to custodian role
+    const user = validUsers['cf-custodian-token'];
+    const addUserToCustodianRole = await env.AUTHZED.addDataCustodianToOrg(TEST_ORG_ID, user.email);
+    expect(addUserToCustodianRole).toBeDefined();
+
+    // add data channel to org
+    const addDataChannelToOrg = await env.AUTHZED.addDataChannelToOrg(
+      TEST_ORG_ID,
+      'dummy-data-channel-id',
+    );
+    expect(addDataChannelToOrg).toBeDefined();
+    // add org to data channel
+    const addOrgToDataChannel = await env.AUTHZED.addOrgToDataChannel(
+      'dummy-data-channel-id',
+      TEST_ORG_ID,
+    );
+    expect(addOrgToDataChannel).toBeDefined();
+
+    const readResult = await SELF.read('default', 'dummy-data-channel-id', {
+      cfToken: 'cf-custodian-token',
+    });
+    expect(readResult.success).toBe(false);
+    if (!readResult.success) {
+      expect(readResult.error).toBe('catalyst unable to find data channel');
+    }
   });
 });

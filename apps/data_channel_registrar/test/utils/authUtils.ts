@@ -1,6 +1,9 @@
 export const TEST_ORG_ID = 'localdevorg';
 
-export const validUsers: Record<string, { email: string; custom: Record<string, unknown> }> = {
+export const validUsers: Record<
+  string,
+  { email: string; custom: Record<string, Record<string, Record<string, string>>> }
+> = {
   'cf-org-admin-token': {
     email: 'org-admin@email.com',
     custom: {
