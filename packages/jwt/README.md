@@ -1,13 +1,4 @@
-```
-npm install
-npm run dev
-```
-
-```
-npm run deploy
-```
-
-# JWT Validation in DataChannel Airplanes
+# JWT Validation Package
 
 This data channel uses JWT validation to ensure secure access to airplane data. The following table outlines the validation checks performed on each JWT token and the corresponding error messages when validation fails.
 
@@ -23,6 +14,48 @@ This data channel uses JWT validation to ensure secure access to airplane data. 
 | `JWT_ISSUER_INVALID`              | Invalid Issuer              | Token issuer doesn't match expected issuer              | "JWT Issuer Invalid"                                         |
 | `JWT_CLAIMS_MISSING`              | Missing Claims              | Token doesn't contain required claims field             | "JWT Data Channel Claims Missing"                            |
 | `JWT_CLAIMS_DO_NOT_ALIGN`         | Claims Mismatch             | Token claims don't include the required data channel ID | "JWT Data Channel Claims Does not contain current ChannelId" |
+
+## Key Functions
+
+### grabTokenInHeader
+
+Extracts a JWT token from the Authorization header.
+
+```typescript
+function grabTokenInHeader(
+    authHeader: string | undefined
+): [string, { msg: string; status: ContentfulStatusCode } | null];
+```
+
+- **Input**: Authorization header string in format "Bearer {token}"
+- **Output**: A tuple containing:
+    - The extracted token (if successful)
+    - Error details (if extraction fails) or null (if successful)
+- **Error Cases**:
+    - Missing Authorization header
+    - Improperly formatted Authorization header
+
+### verifyJwtWithRemoteJwks
+
+Verifies a JWT token using a remote JWKS provider.
+
+```typescript
+async function verifyJwtWithRemoteJwks(
+    jwtToken: string,
+    issuer: string,
+    dataChannelId: string,
+    jwksProviderUrl: string
+): Promise<JWTValidationResult>;
+```
+
+- **Parameters**:
+    - `jwtToken`: The JWT token to verify
+    - `issuer`: The expected issuer of the token
+    - `dataChannelId`: The data channel ID that should be included in the token's claims
+    - `jwksProviderUrl`: URL to the JWKS provider for signature verification
+- **Returns**: A discriminated union result type with either:
+    - Success: `{ verified: true, payload: JWTPayload }`
+    - Error: `{ verified: false, errorCode: JWTValidationErrorType, message: string, jwtError?: object }`
 
 ## Usage Example
 

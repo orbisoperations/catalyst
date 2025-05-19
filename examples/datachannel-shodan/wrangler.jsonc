@@ -1,0 +1,7 @@
+{
+    "$schema": "node_modules/wrangler/config-schema.json",
+    "name": "datachannel-shodan",
+    "compatibility_date": "2025-04-01",
+    "compatibility_flags": ["nodejs_compat"],
+    "main": "index.ts",
+}
