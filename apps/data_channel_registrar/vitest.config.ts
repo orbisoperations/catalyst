@@ -121,23 +121,6 @@ export default defineWorkersConfig({
               },
               outboundService: handleCloudflareAccessAuthServiceOutbound,
             },
-            {
-              name: 'data_channel_registrar',
-              modules: true,
-              modulesRoot: path.resolve('../data_channel_registrar'),
-              scriptPath: path.resolve('../data_channel_registrar/dist/worker.js'),
-              compatibilityDate: '2025-04-01',
-              compatibilityFlags: ['nodejs_compat'],
-              entrypoint: 'RegistrarWorker',
-              unsafeEphemeralDurableObjects: true,
-              durableObjects: {
-                DO: 'Registrar',
-              },
-              serviceBindings: {
-                AUTHX_TOKEN_API: 'authx_token_api',
-                AUTHZED: 'authx_authzed_api',
-              },
-            },
           ],
         },
       },

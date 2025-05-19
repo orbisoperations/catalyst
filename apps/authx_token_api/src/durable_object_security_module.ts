@@ -9,16 +9,16 @@ export class JWTKeyProvider extends DurableObject {
 	currentSerializedKey: KeyStateSerialized | undefined;
 	async key() {
 		if (this.currentKey === undefined) {
-			if ((await this.ctx.storage.get<KeyStateSerialized>('default')) === undefined) {
+			if ((await this.ctx.storage.get<KeyStateSerialized>('current')) === undefined) {
 				await this.ctx.blockConcurrencyWhile(async () => {
 					const newKey = new KeyState();
 					await newKey.init();
 					this.currentKey = newKey;
 					const serialized = (this.currentSerializedKey = await newKey.serialize());
-					await this.ctx.storage.put('latest', serialized);
+					await this.ctx.storage.put('current', serialized);
 				});
 			} else {
-				const serialized = (this.currentSerializedKey = await this.ctx.storage.get<KeyStateSerialized>('default')!);
+				const serialized = (this.currentSerializedKey = await this.ctx.storage.get<KeyStateSerialized>('current')!);
 				this.currentSerializedKey = serialized;
 				this.currentKey = await KeyState.deserialize(serialized!);
 			}
@@ -94,8 +94,7 @@ export class JWTKeyProvider extends DurableObject {
 			}
 			const jwkPub = createLocalJWKSet(await this.getJWKS());
 
-			// eslint-disable-next-line @typescript-eslint/no-unused-vars
-			const { payload, protectedHeader } = await jwtVerify(token, jwkPub, { clockTolerance: '5 minutes' });
+			const { payload } = await jwtVerify(token, jwkPub, { clockTolerance: '5 minutes' });
 			const resp = JWTParsingResponse.parse({
 				valid: true,
 				entity: payload.sub,
