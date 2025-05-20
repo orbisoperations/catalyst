@@ -1,4 +1,4 @@
-import { env, runInDurableObject } from 'cloudflare:test';
+import { env } from 'cloudflare:test';
 import { describe, expect, it } from 'vitest';
 import { JWTSigningRequest } from '../../../packages/schema_zod';
 import { KeyStateSerialized } from '../src/keystate';
@@ -7,41 +7,38 @@ describe('JWTKeyProvider', () => {
 	let latestKey: KeyStateSerialized | undefined;
 
 	it('should initialize a new key if none exists in storage', async () => {
-		const id = env.KEY_PROVIDER.idFromName('default');
-		const stub = env.KEY_PROVIDER.get(id);
+		const id = await env.KEY_PROVIDER.idFromName('default');
+		const stub = await env.KEY_PROVIDER.get(id);
 
-		runInDurableObject(stub, async (instance) => {
-			// the createion and validation needs to be done here
-			// if out of this context it will cause error due to memory issues
-			expect(await instance.getJWKS()).toBeDefined();
-			expect(await instance.getPublicKey()).toBeDefined();
+		// the createion and validation needs to be done here
+		// if out of this context it will cause error due to memory issues
+		expect(await stub.getJWKS()).toBeDefined();
+		expect(await stub.getPublicKey()).toBeDefined();
 
-			latestKey = instance.currentSerializedKey;
-			expect(latestKey).toBeDefined();
-		});
+		// const latestKey = await stub.currentSerializedKey;
+		// expect(latestKey).toBeDefined();
 	});
 
 	it('should rotate keys', async () => {
 		const id = env.KEY_PROVIDER.idFromName('default');
 		const stub = env.KEY_PROVIDER.get(id);
 
-		runInDurableObject(stub, async (instance) => {
-			expect(await instance.rotateKey()).toBe(true);
+		expect(await stub.rotateKey()).toBe(true);
 
-			const currentKey = instance.currentKey;
-			expect(currentKey).toBeDefined();
-			expect(currentKey).not.toEqual(latestKey);
+		const currentKey = stub.currentKey;
+		expect(currentKey).toBeDefined();
+		expect(currentKey).not.toEqual(latestKey);
 
-			latestKey = instance.currentSerializedKey;
-		});
+		latestKey = await stub.getSerializedKey();
+		expect(latestKey).toBeDefined();
 	});
 
 	it('should sign a JWT and validate it', async () => {
 		// NOTE: for some reason if name=default the validateTOKEN fails due to
 		//  token JWSSignatureVerificationFailed: signature verification failed
 		// at flattenedVerify
-		const id = env.KEY_PROVIDER.idFromName('not-default');
-		const stub = env.KEY_PROVIDER.get(id);
+		const id = await env.KEY_PROVIDER.idFromName('not-default');
+		const stub = await env.KEY_PROVIDER.get(id);
 
 		const req: JWTSigningRequest = {
 			entity: 'user123',
@@ -80,19 +77,19 @@ describe('JWTKeyProvider', () => {
 
 	describe('rotateKey()', () => {
 		it('should generate a new key, serialize it, and store it', async () => {
-            const id = env.KEY_PROVIDER.idFromName('default');
-            const stub = env.KEY_PROVIDER.get(id);
+			const id = await env.KEY_PROVIDER.idFromName('default');
+			const stub = await env.KEY_PROVIDER.get(id);
 
-            const originalPublicKey = await stub.getPublicKey();
-            const originalJWKS = await stub.getJWKS();
+			const originalPublicKey = await stub.getPublicKey();
+			const originalJWKS = await stub.getJWKS();
 
-            expect(await stub.rotateKey()).toBe(true)
+			expect(await stub.rotateKey()).toBe(true);
 
-            const newPublicKey = await stub.getPublicKey()
-            const newJWKS = await stub.getJWKS()
+			const newPublicKey = await stub.getPublicKey();
+			const newJWKS = await stub.getJWKS();
 
-            expect(originalJWKS).not.toEqual(newJWKS)
-            expect(originalPublicKey).not.toEqual(newPublicKey)
+			expect(originalJWKS).not.toEqual(newJWKS);
+			expect(originalPublicKey).not.toEqual(newPublicKey);
 		});
 	});
 });

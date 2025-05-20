@@ -105,7 +105,6 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 
 		const userParse = User.safeParse(await this.env.USERCACHE.getUser(token.cfToken));
 		if (!userParse.success) {
-			console.log(userParse.error);
 			return JWTSigningResponse.parse({
 				success: false,
 				error: 'catalyst is unable to verify user',
@@ -181,9 +180,10 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 			});
 		}
 
-		const claims = decodedToken.payload.claims;
+		// filter out any empty claims
 		// @ts-expect-error: claims is not typed, but exists in the JWT payload
-		if (claims?.length === 0) {
+		const claims: string[] = decodedToken.payload.claims?.filter((claim) => claim) ?? [];
+		if (claims.length === 0) {
 			return JWTSigningResponse.parse({
 				success: false,
 				error: 'invalid claims error: JWT creating request must contain at least one claim',
@@ -272,7 +272,7 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 
 		const singleUseTokens: DataChannelAccessToken[] = [];
 		for (const claim of parsedTokenResult.claims) {
-			const singleUseToken = await this.signSingleUseJWT(claim, { catalystToken }, 'default');
+			const singleUseToken = await this.signSingleUseJWT(claim, { catalystToken }, keyNamespace);
 			// fail and log the error on a per claim basis, but continue to sign other claims
 			// intended for silent failing when not able to sign a single use token
 			if (!singleUseToken.success) {
