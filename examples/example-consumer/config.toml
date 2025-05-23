@@ -1,0 +1,19 @@
+[consumer]
+catalyst_endpoint="http://localhost:4010/graphql"
+catalyst_token="eyJhbGciOiJFZERTQSJ9.eyJpc3MiOiJjYXRhbHlzdDpzeXN0ZW06and0OmxhdGVzdCIsInN1YiI6Im9yYmlzb3BzL2cuc2FudGlhZ29Ab3JiaXNvcHMuY29tIiwiY2xhaW1zIjpbIjA4YWJmMWY5LTFhNWItNDAxZi1iM2E0LTQ2YjM0NmExYmM3MyIsIjE2OWYzNzY1LWFiY2EtNGFmOS05N2ZmLTJhZGFjZDFiMmMyZCIsIjQ3Yjc4OTAzLTFhZWMtNGM5Mi1hOTg2LTU5NjczODdhZjI3ZCJdLCJhdWQiOiJjYXRhbHlzdDpzeXN0ZW06ZGF0YWNoYW5uZWxzIiwianRpIjoiOTYwOTg0NzAtMjI5My00NTI5LTkwYjctYmQ4YTU3MzNjNTFkIiwibmJmIjoxNzQ3MDg1MTYzLCJpYXQiOjE3NDcwODUxNjQsImV4cCI6MTc0NzY4OTk2NH0.4U5R2rQvhj9zhNIXrmjpqumBU6vxmz1OB4pzDRwMmoXAwUXkBPpqh-sZ_WPaXzxCxWjv-VzHw4vti2ZrujgACA"
+catalyst_query= """
+{
+    _schema { type }
+}
+"""
+
+catalyst_query_poll_interval_ms = 10000
+
+[consumer.parser.aircraftWithinDistance.transform]
+uid = "hex"
+lat = "lat"
+lon = "lon"
+hae = "alt_geom"
+
+[consumer.parser.aircraftWithinDistance.overwrite]
+type = "a-f-A"
