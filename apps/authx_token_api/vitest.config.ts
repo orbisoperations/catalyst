@@ -1,40 +1,6 @@
 import { defineWorkersConfig } from '@cloudflare/vitest-pool-workers/config';
 import path from 'path';
-
-const validUsers: Record<string, { email: string; custom: unknown }> = {
-	'admin-cf-token': {
-		email: 'email@example.com',
-		custom: {
-			'urn:zitadel:iam:org:project:roles': {
-				'data-custodian': {
-					YES: 'auth.provider.io',
-				},
-				'org-admin': {
-					YES: 'auth.provider.io',
-				},
-				'org-user': {
-					YES: 'auth.provider.io',
-				},
-				'platform-admin': {
-					YES: 'auth.provider.io',
-				},
-			},
-		},
-	},
-	'org-user-cf-token': {
-		email: 'TestUser',
-		custom: {
-			'urn:zitadel:iam:org:project:roles': {
-				'data-custodian': {
-					YES: 'auth.provider.io',
-				},
-				'org-user': {
-					YES: 'auth.provider.io',
-				},
-			},
-		},
-	},
-};
+import { validUsers } from './test/utils/authUtils';
 
 const handleCloudflareAccessAuthServiceOutbound = async (req: Request) => {
 	// receives
@@ -59,8 +25,6 @@ const handleCloudflareAccessAuthServiceOutbound = async (req: Request) => {
 		return Response.json({ error: 'Unauthorized' }, { status: 401 });
 	}
 
-	console.log('userData', userData);
-
 	return Response.json(userData);
 };
 
@@ -73,7 +37,7 @@ export default defineWorkersConfig({
 				wrangler: { configPath: './wrangler.jsonc' },
 				main: 'src/index.ts',
 				singleWorker: true,
-				isolatedStorage: false,
+				isolatedStorage: true,
 				miniflare: {
 					compatibilityDate: '2025-04-01',
 					compatibilityFlags: ['nodejs_compat'],
@@ -93,23 +57,8 @@ export default defineWorkersConfig({
 								DO: 'Registrar',
 							},
 							serviceBindings: {
-								AUTHX_TOKEN_API: 'authx_token_api',
 								AUTHZED: 'authx_authzed_api',
-							},
-						},
-						{
-							name: 'authx_token_api',
-							modules: true,
-							modulesRoot: path.resolve('../authx_token_api'),
-							scriptPath: path.resolve('../authx_token_api/dist/index.js'),
-							compatibilityDate: '2025-04-01',
-							compatibilityFlags: ['nodejs_compat'],
-							unsafeEphemeralDurableObjects: true,
-							durableObjects: {
-								KEY_PROVIDER: 'JWTKeyProvider',
-							},
-							serviceBindings: {
-								DATA_CHANNEL_REGISTRAR: 'data_channel_registrar',
+								USERCACHE: 'user-credentials-cache',
 							},
 						},
 						{

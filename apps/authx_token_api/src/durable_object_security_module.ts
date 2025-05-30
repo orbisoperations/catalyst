@@ -27,6 +27,10 @@ export class JWTKeyProvider extends DurableObject {
 		return this.currentKey!;
 	}
 
+	async getSerializedKey() {
+		return this.currentSerializedKey;
+	}
+
 	async getPublicKey() {
 		return {
 			pem: (await this.key()).pub(),
