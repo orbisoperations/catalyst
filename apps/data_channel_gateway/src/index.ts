@@ -8,6 +8,18 @@ import { createYoga } from 'graphql-yoga';
 import { Hono } from 'hono';
 import { Env } from './env';
 
+export type ValidateTokenRequest = {
+    claimId: string;
+    catalystToken: string;
+};
+
+export type ValidateTokenResponse = {
+    claimId: string;
+    catalystToken: string;
+    valid: boolean;
+    error: string;
+};
+
 // // https://github.com/ardatan/schema-stitching/blob/master/examples/stitching-directives-sdl/src/gateway.ts
 export async function fetchRemoteSchema(executor: Executor) {
     // throw new Error();
@@ -102,6 +114,78 @@ app.use('/.well-known/jwks.json', async (c) => {
     const jwks = await c.env.AUTHX_TOKEN_API.getPublicKeyJWK();
     console.log(jwks);
     return c.json(jwks, 200);
+});
+
+// Add bulk validation endpoint
+app.post('/validate-tokens', async (ctx) => {
+    const requests = await ctx.req.json();
+
+    if (!Array.isArray(requests)) {
+        return ctx.json(
+            {
+                error: 'request body must be an array',
+            },
+            400
+        );
+    }
+
+    const results = await Promise.all(
+        requests.map(async (request: ValidateTokenRequest): Promise<ValidateTokenResponse> => {
+            const token = Token.safeParse(request);
+
+            if (!token.success || !token.data.catalystToken) {
+                return {
+                    claimId: request.claimId,
+                    catalystToken: request.catalystToken,
+                    valid: false,
+                    error: 'invalid token',
+                };
+            }
+
+            const dataChannels = await ctx.env.DATA_CHANNEL_REGISTRAR.list('default', {
+                catalystToken: token.data.catalystToken,
+            });
+
+            if (!dataChannels.success) {
+                return {
+                    claimId: request.claimId,
+                    catalystToken: request.catalystToken,
+                    valid: false,
+                    error: 'failed to fetch data channels',
+                };
+            }
+
+            const dataChannelsArray = Array.isArray(dataChannels.data) ? dataChannels.data : [dataChannels.data];
+            if (dataChannelsArray.length === 0) {
+                return {
+                    claimId: request.claimId,
+                    catalystToken: request.catalystToken,
+                    valid: false,
+                    error: 'no data channels found for token',
+                };
+            }
+
+            // check if claimId is in dataChannels
+            const dataChannel = dataChannelsArray.find((channel) => channel.id === request.claimId);
+            if (!dataChannel) {
+                return {
+                    claimId: request.claimId,
+                    catalystToken: request.catalystToken,
+                    valid: false,
+                    error: `data channel '${request.claimId}' not found in available channels`,
+                };
+            }
+
+            return {
+                claimId: request.claimId,
+                catalystToken: request.catalystToken,
+                valid: true,
+                error: '',
+            };
+        })
+    );
+
+    return ctx.json(results, 200);
 });
 
 app.use(async (c, next) => {
