@@ -42,7 +42,7 @@ export default defineWorkersConfig({
 							compatibilityFlags: ['nodejs_compat'],
 							entrypoint: 'AuthzedWorker',
 							bindings: {
-								AUTHZED_ENDPOINT: 'http://localhost:8443',
+								AUTHZED_ENDPOINT: 'http://localhost:8449',
 								AUTHZED_KEY: 'atoken',
 								AUTHZED_PREFIX: 'orbisops_catalyst_dev/',
 							},

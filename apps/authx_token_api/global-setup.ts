@@ -31,7 +31,7 @@ export default function () {
 	const podmanCommand = [
 		'podman run --rm',
 		'-v ./authx_authzed_api/schema.zaml:/schema.zaml:ro',
-		'-p 8443:8443',
+		'-p 8449:8443',
 		'-d',
 		'--name authzed-container',
 		'authzed/spicedb:latest',

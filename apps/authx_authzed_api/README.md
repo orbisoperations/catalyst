@@ -49,7 +49,7 @@ Used by the following services:
    - Local development uses a `.dev.vars` file in this directory. Example:
 
      ```env
-     AUTHZED_ENDPOINT="http://localhost:8443"
+     AUTHZED_ENDPOINT="http://localhost:8449"
      AUTHZED_KEY="atoken"
      AUTHZED_PREFIX="orbisops_catalyst_dev/"
      ```
@@ -61,7 +61,7 @@ Used by the following services:
    - You can run a local AuthZed instance using Podman (or Docker). Example command:
 
      ```sh
-     podman run --rm -v ./apps/authx_authzed_api/schema.zaml:/schema.zaml:ro -p 8443:8443 --detach --name authzed-container authzed/spicedb:latest serve-testing --http-enabled --skip-release-check=true --log-level trace --load-configs ./schema.zaml
+     podman run --rm -v ./apps/authx_authzed_api/schema.zaml:/schema.zaml:ro -p 8449:8443 --detach --name authzed-container authzed/spicedb:latest serve-testing --http-enabled --skip-release-check=true --log-level trace --load-configs ./schema.zaml
      ```
 
      > [!IMPORTANT]

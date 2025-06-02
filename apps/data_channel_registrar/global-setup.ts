@@ -13,7 +13,7 @@ export default function () {
 
   // compile dependencies
   for (const dependency of dependencies) {
-    let label = `Compiled ${dependency}`;
+    const label = `Compiled ${dependency}`;
     console.time(label);
     childProcess.execSync('pnpm build', {
       cwd: path.join(dependency),
@@ -28,7 +28,7 @@ export default function () {
   const podmanCommand = [
     'podman run --rm',
     '-v ./authx_authzed_api/schema.zaml:/schema.zaml:ro',
-    '-p 8443:8443',
+    '-p 8449:8443',
     '-d',
     '--name authzed-container',
     'authzed/spicedb:latest',
@@ -40,16 +40,22 @@ export default function () {
   ].join(' ');
 
   // turn on podman container for authzed
-  childProcess.exec(podmanCommand, {
-    cwd: path.join(__dirname, '..'),
-  }, (err) => {
-    if (err && !err.message.includes('the container name "authzed-container" is already in use')) {
-      logger.error('Error starting authzed podman container: Check status with `podman ps`', err);
-    } else {
-      logger.info('Authzed podman container started successfully');
-    }
-  });
-
+  childProcess.exec(
+    podmanCommand,
+    {
+      cwd: path.join(__dirname, '..'),
+    },
+    err => {
+      if (
+        err &&
+        !err.message.includes('the container name "authzed-container" is already in use')
+      ) {
+        logger.error('Error starting authzed podman container: Check status with `podman ps`', err);
+      } else {
+        logger.info('Authzed podman container started successfully');
+      }
+    },
+  );
 
   logger.info('Global setup complete');
 }

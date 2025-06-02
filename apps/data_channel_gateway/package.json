@@ -2,7 +2,7 @@
     "name": "@catalyst/data_channel_gateway",
     "type": "module",
     "scripts": {
-        "dev": "wrangler dev --port 5052",
+        "dev": "wrangler dev --port 4008",
         "test": "vitest",
         "test:workspace": "vitest run --silent",
         "test:coverage": "vitest --coverage",

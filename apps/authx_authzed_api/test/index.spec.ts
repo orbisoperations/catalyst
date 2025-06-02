@@ -1,26 +1,10 @@
 // test/index.spec.ts
 
 // RUN THIS TO GET IT WORKING
-// podman run -v "$(pwd)"/schema.zaml:/schema.zaml:ro  -p 8443:8443 authzed/spicedb serve-testing --http-enabled --skip-release-check=true --log-level debug --load-configs /schema.zaml
+// podman run -v "$(pwd)"/schema.zaml:/schema.zaml:ro  -p 8449:8443 authzed/spicedb serve-testing --http-enabled --skip-release-check=true --log-level debug --load-configs /schema.zaml
 
 import { SELF, env } from 'cloudflare:test';
 import { describe, expect, it } from 'vitest';
-
-const generateUsers = (count: number = 1) => {
-	const users = [];
-	for (let i = 0; i < count; i++) {
-		users.push(`test-user-${i}`);
-	}
-	return users;
-};
-
-const generateOrgs = (count: number = 1) => {
-	const orgs = [];
-	for (let i = 0; i < count; i++) {
-		orgs.push(`test-org-${i}`);
-	}
-	return orgs;
-};
 
 describe('Authzed Integration via TRPC', () => {
 	it('should have the env vars defined', async () => {
