@@ -59,7 +59,7 @@ print_header "Starting authzed container"
 printf "  ${CYAN}⏳ Launching podman container...${RESET}\n"
 pushd ./apps > /dev/null
   CONTAINER_NAME="authzed-container"
-  AUTHZED_OUTPUT=$(docker run -v ./authx_authzed_api/schema.zaml:/schema.zaml:ro \
+  AUTHZED_OUTPUT=$(podman run -v ./authx_authzed_api/schema.zaml:/schema.zaml:ro \
       -p $AUTHZED_RPC_PORT:50051 \
       -p $AUTHZED_HTTP_PORT:8443 --detach \
       --name $CONTAINER_NAME authzed/spicedb:latest \
