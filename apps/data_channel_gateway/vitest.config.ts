@@ -88,7 +88,7 @@ export default defineWorkersConfig({
                             compatibilityDate: '2025-04-01',
                             compatibilityFlags: ['nodejs_compat'],
                             bindings: {
-                                AUTHZED_ENDPOINT: 'http://localhost:8443',
+                                AUTHZED_ENDPOINT: 'http://localhost:8449',
                                 AUTHZED_KEY: 'atoken',
                                 AUTHZED_PREFIX: 'orbisops_catalyst_dev/',
                             },
