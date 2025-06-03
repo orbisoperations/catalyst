@@ -10,28 +10,28 @@
 	"keep_vars": true,
 	"send_metrics": false,
 	"observability": {
-		"enabled": true
+		"enabled": true,
 	},
 	"services": [
 		{ "binding": "USERCACHE", "service": "user-credentials-cache" },
-		{ "binding": "AUTHZED", "service": "authx_authzed_api" }
+		{ "binding": "AUTHZED", "service": "authx_authzed_api" },
 	],
 	"durable_objects": {
 		"bindings": [
 			{
 				"name": "ORG_MATCHMAKING",
-				"class_name": "OrganizationMatchmakingDO"
-			}
-		]
+				"class_name": "OrganizationMatchmakingDO",
+			},
+		],
 	},
 	"migrations": [
 		{
 			"tag": "v1",
-			"new_classes": ["OrganizationMatchmakingDO"]
+			"new_classes": ["OrganizationMatchmakingDO"],
 		},
 		{
-			"tag": "v2"
-		}
+			"tag": "v2",
+		},
 	],
 	"env": {
 		"preview": {
@@ -39,56 +39,70 @@
 				"bindings": [
 					{
 						"name": "ORG_MATCHMAKING",
-						"class_name": "OrganizationMatchmakingDO"
-					}
-				]
+						"class_name": "OrganizationMatchmakingDO",
+					},
+				],
 			},
 			"services": [
 				{ "binding": "AUTHZED", "service": "authx_authzed_api-preview" },
-				{ "binding": "USERCACHE", "service": "user-credentials-cache-preview" }
-			]
+				{ "binding": "USERCACHE", "service": "user-credentials-cache-preview" },
+			],
 		},
-        "staging": {
+		"staging": {
 			"durable_objects": {
 				"bindings": [
 					{
 						"name": "ORG_MATCHMAKING",
-						"class_name": "OrganizationMatchmakingDO"
-					}
-				]
+						"class_name": "OrganizationMatchmakingDO",
+					},
+				],
 			},
 			"services": [
 				{ "binding": "AUTHZED", "service": "authx_authzed_api-staging" },
-				{ "binding": "USERCACHE", "service": "user-credentials-cache-staging" }
-			]
+				{ "binding": "USERCACHE", "service": "user-credentials-cache-staging" },
+			],
 		},
-        "demo": {
+		// "demo": {
+		// 	"durable_objects": {
+		// 		"bindings": [
+		// 			{
+		// 				"name": "ORG_MATCHMAKING",
+		// 				"class_name": "OrganizationMatchmakingDO"
+		// 			}
+		// 		]
+		// 	},
+		// 	"services": [
+		// 		{ "binding": "AUTHZED", "service": "authx_authzed_api-demo" },
+		// 		{ "binding": "USERCACHE", "service": "user-credentials-cache-demo" }
+		// 	]
+		// },
+		"uxr": {
 			"durable_objects": {
 				"bindings": [
 					{
 						"name": "ORG_MATCHMAKING",
-						"class_name": "OrganizationMatchmakingDO"
-					}
-				]
+						"class_name": "OrganizationMatchmakingDO",
+					},
+				],
 			},
 			"services": [
-				{ "binding": "AUTHZED", "service": "authx_authzed_api-demo" },
-				{ "binding": "USERCACHE", "service": "user-credentials-cache-demo" }
-			]
+				{ "binding": "AUTHZED", "service": "authx_authzed_api-uxr" },
+				{ "binding": "USERCACHE", "service": "user-credentials-cache-uxr" },
+			],
 		},
 		"production": {
 			"durable_objects": {
 				"bindings": [
 					{
 						"name": "ORG_MATCHMAKING",
-						"class_name": "OrganizationMatchmakingDO"
-					}
-				]
+						"class_name": "OrganizationMatchmakingDO",
+					},
+				],
 			},
 			"services": [
 				{ "binding": "AUTHZED", "service": "authx_authzed_api-production" },
-				{ "binding": "USERCACHE", "service": "user-credentials-cache-production" }
-			]
-		}
-	}
+				{ "binding": "USERCACHE", "service": "user-credentials-cache-production" },
+			],
+		},
+	},
 }

@@ -11,12 +11,13 @@
 	"minify": true,
 	"send_metrics": false,
 	"observability": {
-		"enabled": true
+		"enabled": true,
 	},
 	"env": {
 		"preview": {},
 		"staging": {},
-		"demo": {},
-		"production": {}
-	}
+		"uxr": {},
+		// "demo": {},
+		"production": {},
+	},
 }
