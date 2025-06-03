@@ -56,11 +56,22 @@
       },
     },
     // DEMO VALUES
-    "demo": {
+    // "demo": {
+    //   "services": [
+    //     { "binding": "AUTHX_TOKEN_API", "service": "authx_token_api-demo" },
+    //     { "binding": "AUTHZED", "service": "authx_authzed_api-demo" },
+    //     { "binding": "USERCACHE", "service": "user-credentials-cache-demo" },
+    //   ],
+    //   "durable_objects": {
+    //     "bindings": [{ "name": "DO", "class_name": "Registrar" }],
+    //   },
+    // },
+    // UXR VALUES
+    "uxr": {
       "services": [
-        { "binding": "AUTHX_TOKEN_API", "service": "authx_token_api-demo" },
-        { "binding": "AUTHZED", "service": "authx_authzed_api-demo" },
-        { "binding": "USERCACHE", "service": "user-credentials-cache-demo" },
+        { "binding": "AUTHX_TOKEN_API", "service": "authx_token_api-uxr" },
+        { "binding": "AUTHZED", "service": "authx_authzed_api-uxr" },
+        { "binding": "USERCACHE", "service": "user-credentials-cache-uxr" },
       ],
       "durable_objects": {
         "bindings": [{ "name": "DO", "class_name": "Registrar" }],

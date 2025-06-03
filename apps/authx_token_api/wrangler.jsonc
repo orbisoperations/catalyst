@@ -57,11 +57,21 @@
 				"bindings": [{ "name": "KEY_PROVIDER", "class_name": "JWTKeyProvider" }],
 			},
 		},
-		"demo": {
+		// "demo": {
+		// 	"services": [
+		// 		{ "binding": "AUTHZED", "service": "authx_authzed_api-demo" },
+		// 		{ "binding": "USERCACHE", "service": "user-credentials-cache-demo" },
+		// 		{ "binding": "DATA_CHANNEL_REGISTRAR", "service": "data_channel_registrar-demo" },
+		// 	],
+		// 	"durable_objects": {
+		// 		"bindings": [{ "name": "KEY_PROVIDER", "class_name": "JWTKeyProvider" }],
+		// 	},
+		// },
+		"uxr": {
 			"services": [
-				{ "binding": "AUTHZED", "service": "authx_authzed_api-demo" },
-				{ "binding": "USERCACHE", "service": "user-credentials-cache-demo" },
-				{ "binding": "DATA_CHANNEL_REGISTRAR", "service": "data_channel_registrar-demo" },
+				{ "binding": "AUTHZED", "service": "authx_authzed_api-uxr" },
+				{ "binding": "USERCACHE", "service": "user-credentials-cache-uxr" },
+				{ "binding": "DATA_CHANNEL_REGISTRAR", "service": "data_channel_registrar-uxr" },
 			],
 			"durable_objects": {
 				"bindings": [{ "name": "KEY_PROVIDER", "class_name": "JWTKeyProvider" }],

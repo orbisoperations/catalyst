@@ -1,114 +1,131 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
-  // Basic worker configuration
-  "name": "issued-jwt-registry",
-  "main": "src/index.ts",
-  "compatibility_date": "2025-04-01",
-  "compatibility_flags": ["nodejs_compat"],
-  "preview_urls": false,
-  "workers_dev": false,
-  "minify": true,
-  "keep_vars": true,
-  "send_metrics": false,
-  "observability": {
-    "enabled": true
-  },
+	"$schema": "node_modules/wrangler/config-schema.json",
+	// Basic worker configuration
+	"name": "issued-jwt-registry",
+	"main": "src/index.ts",
+	"compatibility_date": "2025-04-01",
+	"compatibility_flags": ["nodejs_compat"],
+	"preview_urls": false,
+	"workers_dev": false,
+	"minify": true,
+	"keep_vars": true,
+	"send_metrics": false,
+	"observability": {
+		"enabled": true,
+	},
 
-  // Service bindings for inter-worker communication
-  "services": [
-    {
-      "binding": "USERCACHE",
-      "service": "user-credentials-cache"
-    }
-  ],
+	// Service bindings for inter-worker communication
+	"services": [
+		{
+			"binding": "USERCACHE",
+			"service": "user-credentials-cache",
+		},
+	],
 
-  // Durable Objects configuration
-  "durable_objects": {
-    "bindings": [
-      {
-        "name": "ISSUED_JWT_REGISTRY_DO",
-        "class_name": "I_JWT_Registry_DO"
-      }
-    ]
-  },
+	// Durable Objects configuration
+	"durable_objects": {
+		"bindings": [
+			{
+				"name": "ISSUED_JWT_REGISTRY_DO",
+				"class_name": "I_JWT_Registry_DO",
+			},
+		],
+	},
 
-  // Database migrations for Durable Objects
-  "migrations": [
-    {
-      "tag": "v1",
-      "new_classes": ["I_JWT_Registry_DO"]
-    }
-  ],
+	// Database migrations for Durable Objects
+	"migrations": [
+		{
+			"tag": "v1",
+			"new_classes": ["I_JWT_Registry_DO"],
+		},
+	],
 
-  // Environment-specific configurations
-  "env": {
-     // Staging environment
-     "preview": {
-      "durable_objects": {
-        "bindings": [
-          {
-            "name": "ISSUED_JWT_REGISTRY_DO",
-            "class_name": "I_JWT_Registry_DO"
-          }
-        ]
-      },
-      "services": [
-        {
-          "binding": "USERCACHE",
-          "service": "user-credentials-cache-preview"
-        }
-      ]
-    },
-    // Staging environment
-    "staging": {
-      "durable_objects": {
-        "bindings": [
-          {
-            "name": "ISSUED_JWT_REGISTRY_DO",
-            "class_name": "I_JWT_Registry_DO"
-          }
-        ]
-      },
-      "services": [
-        {
-          "binding": "USERCACHE",
-          "service": "user-credentials-cache-staging"
-        }
-      ]
-    },
-    // Demo environment
-    "demo": {
-      "durable_objects": {
-        "bindings": [
-          {
-            "name": "ISSUED_JWT_REGISTRY_DO",
-            "class_name": "I_JWT_Registry_DO"
-          }
-        ]
-      },
-      "services": [
-        {
-          "binding": "USERCACHE",
-          "service": "user-credentials-cache-demo"
-        }
-      ]
-    },
-     // Production environment
-     "production": {
-      "durable_objects": {
-        "bindings": [
-          {
-            "name": "ISSUED_JWT_REGISTRY_DO",
-            "class_name": "I_JWT_Registry_DO"
-          }
-        ]
-      },
-      "services": [
-        {
-          "binding": "USERCACHE",
-          "service": "user-credentials-cache-production"
-        }
-      ]
-    }
-  }
+	// Environment-specific configurations
+	"env": {
+		// Staging environment
+		"preview": {
+			"durable_objects": {
+				"bindings": [
+					{
+						"name": "ISSUED_JWT_REGISTRY_DO",
+						"class_name": "I_JWT_Registry_DO",
+					},
+				],
+			},
+			"services": [
+				{
+					"binding": "USERCACHE",
+					"service": "user-credentials-cache-preview",
+				},
+			],
+		},
+		// Staging environment
+		"staging": {
+			"durable_objects": {
+				"bindings": [
+					{
+						"name": "ISSUED_JWT_REGISTRY_DO",
+						"class_name": "I_JWT_Registry_DO",
+					},
+				],
+			},
+			"services": [
+				{
+					"binding": "USERCACHE",
+					"service": "user-credentials-cache-staging",
+				},
+			],
+		},
+		// Demo environment
+		// "demo": {
+		//   "durable_objects": {
+		//     "bindings": [
+		//       {
+		//         "name": "ISSUED_JWT_REGISTRY_DO",
+		//         "class_name": "I_JWT_Registry_DO"
+		//       }
+		//     ]
+		//   },
+		//   "services": [
+		//     {
+		//       "binding": "USERCACHE",
+		//       "service": "user-credentials-cache-demo"
+		//     }
+		//   ]
+		// },
+		// UXR environment
+		"uxr": {
+			"durable_objects": {
+				"bindings": [
+					{
+						"name": "ISSUED_JWT_REGISTRY_DO",
+						"class_name": "I_JWT_Registry_DO",
+					},
+				],
+			},
+			"services": [
+				{
+					"binding": "USERCACHE",
+					"service": "user-credentials-cache-uxr",
+				},
+			],
+		},
+		// Production environment
+		"production": {
+			"durable_objects": {
+				"bindings": [
+					{
+						"name": "ISSUED_JWT_REGISTRY_DO",
+						"class_name": "I_JWT_Registry_DO",
+					},
+				],
+			},
+			"services": [
+				{
+					"binding": "USERCACHE",
+					"service": "user-credentials-cache-production",
+				},
+			],
+		},
+	},
 }

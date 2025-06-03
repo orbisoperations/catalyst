@@ -9,7 +9,7 @@
 	"workers_dev": false,
 	"preview_urls": false,
 	"observability": {
-		"enabled": true
+		"enabled": true,
 	},
 	"tsconfig": "tsconfig.json",
 	"minify": true,
@@ -19,9 +19,9 @@
 		"bindings": [
 			{
 				"name": "CACHE", // The name used to reference the Durable Object in code
-				"class_name": "UserCredsCache" // The class that implements the Durable Object
-			}
-		]
+				"class_name": "UserCredsCache", // The class that implements the Durable Object
+			},
+		],
 	},
 
 	// Migration configuration
@@ -29,11 +29,11 @@
 	"migrations": [
 		{
 			"tag": "v1", // First migration version
-			"new_classes": ["UserCredsCache"] // Initial creation of the UserCredsCache class
+			"new_classes": ["UserCredsCache"], // Initial creation of the UserCredsCache class
 		},
 		{
-			"tag": "v2" // Second migration version
-		}
+			"tag": "v2", // Second migration version
+		},
 	],
 
 	// Environment-specific configurations
@@ -43,9 +43,9 @@
 				"bindings": [
 					{
 						"name": "CACHE",
-						"class_name": "UserCredsCache"
-					}
-				]
+						"class_name": "UserCredsCache",
+					},
+				],
 			},
 		},
 		"staging": {
@@ -53,19 +53,29 @@
 				"bindings": [
 					{
 						"name": "CACHE",
-						"class_name": "UserCredsCache"
-					}
-				]
+						"class_name": "UserCredsCache",
+					},
+				],
 			},
 		},
-		"demo": {
+		// "demo": {
+		// 	"durable_objects": {
+		// 		"bindings": [
+		// 			{
+		// 				"name": "CACHE",
+		// 				"class_name": "UserCredsCache"
+		// 			}
+		// 		]
+		// 	},
+		// },
+		"uxr": {
 			"durable_objects": {
 				"bindings": [
 					{
 						"name": "CACHE",
-						"class_name": "UserCredsCache"
-					}
-				]
+						"class_name": "UserCredsCache",
+					},
+				],
 			},
 		},
 		"production": {
@@ -73,10 +83,10 @@
 				"bindings": [
 					{
 						"name": "CACHE",
-						"class_name": "UserCredsCache"
-					}
-				]
+						"class_name": "UserCredsCache",
+					},
+				],
 			},
-		}
+		},
 	},
 }
