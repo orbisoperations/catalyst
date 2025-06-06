@@ -97,3 +97,22 @@ To spin the app up, it's recommended to use the `run_local_dev.sh` script found 
 ## Learn More
 
 For detailed information about each component, please refer to the individual READMEs in the respective directories.
+
+## Local Port Mapping
+
+When running the local development environment using `./run_local_dev.sh`, the following services are started on their respective ports:
+
+| Service                    | Port   | Description                                             |
+| -------------------------- | ------ | ------------------------------------------------------- |
+| `catalyst-ui-worker`       | 4000   | The main web interface for Catalyst.                    |
+| `data_channel_gateway`     | 4008   | Federates data channels into a single GraphQL endpoint. |
+| `authx_authzed_api`        | 5050   | Core authorization service using Authzed/SpiceDB.       |
+| `data_channel_registrar`   | 5053   | Manages data channel discovery and registration.        |
+| `organization_matchmaking` | 8787\* | Manages organization partnerships and invitations.      |
+| `authx_token_api`          | 5051   | Issues and signs service-to-service JWTs.               |
+| `user-credentials-cache`   | 8787\* | Caches user identity information from auth provider.    |
+| `issued-jwt-registry`      | 5054   | Tracks and validates issued JWTs.                       |
+| `authzed-container` (gRPC) | 50051  | The gRPC port for the Authzed/SpiceDB container.        |
+| `authzed-container` (HTTP) | 8449   | The HTTP port for the Authzed/SpiceDB container.        |
+
+_Note: Services running on port 8787 use the default Wrangler port. If multiple services run without a specified port, Wrangler will automatically assign the next available port (e.g., 8788, 8789)._
