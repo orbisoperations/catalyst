@@ -1,40 +1,164 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Catalyst UI Worker
 
-## Orbis UI
+The Catalyst UI Worker is a Next.js-based web application that serves as the management interface for the Catalyst federated data platform. It provides a user-friendly interface for managing data channels, organizations, partnerships, and user credentials within the Catalyst ecosystem.
 
-This project uses [Orbis UI](ui.devintelops.io) as a component library. Orbis UI is a design system and component library for building modern web applications. It is a collection of reusable components and styles that can be used to build web applications. It is built with React and TypeScript and is available as a Github Repository. A general guide on how to use them can be found [here](https://ui.devintelops.io/) as a Storybook.
+## Overview
 
-## Getting Started
+This application is built with:
 
-First, run the development server:
+- **Next.js 15.3.1** - React framework with server-side rendering
+- **Chakra UI** - Component library for consistent UI design
+- **Orbis UI** - Custom design system and component library
+- **OpenNext.js for Cloudflare** - Deployment adapter for Cloudflare Workers
+- **TypeScript** - Type-safe JavaScript development
+- **Tailwind CSS** - Utility-first CSS framework
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Architecture
+
+The UI Worker integrates with multiple Catalyst services:
+
+- **ISSUED_JWT_WORKER** - JWT token management
+- **CATALYST_DATA_CHANNEL_REGISTRAR_API** - Data channel discovery and registration
+- **AUTHX_TOKEN_API** - Authentication token services
+- **AUTHX_AUTHZED_API** - Authorization and permissions
+- **USER_CREDS_CACHE** - User credential caching
+- **ORGANIZATION_MATCHMAKING** - Organization partnership management
+
+## Features
+
+- **Token Management** - Issue and manage JWT tokens
+- **Data Channel Management** - Register, discover, and manage data channels
+- **Organization Partnerships** - Manage partnerships between organizations
+- **User Authentication** - Secure user authentication and authorization
+- **Responsive Design** - Mobile-friendly interface using Chakra UI
+
+## Development
+
+### Prerequisites
+
+- Node.js 18+ and pnpm
+- Access to Catalyst backend services
+- Cloudflare Workers environment (for deployment)
+
+### Local Development
+
+1. **Install dependencies:**
+
+    ```bash
+    pnpm install
+    ```
+
+2. **Start the development server:**
+
+    ```bash
+    pnpm dev
+    ```
+
+    The application will be available at [http://localhost:4000](http://localhost:4000)
+
+3. **Using the full development environment:**
+
+    For the complete Catalyst ecosystem, use the root-level development script:
+
+    ```bash
+    # From the root catalyst directory
+    ./run_local_dev.sh
+    ```
+
+    This will start all Catalyst services in the correct dependency order, including the UI worker.
+
+### Available Scripts
+
+- `pnpm dev` - Start development server on port 4000
+- `pnpm build` - Build the application for production
+- `pnpm start` - Start production server
+- `pnpm lint` - Run ESLint
+- `pnpm lint:fix` - Fix ESLint issues automatically
+- `pnpm format` - Format code with Prettier
+- `pnpm preview` - Build and preview with OpenNext.js for Cloudflare
+- `pnpm upload` - Upload to Cloudflare Workers
+- `pnpm cf-typegen` - Generate Cloudflare environment types
+
+## Project Structure
+
+```
+apps/catalyst-ui-worker/
+├── app/                    # Next.js app router pages
+│   ├── actions/           # Server actions
+│   ├── api/               # API routes
+│   ├── channels/          # Data channel management pages
+│   ├── graphql/           # GraphQL queries and mutations
+│   ├── partners/          # Partnership management pages
+│   ├── tokens/            # Token management pages
+│   ├── types/             # TypeScript type definitions
+│   ├── globals.css        # Global styles
+│   ├── layout.tsx         # Root layout component
+│   └── page.tsx           # Home page
+├── components/            # Reusable React components
+├── layouts/               # Layout components
+├── public/                # Static assets
+├── theme/                 # Chakra UI theme customization
+├── utils/                 # Utility functions
+└── tests/                 # Test files
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Deployment
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+The application is configured for deployment to Cloudflare Workers using Worker Builds. The preview environment(not to be confused with the local preview server that simulates the Cloudflare Workers runtime) will automatically be deployed when changes are merged to the main branch.
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+### Environments
+
+- **Preview**: `preview.catalyst.devintelops.io`
+- **Staging**: `staging.catalyst.devintelops.io`
+- **UXR**: `uxr.catalyst.devintelops.io`
+- **Production**: `catalyst.intelops.io`
+
+## Configuration
+
+### Environment Variables
+
+The application uses Cloudflare Workers bindings for service communication. These are configured in `wrangler.jsonc`:
+
+- Service bindings for backend APIs
+- Custom domain routing
+- Environment-specific configurations
+
+### Type Generation
+
+Generate Cloudflare environment types:
+
+```bash
+pnpm cf-typegen
+```
+
+## Integration with Catalyst Ecosystem
+
+The UI Worker is part of the larger Catalyst federated data platform. It depends on and integrates with:
+
+- **Management Layer**: Token API, User Cache, JWT Registry
+- **Control Layer**: AuthZed API, Data Channel Registrar, Organization Matchmaking
+- **Data Layer**: Data Channel Gateway
+
+For the complete development experience, use the root-level development script which starts all services in the correct order.
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Port conflicts**: The UI worker runs on port 4000 by default
+2. **Service dependencies**: Ensure backend services are running when testing integrations
+3. **Build failures**: Check that all dependencies are installed with `pnpm install`
+
+### Development Tips
+
+- Use the preview command to test Cloudflare Workers compatibility locally
+- Monitor the development console for GraphQL and API errors
+- Use browser dev tools to inspect service worker behavior
 
 ## Learn More
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Chakra UI Documentation](https://chakra-ui.com/)
+- [Orbis UI Storybook](https://ui.devintelops.io/)
+- [OpenNext.js for Cloudflare](https://github.com/opennextjs/opennextjs-cloudflare)
+- [Cloudflare Workers](https://developers.cloudflare.com/workers/)

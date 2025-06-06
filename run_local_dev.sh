@@ -158,6 +158,20 @@ printf "${RESET}\n"
 print_step "Initializing development environment..." "${CYAN}"
 printf "${YELLOW}${BOLD}⚠️  Ensure 'pnpm install' has been run in all app directories${RESET}\n\n"
 
+# Check for required .dev.vars file in authx_authzed_api
+DEV_VARS_FILE="apps/authx_authzed_api/.dev.vars"
+if [ ! -f "$DEV_VARS_FILE" ]; then
+  print_error "Missing required configuration file: $DEV_VARS_FILE"
+  print_error ""
+  print_error "Please copy the example file and configure it:"
+  print_error "  cd apps/authx_authzed_api"
+  print_error "  cp .dev.vars.example .dev.vars"
+  print_error ""
+  print_error "Then edit .dev.vars with your local configuration."
+  print_error "See apps/authx_authzed_api/README.md for details."
+  exit 1
+fi
+
 # Store PIDs of background processes
 declare -a pids
 

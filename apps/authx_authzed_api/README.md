@@ -22,6 +22,34 @@ The application is structured around two main components:
 
 ## Features
 
+The AuthX AuthZed API provides comprehensive relationship-based authorization capabilities:
+
+### User Management
+
+- **Add/Remove Users**: Manage user membership in organizations with different roles
+- **Role Management**: Support for User, Data Custodian, and Admin roles
+- **User Listing**: Query users within organizations with optional role filtering
+
+### Organization Management
+
+- **Organization Membership**: Check if users are members of organizations
+- **Partnership Management**: Create and manage partnerships between organizations
+- **Permission Checks**: Verify user permissions for various organization operations
+
+### Data Channel Authorization
+
+- **Data Channel Association**: Link data channels to organizations
+- **Access Control**: Manage which organizations can access specific data channels
+- **Read Permissions**: Check if users can read from data channels (both direct and partner access)
+- **CRUD Permissions**: Verify create, update, and delete permissions for data channels
+
+### Permission System
+
+- **Role-Based Access**: Different permission levels based on user roles
+- **Relationship-Based**: Access determined by relationships between entities
+- **Partnership Access**: Users can access partner organization resources
+- **Fine-Grained Control**: Specific permissions for different operations
+
 ## Integration
 
 This service is a critical component in the Catalyst security infrastructure.
@@ -33,8 +61,7 @@ Used by the following services:
 - [Organization Matchmaking](../organization_matchmaking/README.md)
 - [Data Channel Registrar](../data_channel_registrar/README.md)
 - [Data Channel Gateway](../data_channel_gateway/README.md)
-- [Catalyst UI](../catalyst-ui/README.md)
-- [AuthX Token API](../authx_token_api/README.md)
+- [Catalyst UI Worker](../catalyst-ui-worker/README.md)
 
 ## Development
 
@@ -44,48 +71,75 @@ Used by the following services:
 
 ### Local Development Setup
 
-1. **Environment Variables**
+1. **Environment Variables Setup**
 
-   - Local development uses a `.dev.vars` file in this directory. Example:
+   Copy the example environment file and configure it:
 
-     ```env
-     AUTHZED_ENDPOINT="http://localhost:8449"
-     AUTHZED_KEY="atoken"
-     AUTHZED_PREFIX="orbisops_catalyst_dev/"
-     ```
+   ```bash
+   cd apps/authx_authzed_api
+   cp .dev.vars.example .dev.vars
+   ```
 
-   - Make sure to update these values as needed for your local or remote AuthZed instance.
+   The `.dev.vars` file should contain:
 
-2. **Running AuthZed Locally with Podman**
+   ```env
+   AUTHZED_ENDPOINT="http://localhost:8449"
+   AUTHZED_KEY="atoken"
+   AUTHZED_PREFIX="orbisops_catalyst_dev/"
+   ```
 
-   - You can run a local AuthZed instance using Podman (or Docker). Example command:
+   > **Important**: Always copy `.dev.vars.example` to `.dev.vars` and update the values as needed for your local or remote AuthZed instance. The `.dev.vars` file is gitignored and contains your local configuration.
 
-     ```sh
-     podman run --rm -v ./apps/authx_authzed_api/schema.zaml:/schema.zaml:ro -p 8449:8443 --detach --name authzed-container authzed/spicedb:latest serve-testing --http-enabled --skip-release-check=true --log-level trace --load-configs ./schema.zaml
-     ```
+2. **Start AuthZed/SpiceDB Container**
 
-     > [!IMPORTANT]
-     > If want to use CLI tool [authzed/zed](https://github.com/authzed/zed), you need to expose also the port `50051` for `gRPC`.
-     >
-     > Add: `-p 50051:50051` to `podman` flags
+   You can either:
 
-     ***
+   **Option A**: Use the root development script (recommended):
 
-     > [!NOTE]
-     > By default the `authx_authzed_api` **CloudFlare Worker™** relies on the HTTP endpoint for connections with SpiceDB. The exposed `gRPC` port is necessary if local development with `authzed/zed` cli tool will be made.
+   ```bash
+   # From the root catalyst directory
+   ./run_local_dev.sh
+   ```
 
-   - This will start AuthZed on `localhost:8443` with an in-memory datastore and a pre-shared key matching the `.dev.vars` example above.
-   - **Note:** For unit testing, starting AuthZed SpiceDB with Podman is already handled automatically by `global-setup.ts`. You only need to start it manually for local development outside of the test environment.
+   This automatically starts AuthZed along with all other services.
+
+   **Option B**: Run AuthZed manually:
+
+   ```bash
+   # From the root catalyst directory
+   podman run --rm \
+     -v ./apps/authx_authzed_api/schema.zaml:/schema.zaml:ro \
+     -p 8449:8443 \
+     -p 50051:50051 \
+     --detach \
+     --name authzed-container \
+     authzed/spicedb:latest \
+     serve-testing \
+     --http-enabled \
+     --skip-release-check=true \
+     --log-level debug \
+     --load-configs ./schema.zaml
+   ```
+
+   **Port Mapping**:
+
+   - `8449`: HTTP API endpoint (used by Catalyst services)
+   - `50051`: gRPC endpoint (for `zed` CLI tool)
+
+   > **Note**: For unit testing, AuthZed is automatically started by `global-setup.ts`. Manual startup is only needed for local development.
 
 3. **Start the Worker Locally**
 
-   - Use Wrangler to start the worker in local mode:
+   ```bash
+   cd apps/authx_authzed_api
+   pnpm dev
+   ```
 
-     ```sh
-     npx wrangler dev --env preview --var-file .dev.vars
-     ```
+   Or with specific environment and variables:
 
-   - This will load your local environment variables and connect to the local AuthZed instance.
+   ```bash
+   npx wrangler dev --env preview --var-file .dev.vars
+   ```
 
 See the `wrangler.jsonc` file for more configuration options and environment-specific settings.
 
