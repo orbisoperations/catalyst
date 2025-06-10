@@ -34,29 +34,29 @@
         "zod": "^3.23.5"
     },
     "devDependencies": {
-        "@cloudflare/vitest-pool-workers": "^0.8.22",
-        "@cloudflare/workers-types": "catalog:",
-        "wrangler": "catalog:",
+        "@cloudflare/vitest-pool-workers": "^0.8.23",
+        "@cloudflare/workers-types": "^4.20250525.0",
+        "wrangler": "^4.19.1",
         "@eslint/compat": "^1.2.8",
         "@eslint/eslintrc": "^3.0.5",
-        "@eslint/js": "^9.24.0",
+        "@eslint/js": "^9.25.1",
         "@opennextjs/aws": "^3.5.7",
         "@types/node": "^20.12.7",
         "@types/react": "^18.3.1",
         "@types/react-dom": "^18.3.0",
         "autoprefixer": "^10.4.19",
-        "eslint": "^9.24.0",
+        "eslint": "^9.25.1",
         "eslint-config-next": "15.3.1",
         "eslint-config-prettier": "^10.1.2",
         "eslint-plugin-prettier": "^5.2.6",
         "eslint-plugin-react": "^7.37.5",
         "postcss": "^8.4.38",
-        "prettier": "^3.2.5",
+        "prettier": "^3.5.3",
         "tailwindcss": "^3.4.3",
         "tslog": "^4.9.2",
         "tsx": "^4.9.4",
         "typescript": "^5.8.3",
         "typescript-eslint": "^8.31.0",
-        "vitest": "3.0.9"
+        "vitest": "^3.1.4"
     }
 }
