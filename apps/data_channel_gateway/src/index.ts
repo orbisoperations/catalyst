@@ -5,7 +5,7 @@ import { stitchingDirectives } from '@graphql-tools/stitching-directives';
 import { AsyncExecutor, isAsyncIterable, type Executor } from '@graphql-tools/utils';
 import { buildSchema, parse, print } from 'graphql';
 import { createYoga } from 'graphql-yoga';
-import { Hono } from 'hono';
+import { Context, Hono, Next } from 'hono';
 import { Env } from './env';
 
 export type ValidateTokenRequest = {
@@ -57,6 +57,10 @@ export async function makeGatewaySchema(endpoints: { token: string; endpoint: st
                     },
                     body: JSON.stringify({ query, variables, operationName, extensions }),
                 });
+                if (fetchResult.status >= 400) {
+                    console.error('error fetching remote schema:', fetchResult.status);
+                    throw new Error(`error fetching remote schema: ${endpoint} Status:${fetchResult.status}`);
+                }
                 return fetchResult.json();
             };
             return executor;
@@ -110,9 +114,8 @@ const app = new Hono<{
 }>();
 
 // this should be public
-app.use('/.well-known/jwks.json', async (c) => {
+app.get('/.well-known/jwks.json', async (c) => {
     const jwks = await c.env.AUTHX_TOKEN_API.getPublicKeyJWK();
-    console.log(jwks);
     return c.json(jwks, 200);
 });
 
@@ -188,16 +191,29 @@ app.post('/validate-tokens', async (ctx) => {
     return ctx.json(results, 200);
 });
 
-app.use(async (c, next) => {
+/**
+ * Middleware to authenticate requests
+ * TODO: separate this into a separate file, with better logic
+ *
+ * Separating into its own handler fixes a weird case where app.use does a app.all('*', for all routes, and we only need auth for /graphql
+ * Use in specific routes that need auth
+ *
+ * @param c - The context object
+ * @param next - The next middleware function
+ * @returns A JSON response with an error message if the token is invalid
+ */
+const authenticateRequestMiddleware = async (c: Context<{ Bindings: Env; Variables: Variables }>, next: Next) => {
     console.log('in da gtwy');
 
     const [token, error] = grabTokenInHeader(c.req.header('Authorization'));
-    if (!token)
+    if (!token) {
         console.error({
             tokenError: token,
             error: 'invalid token before createYoga',
         });
-    else console.error('token should be working');
+    } else {
+        console.log('token should be working');
+    }
 
     if (error) {
         return c.json(
@@ -209,7 +225,7 @@ app.use(async (c, next) => {
             error.status
         );
     }
-    if (token == '') {
+    if (!token) {
         return c.json(
             {
                 error: 'JWT Invalid',
@@ -218,6 +234,7 @@ app.use(async (c, next) => {
         );
     }
 
+    console.log('validating token');
     const { valid, entity, claims, jwtId, error: ValidError } = await c.env.AUTHX_TOKEN_API.validateToken(token);
     console.log(valid, entity, claims, jwtId, error);
     if (!valid || ValidError || !jwtId) {
@@ -236,10 +253,9 @@ app.use(async (c, next) => {
     await next();
 
     // we can add claims but do not need to enforce them here
-});
+};
 
-app.use('/graphql', async (ctx) => {
-    //console.log({context: ctx})
+app.use('/graphql', authenticateRequestMiddleware, async (ctx) => {
     const token = Token.safeParse({
         catalystToken: ctx.get('catalyst-token'),
     });

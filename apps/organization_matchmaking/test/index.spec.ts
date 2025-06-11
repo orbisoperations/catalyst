@@ -595,7 +595,6 @@ describe('organization matchmaking worker', () => {
 
 		it('should return error when user is not found', async () => {
 			// Mock USERCACHE to return no user
-			// @ts-expect-error: Mock implementation doesn't match expected type
 			env.USERCACHE.getUser = async () => undefined;
 
 			const worker = SELF;
@@ -703,7 +702,6 @@ describe('organization matchmaking worker', () => {
 
 		it('should return error when user is not found', async () => {
 			// Mock USERCACHE to return no user
-			// @ts-expect-error: Mock implementation doesn't match expected type
 			env.USERCACHE.getUser = async () => undefined;
 
 			const worker = SELF;
@@ -990,7 +988,6 @@ describe('Invite Management', () => {
 
 		it('should return error when user is not found', async () => {
 			const worker = SELF;
-			// @ts-expect-error: Mock implementation doesn't match expected type
 			env.USERCACHE.getUser = async () => undefined;
 
 			const response = await worker.listInvites({ cfToken: 'valid-token' });

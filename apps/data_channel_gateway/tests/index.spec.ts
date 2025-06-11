@@ -87,7 +87,8 @@ describe('gateway integration tests', () => {
 
     it('should return health a known good token no claims', async (textCtx) => {
         const token = await generateCatalystToken('airplanes1', ['airplanes1'], textCtx);
-        const response = await SELF.fetch('https://data-channel-gateway/graphql', {
+        console.log('token', token);
+        const response = await SELF.fetch('http://data-channel-gateway/graphql', {
             method: 'POST',
             headers: {
                 Authorization: `Bearer ${token}`,
@@ -114,7 +115,6 @@ describe('gateway integration tests', () => {
           }`,
             }),
         });
-
         const responsePayload = await response.json<{
             data: {
                 __type: {

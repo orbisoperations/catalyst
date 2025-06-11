@@ -30,7 +30,6 @@ export default function () {
     '-v ./authx_authzed_api/schema.zaml:/schema.zaml:ro',
     '-p 8449:8443',
     '-d',
-    '--name authzed-container',
     'authzed/spicedb:latest',
     'serve-testing',
     '--http-enabled',
