@@ -142,4 +142,102 @@ describe('Schema fetching resilience', () => {
         expect(result.errors).toBeDefined();
         expect(result.errors?.length).toBe(1);
     });
+
+    it('should gracefully handle a 500 server error from a data channel', async (ctx) => {
+        const token = await generateCatalystToken('test', ['test-claim'], ctx, 'test_user@mail.com');
+        const endpoints = [
+            { token, endpoint: 'http://failing-endpoint-500/graphql' },
+            { token, endpoint: 'http://working-endpoint/graphql' },
+        ];
+
+        // Mock the failing endpoint to return a 500 error
+        fetchMock.get('http://failing-endpoint-500').intercept({ path: '/graphql', method: 'POST' }).reply(500, 'Internal Server Error');
+
+        // Mock the working endpoint
+        createMockGraphqlEndpoint(
+            'http://working-endpoint',
+            '"""Working GraphQL Server""" type Query { workingGraphqlField: String! }',
+            {
+                workingGraphqlField: 'dummy-value',
+            }
+        );
+
+        const schema = await makeGatewaySchema(endpoints);
+
+        // @ts-expect-error: stiching info is not typed
+        expect(schema.extensions.stitchingInfo.subschemaMap.size).toBe(1);
+
+        const queryType = schema.getQueryType();
+        expect(queryType).toBeDefined();
+        const fields = queryType?.getFields();
+        expect(fields).toHaveProperty('health');
+        expect(fields).toHaveProperty('workingGraphqlField');
+
+        const result = await graphql({
+            schema,
+            source: '{ workingGraphqlField, health }',
+        });
+
+        expect(result).toEqual({
+            data: { health: 'OK', workingGraphqlField: 'dummy-value' },
+        });
+
+        // Querying for a field from the failed schema should result in an error
+        const failedResult = await graphql({
+            schema,
+            source: '{ failingField }',
+        });
+        expect(failedResult.errors).toBeDefined();
+        expect(failedResult.errors?.[0].message).toBe('Cannot query field "failingField" on type "Query".');
+    });
+
+    it('should gracefully handle a non-JSON response from a data channel', async (ctx) => {
+        const token = await generateCatalystToken('test', ['test-claim'], ctx, 'test_user@mail.com');
+        const endpoints = [
+            { token, endpoint: 'http://non-json-endpoint/graphql' },
+            { token, endpoint: 'http://working-endpoint/graphql' },
+        ];
+
+        // Mock the endpoint to return a non-JSON response
+        fetchMock.get('http://non-json-endpoint').intercept({ path: '/graphql', method: 'POST' }).reply(200, '<h1>This is not JSON</h1>', {
+            headers: { 'Content-Type': 'text/html' },
+        });
+
+        // Mock the working endpoint
+        createMockGraphqlEndpoint(
+            'http://working-endpoint',
+            '"""Working GraphQL Server""" type Query { workingGraphqlField: String! }',
+            {
+                workingGraphqlField: 'dummy-value',
+            }
+        );
+
+        const schema = await makeGatewaySchema(endpoints);
+
+        // @ts-expect-error: stiching info is not typed
+        expect(schema.extensions.stitchingInfo.subschemaMap.size).toBe(1);
+
+        const queryType = schema.getQueryType();
+        expect(queryType).toBeDefined();
+        const fields = queryType?.getFields();
+        expect(fields).toHaveProperty('health');
+        expect(fields).toHaveProperty('workingGraphqlField');
+
+        const result = await graphql({
+            schema,
+            source: '{ workingGraphqlField, health }',
+        });
+
+        expect(result).toEqual({
+            data: { health: 'OK', workingGraphqlField: 'dummy-value' },
+        });
+
+        // Querying for a field from the failed schema should result in an error
+        const failedResult = await graphql({
+            schema,
+            source: '{ nonExistentField }',
+        });
+        expect(failedResult.errors).toBeDefined();
+        expect(failedResult.errors?.[0].message).toBe('Cannot query field "nonExistentField" on type "Query".');
+    });
 });
