@@ -18,8 +18,8 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-    fetchMock.deactivate();
     fetchMock.assertNoPendingInterceptors();
+    fetchMock.deactivate();
 });
 
 describe('Schema fetching resilience', () => {
@@ -151,7 +151,14 @@ describe('Schema fetching resilience', () => {
         ];
 
         // Mock the failing endpoint to return a 500 error
-        fetchMock.get('http://failing-endpoint-500').intercept({ path: '/graphql', method: 'POST' }).reply(500, 'Internal Server Error');
+        fetchMock
+            .get('http://failing-endpoint-500')
+            .intercept({
+                path: '/graphql',
+                method: 'POST',
+                body: (body) => body.toString().includes('_sdl'),
+            })
+            .reply(500, 'Internal Server Error');
 
         // Mock the working endpoint
         createMockGraphqlEndpoint(
@@ -199,9 +206,16 @@ describe('Schema fetching resilience', () => {
         ];
 
         // Mock the endpoint to return a non-JSON response
-        fetchMock.get('http://non-json-endpoint').intercept({ path: '/graphql', method: 'POST' }).reply(200, '<h1>This is not JSON</h1>', {
-            headers: { 'Content-Type': 'text/html' },
-        });
+        fetchMock
+            .get('http://non-json-endpoint')
+            .intercept({
+                path: '/graphql',
+                method: 'POST',
+                body: (body) => body.toString().includes('_sdl'),
+            })
+            .reply(200, '<h1>This is not JSON</h1>', {
+                headers: { 'Content-Type': 'text/html' },
+            });
 
         // Mock the working endpoint
         createMockGraphqlEndpoint(
