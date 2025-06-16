@@ -70,18 +70,6 @@ export const createMockGraphqlEndpoint = (
                 return !body.toString().includes('_sdl');
             },
         })
-        .reply(200, ({ body }) => {
-            return {
-                data: Object.keys(dataStore).reduce(
-                    (acc, key) => {
-                        if (body?.toString().includes(key)) {
-                            acc[key] = dataStore[key];
-                        }
-                        return acc;
-                    },
-                    {} as Record<string, string | object | number>
-                ),
-            };
-        })
+        .reply(200, { data: dataStore })
         .persist();
 };

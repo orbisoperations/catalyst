@@ -22,6 +22,7 @@ afterEach(() => {
         fetchMock.assertNoPendingInterceptors();
     } finally {
         fetchMock.deactivate();
+        fetchMock.enableNetConnect();
     }
 });
 
