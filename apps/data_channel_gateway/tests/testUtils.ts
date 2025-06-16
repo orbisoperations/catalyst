@@ -49,27 +49,23 @@ export const createMockGraphqlEndpoint = (
         endpoint = endpoint.replace('/graphql', '');
     }
 
-    const mockScope = fetchMock.get(endpoint);
-
-    mockScope
+    fetchMock
+        .get(endpoint)
         .intercept({
             path: '/graphql',
             method: 'POST',
-            body: (body) => {
-                return body.toString().includes('_sdl');
-            },
         })
-        .reply(200, { data: { _sdl: typeDefs } });
-
-    mockScope
-        .intercept({
-            path: '/graphql',
-            method: 'POST',
-            body: (body) => {
-                // if body includes any of the keys in the dataStore, return true
-                return !body.toString().includes('_sdl');
+        .reply(
+            200,
+            ({ body }) => {
+                if (body && body.toString().includes('_sdl')) {
+                    return { data: { _sdl: typeDefs } };
+                }
+                return { data: dataStore };
             },
-        })
-        .reply(200, { data: dataStore })
+            {
+                headers: { 'Content-Type': 'application/json' },
+            }
+        )
         .persist();
 };
