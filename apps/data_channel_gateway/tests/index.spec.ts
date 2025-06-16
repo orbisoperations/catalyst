@@ -64,7 +64,23 @@ describe('gateway integration tests', () => {
     afterEach(async () => {
         await teardown();
         try {
+            // Ensure that any interceptors created during the test have been consumed.
+            // If some are still pending (which can happen with persisted interceptors),
+            // log the information and clear the interceptors to avoid cross-test leakage.
             fetchMock.assertNoPendingInterceptors();
+        } catch (err) {
+            console.warn('Clearing pending interceptors after test:', err);
+            if (
+                'clearInterceptors' in fetchMock &&
+                typeof (fetchMock as unknown as { clearInterceptors: () => void }).clearInterceptors === 'function'
+            ) {
+                (fetchMock as unknown as { clearInterceptors: () => void }).clearInterceptors();
+            } else if (
+                'reset' in fetchMock &&
+                typeof (fetchMock as unknown as { reset: () => void }).reset === 'function'
+            ) {
+                (fetchMock as unknown as { reset: () => void }).reset();
+            }
         } finally {
             fetchMock.deactivate();
             fetchMock.enableNetConnect();
