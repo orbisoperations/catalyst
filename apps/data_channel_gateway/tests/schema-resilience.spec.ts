@@ -18,8 +18,11 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-    fetchMock.assertNoPendingInterceptors();
-    fetchMock.deactivate();
+    try {
+        fetchMock.assertNoPendingInterceptors();
+    } finally {
+        fetchMock.deactivate();
+    }
 });
 
 describe('Schema fetching resilience', () => {

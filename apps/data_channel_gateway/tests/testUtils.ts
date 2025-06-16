@@ -58,8 +58,7 @@ export const createMockGraphqlEndpoint = (
                 return body.toString().includes('_sdl');
             },
         })
-        .reply(200, { data: { _sdl: typeDefs } })
-        .persist();
+        .reply(200, { data: { _sdl: typeDefs } });
 
     fetchMock
         .get(endpoint)
@@ -86,6 +85,5 @@ export const createMockGraphqlEndpoint = (
                     {} as Record<string, string | object | number>
                 ),
             };
-        })
-        .persist();
+        });
 };
