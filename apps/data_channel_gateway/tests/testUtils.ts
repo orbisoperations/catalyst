@@ -49,8 +49,9 @@ export const createMockGraphqlEndpoint = (
         endpoint = endpoint.replace('/graphql', '');
     }
 
-    fetchMock
-        .get(endpoint)
+    const mockScope = fetchMock.get(endpoint);
+
+    mockScope
         .intercept({
             path: '/graphql',
             method: 'POST',
@@ -60,8 +61,7 @@ export const createMockGraphqlEndpoint = (
         })
         .reply(200, { data: { _sdl: typeDefs } });
 
-    fetchMock
-        .get(endpoint)
+    mockScope
         .intercept({
             path: '/graphql',
             method: 'POST',
