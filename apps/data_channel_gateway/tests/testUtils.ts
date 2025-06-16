@@ -67,10 +67,7 @@ export const createMockGraphqlEndpoint = (
             method: 'POST',
             body: (body) => {
                 // if body includes any of the keys in the dataStore, return true
-                return (
-                    !body.toString().includes('_sdl') &&
-                    Object.keys(dataStore).some((key) => body.toString().includes(key))
-                );
+                return !body.toString().includes('_sdl');
             },
         })
         .reply(200, ({ body }) => {
