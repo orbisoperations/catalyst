@@ -188,3 +188,6 @@ packages/schema/flatten_migrations/
 
 .turbo
 .vscode/
+
+.aider*
+.cursorrules
