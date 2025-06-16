@@ -85,5 +85,6 @@ export const createMockGraphqlEndpoint = (
                     {} as Record<string, string | object | number>
                 ),
             };
-        });
+        })
+        .persist();
 };
