@@ -77,7 +77,7 @@ export default class IssuedJWTRegistryWorker extends WorkerEntrypoint<Env> {
 		return resp;
 	}
 
-	async addToRevocationList(token: Token, issuedJWTRegId: string, doNamespace: string = 'default'){
+	async addToRevocationList(token: Token, issuedJWTRegId: string, doNamespace: string = 'default') {
 		const permCheck = await this.RPerms(token);
 		if (!permCheck.success) {
 			throw new Error(permCheck.error);
@@ -86,7 +86,7 @@ export default class IssuedJWTRegistryWorker extends WorkerEntrypoint<Env> {
 		const stub = this.env.ISSUED_JWT_REGISTRY_DO.get(doId);
 		return await stub.addToRevocationList(issuedJWTRegId);
 	}
-	async removeFromRevocationList(token: Token, issuedJWTRegId: string, doNamespace: string = 'default'){
+	async removeFromRevocationList(token: Token, issuedJWTRegId: string, doNamespace: string = 'default') {
 		const permCheck = await this.RPerms(token);
 		if (!permCheck.success) {
 			throw new Error(permCheck.error);
@@ -95,7 +95,7 @@ export default class IssuedJWTRegistryWorker extends WorkerEntrypoint<Env> {
 		const stub = this.env.ISSUED_JWT_REGISTRY_DO.get(doId);
 		return await stub.removeFromRevocationList(issuedJWTRegId);
 	}
-	async isOnRevocationList(issuedJWTRegId: string, doNamespace: string = 'default'){
+	async isOnRevocationList(issuedJWTRegId: string, doNamespace: string = 'default') {
 		const doId = this.env.ISSUED_JWT_REGISTRY_DO.idFromName(doNamespace);
 		const stub = this.env.ISSUED_JWT_REGISTRY_DO.get(doId);
 		return await stub.isOnRevocationList(issuedJWTRegId);
@@ -103,12 +103,10 @@ export default class IssuedJWTRegistryWorker extends WorkerEntrypoint<Env> {
 }
 
 export class I_JWT_Registry_DO extends DurableObject {
-
 	async JWTRegistryItemGuard(ijr?: IssuedJWTRegistry) {
-		const editableStatus = ijr? ijr.status === JWTRegisterStatus.enum.active
-		|| ijr.status === JWTRegisterStatus.enum.revoked : false
-		const isExpired =  ijr ? ijr.expiry.getTime() < Date.now() : false
-		return [ editableStatus && !isExpired,  isExpired]
+		const editableStatus = ijr ? ijr.status === JWTRegisterStatus.enum.active || ijr.status === JWTRegisterStatus.enum.revoked : false;
+		const isExpired = ijr ? ijr.expiry.getTime() < Date.now() : false;
+		return [editableStatus && !isExpired, isExpired];
 	}
 	async create(issuedJWTRegistry: Omit<IssuedJWTRegistry, 'id'>) {
 		const newIJR = Object.assign(issuedJWTRegistry, { id: crypto.randomUUID() });
@@ -124,54 +122,52 @@ export class I_JWT_Registry_DO extends DurableObject {
 
 	async list(orgId: string) {
 		const allIJR = await this.ctx.storage.list<IssuedJWTRegistry>();
-		return Array.from(allIJR.entries())
-			.filter(([_, ijr]) => ijr.organization === orgId)
-			.map(([_, ijr]) => ijr);
+		return Array.from(allIJR.values()).filter((ijr) => ijr.organization === orgId && ijr.status !== JWTRegisterStatus.enum.deleted);
 	}
 
 	async changeStatus(issuedJWTRegId: string, status: JWTRegisterStatus) {
-		let updated : boolean = false
+		let updated: boolean = false;
 		await this.ctx.blockConcurrencyWhile(async () => {
-			let currentIjr = await this.ctx.storage.get<IssuedJWTRegistry>(issuedJWTRegId)
+			const currentIjr = await this.ctx.storage.get<IssuedJWTRegistry>(issuedJWTRegId);
 			if (!currentIjr) {
-				return
+				return;
 			}
-			const [canEdit, needsToBeExpired] = await this.JWTRegistryItemGuard(currentIjr)
+			const [canEdit, needsToBeExpired] = await this.JWTRegistryItemGuard(currentIjr);
 			if (canEdit) {
-				currentIjr.status = needsToBeExpired ? JWTRegisterStatus.enum.expired : status
+				currentIjr.status = needsToBeExpired ? JWTRegisterStatus.enum.expired : status;
 				await this.ctx.storage.put(currentIjr.id, currentIjr);
-				updated = true
+				updated = true;
 			}
 		});
 		return updated;
 	}
 
 	async delete(issuedJWTRegId: string) {
-		let currentIjr = await this.ctx.storage.get<IssuedJWTRegistry>(issuedJWTRegId)
-		if (!currentIjr) return false
+		const currentIjr = await this.ctx.storage.get<IssuedJWTRegistry>(issuedJWTRegId);
+		if (!currentIjr) return false;
 
-		currentIjr.status = JWTRegisterStatus.enum.deleted
+		currentIjr.status = JWTRegisterStatus.enum.deleted;
 		await this.ctx.storage.put(currentIjr.id, currentIjr);
-		return true
+		return true;
 	}
 
-	async addToRevocationList(id: string){
-		let status: boolean = false
+	async addToRevocationList(id: string) {
+		let status: boolean = false;
 		await this.ctx.blockConcurrencyWhile(async () => {
-			status = await this.changeStatus(id, JWTRegisterStatus.enum.revoked)
-		})
-		return status
+			status = await this.changeStatus(id, JWTRegisterStatus.enum.revoked);
+		});
+		return status;
 	}
-	async removeFromRevocationList(id:string){
-		let status: boolean = false
+	async removeFromRevocationList(id: string) {
+		let status: boolean = false;
 		await this.ctx.blockConcurrencyWhile(async () => {
-			status = await this.changeStatus(id, JWTRegisterStatus.enum.active)
-		})
-		return status
+			status = await this.changeStatus(id, JWTRegisterStatus.enum.active);
+		});
+		return status;
 	}
 
-	async isOnRevocationList(id:string){
-		let ijr = await this.get(id)
-		return ijr ?  ijr.status === JWTRegisterStatus.enum.revoked : false
+	async isOnRevocationList(id: string) {
+		const ijr = await this.get(id);
+		return ijr ? ijr.status === JWTRegisterStatus.enum.revoked || ijr.status === JWTRegisterStatus.enum.deleted : false;
 	}
 }
