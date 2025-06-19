@@ -241,8 +241,7 @@ const authenticateRequestMiddleware = async (c: Context<{ Bindings: Env; Variabl
         return c.json({ message: 'Token validation failed' }, 403);
     }
 
-    // if token is not on the revocation list, this function will return false
-    // else it checks the status against the revocation list
+    // Check if the JWT token is invalid (revoked or deleted)
     if (await c.env.ISSUED_JWT_REGISTRY.isInvalid(jwtId)) {
         return c.json({ message: 'Token has been revoked' }, 403);
     }
