@@ -242,8 +242,8 @@ const authenticateRequestMiddleware = async (c: Context<{ Bindings: Env; Variabl
     }
 
     // if token is not on the revocation list, this function will return false
-    // else it checks the status agains ENUM.revoked
-    if (await c.env.ISSUED_JWT_REGISTRY.isOnRevocationList(jwtId)) {
+    // else it checks the status against the revocation list
+    if (await c.env.ISSUED_JWT_REGISTRY.isInvalid(jwtId)) {
         return c.json({ message: 'Token has been revoked' }, 403);
     }
 

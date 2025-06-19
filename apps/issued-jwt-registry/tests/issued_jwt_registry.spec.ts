@@ -177,7 +177,7 @@ describe('issued-jwt-registry unit tests', () => {
 		expect(cantRevoke).toBe(false);
 	});
 
-	it('can add items to the revocatoion list', async () => {
+	it('can add items to the revocation list', async () => {
 		const id = env.ISSUED_JWT_REGISTRY_DO.idFromName('creation');
 		const stub = env.ISSUED_JWT_REGISTRY_DO.get(id);
 
@@ -191,18 +191,18 @@ describe('issued-jwt-registry unit tests', () => {
 			status: 'active',
 		});
 
-		expect(await stub.isOnRevocationList(item1.id)).toBe(false);
+		expect(await stub.isInvalid(item1.id)).toBe(false);
 
 		expect(await stub.addToRevocationList(item1.id)).toBe(true);
 
-		expect(await stub.isOnRevocationList(item1.id)).toBe(true);
+		expect(await stub.isInvalid(item1.id)).toBe(true);
 
 		expect(await stub.removeFromRevocationList(item1.id)).toBe(true);
 
-		expect(await stub.isOnRevocationList(item1.id)).toBe(false);
+		expect(await stub.isInvalid(item1.id)).toBe(false);
 	});
 
-	it('deleted items are considered to be on revocation list', async () => {
+	it('deleted items are considered invalid', async () => {
 		const id = env.ISSUED_JWT_REGISTRY_DO.idFromName('creation');
 		const stub = env.ISSUED_JWT_REGISTRY_DO.get(id);
 
@@ -216,12 +216,12 @@ describe('issued-jwt-registry unit tests', () => {
 			status: 'active',
 		});
 
-		expect(await stub.isOnRevocationList(item1.id)).toBe(false);
+		expect(await stub.isInvalid(item1.id)).toBe(false);
 
 		// Delete the item
 		await stub.delete(item1.id);
 
 		// Verify deleted items are considered to be on revocation list
-		expect(await stub.isOnRevocationList(item1.id)).toBe(true);
+		expect(await stub.isInvalid(item1.id)).toBe(true);
 	});
 });

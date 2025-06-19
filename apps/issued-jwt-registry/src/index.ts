@@ -95,10 +95,10 @@ export default class IssuedJWTRegistryWorker extends WorkerEntrypoint<Env> {
 		const stub = this.env.ISSUED_JWT_REGISTRY_DO.get(doId);
 		return await stub.removeFromRevocationList(issuedJWTRegId);
 	}
-	async isOnRevocationList(issuedJWTRegId: string, doNamespace: string = 'default') {
+	async isInvalid(issuedJWTRegId: string, doNamespace: string = 'default') {
 		const doId = this.env.ISSUED_JWT_REGISTRY_DO.idFromName(doNamespace);
 		const stub = this.env.ISSUED_JWT_REGISTRY_DO.get(doId);
-		return await stub.isOnRevocationList(issuedJWTRegId);
+		return await stub.isInvalid(issuedJWTRegId);
 	}
 }
 
@@ -166,7 +166,7 @@ export class I_JWT_Registry_DO extends DurableObject {
 		return status;
 	}
 
-	async isOnRevocationList(id: string) {
+	async isInvalid(id: string) {
 		const ijr = await this.get(id);
 		return ijr ? ijr.status === JWTRegisterStatus.enum.revoked || ijr.status === JWTRegisterStatus.enum.deleted : false;
 	}
