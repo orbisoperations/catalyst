@@ -261,9 +261,11 @@ export default function CreateTokensForm({ signToken, listChannels, createIJWTRe
                                     {expirationError}
                                 </Text>
                             )}
-                            <Text color="gray.500" fontSize="sm" mt={1}>
-                                {getExpirationHelpText()}
-                            </Text>
+                            {!expirationError && (
+                                <Text color="gray.500" fontSize="sm" mt={1}>
+                                    {getExpirationHelpText()}
+                                </Text>
+                            )}
                         </FormControl>
                     </Box>
                     <OrbisCard>
