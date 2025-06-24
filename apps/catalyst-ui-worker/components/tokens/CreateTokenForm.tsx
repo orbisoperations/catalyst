@@ -73,7 +73,7 @@ function getExpirationHelpText(expiration: { unit: 'days' | 'weeks' }) {
 }
 
 // UserLike type for buildJWTRequest
-type UserLike = { custom: { org: string }; email: string } | undefined;
+type UserLike = { custom: { org?: string }; email: string } | undefined;
 
 // JWT request builder
 function buildJWTRequest(channelsResponse: DataChannel[], selectedChannels: number[], user: UserLike): JWTRequest {
@@ -139,7 +139,7 @@ export default function CreateTokensForm({ signToken, listChannels, createIJWTRe
                         description: apiKeyDescription,
                         claims: jwtRequest.claims,
                         expiry: new Date(resp.expiration),
-                        organization: user.custom.org,
+                        organization: user.custom.org || 'default',
                     } as Omit<IssuedJWTRegistry, 'id'>;
                     const iJWTRegistryEntry = await createIJWTRegistry(cfToken, issuedJWTRegistryEntry).catch(() => {
                         setHasError(true);
