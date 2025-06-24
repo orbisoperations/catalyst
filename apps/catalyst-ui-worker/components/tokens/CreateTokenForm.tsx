@@ -36,6 +36,53 @@ type CreateTokensFormProps = {
     createIJWTRegistry: (token: string, data: Omit<IssuedJWTRegistry, 'id'>) => Promise<IssuedJWTRegistry | undefined>;
 };
 
+// Constants for maximum expiration values
+const MAX_DAYS = 365;
+const MAX_WEEKS = 52;
+
+// validation function for expiration time
+function validateExpiration(
+    expiration: { value: number; unit: 'days' | 'weeks' },
+    setExpirationError: (msg: string) => void
+): boolean {
+    if (!expiration.value || expiration.value <= 0) {
+        setExpirationError('Please enter a valid expiration time');
+        return false;
+    }
+    if (expiration.unit === 'days' && expiration.value > MAX_DAYS) {
+        setExpirationError(`Expiration time cannot be greater than ${MAX_DAYS} days`);
+        return false;
+    }
+    if (expiration.unit === 'weeks' && expiration.value > MAX_WEEKS) {
+        setExpirationError(`Expiration time cannot be greater than ${MAX_WEEKS} weeks`);
+        return false;
+    }
+    setExpirationError('');
+    return true;
+}
+
+// expiration help text function
+function getExpirationHelpText(expiration: { unit: 'days' | 'weeks' }) {
+    if (expiration.unit === 'days') {
+        return `Maximum: ${MAX_DAYS} days`;
+    } else if (expiration.unit === 'weeks') {
+        return `Maximum: ${MAX_WEEKS} weeks`;
+    } else {
+        return 'Unknown unit'; //shouldn't happen
+    }
+}
+
+// UserLike type for buildJWTRequest
+type UserLike = { custom: { org: string }; email: string } | undefined;
+
+// JWT request builder
+function buildJWTRequest(channelsResponse: DataChannel[], selectedChannels: number[], user: UserLike): JWTRequest {
+    return {
+        claims: channelsResponse.filter((_, i) => selectedChannels.includes(i)).map((channel) => channel.id),
+        entity: (user && user.custom.org && `${user.custom.org}/${user.email}`) || 'default',
+    };
+}
+
 export default function CreateTokensForm({ signToken, listChannels, createIJWTRegistry }: CreateTokensFormProps) {
     const router = useRouter();
     const tokenConfirmation = useDisclosure();
@@ -48,45 +95,8 @@ export default function CreateTokensForm({ signToken, listChannels, createIJWTRe
     const [token, setToken] = useState<string>('');
     const [hasError, setHasError] = useState<boolean>(false);
     const [errorMessage, setErrorMessage] = useState<string>('');
-    const [expiration, setExpiration] = useState<{
-        value: number;
-        unit: 'days' | 'weeks';
-    }>({ value: 7, unit: 'days' });
+    const [expiration, setExpiration] = useState<{ value: number; unit: 'days' | 'weeks' }>({ value: 7, unit: 'days' });
     const [expirationError, setExpirationError] = useState<string>('');
-
-    // Constants for maximum expiration values
-    const MAX_DAYS = 365;
-    const MAX_WEEKS = 52;
-
-    function validateExpiration() {
-        // Check for invalid or missing values
-        if (!expiration.value || expiration.value <= 0) {
-            setExpirationError('Please enter a valid expiration time');
-            return false;
-        }
-
-        if (expiration.unit === 'days' && expiration.value > MAX_DAYS) {
-            setExpirationError(`Expiration time cannot be greater than ${MAX_DAYS} days`);
-            return false;
-        }
-        if (expiration.unit === 'weeks' && expiration.value > MAX_WEEKS) {
-            setExpirationError(`Expiration time cannot be greater than ${MAX_WEEKS} weeks`);
-            return false;
-        }
-        setExpirationError('');
-        return true;
-    }
-
-    // Get the appropriate help text based on selected unit
-    function getExpirationHelpText() {
-        if (expiration.unit === 'days') {
-            return `Maximum: ${MAX_DAYS} days`;
-        } else if (expiration.unit === 'weeks') {
-            return `Maximum: ${MAX_WEEKS} weeks`;
-        } else {
-            return 'Unknown unit'; //shouldn't happen
-        }
-    }
 
     function fetchChannels() {
         setHasError(false);
@@ -107,20 +117,12 @@ export default function CreateTokensForm({ signToken, listChannels, createIJWTRe
     // Validate expiration whenever expiration state changes
     useEffect(() => {
         if (expiration.value) {
-            validateExpiration();
+            validateExpiration(expiration, setExpirationError);
         }
     }, [expiration.value, expiration.unit]);
 
     function createToken() {
-        const jwtRequest: JWTRequest = {
-            claims: channelsResponse
-                .filter((_, i) => selectedChannels.includes(i))
-                .map((channel) => {
-                    console.log(channel);
-                    return channel.id;
-                }),
-            entity: (user && user.custom.org && `${user?.custom.org}/${user?.email}`) || 'default',
-        };
+        const jwtRequest = buildJWTRequest(channelsResponse, selectedChannels, user);
         if (!cfToken) {
             throw 'No cf token';
         }
@@ -234,7 +236,7 @@ export default function CreateTokensForm({ signToken, listChannels, createIJWTRe
                                     }}
                                     onBlur={() => {
                                         // Validate on blur for better UX
-                                        validateExpiration();
+                                        validateExpiration(expiration, setExpirationError);
                                     }}
                                     placeholder="Expiration"
                                 />
@@ -263,7 +265,7 @@ export default function CreateTokensForm({ signToken, listChannels, createIJWTRe
                             )}
                             {!expirationError && (
                                 <Text color="gray.500" fontSize="sm" mt={1}>
-                                    {getExpirationHelpText()}
+                                    {getExpirationHelpText(expiration)}
                                 </Text>
                             )}
                         </FormControl>
