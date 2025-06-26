@@ -8,7 +8,7 @@ Run the setup script to automatically configure and start local Authzed:
 
 ```sh
 # From the repo root:
-node scripts/local-authzed/setup-local-authzed.ts
+bash scripts/local-authzed/setup-local-authzed.sh
 ```
 
 The script will:
@@ -18,7 +18,9 @@ The script will:
 - Prompt you for your email to grant local admin permissions
 - Verify everything is working correctly
 
-**Note:** This script is typically launched automatically by the `./run_local_dev.sh` script as part of the local development setup.
+## ⚠️ Important Note
+
+**This script is typically launched automatically by the `./run_local_dev.sh` script as part of the local development setup.**
 
 ## Stopping Containers
 
@@ -33,17 +35,17 @@ podman compose -f scripts/local-authzed/docker-compose.authzed.yml down
 To completely reset the local Authzed instance (removes all data):
 
 ```sh
-# Stop containers and remove volumes
+# Stop containers and remove volumes (resetting your local authzed schema/relationships)
 podman compose -f scripts/local-authzed/docker-compose.authzed.yml down --volumes
 
 # Then run the setup script again
-node scripts/local-authzed/setup-local-authzed.ts
+bash scripts/local-authzed/setup-local-authzed.sh
 ```
 
 ## Files
 
 - `docker-compose.authzed.yml`: Compose file for Authzed/SpiceDB and dependencies
-- `setup-local-authzed.ts`: Automated setup script that handles all container management
+- `setup-local-authzed.sh`: Automated setup script that handles all container management
 - `README.md`: This file
 
 ## Notes
