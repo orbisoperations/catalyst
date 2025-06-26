@@ -92,6 +92,28 @@ else
     done
 fi
 
+# Check for and clean up conflicting containers
+log_info "🧹 Checking for conflicting containers..."
+CONFLICTING_CONTAINERS=$(podman ps -a --format "{{.Names}}" | grep -E "(authzed|spicedb)" | grep -v "authzed-container" || true)
+# Also check for containers using the authzed/spicedb image
+CONFLICTING_IMAGE_CONTAINERS=$(podman ps -a --filter "ancestor=authzed/spicedb" --format "{{.Names}}" | grep -v "authzed-container" || true)
+# Combine both lists
+ALL_CONFLICTING_CONTAINERS=$(echo -e "${CONFLICTING_CONTAINERS}\n${CONFLICTING_IMAGE_CONTAINERS}" | sort -u | grep -v '^$' || true)
+
+if [[ -n "$ALL_CONFLICTING_CONTAINERS" ]]; then
+    log_warn "Found conflicting containers: $ALL_CONFLICTING_CONTAINERS"
+    log_info "Stopping conflicting containers..."
+    
+    echo "$ALL_CONFLICTING_CONTAINERS" | while read -r container; do
+        if [[ -n "$container" ]]; then
+            log_info "Stopping container: $container"
+            podman stop "$container" 2>/dev/null || true
+        fi
+    done
+    
+    log_success "Conflicting containers stopped"
+fi
+
 # 1. Ensure containers are running with health checks
 log_info "🔄 Ensuring Authzed/SpiceDB containers are running..."
 
@@ -227,4 +249,5 @@ for ((attempt=1; attempt<=PERMISSION_CHECK_ATTEMPTS; attempt++)); do
     fi
 done
 
-log_success "🎉 Local Authzed setup complete!" 
+log_success "🎉 Local Authzed setup complete!"
+log_info "💡 To reset the local Authzed database, run: podman compose -f scripts/local-authzed/docker-compose.authzed.yml down --volumes" 
