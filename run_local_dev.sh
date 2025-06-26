@@ -30,10 +30,15 @@ cleanup() {
 
   # Stop the authzed container
   print_step "Stopping Authzed services..." "${YELLOW}"
-  if podman compose -f "$PROJECT_ROOT/scripts/local-authzed/docker-compose.authzed.yml" down; then
-    print_success "Authzed services stopped successfully"
+  if podman version >/dev/null 2>&1; then
+    if podman compose -f "$PROJECT_ROOT/scripts/local-authzed/docker-compose.authzed.yml" down; then
+      print_success "Authzed services stopped successfully"
+    else
+      print_warn "Failed to stop Authzed services - they may not be running"
+    fi
   else
-    print_warn "Failed to stop Authzed services - they may not be running"
+    print_warn "Podman not responding - Authzed services may still be running"
+    print_warn "You may need to manually stop them with: podman machine start && podman compose -f scripts/local-authzed/docker-compose.authzed.yml down"
   fi
 
   print_box "🛑 Cleanup completed" "${RED}"
