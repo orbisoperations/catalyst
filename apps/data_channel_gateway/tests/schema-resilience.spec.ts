@@ -160,7 +160,6 @@ describe('Schema fetching resilience', () => {
             .intercept({
                 path: '/graphql',
                 method: 'POST',
-                body: (body) => body.toString().includes('_sdl'),
             })
             .reply(500, 'Internal Server Error');
 
@@ -215,7 +214,6 @@ describe('Schema fetching resilience', () => {
             .intercept({
                 path: '/graphql',
                 method: 'POST',
-                body: (body) => body.toString().includes('_sdl'),
             })
             .reply(200, '<h1>This is not JSON</h1>', {
                 headers: { 'Content-Type': 'text/html' },
