@@ -57,18 +57,10 @@ const teardown = async () => {
 describe('gateway integration tests', () => {
     beforeEach(async () => {
         await setup();
-        fetchMock.activate();
-        fetchMock.disableNetConnect();
     });
 
     afterEach(async () => {
         await teardown();
-        try {
-            fetchMock.assertNoPendingInterceptors();
-        } finally {
-            fetchMock.deactivate();
-            fetchMock.enableNetConnect();
-        }
     });
 
     it("returns gf'd for a invalid token", async () => {
@@ -284,6 +276,9 @@ describe('gateway integration tests', () => {
 
     it('should be able to access multiple data channels with a single use token', async (testContext) => {
         // create mock graphql endpoint for working endpoint
+        fetchMock.activate();
+        fetchMock.disableNetConnect();
+
         DUMMY_DATA_CHANNELS.forEach((dataChannel) => {
             createMockGraphqlEndpoint(
                 dataChannel.endpoint,
@@ -319,5 +314,9 @@ describe('gateway integration tests', () => {
         expect(gateWayResponsePayload.data.workingGraphqlField_airplanes1).toBe('dummy-value-airplanes1');
         expect(gateWayResponsePayload.data.workingGraphqlField_airplanes2).toBe('dummy-value-airplanes2');
         expect(gateWayResponsePayload.data.health).toBe('OK');
+
+        fetchMock.deactivate();
+        fetchMock.assertNoPendingInterceptors();
+        fetchMock.enableNetConnect();
     });
 });

@@ -54,18 +54,38 @@ export const createMockGraphqlEndpoint = (
         .intercept({
             path: '/graphql',
             method: 'POST',
-        })
-        .reply(
-            200,
-            ({ body }) => {
-                if (body && body.toString().includes('_sdl')) {
-                    return { data: { _sdl: typeDefs } };
-                }
-                return { data: dataStore };
+            body: (body) => {
+                return body.toString().includes('_sdl');
             },
-            {
-                headers: { 'Content-Type': 'application/json' },
-            }
-        )
+        })
+        .reply(200, { data: { _sdl: typeDefs } })
+        .persist();
+
+    fetchMock
+        .get(endpoint)
+        .intercept({
+            path: '/graphql',
+            method: 'POST',
+            body: (body) => {
+                // if body includes any of the keys in the dataStore, return true
+                return (
+                    !body.toString().includes('_sdl') &&
+                    Object.keys(dataStore).some((key) => body.toString().includes(key))
+                );
+            },
+        })
+        .reply(200, ({ body }) => {
+            return {
+                data: Object.keys(dataStore).reduce(
+                    (acc, key) => {
+                        if (body?.toString().includes(key)) {
+                            acc[key] = dataStore[key];
+                        }
+                        return acc;
+                    },
+                    {} as Record<string, string | object | number>
+                ),
+            };
+        })
         .persist();
 };
