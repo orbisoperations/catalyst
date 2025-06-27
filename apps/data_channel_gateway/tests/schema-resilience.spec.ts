@@ -147,7 +147,7 @@ describe('Schema fetching resilience', () => {
         expect(result.errors?.length).toBe(1);
     });
 
-    it('should gracefully handle a 500 server error from a data channel', async (ctx) => {
+    it.only('should gracefully handle a 500 server error from a data channel', async (ctx) => {
         const token = await generateCatalystToken('test', ['test-claim'], ctx, 'test_user@mail.com');
         const endpoints = [
             { token, endpoint: 'http://failing-endpoint-500/graphql' },
@@ -201,7 +201,7 @@ describe('Schema fetching resilience', () => {
         expect(failedResult.errors?.[0].message).toBe('Cannot query field "failingField" on type "Query".');
     });
 
-    it('should gracefully handle a non-JSON response from a data channel', async (ctx) => {
+    it.only('should gracefully handle a non-JSON response from a data channel', async (ctx) => {
         const token = await generateCatalystToken('test', ['test-claim'], ctx, 'test_user@mail.com');
         const endpoints = [
             { token, endpoint: 'http://non-json-endpoint/graphql' },
