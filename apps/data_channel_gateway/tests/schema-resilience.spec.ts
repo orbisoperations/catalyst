@@ -147,7 +147,7 @@ describe('Schema fetching resilience', () => {
         const token = await generateCatalystToken('test', ['test-claim'], ctx, 'test_user@mail.com');
         const endpoints = [
             { token, endpoint: 'http://failing-endpoint/graphql' },
-            { token, endpoint: 'http://working-endpoint/graphql' },
+            { token, endpoint: 'http://my-working-endpoint-1/graphql' },
         ];
 
         // Mock the failing endpoint to return a 500 error
@@ -160,7 +160,7 @@ describe('Schema fetching resilience', () => {
             .reply(500, 'Internal Server Error');
 
         createMockGraphqlEndpoint(
-            'http://working-endpoint',
+            'http://my-working-endpoint-1',
             '"""Working GraphQL Server""" type Query { workingGraphqlField: String! }',
             {
                 workingGraphqlField: 'dummy-value',
@@ -187,15 +187,22 @@ describe('Schema fetching resilience', () => {
             data: { health: 'OK', workingGraphqlField: 'dummy-value' },
         });
 
-        // should probably check that the result set is empty as well
         expect(result.errors).toBeUndefined();
+
+        const failingResult = await graphql({
+            schema,
+            source: '{ health, nonExistentField }',
+        });
+
+        expect(failingResult.errors).toBeDefined();
+        expect(failingResult.errors?.length).toBe(1);
     });
 
     it('should gracefully handle a non-JSON response from a data channel', async (ctx) => {
         const token = await generateCatalystToken('test', ['test-claim'], ctx, 'test_user@mail.com');
         const endpoints = [
             { token, endpoint: 'http://failing-endpoint/graphql' },
-            { token, endpoint: 'http://working-endpoint/graphql' },
+            { token, endpoint: 'http://my-working-endpoint-2/graphql' },
         ];
 
         // Mock the endpoint to return a non-JSON response
@@ -210,7 +217,7 @@ describe('Schema fetching resilience', () => {
             });
 
         createMockGraphqlEndpoint(
-            'http://working-endpoint',
+            'http://my-working-endpoint-2',
             '"""Working GraphQL Server""" type Query { workingGraphqlField: String! }',
             {
                 workingGraphqlField: 'dummy-value',
@@ -236,8 +243,14 @@ describe('Schema fetching resilience', () => {
         expect(result).toEqual({
             data: { health: 'OK', workingGraphqlField: 'dummy-value' },
         });
-
-        // should probably check that the result set is empty as well
         expect(result.errors).toBeUndefined();
+
+        const failingResult = await graphql({
+            schema,
+            source: '{ health, nonExistentField }',
+        });
+
+        expect(failingResult.errors).toBeDefined();
+        expect(failingResult.errors?.length).toBe(1);
     });
 });
