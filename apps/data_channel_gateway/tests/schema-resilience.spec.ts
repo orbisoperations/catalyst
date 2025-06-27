@@ -20,19 +20,6 @@ beforeEach(() => {
 afterEach(() => {
     try {
         fetchMock.assertNoPendingInterceptors();
-    } catch (err) {
-        console.warn('Clearing pending interceptors after test:', err);
-        if (
-            'clearInterceptors' in fetchMock &&
-            typeof (fetchMock as unknown as { clearInterceptors: () => void }).clearInterceptors === 'function'
-        ) {
-            (fetchMock as unknown as { clearInterceptors: () => void }).clearInterceptors();
-        } else if (
-            'reset' in fetchMock &&
-            typeof (fetchMock as unknown as { reset: () => void }).reset === 'function'
-        ) {
-            (fetchMock as unknown as { reset: () => void }).reset();
-        }
     } finally {
         fetchMock.deactivate();
         fetchMock.enableNetConnect();
