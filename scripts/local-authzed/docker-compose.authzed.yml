@@ -24,8 +24,6 @@ services:
             postgres:
                 condition: service_healthy
         command: migrate head --datastore-engine postgres --datastore-conn-uri postgres://spicedb:spicedb@postgres:5432/spicedb?sslmode=disable
-        environment:
-            - SPICEDB_GRPC_PRESHARED_KEY=somerandomkeyhere
         volumes:
             - ./apps/authx_authzed_api/schema.zaml:/schema.zaml:ro
 
@@ -37,8 +35,6 @@ services:
                 condition: service_completed_successfully
             postgres:
                 condition: service_healthy
-        environment:
-            - SPICEDB_GRPC_PRESHARED_KEY=somerandomkeyhere
         volumes:
             - ./apps/authx_authzed_api/schema.zaml:/schema.zaml:ro
         ports:
