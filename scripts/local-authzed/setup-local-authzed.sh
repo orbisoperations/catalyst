@@ -95,12 +95,16 @@ fi
 # Check for and clean up conflicting containers
 log_info "🧹 Checking for conflicting containers..."
 CONFLICTING_CONTAINERS=$(podman ps -a --format "{{.Names}}" | grep -E "(authzed|spicedb)" || true)
+# Also check for containers using the authzed/spicedb image
+CONFLICTING_IMAGE_CONTAINERS=$(podman ps -a --filter "ancestor=authzed/spicedb" --format "{{.Names}}" || true)
+# Combine both lists
+ALL_CONFLICTING_CONTAINERS=$(echo -e "${CONFLICTING_CONTAINERS}\n${CONFLICTING_IMAGE_CONTAINERS}" | sort -u | grep -v '^$' || true)
 
-if [[ -n "$CONFLICTING_CONTAINERS" ]]; then
-    log_warn "Found containers: $CONFLICTING_CONTAINERS"
+if [[ -n "$ALL_CONFLICTING_CONTAINERS" ]]; then
+    log_warn "Found containers: $ALL_CONFLICTING_CONTAINERS"
     log_info "Stopping all containers..."
     
-    echo "$CONFLICTING_CONTAINERS" | while read -r container; do
+    echo "$ALL_CONFLICTING_CONTAINERS" | while read -r container; do
         if [[ -n "$container" ]]; then
             log_info "Stopping container: $container"
             podman stop "$container" 2>/dev/null || true
