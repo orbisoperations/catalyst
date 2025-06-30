@@ -22,7 +22,7 @@ MEMBER_REL="member"
 # Timeout and retry constants
 PODMAN_READY_ATTEMPTS=15
 PODMAN_READY_SLEEP=2
-AUTHZED_READY_ATTEMPTS=30
+AUTHZED_READY_ATTEMPTS=5
 AUTHZED_READY_SLEEP=2
 SCHEMA_AVAILABLE_ATTEMPTS=20
 SCHEMA_AVAILABLE_SLEEP=1
@@ -94,42 +94,25 @@ fi
 
 # Check for and clean up conflicting containers
 log_info "🧹 Checking for conflicting containers..."
-CONFLICTING_CONTAINERS=$(podman ps -a --format "{{.Names}}" | grep -E "(authzed|spicedb)" | grep -v "authzed-container" || true)
-# Also check for containers using the authzed/spicedb image
-CONFLICTING_IMAGE_CONTAINERS=$(podman ps -a --filter "ancestor=authzed/spicedb" --format "{{.Names}}" | grep -v "authzed-container" || true)
-# Combine both lists
-ALL_CONFLICTING_CONTAINERS=$(echo -e "${CONFLICTING_CONTAINERS}\n${CONFLICTING_IMAGE_CONTAINERS}" | sort -u | grep -v '^$' || true)
+CONFLICTING_CONTAINERS=$(podman ps -a --format "{{.Names}}" | grep -E "(authzed|spicedb)" || true)
 
-if [[ -n "$ALL_CONFLICTING_CONTAINERS" ]]; then
-    log_warn "Found conflicting containers: $ALL_CONFLICTING_CONTAINERS"
-    log_info "Stopping conflicting containers..."
+if [[ -n "$CONFLICTING_CONTAINERS" ]]; then
+    log_warn "Found containers: $CONFLICTING_CONTAINERS"
+    log_info "Stopping all containers..."
     
-    echo "$ALL_CONFLICTING_CONTAINERS" | while read -r container; do
+    echo "$CONFLICTING_CONTAINERS" | while read -r container; do
         if [[ -n "$container" ]]; then
             log_info "Stopping container: $container"
             podman stop "$container" 2>/dev/null || true
         fi
     done
     
-    log_success "Conflicting containers stopped"
+    log_success "All containers stopped"
 fi
 
-# 1. Ensure containers are running with health checks
-log_info "🔄 Ensuring Authzed/SpiceDB containers are running..."
-
-# Check if containers exist and are running
-if podman ps --filter "name=authzed-container" --format "{{.Names}}" | grep -q "authzed-container"; then
-    log_info "Containers exist, checking if they're running..."
-    if podman ps --filter "name=authzed-container" --format "{{.Status}}" | grep -q "Up"; then
-        log_success "Containers are already running"
-    else
-        log_warn "Containers are stopped, starting them..."
-        podman compose -f scripts/local-authzed/docker-compose.authzed.yml up -d
-    fi
-else
-    log_info "Starting fresh containers..."
-    podman compose -f scripts/local-authzed/docker-compose.authzed.yml up -d
-fi
+# 1. Start fresh containers
+log_info "🔄 Starting fresh Authzed/SpiceDB containers..."
+podman compose -f scripts/local-authzed/docker-compose.authzed.yml up -d
 
 # Wait for containers to be ready
 log_info "⏳ Waiting for Authzed to be ready..."
