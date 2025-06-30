@@ -155,7 +155,7 @@ done
 set -e  # Re-enable exit on error
 
 # 2. Load schema
-log_info " Loading schema..."
+log_info "Loading schema..."
 if [[ ! -f "$SCHEMA_FILE" ]]; then
     log_error "Schema file not found: $SCHEMA_FILE"
     exit 1
