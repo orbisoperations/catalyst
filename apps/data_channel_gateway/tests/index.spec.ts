@@ -61,6 +61,12 @@ describe('gateway integration tests', () => {
 
     afterEach(async () => {
         await teardown();
+        try {
+            fetchMock.assertNoPendingInterceptors();
+        } finally {
+            fetchMock.deactivate();
+            fetchMock.enableNetConnect();
+        }
     });
 
     it("returns gf'd for a invalid token", async () => {
