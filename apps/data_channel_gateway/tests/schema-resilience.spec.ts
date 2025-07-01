@@ -143,7 +143,7 @@ describe('Schema fetching resilience', () => {
         expect(result.errors?.length).toBe(1);
     });
 
-    it.only('should gracefully handle a 500 server error from a data channel', async (ctx) => {
+    it('should gracefully handle a 500 server error from a data channel', async (ctx) => {
         const token = await generateCatalystToken('test', ['test-claim'], ctx, 'test_user@mail.com');
         const endpoints = [
             { token, endpoint: 'http://failing-endpoint/graphql' },
@@ -180,7 +180,7 @@ describe('Schema fetching resilience', () => {
         // Verify we can execute a query against the partial schema.
         const result = await graphql({
             schema,
-            source: '{ workingGraphqlField, health, fakeField }',
+            source: '{ workingGraphqlField, health }',
         });
 
         expect(result).toEqual({
@@ -198,7 +198,7 @@ describe('Schema fetching resilience', () => {
         expect(failingResult.errors?.length).toBe(1);
     });
 
-    it.only('should gracefully handle a non-JSON response from a data channel', async (ctx) => {
+    it('should gracefully handle a non-JSON response from a data channel', async (ctx) => {
         const token = await generateCatalystToken('test', ['test-claim'], ctx, 'test_user@mail.com');
         const endpoints = [
             { token, endpoint: 'http://failing-endpoint/graphql' },
@@ -237,7 +237,7 @@ describe('Schema fetching resilience', () => {
         // Verify we can execute a query against the partial schema.
         const result = await graphql({
             schema,
-            source: '{ workingGraphqlField, health, fakeField }',
+            source: '{ workingGraphqlField, health }',
         });
 
         expect(result).toEqual({
