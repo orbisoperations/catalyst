@@ -142,4 +142,115 @@ describe('Schema fetching resilience', () => {
         expect(result.errors).toBeDefined();
         expect(result.errors?.length).toBe(1);
     });
+
+    it('should gracefully handle a 500 server error from a data channel', async (ctx) => {
+        const token = await generateCatalystToken('test', ['test-claim'], ctx, 'test_user@mail.com');
+        const endpoints = [
+            { token, endpoint: 'http://failing-endpoint/graphql' },
+            { token, endpoint: 'http://my-working-endpoint-1/graphql' },
+        ];
+
+        // Mock the failing endpoint to return a 500 error
+        fetchMock
+            .get('http://failing-endpoint')
+            .intercept({
+                path: '/graphql',
+                method: 'POST',
+            })
+            .reply(500, 'Internal Server Error');
+
+        createMockGraphqlEndpoint(
+            'http://my-working-endpoint-1',
+            '"""Working GraphQL Server""" type Query { workingGraphqlField: String! }',
+            {
+                workingGraphqlField: 'dummy-value',
+            }
+        );
+        // Mock endpoints - one working, one failing
+        const schema = await makeGatewaySchema(endpoints);
+
+        // @ts-expect-error: stiching info is not typed
+        expect(schema.extensions.stitchingInfo.subschemaMap.size).toBe(1);
+
+        // Verify the schema was created (should have the health query)
+        const queryType = schema.getQueryType();
+        expect(queryType).toBeDefined();
+        expect(queryType?.getFields()).toHaveProperty('health');
+
+        // Verify we can execute a query against the partial schema.
+        const result = await graphql({
+            schema,
+            source: '{ workingGraphqlField, health }',
+        });
+
+        expect(result).toEqual({
+            data: { health: 'OK', workingGraphqlField: 'dummy-value' },
+        });
+
+        expect(result.errors).toBeUndefined();
+
+        const failingResult = await graphql({
+            schema,
+            source: '{ health, nonExistentField }',
+        });
+
+        expect(failingResult.errors).toBeDefined();
+        expect(failingResult.errors?.length).toBe(1);
+    });
+
+    it('should gracefully handle a non-JSON response from a data channel', async (ctx) => {
+        const token = await generateCatalystToken('test', ['test-claim'], ctx, 'test_user@mail.com');
+        const endpoints = [
+            { token, endpoint: 'http://failing-endpoint/graphql' },
+            { token, endpoint: 'http://my-working-endpoint-2/graphql' },
+        ];
+
+        // Mock the endpoint to return a non-JSON response
+        fetchMock
+            .get('http://failing-endpoint')
+            .intercept({
+                path: '/graphql',
+                method: 'POST',
+            })
+            .reply(200, '<h1>This is not JSON</h1>', {
+                headers: { 'Content-Type': 'text/html' },
+            });
+
+        createMockGraphqlEndpoint(
+            'http://my-working-endpoint-2',
+            '"""Working GraphQL Server""" type Query { workingGraphqlField: String! }',
+            {
+                workingGraphqlField: 'dummy-value',
+            }
+        );
+        // Mock endpoints - one working, one failing
+        const schema = await makeGatewaySchema(endpoints);
+
+        // @ts-expect-error: stiching info is not typed
+        expect(schema.extensions.stitchingInfo.subschemaMap.size).toBe(1);
+
+        // Verify the schema was created (should have the health query)
+        const queryType = schema.getQueryType();
+        expect(queryType).toBeDefined();
+        expect(queryType?.getFields()).toHaveProperty('health');
+
+        // Verify we can execute a query against the partial schema.
+        const result = await graphql({
+            schema,
+            source: '{ workingGraphqlField, health }',
+        });
+
+        expect(result).toEqual({
+            data: { health: 'OK', workingGraphqlField: 'dummy-value' },
+        });
+        expect(result.errors).toBeUndefined();
+
+        const failingResult = await graphql({
+            schema,
+            source: '{ health, nonExistentField }',
+        });
+
+        expect(failingResult.errors).toBeDefined();
+        expect(failingResult.errors?.length).toBe(1);
+    });
 });

@@ -61,7 +61,12 @@ export async function makeGatewaySchema(endpoints: { token: string; endpoint: st
                     console.error('error fetching remote schema:', fetchResult.status);
                     throw new Error(`error fetching remote schema: ${endpoint} Status:${fetchResult.status}`);
                 }
-                return fetchResult.json();
+                const responseText = await fetchResult.text();
+                try {
+                    return JSON.parse(responseText);
+                } catch (e) {
+                    throw new Error(`Failed to parse JSON response from ${endpoint}. Response: ${responseText}`);
+                }
             };
             return executor;
         })
