@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-empty-object-type */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Authzed, Catalyst, DataChannelId, OrgId, UserId } from '@catalyst/schema_zod';
 
 export type SearchInfoBody = {
@@ -261,9 +264,9 @@ export class AuthzedClient {
 		},
 	) {
 		const searchRoles = args.roles ?? [Catalyst.RoleEnum.enum.user, Catalyst.RoleEnum.enum.data_custodian, Catalyst.RoleEnum.enum.admin];
-		console.log(searchRoles)
+		console.log(searchRoles);
 
-		let results: Catalyst.Relationship[] = [];
+		const results: Catalyst.Relationship[] = [];
 
 		for (const role of searchRoles) {
 			const body = this.utils.readRelationship({
@@ -303,8 +306,8 @@ export class AuthzedClient {
 		const { data } = await this.utils.permissionFetcher(req);
 
 		const permissionResp = Authzed.Permissions.Response.parse(data);
-		if (typeof permissionResp === typeof Authzed.Permissions.CheckReponse) {
-			const response = Authzed.Permissions.CheckReponse.safeParse(permissionResp);
+		if (typeof permissionResp === typeof Authzed.Permissions.CheckResponse) {
+			const response = Authzed.Permissions.CheckResponse.safeParse(permissionResp);
 			return response.success && response.data.permissionship === Authzed.Permissions.PermissionValues.enum.PERMISSIONSHIP_HAS_PERMISSION;
 		}
 		return false;
@@ -362,14 +365,14 @@ export class AuthzedClient {
 		const req = this.utils.checkDataChannelPermission(dataChannelId, userId, permission);
 		const { data } = await this.utils.permissionFetcher(req);
 
-		const resp = Authzed.Permissions.CheckReponse.safeParse(data);
+		const resp = Authzed.Permissions.CheckResponse.safeParse(data);
 		if (!resp.success) {
 			console.error(resp.error, 'data channel permission check failed', dataChannelId, userId, permission);
 			return false;
 		}
 		const permissionResp = resp.data;
-		if (typeof permissionResp === typeof Authzed.Permissions.CheckReponse) {
-			const success = Authzed.Permissions.CheckReponse.parse(permissionResp);
+		if (typeof permissionResp === typeof Authzed.Permissions.CheckResponse) {
+			const success = Authzed.Permissions.CheckResponse.parse(permissionResp);
 			return success.permissionship === Authzed.Permissions.PermissionValues.enum.PERMISSIONSHIP_HAS_PERMISSION;
 		}
 		return false;
@@ -497,7 +500,7 @@ export class AuthzedUtils {
 	}
 
 	parseNDJONFromAuthzed(rawData: string): any[] {
-		let parsedData: any[] = [];
+		const parsedData: any[] = [];
 		rawData.split('\n').forEach((row) => {
 			if (row.length > 0) {
 				parsedData.push(JSON.parse(row) as Authzed.Relationships.ReadResult);
