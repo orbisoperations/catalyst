@@ -6,7 +6,7 @@ import {
   PermissionCheckResponse,
   Token,
   User,
-} from '../../../packages/schema_zod';
+} from '@catalyst/schema_zod';
 import { Env } from './env';
 
 export default class RegistrarWorker extends WorkerEntrypoint<Env> {

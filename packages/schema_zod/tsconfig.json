@@ -7,6 +7,15 @@
         "strict": true,
         "types": []
     },
-    "include": ["./authzed/**/*", "./catalyst/**/*", "index.ts"],
+    "include": [
+        "./authzed/**/*",
+        "./catalyst/**/*",
+        "index.ts",
+        "common.ts",
+        "core_entities.ts",
+        "jwt.ts",
+        "./helpers/**/*",
+        "./entities/**/*"
+    ],
     "exclude": []
 }

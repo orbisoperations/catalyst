@@ -26,9 +26,9 @@ The main client class that provides high-level methods for interacting with the 
 
 #### Partner Organization Management
 
-- `addParnterToOrganization(orgId: OrgId, partnerId: OrgId)`: Adds a partner organization
-- `listParntersInOrganization(orgId: OrgId, partnerId?: DataChannelId)`: Lists partner organizations
-- `deleteParnterInOrganization(orgId: OrgId, partnerId: OrgId)`: Removes a partner organization
+- `addPartnerToOrganization(orgId: OrgId, partnerId: OrgId)`: Adds a partner organization
+- `listPartnersInOrganization(orgId: OrgId, partnerId?: OrgId)`: Lists partner organizations
+- `deletePartnerInOrganization(orgId: OrgId, partnerId: OrgId)`: Removes a partner organization
 
 #### Permission Checks
 
@@ -50,15 +50,18 @@ A utility class that handles low-level interactions with the Authzed API.
 ## Data Flow
 
 1. **Authentication & Setup**
+
    - The system is initialized with Authzed endpoint, token, and optional schema prefix
    - All requests are authenticated using the provided token
 
 2. **Relationship Management**
+
    - Relationships between entities (organizations, users, data channels) are managed through write/delete operations
    - Each relationship is defined with a specific relation type (e.g., user, admin, data_custodian)
    - Relationships can be queried using read operations
 
 3. **Permission Checking**
+
    - Permissions are checked using the Authzed permission system
    - Both organization-level and data channel-level permissions are supported
    - Permission checks can be performed for specific actions or roles
@@ -95,11 +98,7 @@ const client = new AuthzedClient(endpoint, token, schemaPrefix);
 await client.addUserToOrganization(orgId, userId);
 
 // Check if a user has admin permissions
-const hasAdminAccess = await client.organizationPermissionsCheck(
-  orgId,
-  userId,
-  Catalyst.Org.PermissionsEnum.enum.admin
-);
+const hasAdminAccess = await client.organizationPermissionsCheck(orgId, userId, Catalyst.Org.PermissionsEnum.enum.admin);
 
 // List all data channels in an organization
 const dataChannels = await client.listDataChannelsInOrganization(orgId);

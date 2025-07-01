@@ -1,5 +1,5 @@
 import { DurableObject, WorkerEntrypoint } from 'cloudflare:workers';
-import { User } from '../../../packages/schema_zod';
+import { User } from '@catalyst/schema_zod';
 import { Env } from './env';
 
 /**

@@ -13,8 +13,10 @@
 		"build": "wrangler build",
 		"postinstall": "pnpm build"
 	},
+	"dependencies": {
+		"@catalyst/schema_zod": "workspace:*"
+	},
 	"devDependencies": {
-		"@catalyst/schema_zod": "workspace:*",
 		"@cloudflare/vitest-pool-workers": "^0.8.23",
 		"@cloudflare/workers-types": "^4.20250525.0",
 		"@eslint/js": "^9.25.1",

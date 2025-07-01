@@ -22,7 +22,6 @@ export type ValidateTokenResponse = {
 
 // // https://github.com/ardatan/schema-stitching/blob/master/examples/stitching-directives-sdl/src/gateway.ts
 export async function fetchRemoteSchema(executor: Executor) {
-    // throw new Error();
     const result = await executor({
         document: parse(/* GraphQL */ `
             {
@@ -53,7 +52,6 @@ export async function makeGatewaySchema(endpoints: { token: string; endpoint: st
                         'Content-Type': 'application/json',
                         Accept: 'application/json',
                         Authorization: `Bearer ${token}`,
-                        //  Authorization: executorRequest?.context?.authHeader,
                     },
                     body: JSON.stringify({ query, variables, operationName, extensions }),
                 });
@@ -65,6 +63,7 @@ export async function makeGatewaySchema(endpoints: { token: string; endpoint: st
                 try {
                     return JSON.parse(responseText);
                 } catch (e) {
+                    console.error(`error parsing JSON: ${JSON.stringify(e, null, 4)}`);
                     throw new Error(`Failed to parse JSON response from ${endpoint}. Response: ${responseText}`);
                 }
             };
@@ -208,26 +207,13 @@ app.post('/validate-tokens', async (ctx) => {
  * @returns A JSON response with an error message if the token is invalid
  */
 const authenticateRequestMiddleware = async (c: Context<{ Bindings: Env; Variables: Variables }>, next: Next) => {
-    console.log('in da gtwy');
-
     const [token, error] = grabTokenInHeader(c.req.header('Authorization'));
-    if (!token) {
-        console.error({
-            tokenError: token,
-            error: 'invalid token before createYoga',
-        });
-    } else {
-        console.log('token should be working');
-    }
-
     if (error) {
         return c.json(
             {
                 error: error.msg,
             },
-            // @ts-expect-error:  Argument of type 'StatusCode' is not assignable to parameter of type 'ContentfulStatusCode | undefined'.
-            //                    Type '101' is not assignable to type 'ContentfulStatusCode | undefined'.‘
-            error.status
+            400
         );
     }
     if (!token) {
@@ -239,9 +225,7 @@ const authenticateRequestMiddleware = async (c: Context<{ Bindings: Env; Variabl
         );
     }
 
-    console.log('validating token');
-    const { valid, entity, claims, jwtId, error: ValidError } = await c.env.AUTHX_TOKEN_API.validateToken(token);
-    console.log(valid, entity, claims, jwtId, error);
+    const { valid, claims, jwtId, error: ValidError } = await c.env.AUTHX_TOKEN_API.validateToken(token);
     if (!valid || ValidError || !jwtId) {
         return c.json({ message: 'Token validation failed' }, 403);
     }

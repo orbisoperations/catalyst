@@ -1,5 +1,5 @@
 import { DurableObject, WorkerEntrypoint } from 'cloudflare:workers';
-import { OrgId, OrgInvite, OrgInviteResponse, OrgInviteStatus, Token, User } from '../../../packages/schema_zod';
+import { OrgId, OrgInvite, OrgInviteResponse, OrgInviteStatus, Token, User } from '@catalyst/schema_zod';
 import { Env } from './env';
 
 /**

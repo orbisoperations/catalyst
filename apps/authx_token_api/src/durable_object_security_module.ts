@@ -1,6 +1,6 @@
 import { JSONWebKeySet, JWTPayload, createLocalJWKSet, decodeJwt, jwtVerify } from 'jose';
 import { DurableObject } from 'cloudflare:workers';
-import { DEFAULT_STANDARD_DURATIONS, JWTParsingResponse, JWTSigningRequest } from '../../../packages/schema_zod';
+import { DEFAULT_STANDARD_DURATIONS, JWTParsingResponse, JWTSigningRequest } from '@catalyst/schema_zod';
 import { JWT } from './jwt';
 import { KeyState, KeyStateSerialized } from './keystate';
 
@@ -105,10 +105,9 @@ export class JWTKeyProvider extends DurableObject {
 				claims: payload.claims,
 				jwtId: payload.jti,
 			});
-			console.log({ resp });
 			return resp;
 		} catch (e: unknown) {
-			console.log('error validating token', e);
+			console.error('error validating token', e);
 			return JWTParsingResponse.parse({
 				valid: false,
 				entity: undefined,

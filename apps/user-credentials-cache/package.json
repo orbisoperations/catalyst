@@ -13,6 +13,9 @@
 		"test:workspace": "vitest run --silent",
 		"test:coverage": "vitest run --coverage"
 	},
+	"dependencies": {
+		"@catalyst/schema_zod": "workspace:*"
+	},
 	"devDependencies": {
 		"@cloudflare/vitest-pool-workers": "^0.8.23",
 		"@cloudflare/workers-types": "^4.20250525.0",

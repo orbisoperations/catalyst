@@ -13,7 +13,8 @@ const emailTob64 = (email: string) => {
 };
 
 export default class AuthzedWorker extends WorkerEntrypoint<Env> {
-	async fetch(req: Request) {
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	async fetch(_req: Request) {
 		return Response.json({ message: 'placeholder' });
 	}
 
@@ -26,7 +27,6 @@ export default class AuthzedWorker extends WorkerEntrypoint<Env> {
 	async addUserToOrg(orgId: OrgId, userId: UserId) {
 		const client = new AuthzedClient(this.env.AUTHZED_ENDPOINT, this.env.AUTHZED_KEY, this.env.AUTHZED_PREFIX);
 		const resp = await client.addUserToOrganization(orgId, emailTob64(userId));
-		// console.log('synced new user', orgId, emailTob64(userId), resp);
 		return {
 			entity: `${client.utils.schemaPrefix}organization:${orgId}#user@${client.utils.schemaPrefix}user:${emailTob64(userId)}`,
 			...resp,
@@ -108,15 +108,15 @@ export default class AuthzedWorker extends WorkerEntrypoint<Env> {
 
 	async addPartnerToOrg(orgId: OrgId, partnerId: OrgId) {
 		const client = new AuthzedClient(this.env.AUTHZED_ENDPOINT, this.env.AUTHZED_KEY, this.env.AUTHZED_PREFIX);
-		return await client.addParnterToOrganization(orgId, partnerId);
+		return await client.addPartnerToOrganization(orgId, partnerId);
 	}
-	async listPartnersInOrg(orgId: OrgId, parnterId?: DataChannelId) {
+	async listPartnersInOrg(orgId: OrgId, partnerId?: OrgId) {
 		const client = new AuthzedClient(this.env.AUTHZED_ENDPOINT, this.env.AUTHZED_KEY, this.env.AUTHZED_PREFIX);
-		return await client.listParntersInOrganization(orgId, parnterId);
+		return await client.listPartnersInOrganization(orgId, partnerId);
 	}
-	async deletePartnerInOrg(orgId: OrgId, parnterId: OrgId) {
+	async deletePartnerInOrg(orgId: OrgId, partnerId: OrgId) {
 		const client = new AuthzedClient(this.env.AUTHZED_ENDPOINT, this.env.AUTHZED_KEY, this.env.AUTHZED_PREFIX);
-		return await client.deleteParnterInOrganization(orgId, parnterId);
+		return await client.deletePartnerInOrganization(orgId, partnerId);
 	}
 
 	async isMemberOfOrg(orgId: OrgId, userId: UserId) {
@@ -175,7 +175,6 @@ export default class AuthzedWorker extends WorkerEntrypoint<Env> {
 			emailTob64(userId),
 			Catalyst.DataChannel.PermissionsEnum.enum.read_by_partner_org,
 		);
-		console.log(`data channel permission check asserts local(${owningResp}) and partner(${parterResp}) paths`);
 		return owningResp || parterResp;
 	}
 }

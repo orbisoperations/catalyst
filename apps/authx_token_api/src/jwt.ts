@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import base64url from 'base64url';
 import { JWTPayload } from 'jose';
-import { DEFAULT_STANDARD_DURATIONS } from '../../../packages/schema_zod';
+import { DEFAULT_STANDARD_DURATIONS } from '@catalyst/schema_zod';
 
 /*
 RFC 7519 (JWT)
@@ -34,11 +34,8 @@ export class JWT implements DSSJWT {
 	sub: string; // subject
 	aud: string; // audience
 	jti: string; // jwt id
-	// @ts-expect-error: nbf is not typed
 	nbf: number; // not before
-	// @ts-expect-error: exp is not typed
 	exp: number; // expiration
-	// @ts-expect-error: iat is not typed
 	iat: number; // issued at
 	claims: string[]; // list of urns
 
@@ -48,9 +45,9 @@ export class JWT implements DSSJWT {
 		this.iss = iss;
 		this.aud = `catalyst:system:datachannels`;
 		this.jti = uuidv4();
-		//this.nbf = new Date().getTime();
-		//this.iat = new Date().getTime();
-		//this.exp = new Date().getTime() + expiry;
+		this.nbf = 0;
+		this.exp = 0;
+		this.iat = 0;
 	}
 
 	header(alg: string) {
