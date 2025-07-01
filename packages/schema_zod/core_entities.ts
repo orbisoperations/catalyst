@@ -59,7 +59,7 @@ export const OrgInvite = z.object({
 
 export type OrgInvite = z.infer<typeof OrgInvite>;
 
-const invtiteAction = z.object({
+const inviteAction = z.object({
     success: z.literal(true),
     invite: z.union([OrgInvite, OrgInvite.array()]),
 });
@@ -69,7 +69,7 @@ const inviteError = z.object({
     error: z.string(),
 });
 
-export const OrgInviteResponse = z.discriminatedUnion('success', [invtiteAction, inviteError]);
+export const OrgInviteResponse = z.discriminatedUnion('success', [inviteAction, inviteError]);
 
 export type OrgInviteResponse = z.infer<typeof OrgInviteResponse>;
 
