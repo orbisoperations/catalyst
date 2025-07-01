@@ -65,6 +65,7 @@ export async function makeGatewaySchema(endpoints: { token: string; endpoint: st
                 try {
                     return JSON.parse(responseText);
                 } catch (e) {
+                    console.log(e);
                     throw new Error(`Failed to parse JSON response from ${endpoint}. Response: ${responseText}`);
                 }
             };
