@@ -170,11 +170,11 @@ export default class AuthzedWorker extends WorkerEntrypoint<Env> {
 			emailTob64(userId),
 			Catalyst.DataChannel.PermissionsEnum.enum.read_by_owning_org,
 		);
-		const parterResp = await client.dataChannelPermissionsCheck(
+		const partnerResp = await client.dataChannelPermissionsCheck(
 			dataChannelId,
 			emailTob64(userId),
 			Catalyst.DataChannel.PermissionsEnum.enum.read_by_partner_org,
 		);
-		return owningResp || parterResp;
+		return owningResp || partnerResp;
 	}
 }
