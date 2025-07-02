@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+    postgres:
+        image: docker.io/postgres:15
+        container_name: authzed-postgres
+        environment:
+            POSTGRES_DB: spicedb
+            POSTGRES_USER: spicedb
+            POSTGRES_PASSWORD: spicedb
+        volumes:
+            - spicedb_data:/var/lib/postgresql/data
+        ports:
+            - '5432:5432'
+        healthcheck:
+            test: ['CMD-SHELL', 'pg_isready -U spicedb -d spicedb']
+            interval: 10s
+            timeout: 5s
+            retries: 5
+
+    authzed-init:
+        image: docker.io/authzed/spicedb:latest
+        depends_on:
+            postgres:
+                condition: service_healthy
+        command: migrate head --datastore-engine postgres --datastore-conn-uri postgres://spicedb:spicedb@postgres:5432/spicedb?sslmode=disable
+        volumes:
+            - ./apps/authx_authzed_api/schema.zaml:/schema.zaml:ro
+
+    authzed:
+        image: docker.io/authzed/spicedb:latest
+        container_name: authzed-container
+        depends_on:
+            authzed-init:
+                condition: service_completed_successfully
+            postgres:
+                condition: service_healthy
+        volumes:
+            - ./apps/authx_authzed_api/schema.zaml:/schema.zaml:ro
+        ports:
+            - '50051:50051'
+            - '8449:8443'
+        command: >
+            serve
+            --http-enabled
+            --skip-release-check=true
+            --log-level debug
+            --grpc-preshared-key atoken
+            --datastore-engine postgres
+            --datastore-conn-uri postgres://spicedb:spicedb@postgres:5432/spicedb?sslmode=disable
+        healthcheck:
+            test: ['CMD', 'curl', '-f', 'http://localhost:8443/v1/schema/read']
+            interval: 10s
+            timeout: 5s
+            retries: 5
+
+volumes:
+    spicedb_data:

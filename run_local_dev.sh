@@ -1,26 +1,44 @@
 #!/bin/bash
 # Script to run Catalyst applications locally in dependency order.
 
+# Store the project root directory
+PROJECT_ROOT="$(cd "$(dirname "$0")" && pwd)"
+
 # --- Cleanup after Ctrl+C ---
 cleanup() {
   printf "\n\033[1;31m⚠️ Caught interrupt signal. Shutting down services...\033[0m\n"
 
-  print_step " Terminating ${#pids[@]} services..." "${YELLOW}"
+  print_step "Terminating ${#pids[@]} tracked services..." "${YELLOW}"
     for pid in "${pids[@]}"; do
+      # Check if process is still running
+      if kill -0 "$pid" 2>/dev/null; then
+        # Process exists, try to kill it gracefully first
       if kill "$pid" 2>/dev/null; then
         printf "  ${GREEN}✓ Terminated process ${YELLOW}(PID: ${pid})${RESET}\n"
+        else
+          # Try force kill if graceful kill failed
+          if kill -9 "$pid" 2>/dev/null; then
+            printf "  ${GREEN}✓ Force terminated process ${YELLOW}(PID: ${pid})${RESET}\n"
       else
         printf "  ${RED}✗ Failed to terminate process ${YELLOW}(PID: ${pid})${RESET}\n"
+          fi
+        fi
+      else
+        printf "  ${CYAN}• Process ${YELLOW}(PID: ${pid})${CYAN} already exited${RESET}\n"
       fi
     done
-    print_success "All services terminated"
 
   # Stop the authzed container
-  print_step "Stopping authzed container..." "${YELLOW}"
-  if podman stop authzed-container &>/dev/null; then
-    print_success "Authzed container stopped successfully"
+  print_step "Stopping Authzed services..." "${YELLOW}"
+  if podman version >/dev/null 2>&1; then
+    if podman compose -f "$PROJECT_ROOT/scripts/local-authzed/docker-compose.authzed.yml" down; then
+      print_success "Authzed services stopped successfully"
+    else
+      print_warn "Failed to stop Authzed services - they may not be running"
+    fi
   else
-    print_warn "Failed to stop authzed container - it may not be running"
+    print_warn "Podman not responding - Authzed services may still be running"
+    print_warn "You may need to manually stop them with: podman machine start && podman compose -f scripts/local-authzed/docker-compose.authzed.yml down"
   fi
 
   print_box "🛑 Cleanup completed" "${RED}"
@@ -29,7 +47,7 @@ cleanup() {
 }
 
 # Trap SIGINT (Ctrl+C) and error exit code
-trap cleanup INT # callback
+trap cleanup INT EXIT
 
 # Color definitions
 BOLD="\033[1m"
@@ -172,6 +190,18 @@ if [ ! -f "$DEV_VARS_FILE" ]; then
   exit 1
 fi
 
+# Set up Authzed first (before starting other services)
+print_header "Starting authzed container"
+printf "  ${CYAN}⏳ Running Authzed setup script...${RESET}\n"
+
+# Run the shell setup script
+if bash scripts/local-authzed/setup-local-authzed.sh; then
+  print_success "Authzed setup completed successfully"
+else
+  print_error "Authzed setup failed"
+  exit 1
+fi
+
 # Store PIDs of background processes
 declare -a pids
 
@@ -230,36 +260,6 @@ for app_name in "${APP_ORDER[@]}"; do
     printf "  ${CYAN}%s${RESET}\n" "$(printf "%68s" | tr ' ' '─')"
   fi
 done
-
-print_header "Starting authzed container"
-printf "  ${CYAN}⏳ Launching podman container...${RESET}\n"
-pushd ./apps > /dev/null
-  CONTAINER_NAME="authzed-container"
-  # if a container with the same name already exists, start it
-  if podman ps -a --filter "name=$CONTAINER_NAME" --format "{{.Names}}" | grep -q "$CONTAINER_NAME"; then
-    print_success "Authzed container already exists"
-    podman start $CONTAINER_NAME
-  else
-    # for development enabling grpc and http
-    # 8443 is the default port for http
-    # 50051 is the default port for grpc: use authzed/zed (see ReADME.md
-    AUTHZED_OUTPUT=$(podman run -v ./authx_authzed_api/schema.zaml:/schema.zaml:ro \
-        -p 50051:50051 \
-        -p 8449:8443 --detach \
-        --name $CONTAINER_NAME authzed/spicedb:latest \
-        serve-testing --http-enabled --skip-release-check=true --log-level debug --load-configs ./schema.zaml 2>&1)
-    podman_exit_code=$?
-  fi
-
-  # Check if the container started successfully
-  if [[ "$AUTHZED_OUTPUT" == *"the container name \"$CONTAINER_NAME\" is already in use"* ]]; then
-      print_success "Authzed container already running"
-  elif [[ "$podman_exit_code" -ne 0 ]]; then
-      print_error "Failed to start authzed container: $AUTHZED_OUTPUT"
-  else
-      print_success "Started authzed container successfully"
-  fi
-popd > /dev/null
 
 # Final status
 print_box "🎉 All services are now running" "${GREEN}"
