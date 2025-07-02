@@ -1,6 +1,6 @@
 import { env } from 'cloudflare:test';
 import { expect } from 'vitest';
-import { DataChannel } from '../../../../packages/schema_zod';
+import { DataChannel } from '@catalyst/schema_zod';
 import { TEST_ORG_ID, validUsers } from './authUtils';
 
 export { TEST_ORG_ID, validUsers };

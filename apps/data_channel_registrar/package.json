@@ -43,6 +43,7 @@
     "wrangler": "^4.19.1"
   },
   "dependencies": {
+    "@catalyst/schema_zod": "workspace:*",
     "@pothos/core": "^3.41.2",
     "@trpc/server": "^10.45.2",
     "graphql-yoga": "^5.3.1",

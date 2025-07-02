@@ -6,9 +6,6 @@ export const CheckError = z.object({
     details: z
         .object({
             '@type': z.string().optional(),
-            eiusmod93: z.object({}).optional(),
-            labore2e: z.object({}).optional(),
-            in_81a: z.object({}).optional(),
         })
         .array(),
 });
@@ -16,7 +13,7 @@ export const CheckError = z.object({
 export const PermissionValues = z.enum(['PERMISSIONSHIP_HAS_PERMISSION', 'PERMISSIONSHIP_NO_PERMISSION']);
 
 export type PermissionValues = z.infer<typeof PermissionValues>;
-export const CheckReponse = z.object({
+export const CheckResponse = z.object({
     checkedAt: z.object({
         token: z.string(),
     }),
@@ -27,12 +24,10 @@ export const CheckReponse = z.object({
         })
         .nullish()
         .optional(),
-    debugTrace: z.any().nullable().optional(),
-    optionalExpiresAt: z.any().nullable().optional(),
 });
 
-export const Response = z.union([CheckReponse, CheckError]);
+export const Response = z.union([CheckResponse, CheckError]);
 
-export type CheckReponse = z.infer<typeof CheckReponse>;
+export type CheckResponse = z.infer<typeof CheckResponse>;
 export type CheckError = z.infer<typeof CheckError>;
 export type Response = z.infer<typeof Response>;

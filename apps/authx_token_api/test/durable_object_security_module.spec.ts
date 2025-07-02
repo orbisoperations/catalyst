@@ -1,6 +1,6 @@
 import { env } from 'cloudflare:test';
 import { describe, expect, it } from 'vitest';
-import { JWTSigningRequest } from '../../../packages/schema_zod';
+import { JWTSigningRequest } from '@catalyst/schema_zod';
 import { KeyStateSerialized } from '../src/keystate';
 
 describe('JWTKeyProvider', () => {

@@ -14,6 +14,10 @@ import { Env } from './env';
 import { JWTPayload } from 'jose';
 export { JWTKeyProvider } from './durable_object_security_module';
 
+interface CatalystJWTPayload extends JWTPayload {
+	claims?: string[];
+}
+
 export default class JWTWorker extends WorkerEntrypoint<Env> {
 	/**
 	 * Retrieves the public key for JWT verification
@@ -130,7 +134,7 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 			return !check.check;
 		});
 		if (failedClaimsChecks.length > 0) {
-			console.log('user is not authorized for all claims');
+			console.error('user is not authorized for all claims');
 			return JWTSigningResponse.parse({
 				success: false,
 				error: 'catalyst is unable to validate user to all claims',
@@ -172,7 +176,7 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 		const stub = this.env.KEY_PROVIDER.get(id);
 
 		// decode the CT token
-		const decodedToken: { success: boolean; payload: JWTPayload } = await stub.decodeToken(token.catalystToken);
+		const decodedToken: { success: boolean; payload: CatalystJWTPayload } = await stub.decodeToken(token.catalystToken);
 		if (!decodedToken?.payload || !decodedToken.payload.claims) {
 			return JWTSigningResponse.parse({
 				success: false,
@@ -181,7 +185,6 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 		}
 
 		// filter out any empty claims
-		// @ts-expect-error: claims is not typed, but exists in the JWT payload
 		const claims: string[] = decodedToken.payload.claims?.filter((claim) => claim) ?? [];
 		if (claims.length === 0) {
 			return JWTSigningResponse.parse({
