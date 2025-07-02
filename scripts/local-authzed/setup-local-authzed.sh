@@ -55,6 +55,7 @@ if [[ ! -f "package.json" ]] || [[ ! -f "pnpm-workspace.yaml" ]]; then
     exit 1
 fi
 
+
 # Check and start Podman machine if needed
 log_info "🔧 Checking Podman machine status..."
 
@@ -91,6 +92,13 @@ else
         fi
     done
 fi
+
+# Check if zed CLI is installed
+if ! command -v zed &> /dev/null; then
+    log_error "zed command not found. Please install the Authzed CLI: https://github.com/authzed/zed"
+    exit 1
+fi
+
 
 # Check for and clean up conflicting containers
 log_info "🧹 Checking for conflicting containers..."
