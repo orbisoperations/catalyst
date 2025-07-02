@@ -293,12 +293,9 @@ export class AuthzedClient {
 		const req = this.utils.checkOrgPermission(orgId, userId, permission);
 		const { data } = await this.utils.permissionFetcher(req);
 
-		const permissionResp = Authzed.Permissions.Response.parse(data);
-		if ('permissionship' in permissionResp) {
-			const response = Authzed.Permissions.CheckResponse.safeParse(permissionResp);
-			return response.success && response.data.permissionship === Authzed.Permissions.PermissionValues.enum.PERMISSIONSHIP_HAS_PERMISSION;
-		}
-		return false;
+		const result = Authzed.Permissions.CheckResponse.safeParse(data);
+		if (!result.success) return false;
+		return result.data.permissionship === Authzed.Permissions.PermissionValues.enum.PERMISSIONSHIP_HAS_PERMISSION;
 	}
 
 	async addOrganizationToDataChannel(dataChannelId: DataChannelId, orgId: OrgId): Promise<Authzed.Relationships.WriteResult> {
@@ -353,17 +350,13 @@ export class AuthzedClient {
 		const req = this.utils.checkDataChannelPermission(dataChannelId, userId, permission);
 		const { data } = await this.utils.permissionFetcher(req);
 
-		const resp = Authzed.Permissions.CheckResponse.safeParse(data);
-		if (!resp.success) {
-			console.error(resp.error, 'data channel permission check failed', dataChannelId, userId, permission);
+		const result = Authzed.Permissions.CheckResponse.safeParse(data);
+		if (!result.success) {
+			console.error(result.error, 'data channel permission check failed', dataChannelId, userId, permission);
 			return false;
 		}
-		const permissionResp = resp.data;
-		if ('permissionship' in permissionResp) {
-			const success = Authzed.Permissions.CheckResponse.parse(permissionResp);
-			return success.permissionship === Authzed.Permissions.PermissionValues.enum.PERMISSIONSHIP_HAS_PERMISSION;
-		}
-		return false;
+
+		return result.data.permissionship === Authzed.Permissions.PermissionValues.enum.PERMISSIONSHIP_HAS_PERMISSION;
 	}
 }
 
@@ -403,7 +396,8 @@ export class AuthzedUtils {
 						data: action == 'read' ? await res.text() : await res.json(),
 						success: true,
 					};
-				} catch {
+				} catch (e) {
+					console.log(`Error converting JSON: ${JSON.stringify(e, null, 4)}`);
 					return { data: {}, success: false };
 				}
 			})
@@ -424,7 +418,8 @@ export class AuthzedUtils {
 						data: await res.json(),
 						success: true,
 					};
-				} catch {
+				} catch (e) {
+					console.log(`Error converting JSON: ${JSON.stringify(e, null, 4)}`);
 					return { data: {}, success: false };
 				}
 			})
