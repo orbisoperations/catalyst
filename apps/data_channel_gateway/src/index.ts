@@ -36,17 +36,33 @@ export async function fetchRemoteSchema(executor: Executor) {
 }
 
 // https://github.com/ardatan/schema-stitching/blob/master/examples/combining-local-and-remote-schemas/src/gateway.ts
-export async function makeGatewaySchema(endpoints: { token: string; endpoint: string }[]) {
+export async function makeGatewaySchema(
+    endpoints: { token: string; endpoint: string }[],
+    options?: { timeoutMs?: number }
+) {
     console.log('makeGatewaySchema');
 
     const { stitchingDirectivesTransformer } = stitchingDirectives();
+
+    // Use provided timeout or default to 10 seconds
+    const timeoutMs = options?.timeoutMs ?? 10000;
+
     // Make remote executors:
     // these are simple functions that query a remote GraphQL API for JSON.
     const remoteExecutors = endpoints
         .map(({ endpoint, token }) => {
             const executor: AsyncExecutor = async ({ document, variables, operationName, extensions }) => {
                 const query = print(document);
-                const fetchResult = await fetch(endpoint, {
+
+                // Create a timeout promise that rejects after the specified timeout
+                const timeoutPromise = new Promise<never>((_, reject) => {
+                    setTimeout(() => {
+                        reject(new Error(`Timeout: Request to ${endpoint} took longer than ${timeoutMs}ms`));
+                    }, timeoutMs);
+                });
+
+                // Create the fetch promise
+                const fetchPromise = fetch(endpoint, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -55,6 +71,10 @@ export async function makeGatewaySchema(endpoints: { token: string; endpoint: st
                     },
                     body: JSON.stringify({ query, variables, operationName, extensions }),
                 });
+
+                // Race between fetch and timeout
+                const fetchResult = await Promise.race([fetchPromise, timeoutPromise]);
+
                 if (fetchResult.status >= 400) {
                     console.error('error fetching remote schema:', fetchResult.status);
                     throw new Error(`error fetching remote schema: ${endpoint} Status:${fetchResult.status}`);
