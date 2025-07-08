@@ -225,7 +225,7 @@ for app_name in "${APP_ORDER[@]}"; do
     if [ -f "package.json" ]; then
       # Determine which dev command to use
       if [ "$app_name" = "catalyst-ui-worker" ]; then
-        DEV_COMMAND="pnpm preview"
+        DEV_COMMAND="pnpm run dev"
       else
         DEV_COMMAND="$DEFAULT_DEV_COMMAND"
       fi

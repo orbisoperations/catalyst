@@ -239,20 +239,41 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
       });
     }
 
-    const doId = this.env.DO.idFromName(doNamespace);
-    const stub = this.env.DO.get(doId);
+    try {
+      // Step 1: Find all organizations that reference this channel
+      const orgsWithChannel = await this.env.AUTHZED.listOrgsInDataChannel(dataChannelID);
 
-    const d = await stub.delete(dataChannelID);
-    if (!d) {
+      // Step 2 & 3: Clean up all bidirectional relationships
+      for (const org of orgsWithChannel) {
+        await Promise.all([
+          this.env.AUTHZED.deleteDataChannelInOrg(org.object, dataChannelID),
+          this.env.AUTHZED.deleteOrgInDataChannel(dataChannelID, org.object),
+        ]);
+      }
+
+      // Step 4: Delete from storage
+      const doId = this.env.DO.idFromName(doNamespace);
+      const stub = this.env.DO.get(doId);
+      const deleted = await stub.delete(dataChannelID);
+
+      if (!deleted) {
+        return DataChannelActionResponse.parse({
+          success: false,
+          error: 'catalyst unable to delete data channel from storage',
+        });
+      }
+
+      return DataChannelActionResponse.parse({
+        success: true,
+        data: [],
+      });
+    } catch (error) {
+      console.error('Error during data channel deletion:', error);
       return DataChannelActionResponse.parse({
         success: false,
-        error: 'catalyst unable to delete data channel',
+        error: 'catalyst deletion process failed',
       });
     }
-    return DataChannelActionResponse.parse({
-      success: true,
-      data: [],
-    });
   }
 }
 
