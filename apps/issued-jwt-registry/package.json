@@ -8,6 +8,7 @@
 		"test": "vitest",
 		"test:workspace": "vitest run --silent",
 		"test:coverage": "vitest --coverage",
+		"lint": "eslint . --ext .ts",
 		"build": "wrangler build"
 	},
 	"devDependencies": {

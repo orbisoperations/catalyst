@@ -62,13 +62,12 @@ The application is structured around two main components:
 - **Organization Isolation**: Each organization can only access its own JWT registrations
 - **Expiration Handling**: Automatic handling of JWT expiry
 
-
 ## Integration
 
 The Issued JWT Registry integrates with the following services:
 
 - [User Credentials Cache](../user-credentials-cache/README.md) - Provides user authentication and validation services. Used to:
-  - Verify user identity and permissions 
+  - Verify user identity and permissions
   - Validate organization membership and access rights
   - Cache user credentials to improve performance and reduce external API calls
   - Ensure secure access control for JWT management operations
@@ -81,7 +80,6 @@ and is used by the following services:
 
 ## Development
 
-
 ## Testing
 
 The service includes comprehensive tests to verify functionality:
@@ -92,9 +90,6 @@ The service includes comprehensive tests to verify functionality:
 - Permission checks
 - Expiration handling
 
-Run tests with: `pnpm test` 
+Run tests with: `pnpm test`
 
 ## Deployment
-
-
-

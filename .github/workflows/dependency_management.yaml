@@ -1,44 +1,43 @@
 name: 'Dependency Management'
 on:
-  - pull_request
+    - pull_request
 
 # Limit to 1 concurrent run per workflow run, cancel older runs in favor of newer ones
 concurrency:
-  group: pr-dependencymgt-${{ github.head_ref }}
-  cancel-in-progress: true
+    group: pr-dependencymgt-${{ github.head_ref }}
+    cancel-in-progress: true
 
 jobs:
-  cache-and-install:
-    runs-on: ubuntu-latest
+    cache-and-install:
+        runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v3
 
+            - name: Install Node.js
+              uses: actions/setup-node@v3
+              with:
+                  node-version: 20
 
-      - name: Install Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 20
+            - uses: pnpm/action-setup@v2
+              name: Install pnpm
+              with:
+                  version: 10
+                  run_install: false
 
-      - uses: pnpm/action-setup@v2
-        name: Install pnpm
-        with:
-          version: 10
-          run_install: false
+            - name: Get pnpm store directory
+              shell: bash
+              run: |
+                  echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
 
-      - name: Get pnpm store directory
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+            - uses: actions/cache@v3
+              name: Setup pnpm cache
+              with:
+                  path: ${{ env.STORE_PATH }}
+                  key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+                  restore-keys: |
+                      ${{ runner.os }}-pnpm-store-
 
-      - uses: actions/cache@v3
-        name: Setup pnpm cache
-        with:
-          path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
-
-      - name: Install dependencies
-        run: pnpm install
+            - name: Install dependencies
+              run: pnpm install

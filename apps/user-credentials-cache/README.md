@@ -3,6 +3,7 @@
 A Cloudflare Workers-based service for caching and validating user credentials within the Catalyst project. This service optimizes user authentication by securely caching user data and reducing repeated identity verification calls.
 
 ## Table of Contents
+
 - [User Credentials Cache](#user-credentials-cache)
   - [Table of Contents](#table-of-contents)
   - [Purpose](#purpose)
@@ -37,17 +38,10 @@ The application is structured around two main components:
 
 ## Features
 
-
 ## Integration
-
-
 
 ## Development
 
-
 ## Testing
 
-
 ## Deployment
-
-

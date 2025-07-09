@@ -11,7 +11,8 @@
 		"build": "wrangler build",
 		"test": "vitest",
 		"test:workspace": "vitest run --silent",
-		"test:coverage": "vitest run --coverage"
+		"test:coverage": "vitest run --coverage",
+		"lint": "eslint . --ext .ts"
 	},
 	"dependencies": {
 		"@catalyst/schema_zod": "workspace:*"

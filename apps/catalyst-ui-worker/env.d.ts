@@ -1,14 +1,19 @@
-import JWTWorker from "../authx_token_api/src";
-import RegistrarWorker from "../data_channel_registrar/src/worker";
-import AuthzedWorker from "../authx_authzed_api/src";
-import UserCredsCacheWorker from "../user-credentials-cache/src";
-import OrganizationMatchmakingWorker from "../organization_matchmaking/src";
-import IssuedJWTRegistryWorker from "@catalyst/issued-jwt-registry/src";
-export interface CloudflareEnv {
-  CATALYST_DATA_CHANNEL_REGISTRAR_API: Service<RegistrarWorker>;
-  AUTHX_TOKEN_API: Service<JWTWorker>;
-  AUTHX_AUTHZED_API: Service<AuthzedWorker>;
-  USER_CREDS_CACHE: Service<UserCredsCacheWorker>;
-  ORGANIZATION_MATCHMAKING: Service<OrganizationMatchmakingWorker>;
-  ISSUED_JWT_WORKER: Service<IssuedJWTRegistryWorker>;
+import JWTWorker from '../authx_token_api/src';
+import RegistrarWorker from '../data_channel_registrar/src/worker';
+import AuthzedWorker from '../authx_authzed_api/src';
+import UserCredsCacheWorker from '../user-credentials-cache/src';
+import OrganizationMatchmakingWorker from '../organization_matchmaking/src';
+import IssuedJWTRegistryWorker from '@catalyst/issued-jwt-registry/src';
+
+declare global {
+    interface CloudflareEnv {
+        CATALYST_DATA_CHANNEL_REGISTRAR_API: Service<RegistrarWorker>;
+        AUTHX_TOKEN_API: Service<JWTWorker>;
+        AUTHX_AUTHZED_API: Service<AuthzedWorker>;
+        USER_CREDS_CACHE: Service<UserCredsCacheWorker>;
+        ORGANIZATION_MATCHMAKING: Service<OrganizationMatchmakingWorker>;
+        ISSUED_JWT_WORKER: Service<IssuedJWTRegistryWorker>;
+    }
 }
+
+export {}; // ensure this file is treated as a module

@@ -95,10 +95,10 @@ const validUsers = {
           '1234567890098765432': 'localdevorg.provider.io',
         },
         // other roles...
-      }
-    }
-  }
-}
+      },
+    },
+  },
+};
 ```
 
 When writing integration tests, use these predefined credentials to authenticate requests:

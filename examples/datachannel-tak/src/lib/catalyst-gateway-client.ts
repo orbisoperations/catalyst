@@ -1,9 +1,8 @@
-import * as process from "node:process";
-import {Env} from "..";
+import { Env } from '..';
 
 const takQuery = (selector: string) => {
 	switch (selector) {
-		case "broken-haze":
+		case 'broken-haze':
 			return `query {
 				TAK1Markers {
 					uid
@@ -14,9 +13,9 @@ const takQuery = (selector: string) => {
 					type
 					expiry
 				  }
-			}`
-		case "empty-violet":
-		return `query {
+			}`;
+		case 'empty-violet':
+			return `query {
 			TAK2Markers {
 				uid
 				callsign
@@ -26,11 +25,11 @@ const takQuery = (selector: string) => {
 				type
 				expiry
 			  }
-			}`
-		default: 
-			return undefined
+			}`;
+		default:
+			return undefined;
 	}
-}
+};
 
 export class CatalystGatewayClient {
 	private url: string;
@@ -45,7 +44,6 @@ export class CatalystGatewayClient {
 	}
 
 	async useCatalystData() {
-		const takqgl = this.takQuery ? [this.takQuery] : [] as string[]
 		const queries = {
 			airplanes: `query {
 				aircraftWithinDistance(lat: 25.15090749876091, lon: 121.37875727934632, dist: 200) {
@@ -78,42 +76,38 @@ export class CatalystGatewayClient {
 					uuid
 				}
 			}`,
-			tak: this.takQuery
-		}
-
+			tak: this.takQuery,
+		};
 
 		const doQGLQuery = async (query: string) => {
 			const response = await fetch(this.url, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
-					'Authorization': `Bearer ${this.token}`,
+					Authorization: `Bearer ${this.token}`,
 				},
-				body: JSON.stringify({query}),
+				body: JSON.stringify({ query }),
 			});
-	
-			console.log("catalyst resp", response)
-			const {data, errors} = await response.json() as any;
-	
-			console.log({data});
-	
+
+			console.log('catalyst resp', response);
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			const { data, errors } = (await response.json()) as any;
+
+			console.log({ data });
+
 			if (errors) {
 				console.error('GraphQL Errors: ', JSON.stringify(errors));
 				return undefined;
 			}
 
-			return data
-		}
-		
+			return data;
+		};
+
 		return {
 			airplanes: await doQGLQuery(queries.airplanes),
 			line: await doQGLQuery(queries.line),
 			earthquakes: await doQGLQuery(queries.earthquakes),
-			tak: queries.tak ? await doQGLQuery(queries.tak) : undefined
-		}
+			tak: queries.tak ? await doQGLQuery(queries.tak) : undefined,
+		};
 	}
 }
-
-
-
-

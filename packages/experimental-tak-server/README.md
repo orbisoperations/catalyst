@@ -1,11 +1,15 @@
 # @catalyst/tak-server
 
-## Status: 
+## Status:
+
 Experimental but functional
+
 #### Do not use this tak-server in production as it is untested and the license is weird
 
 # Quickstart
-### 
+
+###
+
 This package is a sub-package of the Catalyst project. We use it to spin up ephemeral tak servers for development.
 
 ## License
@@ -45,12 +49,12 @@ const { createTakServer } = require('@catalyst/experimental-datachannel-tak-serv
 
 ```javascript
 createTakServer()
-  .then(() => {
-    console.log('goatak_server container created and started successfully');
-  })
-  .catch((error) => {
-    console.error('Error creating or starting goatak_server container:', error);
-  });
+    .then(() => {
+        console.log('goatak_server container created and started successfully');
+    })
+    .catch((error) => {
+        console.error('Error creating or starting goatak_server container:', error);
+    });
 ```
 
 The `createTakServer` function pulls the `kdudkov/goatak_server:latest` Docker image, creates a container from it, and starts the container with the specified configuration.
@@ -63,7 +67,7 @@ The `createTakServer` function pulls the `kdudkov/goatak_server:latest` Docker i
     - 8999 (TCP)
     - 8999 (UDP)
 
-   Make sure these ports are available on your host machine.
+    Make sure these ports are available on your host machine.
 
 4. The container logs will be streamed to the console output.
 

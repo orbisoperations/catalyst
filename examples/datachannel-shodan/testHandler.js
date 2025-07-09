@@ -1,9 +1,12 @@
+/* eslint-env node, es2021 */
+/* global fetch */
+/* global console */
+
 const apiUrl = 'http://localhost:4008/graphql';
 
-
-const location = {
-    latitude:  51.46888,
-    longitude: 0.45536
+const coords = {
+    latitude: 51.46888,
+    longitude: 0.45536,
 };
 
 const searchRadiusNauticalMiles = 200;
@@ -11,7 +14,7 @@ const searchRadiusNauticalMiles = 200;
 async function testCriticalAssetsWithinDistance() {
     const query = `
     query {
-      criticalAssetsWithinDistance(lat: ${location.latitude}, lon: ${location.longitude}, dist: ${searchRadiusNauticalMiles}) {
+      criticalAssetsWithinDistance(lat: ${coords.latitude}, lon: ${coords.longitude}, dist: ${searchRadiusNauticalMiles}) {
         ip
         port
         service

@@ -1,22 +1,22 @@
 {
-  "name": "@catalyst/jwt",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Developer Error: No tests in package @catalyst/jwt\""
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "devDependencies": {
-    "@eslint/js": "catalog:",
-    "typescript": "catalog:"
-  },
-  "dependencies": {
-    "@urql/core": "catalog:",
-    "axios": "^1.6.8",
-    "hono": "^4.3.3",
-    "jose": "^5.2.4"
-  }
+    "name": "@catalyst/jwt",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Developer Error: No tests in package @catalyst/jwt\""
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "devDependencies": {
+        "@eslint/js": "catalog:",
+        "typescript": "catalog:"
+    },
+    "dependencies": {
+        "@urql/core": "catalog:",
+        "axios": "^1.6.8",
+        "hono": "^4.3.3",
+        "jose": "^5.2.4"
+    }
 }

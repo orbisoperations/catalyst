@@ -1,15 +1,15 @@
 {
 	"include": ["./**/*.ts", "./**/*.d.ts"],
 	"compilerOptions": {
-	  "esModuleInterop": true,
-	  "module": "ESNext",
-	  "target": "ESNext",
-	  "moduleResolution": "bundler",
-	  "lib": ["esnext"],
-	  "noEmit": true,
-	  "skipLibCheck": true,
-	  "allowSyntheticDefaultImports": true,
-	  "strict": true,
-	  "types": ["@cloudflare/workers-types"],
-	},
-  }
+		"esModuleInterop": true,
+		"module": "ESNext",
+		"target": "ESNext",
+		"moduleResolution": "bundler",
+		"lib": ["esnext"],
+		"noEmit": true,
+		"skipLibCheck": true,
+		"allowSyntheticDefaultImports": true,
+		"strict": true,
+		"types": ["@cloudflare/workers-types"]
+	}
+}

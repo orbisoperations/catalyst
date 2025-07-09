@@ -8,6 +8,7 @@
 		"test": "vitest",
 		"test:workspace": "vitest run --silent",
 		"test:coverage": "vitest run --coverage",
+		"lint": "eslint . --ext .ts",
 		"cf-typegen": "wrangler types"
 	},
 	"dependencies": {

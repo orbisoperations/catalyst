@@ -1,11 +1,8 @@
-/* eslint-disable perfectionist/sort-object-types */
-/* eslint-disable perfectionist/sort-objects */
 import {Args, Command} from '@oclif/core'
-import { gql } from 'graphql-request'
+import {gql} from 'graphql-request'
 
-// eslint-disable-next-line import/namespace
-import { getGraphqlClient } from '../../utils/graphql.js'
-import {displayTable} from "../../utils/tables.js";
+import {getGraphqlClient} from '../../utils/graphql.js'
+import {displayTable} from '../../utils/tables.js'
 
 export default class DataChannelCreate extends Command {
   static args = {
@@ -27,25 +24,28 @@ export default class DataChannelCreate extends Command {
     const client = getGraphqlClient()
 
     const request = gql`
-    mutation create($organization: String!, $name: String!, $endpoint: String!){
+      mutation create($organization: String!, $name: String!, $endpoint: String!) {
         createDataChannel(organization: $organization, name: $name, endpoint: $endpoint) {
-            organization
-            name
-            endpoint
+          organization
+          name
+          endpoint
         }
-    }`
+      }
+    `
 
     const vars = {
       organization: args.organization,
       name: args.name,
-      endpoint: args.endpoint
+      endpoint: args.endpoint,
     }
 
-    const repsonse = await client.request<{createDataChannel: {
-      organization: string
-      name: string
-      endpoint: string
-    }}>(request, vars);
+    const repsonse = await client.request<{
+      createDataChannel: {
+        organization: string
+        name: string
+        endpoint: string
+      }
+    }>(request, vars)
 
     this.debug(`create response: `, repsonse)
 
