@@ -4,6 +4,9 @@
 	"private": true,
 	"scripts": {
 		"dev": "wrangler dev --port 5050",
+		"deploy:uxr": "wrangler deploy --env uxr",
+		"deploy:staging": "wrangler deploy --env staging",
+		"deploy:preview": "wrangler deploy --env preview",
 		"test": "vitest",
 		"test:workspace": "vitest run --silent",
 		"test:coverage": "vitest --coverage",
