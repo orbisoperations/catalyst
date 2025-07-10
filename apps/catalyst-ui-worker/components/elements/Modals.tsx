@@ -65,7 +65,7 @@ export const HelpModal = () => {
                 <form
                     onSubmit={(e) => {
                         e.preventDefault();
-                        submitAction(e);
+                        submitAction();
                     }}
                 >
                     <Grid gap={5}>

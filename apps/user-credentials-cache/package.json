@@ -3,9 +3,10 @@
 	"version": "0.0.0",
 	"private": true,
 	"scripts": {
-		"deploymentDemo": "yes | wrangler deploy --minify --keep-vars --env demo",
-		"deploymentStaging": "yes | wrangler deploy --keep-vars --env staging",
 		"dev": "wrangler dev",
+		"deploy:uxr": "wrangler deploy --env uxr",
+		"deploy:staging": "wrangler deploy --env staging",
+		"deploy:preview": "wrangler deploy --env preview",
 		"start": "wrangler dev",
 		"cf-typegen": "wrangler types",
 		"build": "wrangler build",

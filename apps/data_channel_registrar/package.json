@@ -10,6 +10,9 @@
     "test:coverage": "vitest --coverage",
     "dev": "pnpm wrangler dev --port 5053",
     "deploy": "wrangler deploy --minify src/worker.ts",
+    "deploy:uxr": "wrangler deploy --env uxr",
+    "deploy:staging": "wrangler deploy --env staging",
+    "deploy:preview": "wrangler deploy --env preview",
     "fmt": "prettier --write .",
     "lint": "eslint . --ext .ts",
     "build": "wrangler build"
