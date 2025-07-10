@@ -9,7 +9,7 @@
         "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
         "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
         "format": "prettier --write \"**/*.{js,jsx,ts,tsx,css,md,json}\"",
-        "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+        "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview -- --port=4000",
         "deploy:uxr": "opennextjs-cloudflare build && opennextjs-cloudflare deploy -- --env=uxr",
         "deploy:staging": "opennextjs-cloudflare build && opennextjs-cloudflare deploy -- --env=staging",
         "deploy:preview": "opennextjs-cloudflare build && opennextjs-cloudflare deploy -- --env=preview",
