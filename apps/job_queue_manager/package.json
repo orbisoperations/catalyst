@@ -5,6 +5,8 @@
     "scripts": {
         "deploy": "wrangler deploy",
         "dev": "wrangler dev",
+        "test": "bun test",
+        "test:workspace": "bun test",
         "db:gen": "drizzle-kit generate:sqlite",
         "db:push": "drizzle-kit push:sqlite",
         "typecheck": "bun run tsc --noEmit"
