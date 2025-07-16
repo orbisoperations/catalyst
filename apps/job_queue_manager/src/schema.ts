@@ -15,4 +15,5 @@ export const jobs = sqliteTable('jobs', {
     resultBucket: text('result_bucket'),
     dataChannelId: text('data_channel_id'),
     submittedBy: text('submitted_by'),
+    parameters: text('parameters'),
 });

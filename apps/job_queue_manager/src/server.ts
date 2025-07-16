@@ -4,10 +4,17 @@ import { buildSchema } from 'drizzle-graphql';
 import type { DrizzleD1Database } from 'drizzle-orm/d1';
 import { createYoga } from 'graphql-yoga';
 import { type GraphQLFieldConfigMap, GraphQLObjectType, GraphQLSchema } from 'graphql';
+// Cloudflare Queue type
+import type { Queue } from '@cloudflare/workers-types';
 import * as schema from './schema';
 
 export type Env = {
     DB: D1Database;
+    /**
+     * Queue used to fan-out newly submitted jobs to workers that will execute them.
+     * Defined as `JOB_QUEUE` in `wrangler.toml`.
+     */
+    JOB_QUEUE: Queue;
 };
 
 export function createGraphQLServer(db: DrizzleD1Database<typeof schema>) {
@@ -32,8 +39,29 @@ export function createGraphQLServer(db: DrizzleD1Database<typeof schema>) {
             resolve: async (
                 ...resolverArgs: Parameters<typeof originalResolver>
             ): Promise<ReturnType<typeof originalResolver>> => {
+                const [, args, ctx] = resolverArgs as [unknown, Record<string, unknown>, Env, unknown];
+
+                // Restrict update mutations to only specific fields
+                if (mutationName.startsWith('update') && mutationName.includes('Jobs')) {
+                    const allowedFields = ['status', 'resultBucket', 'dataChannelId', 'parameters'];
+                    const values = args?.values ?? {};
+                    const disallowed = Object.keys(values).filter((k) => !allowedFields.includes(k));
+                    if (disallowed.length > 0) {
+                        throw new Error(
+                            `Updates to fields [${disallowed.join(', ')}] are not permitted. Allowed fields: ${allowedFields.join(', ')}`
+                        );
+                    }
+                }
+
                 if (mutationName.startsWith('insert')) {
                     console.log(`Executing pre-insert hook for ${mutationName}`);
+                    // Attempt to enqueue immediately based on args when available
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const preVals = (args as any)?.values ?? {};
+                    const preJobId: string | undefined = preVals.jobId ?? preVals.job_id;
+                    if (preJobId && ctx?.JOB_QUEUE) {
+                        ctx.JOB_QUEUE.send(JSON.stringify({ jobId: preJobId })).catch(() => {});
+                    }
                 } else if (mutationName.startsWith('update')) {
                     console.log(`Executing pre-update hook for ${mutationName}`);
                 } else if (mutationName.startsWith('delete')) {
@@ -44,6 +72,32 @@ export function createGraphQLServer(db: DrizzleD1Database<typeof schema>) {
                 try {
                     // @ts-expect-error TS cannot yet infer the spread of generic tuple
                     result = await originalResolver(...resolverArgs);
+
+                    // After a successful insert into jobs, enqueue the jobId so that
+                    // downstream workers can start processing it.
+                    if (mutationName.startsWith('insert')) {
+                        // Drizzle-GraphQL returns created record(s). Handle both array and object shapes.
+                        const insertedRecord = Array.isArray(result)
+                            ? (result as Record<string, unknown>[])[0]
+                            : (result as Record<string, unknown>);
+
+                        const recAny = insertedRecord as Record<string, unknown>;
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        let jobId = (recAny as any).jobId ?? (recAny as any).id;
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        const argVals = (args as any)?.values ?? {};
+                        if (!jobId && typeof argVals.jobId === 'string') {
+                            jobId = argVals.jobId;
+                        }
+                        if (!jobId && typeof argVals.job_id === 'string') {
+                            jobId = argVals.job_id;
+                        }
+                        if (jobId && ctx?.JOB_QUEUE) {
+                            ctx.JOB_QUEUE.send(JSON.stringify({ jobId })).catch((err) => {
+                                console.error('Failed to enqueue job', err);
+                            });
+                        }
+                    }
                 } finally {
                     // Ensure post hooks are executed even if the resolver throws so that
                     // application-level error handling can still rely on side-effects
@@ -77,6 +131,8 @@ export function createGraphQLServer(db: DrizzleD1Database<typeof schema>) {
     const yoga = createYoga<Env>({
         schema: gqlSchema,
         graphqlEndpoint: '/graphql',
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        context: (initial: any) => initial.serverContext as Env,
     });
 
     return yoga;
