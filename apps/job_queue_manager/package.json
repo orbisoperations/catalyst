@@ -5,7 +5,7 @@
     "scripts": {
         "deploy": "wrangler deploy",
         "dev": "wrangler dev",
-        "test": "bun test",
+        "test": "vitest run",
         "test:workspace": "bun test",
         "db:gen": "drizzle-kit generate:sqlite",
         "db:push": "drizzle-kit push:sqlite",
@@ -21,6 +21,7 @@
     "devDependencies": {
         "@cloudflare/workers-types": "^4.20240512.0",
         "drizzle-kit": "^0.21.4",
+        "vitest": "^1.5.0",
         "typescript": "^5.4.5",
         "wrangler": "^3.57.0"
     }
