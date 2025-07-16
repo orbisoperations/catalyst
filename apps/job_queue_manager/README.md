@@ -7,7 +7,7 @@ This project sets up a GraphQL server using Drizzle ORM with a Cloudflare D1 dat
 1.  Install dependencies:
 
     ```bash
-    bun install
+    pnpm install
     ```
 
 2.  Create a D1 database. You can do this locally for development.
@@ -21,12 +21,12 @@ This project sets up a GraphQL server using Drizzle ORM with a Cloudflare D1 dat
 3.  Apply database schema:
 
     ```bash
-    bun run db:push
+    pnpm run db:push
     ```
 
 4.  Run the development server:
     ```bash
-    bun run dev
+    pnpm run dev
     ```
 
 The GraphQL endpoint will be available at `http://localhost:8787/graphql`. You can use a tool like GraphiQL to interact with it.
