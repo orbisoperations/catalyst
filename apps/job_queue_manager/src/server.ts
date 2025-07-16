@@ -3,7 +3,11 @@ import { drizzle } from 'drizzle-orm/d1';
 import { buildSchema } from 'drizzle-graphql';
 import type { DrizzleD1Database } from 'drizzle-orm/d1';
 import { createYoga } from 'graphql-yoga';
-import { GraphQLObjectType, GraphQLSchema } from 'graphql';
+import {
+  type GraphQLFieldConfigMap,
+  GraphQLObjectType,
+  GraphQLSchema,
+} from 'graphql';
 import * as schema from './schema';
 
 export type Env = {
@@ -15,10 +19,7 @@ export function createGraphQLServer(db: DrizzleD1Database<typeof schema>) {
 
   // Build a new mutation map so we don't mutate the (readonly) one provided by
   // drizzle-graphql.
-  const wrappedMutations: Record<
-    keyof typeof entities.mutations,
-    (typeof entities.mutations)[keyof typeof entities.mutations]
-  > = {} as any;
+  const wrappedMutations: GraphQLFieldConfigMap<unknown, unknown> = {};
 
   (Object.keys(entities.mutations) as (keyof typeof entities.mutations)[]).forEach(
     (mutationName) => {
@@ -63,7 +64,7 @@ export function createGraphQLServer(db: DrizzleD1Database<typeof schema>) {
 
           return result!;
         },
-      } as any;
+      };
     },
   );
 

@@ -5,11 +5,12 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore – bun:test is provided by the Bun runtime
 import { test, expect } from "bun:test";
+import type { D1Database } from "@cloudflare/workers-types";
 import app from "../src/server";
 
 // Minimal mock of Cloudflare D1 database that satisfies drizzle-orm/d1 runtime
 // interactions used by drizzle-graphql resolvers.
-function createMockD1(): any {
+function createMockD1(): D1Database {
   const dummyResult = { success: true, results: [] };
   const mockPrepared = {
     bind: () => mockPrepared,
@@ -22,7 +23,7 @@ function createMockD1(): any {
     prepare: () => mockPrepared,
     batch: async () => [],
     exec: async () => dummyResult,
-  };
+  } as D1Database;
 }
 
 test("insert mutation triggers pre/post hooks", async () => {
