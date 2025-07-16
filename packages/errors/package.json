@@ -1,16 +1,16 @@
 {
-  "name": "@catalyst/errors",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Developer Error: No tests in package @catalyst/errors\""
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "devDependencies": {
-    "@eslint/js": "catalog:",
-    "typescript": "catalog:"
-  }
+    "name": "@catalyst/errors",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Developer Error: No tests in package @catalyst/errors\""
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "devDependencies": {
+        "@eslint/js": "catalog:",
+        "typescript": "catalog:"
+    }
 }

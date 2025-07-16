@@ -1,10 +1,8 @@
-/* eslint-disable perfectionist/sort-objects,perfectionist/sort-object-types,arrow-body-style */
 import {Args, Command} from '@oclif/core'
-import { gql } from 'graphql-request'
+import {gql} from 'graphql-request'
 
-// eslint-disable-next-line import/namespace
-import { getGraphqlClient } from '../../utils/graphql.js'
-import {displayTable} from "../../utils/tables.js";
+import {getGraphqlClient} from '../../utils/graphql.js'
+import {displayTable} from '../../utils/tables.js'
 
 export default class DataChannelList extends Command {
   static args = {
@@ -22,7 +20,7 @@ export default class DataChannelList extends Command {
      org1         channel http://test.com/
      org2         channel http://test.com/
      org-test     chan    http://test.com/`,
-    
+
     `$ oex data-channels list org1 chan
      Organization Name    Endpoint
      ──────────── ─────── ────────────────
@@ -43,17 +41,18 @@ export default class DataChannelList extends Command {
     const client = getGraphqlClient()
 
     const request = gql`
-    query listChannels ($organization: String, $name: String){
-        listDataChannels(organization: $organization, name:$name) {
-            organization
-            name
-            endpoint
+      query listChannels($organization: String, $name: String) {
+        listDataChannels(organization: $organization, name: $name) {
+          organization
+          name
+          endpoint
         }
-    }`
+      }
+    `
 
     const vars = {
-        organization: args.organization,
-        name: args.name,
+      organization: args.organization,
+      name: args.name,
     }
 
     const response = await client.request<{
@@ -62,7 +61,7 @@ export default class DataChannelList extends Command {
         name: string
         endpoint: string
       }[]
-    }>(request, vars);
+    }>(request, vars)
 
     this.debug(`create response: `, response)
 

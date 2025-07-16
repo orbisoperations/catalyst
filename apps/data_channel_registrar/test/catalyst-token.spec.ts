@@ -123,7 +123,7 @@ describe('Testing the catalyst token access controls to data channels', () => {
     });
   });
 
-  describe('entity doesn\'t have any roles', () => {
+  describe("entity doesn't have any roles", () => {
     it('cannot READ a data channel', async () => {
       await clearAllAuthzedRoles();
       // create token with data channel id in claims

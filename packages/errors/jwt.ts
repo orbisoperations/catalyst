@@ -1,5 +1,5 @@
-import {CError} from  "./index"
+import { CError } from './index';
 
 export const JWTParsingError = (msg: string) => {
-    return new CError(msg, 500)
-}
+    return new CError(msg, 500);
+};

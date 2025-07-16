@@ -1,21 +1,21 @@
 {
-  "name": "@catalyst-examples/datachannel-shodan",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "wrangler dev"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "devDependencies": {
-    "@cloudflare/workers-types": "catalog:",
-    "@eslint/js": "catalog:",
-    "graphql-yoga": "^5.3.1",
-    "shodan-api": "catalog:",
-    "typescript": "catalog:",
-    "wrangler": "catalog:"
-  }
+    "name": "@catalyst-examples/datachannel-shodan",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "dev": "wrangler dev"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "devDependencies": {
+        "@cloudflare/workers-types": "catalog:",
+        "@eslint/js": "catalog:",
+        "graphql-yoga": "^5.3.1",
+        "shodan-api": "catalog:",
+        "typescript": "catalog:",
+        "wrangler": "catalog:"
+    }
 }

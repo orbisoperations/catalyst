@@ -1,17 +1,17 @@
-import { GraphQLClient } from 'graphql-request'
+import {GraphQLClient} from 'graphql-request'
 
-import { getConfig } from './config.js'
+import {getConfig} from './config.js'
 
 export interface DataChannel {
-    endpoint: string
-    name: string
-    organization: string
+  endpoint: string
+  name: string
+  organization: string
 }
 
 export function getGraphqlClient(): GraphQLClient {
-    const config = getConfig();
+  const config = getConfig()
 
-    const client = new GraphQLClient(config.catalystRegistrarEndpoint)
+  const client = new GraphQLClient(config.catalystRegistrarEndpoint)
 
-    return client
+  return client
 }

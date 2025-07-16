@@ -24,8 +24,8 @@ The project is organized as follows:
 - **package.json**: Defines dependencies, scripts, and project metadata.
 - **wrangler.toml**: Configuration file for Cloudflare Workers.
 - **src/lib/**: Contains core logic for the Catalyst Gateway client and the task runner.
-	- **catalyst-gateway-client.ts**: Manages interactions with the Catalyst Gateway.
-	- **index.ts**: Contains utility functions and the task runner.
+  - **catalyst-gateway-client.ts**: Manages interactions with the Catalyst Gateway.
+  - **index.ts**: Contains utility functions and the task runner.
 - **src/index.ts**: Entry point for the Cloudflare Worker.
 - **.dev.vars.example**: Example environment variables file for local development.
 
@@ -34,33 +34,36 @@ The project is organized as follows:
 Three Cloudflare environments are defined, each targeting a unique TAK server but sharing the same Catalyst Gateway:
 
 1. **Staging**
-	- **TAK Server**: `https://tak-server-2-broken-haze-8097.fly.dev`
-	- **Environment Variables**: `env.staging.vars`
-	- **Routes**: `datachannel-tak-broken-haze.catalyst.devintelops.io`
+
+   - **TAK Server**: `https://tak-server-2-broken-haze-8097.fly.dev`
+   - **Environment Variables**: `env.staging.vars`
+   - **Routes**: `datachannel-tak-broken-haze.catalyst.devintelops.io`
 
 2. **Staging2**
-	- **TAK Server**: `https://goatak-empty-violet-5442.fly.dev`
-	- **Environment Variables**: `env.staging2.vars`
-	- **Routes**: `datachannel-tak-empty-violet.catalyst.devintelops.io`
+
+   - **TAK Server**: `https://goatak-empty-violet-5442.fly.dev`
+   - **Environment Variables**: `env.staging2.vars`
+   - **Routes**: `datachannel-tak-empty-violet.catalyst.devintelops.io`
 
 3. **Tak3**
-	- **TAK Server**: `https://tak-server-3-night-shade-spring-grass-8642.fly.dev`
-	- **Environment Variables**: `env.tak3.vars`
-	- **Routes**: `tak3-adapter.catalyst.devintelops.io`
+   - **TAK Server**: `https://tak-server-3-night-shade-spring-grass-8642.fly.dev`
+   - **Environment Variables**: `env.tak3.vars`
+   - **Routes**: `tak3-adapter.catalyst.devintelops.io`
 
 ## Setup
 
 1. **Install dependencies:**
-    ```bash
-    pnpm install
-    ```
+
+   ```bash
+   pnpm install
+   ```
 
 2. **Configure environment variables:**
-	- Copy the `.dev.vars.example` to `.dev.vars`:
-	  ```bash
-	  cp .dev.vars.example .dev.vars
-	  ```
-	- Update `.dev.vars` with the appropriate values.
+   - Copy the `.dev.vars.example` to `.dev.vars`:
+     ```bash
+     cp .dev.vars.example .dev.vars
+     ```
+   - Update `.dev.vars` with the appropriate values.
 
 ## Configuration
 
@@ -69,6 +72,7 @@ Three Cloudflare environments are defined, each targeting a unique TAK server bu
 The `wrangler.toml` file is configured to manage different environments and their specific variables. The environments section defines variables and routes specific to each environment.
 
 Example configuration for the staging environment:
+
 ```toml
 [env.staging.vars]
 TAK_HOST = "https://tak-server-2-broken-haze-8097.fly.dev"
@@ -91,30 +95,33 @@ In this project, the Durable Object `TAKDataManager` is used to manage state and
 ### State Managed
 
 1. **Catalyst UUIDs (catalyst-uuids):**
-	- **Type:** `Map<string, number>`
-	- **Description:** Stores unique identifiers (UUIDs) of data points from the Catalyst Gateway with their expiration timestamps.
-	- **Purpose:** Tracks processed data points to maintain freshness and prevent reprocessing.
+
+   - **Type:** `Map<string, number>`
+   - **Description:** Stores unique identifiers (UUIDs) of data points from the Catalyst Gateway with their expiration timestamps.
+   - **Purpose:** Tracks processed data points to maintain freshness and prevent reprocessing.
 
 2. **TAK UUIDs (tak-uuids):**
-	- **Type:** `Array<{ uid: string, callsign: string, lat: number, lon: number, stale_time: string, type: string }>`
-	- **Description:** Stores data points currently active on the TAK server, including their unique identifiers (UUIDs), positions, and expiration timestamps.
-	- **Purpose:** Keeps a record of data points sent to the TAK server to ensure synchronization.
+   - **Type:** `Array<{ uid: string, callsign: string, lat: number, lon: number, stale_time: string, type: string }>`
+   - **Description:** Stores data points currently active on the TAK server, including their unique identifiers (UUIDs), positions, and expiration timestamps.
+   - **Purpose:** Keeps a record of data points sent to the TAK server to ensure synchronization.
 
 ### How It Works
 
 1. **Initialization and Alarm Handling:**
-	- The Durable Object sets up an alarm to trigger data synchronization tasks.
-	- It periodically fetches data from the Catalyst Gateway, updates its state, and sends data to the TAK servers.
+
+   - The Durable Object sets up an alarm to trigger data synchronization tasks.
+   - It periodically fetches data from the Catalyst Gateway, updates its state, and sends data to the TAK servers.
 
 2. **Fetching and Storing Data:**
-	- The `runTask` function fetches data and processes it into CoT (Cursor on Target) events.
-	- The Durable Object updates its state by purging expired data points and adding new ones.
-	- It stores the updated state in persistent storage.
+
+   - The `runTask` function fetches data and processes it into CoT (Cursor on Target) events.
+   - The Durable Object updates its state by purging expired data points and adding new ones.
+   - It stores the updated state in persistent storage.
 
 3. **Synchronizing with TAK Servers:**
-	- Fetches current data points from the TAK server.
-	- Ensures that only unique, active data points are stored and synchronized.
-	- Sends updated data points to the TAK server to maintain consistency.
+   - Fetches current data points from the TAK server.
+   - Ensures that only unique, active data points are stored and synchronized.
+   - Sends updated data points to the TAK server to maintain consistency.
 
 ### Key Functions
 
@@ -125,37 +132,39 @@ In this project, the Durable Object `TAKDataManager` is used to manage state and
 ## Scripts
 
 - **Deployment:**
-	- Deploy to staging:
-	  ```bash
-	  pnpm run deploymentStaging
-	  ```
-	- Deploy to demo:
-	  ```bash
-	  pnpm run deploymentDemo
-	  ```
-	- Deploy to tak3:
-	  ```bash
-	  pnpm run deploymentTak3
-	  ```
+
+  - Deploy to staging:
+    ```bash
+    pnpm run deploymentStaging
+    ```
+  - Deploy to demo:
+    ```bash
+    pnpm run deploymentDemo
+    ```
+  - Deploy to tak3:
+    ```bash
+    pnpm run deploymentTak3
+    ```
 
 - **Development:**
-	- Start development server:
-	  ```bash
-	  pnpm run dev
-	  ```
-	- Trigger scheduled task locally:
-	  ```bash
-	  pnpm run triggerScheduled
-	  ```
+  - Start development server:
+    ```bash
+    pnpm run dev
+    ```
+  - Trigger scheduled task locally:
+    ```bash
+    pnpm run triggerScheduled
+    ```
 
 ## Development
 
 To start the development server and test the worker locally:
 
 1. **Start the development server:**
-    ```bash
-    pnpm run dev
-    ```
+
+   ```bash
+   pnpm run dev
+   ```
 
 2. **Access the development server:**
    Open your browser and navigate to `http://localhost:4005`.
@@ -165,19 +174,21 @@ To start the development server and test the worker locally:
 Deploy the worker to different environments using the scripts defined in `package.json`:
 
 - **Staging:**
-    ```bash
-    pnpm run deploymentStaging
-    ```
+
+  ```bash
+  pnpm run deploymentStaging
+  ```
 
 - **Demo:**
-    ```bash
-    pnpm run deploymentDemo
-    ```
+
+  ```bash
+  pnpm run deploymentDemo
+  ```
 
 - **Tak3:**
-    ```bash
-    pnpm run deploymentTak3
-    ```
+  ```bash
+  pnpm run deploymentTak3
+  ```
 
 ## Environment Variables
 
@@ -216,6 +227,7 @@ The `CATALYST_GATEWAY_TOKEN` is a critical environment variable used for authent
 - **Configuration:** Set this variable in the web-ui for deployment environments, and in the `.dev.vars` file for local development.
 
 Example:
+
 ```shell
 CATALYST_GATEWAY_TOKEN="your-token"
 ```
@@ -223,12 +235,14 @@ CATALYST_GATEWAY_TOKEN="your-token"
 ## Additional Information
 
 - **Data Flow:**
-	- The worker queries the Catalyst Gateway for data.
-	- The queried data is processed and sent to the respective TAK server.
-	- Data includes aircraft positions, earthquake events, line events, and TAK-specific markers.
+
+  - The worker queries the Catalyst Gateway for data.
+  - The queried data is processed and sent to the respective TAK server.
+  - Data includes aircraft positions, earthquake events, line events, and TAK-specific markers.
 
 - **Environment Variables:**
-	- Ensure all necessary environment variables are set in the `.dev.vars
+  - Ensure all necessary environment variables are set in the `.dev.vars
 
 ` file for local development.
+
 - The production and staging environments will use variables defined in the `wrangler.toml` file when --keep-vars is not specified during deployment

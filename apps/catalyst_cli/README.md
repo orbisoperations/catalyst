@@ -1,5 +1,4 @@
-oclif-hello-world
-=================
+# oclif-hello-world
 
 oclif example Hello World CLI
 
@@ -8,11 +7,15 @@ oclif example Hello World CLI
 [![GitHub license](https://img.shields.io/github/license/oclif/hello-world)](https://github.com/oclif/hello-world/blob/main/LICENSE)
 
 <!-- toc -->
-* [Usage](#usage)
-* [Commands](#commands)
+
+- [Usage](#usage)
+- [Commands](#commands)
 <!-- tocstop -->
+
 # Usage
+
 <!-- usage -->
+
 ```sh-session
 $ npm install -g catalyst_cli_2
 $ cctl COMMAND
@@ -24,22 +27,26 @@ USAGE
   $ cctl COMMAND
 ...
 ```
+
 <!-- usagestop -->
+
 # Commands
+
 <!-- commands -->
-* [`cctl hello PERSON`](#cctl-hello-person)
-* [`cctl hello world`](#cctl-hello-world)
-* [`cctl help [COMMANDS]`](#cctl-help-commands)
-* [`cctl plugins`](#cctl-plugins)
-* [`cctl plugins:install PLUGIN...`](#cctl-pluginsinstall-plugin)
-* [`cctl plugins:inspect PLUGIN...`](#cctl-pluginsinspect-plugin)
-* [`cctl plugins:install PLUGIN...`](#cctl-pluginsinstall-plugin-1)
-* [`cctl plugins:link PLUGIN`](#cctl-pluginslink-plugin)
-* [`cctl plugins:uninstall PLUGIN...`](#cctl-pluginsuninstall-plugin)
-* [`cctl plugins reset`](#cctl-plugins-reset)
-* [`cctl plugins:uninstall PLUGIN...`](#cctl-pluginsuninstall-plugin-1)
-* [`cctl plugins:uninstall PLUGIN...`](#cctl-pluginsuninstall-plugin-2)
-* [`cctl plugins update`](#cctl-plugins-update)
+
+- [`cctl hello PERSON`](#cctl-hello-person)
+- [`cctl hello world`](#cctl-hello-world)
+- [`cctl help [COMMANDS]`](#cctl-help-commands)
+- [`cctl plugins`](#cctl-plugins)
+- [`cctl plugins:install PLUGIN...`](#cctl-pluginsinstall-plugin)
+- [`cctl plugins:inspect PLUGIN...`](#cctl-pluginsinspect-plugin)
+- [`cctl plugins:install PLUGIN...`](#cctl-pluginsinstall-plugin-1)
+- [`cctl plugins:link PLUGIN`](#cctl-pluginslink-plugin)
+- [`cctl plugins:uninstall PLUGIN...`](#cctl-pluginsuninstall-plugin)
+- [`cctl plugins reset`](#cctl-plugins-reset)
+- [`cctl plugins:uninstall PLUGIN...`](#cctl-pluginsuninstall-plugin-1)
+- [`cctl plugins:uninstall PLUGIN...`](#cctl-pluginsuninstall-plugin-2)
+- [`cctl plugins update`](#cctl-plugins-update)
 
 ## `cctl hello PERSON`
 
@@ -161,7 +168,7 @@ ALIASES
   $ cctl plugins add
 
 EXAMPLES
-  $ cctl plugins add myplugin 
+  $ cctl plugins add myplugin
 
   $ cctl plugins add https://github.com/someuser/someplugin
 
@@ -230,7 +237,7 @@ ALIASES
   $ cctl plugins add
 
 EXAMPLES
-  $ cctl plugins install myplugin 
+  $ cctl plugins install myplugin
 
   $ cctl plugins install https://github.com/someuser/someplugin
 
@@ -381,4 +388,5 @@ DESCRIPTION
 ```
 
 _See code: [@oclif/plugin-plugins](https://github.com/oclif/plugin-plugins/blob/v4.2.1/src/commands/plugins/update.ts)_
+
 <!-- commandsstop -->

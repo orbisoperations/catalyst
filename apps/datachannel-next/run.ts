@@ -1,11 +1,11 @@
 import next from 'next';
-import {Server} from 'socket.io';
+import { Server } from 'socket.io';
 import { Logger } from 'tslog';
 import net from 'net';
-import { listen } from "listhen";
-import { createStorage } from "unstorage";
-import fsDriver from "unstorage/drivers/fs";
-import {createStorageServer} from "unstorage/server";
+import { listen } from 'listhen';
+import { createStorage } from 'unstorage';
+import fsDriver from 'unstorage/drivers/fs';
+import { createStorageServer } from 'unstorage/server';
 
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = 'localhost';
@@ -18,7 +18,7 @@ const logger = new Logger({
 });
 
 // Configure a long-lived application storage backend
-const dataStorageDirectory = process.env.APP_DATA_STORAGE_DIRECTORY ?? "./.app/data";
+const dataStorageDirectory = process.env.APP_DATA_STORAGE_DIRECTORY ?? './.app/data';
 
 // This sets up an instance of unstorage @ dataStorageDirectory
 export const storage = createStorage({
@@ -36,12 +36,15 @@ const startServer = async () => {
         await app.prepare();
 
         // manages a next.js server on port 3000
-        await listen((req, res) => {
-            if(req.url?.includes("/state/")) {
-                return storageServer.handle(req, res);
-            }
-            return nextHandler(req, res)
-        }, {port: 3000}).then((l) => {
+        await listen(
+            (req, res) => {
+                if (req.url?.includes('/state/')) {
+                    return storageServer.handle(req, res);
+                }
+                return nextHandler(req, res);
+            },
+            { port: 3000 }
+        ).then((l) => {
             io = new Server(l.server);
             io.on('connection', onSocketConnection);
 
@@ -49,15 +52,15 @@ const startServer = async () => {
             client.on('data', onTakServerData);
             client.on('error', onTakServerError);
             client.on('end', onTakServerDisconnected);
-            logger.info(`> Next.js: ${l.url}`)
+            logger.info(`> Next.js: ${l.url}`);
         });
-
     } catch (error) {
         logger.error(error);
         process.exit(1);
     }
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const onSocketConnection = (socket: any) => {
     logger.info(`Client Connected ${socket.id}`);
     // Add any additional socket event handlers here
