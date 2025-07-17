@@ -2,7 +2,7 @@
     "$schema": "./node_modules/wrangler/config-schema.json",
     "name": "catalyst-job-queue-manager",
     "main": "src/server.ts",
-    "compatibility_date": "2024-05-18",
+    "compatibility_date": "2025-05-18",
     "compatibility_flags": ["nodejs_compat"],
 
     // Basic deploy settings
