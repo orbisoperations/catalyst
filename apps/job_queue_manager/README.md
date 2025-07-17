@@ -33,7 +33,7 @@ pnpm install
 wrangler d1 create jobs-db
 ```
 
-This will output a `database_id`. Update `wrangler.toml` with this ID. For the `preview_database_id`, you can create another one or reuse the same one for simplicity in local development.
+This will output a `database_id`. Update `wrangler.jsonc` with this ID. For the `preview_database_id`, you can create another one or reuse the same one for simplicity in local development.
 
 3. Apply the database schema (writes to the SQLite file Miniflare will use):
 

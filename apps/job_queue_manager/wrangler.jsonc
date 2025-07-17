@@ -1,0 +1,46 @@
+{
+    "$schema": "./node_modules/wrangler/config-schema.json",
+    "name": "catalyst-job-queue-manager",
+    "main": "src/server.ts",
+    "compatibility_date": "2024-05-18",
+    "compatibility_flags": ["nodejs_compat"],
+
+    // Basic deploy settings
+    "preview_urls": false,
+    "workers_dev": false,
+    "minify": true,
+    "keep_vars": true,
+    "send_metrics": false,
+    "observability": {
+        "enabled": true,
+    },
+
+    // D1 Database bindings
+    "d1_databases": [
+        {
+            "binding": "DB",
+            "database_name": "jobs-db",
+            "database_id": "", // 👈 Add your database_id here
+            "preview_database_id": "jobs-db-preview",
+        },
+    ],
+
+    // Queue producer bindings
+    "queues": {
+        "producers": [
+            {
+                "binding": "JOB_QUEUE",
+                "queue": "job-queue",
+            },
+        ],
+    },
+
+    // Environment specific overrides (extend as needed)
+    "env": {
+        "preview": {},
+        "staging": {},
+        "uxr": {},
+        // "demo": {},
+        "production": {},
+    },
+}

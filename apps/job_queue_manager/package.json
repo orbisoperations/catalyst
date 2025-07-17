@@ -1,5 +1,5 @@
 {
-    "name": "drizzle-graphql-d1",
+    "name": "catalyst-job-queue-manager",
     "version": "0.0.0",
     "private": true,
     "scripts": {
@@ -9,7 +9,8 @@
         "test:workspace": "vitest run",
         "db:gen": "drizzle-kit generate",
         "db:push": "drizzle-kit push --driver libsql --dialect sqlite --schema ./src/schema.ts --url file:./.wrangler/state/v3/d1/jobs-db.sqlite",
-        "typecheck": "tsc --noEmit"
+        "typecheck": "tsc --noEmit",
+        "cf-typegen": "wrangler types"
     },
     "dependencies": {
         "drizzle-graphql": "^0.8.5",

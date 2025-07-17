@@ -15,6 +15,6 @@
             "@/*": ["./src/*"]
         }
     },
-    "include": ["src/**/*.ts", "drizzle.config.ts"],
+    "include": ["src/**/*.ts", "drizzle.config.ts", "worker-configuration.d.ts"],
     "exclude": ["node_modules"]
 }

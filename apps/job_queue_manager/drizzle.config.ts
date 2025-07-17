@@ -6,7 +6,7 @@ export default defineConfig({
     dialect: 'sqlite',
     driver: 'd1',
     dbCredentials: {
-        wranglerConfigPath: 'wrangler.toml',
+        wranglerConfigPath: 'wrangler.jsonc',
         dbName: 'jobs-db',
     },
 });
