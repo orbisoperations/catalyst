@@ -42,5 +42,47 @@
         "uxr": {},
         // "demo": {},
         "production": {},
+        // ----------------------------------------------
+        // Job-queue instances (one Worker per pairing)
+        // Deploy with `--env to_download` or `--env downloads_to_parquet`
+        // Fill in the real database_id / preview_database_id values before deploying.
+
+        "to_download": {
+            "d1_databases": [
+                {
+                    "binding": "DB",
+                    "database_name": "jobs-db-to-download",
+                    "database_id": "df4a0f92-9197-4dc6-9116-dc454d5a94c1", // 👈 add D1 database UUID for to_download
+                    "preview_database_id": "jobs-db-to-download-preview",
+                },
+            ],
+            "queues": {
+                "producers": [
+                    {
+                        "binding": "JOB_QUEUE",
+                        "queue": "to_download",
+                    },
+                ],
+            },
+        },
+
+        "downloads_to_parquet": {
+            "d1_databases": [
+                {
+                    "binding": "DB",
+                    "database_name": "jobs-db-downloads-to-parquet",
+                    "database_id": "3d5fc3db-6785-41e3-a815-771c929c7b21", // 👈 add D1 database UUID for downloads_to_parquet
+                    "preview_database_id": "jobs-db-downloads-to-parquet-preview",
+                },
+            ],
+            "queues": {
+                "producers": [
+                    {
+                        "binding": "JOB_QUEUE",
+                        "queue": "downloads_to_parquet",
+                    },
+                ],
+            },
+        },
     },
 }
