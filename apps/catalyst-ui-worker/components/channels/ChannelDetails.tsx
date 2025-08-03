@@ -174,7 +174,7 @@ export default function DataChannelDetailsComponent({
                                             const formData = new FormData(e.currentTarget);
                                             if (editChannel && token) {
                                                 formData.append('id', editChannel.id);
-                                                formData.append('organization', user?.custom.org);
+                                                formData.append('organization', String(user?.custom.org));
                                                 formData.set(
                                                     'name',
 
@@ -196,7 +196,7 @@ export default function DataChannelDetailsComponent({
                                             <FormControl display={'grid'} gap={2}>
                                                 <label htmlFor="name">Data Channel Name</label>
                                                 <InputGroup>
-                                                    <InputLeftAddon>{user?.custom.org}/</InputLeftAddon>
+                                                    <InputLeftAddon>{`${user?.custom.org ?? ''}/`}</InputLeftAddon>
                                                     <Input
                                                         rounded="md"
                                                         name="name"

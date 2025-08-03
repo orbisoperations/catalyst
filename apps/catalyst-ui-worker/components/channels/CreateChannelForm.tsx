@@ -21,7 +21,7 @@ export default function CreateChannelForm({ createDataChannel }: DataChannelForm
         name: '',
         description: '',
         endpoint: '',
-        creatorOrganization: user?.custom.org,
+        creatorOrganization: String(user?.custom.org),
         accessSwitch: true,
     });
     return (
@@ -48,7 +48,7 @@ export default function CreateChannelForm({ createDataChannel }: DataChannelForm
                     <CardBody>
                         <form
                             action={async (fd) => {
-                                fd.set('organization', user?.custom.org);
+                                fd.set('organization', String(user?.custom.org));
                                 fd.set('name', user?.custom.org + '/' + fd.get('name'));
                                 createDataChannel(fd, token ?? '')
                                     .then((newChannel) => {
@@ -64,7 +64,7 @@ export default function CreateChannelForm({ createDataChannel }: DataChannelForm
                                 <FormControl display={'grid'} gap={2}>
                                     <label htmlFor="name">Data Channel Name</label>
                                     <InputGroup>
-                                        <InputLeftAddon>{user?.custom.org}/</InputLeftAddon>
+                                        <InputLeftAddon>{String(user?.custom.org)}/</InputLeftAddon>
 
                                         <Input
                                             rounded="md"

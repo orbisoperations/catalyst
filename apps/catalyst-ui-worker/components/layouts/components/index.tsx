@@ -20,10 +20,10 @@ export const TopBar = (props: TopBarProps) => {
 
     useEffect(() => {
         if (user) {
-            if (typeof window !== 'undefined') window.localStorage.setItem('org', user.custom.org);
-            setOrgName(user.custom.org);
+            if (typeof window !== 'undefined') window.localStorage.setItem('org', String(user.custom.org));
+            setOrgName(String(user.custom.org));
             if (typeof window !== 'undefined') {
-                window.localStorage.setItem('org', user.custom.org);
+                window.localStorage.setItem('org', String(user.custom.org));
             }
         }
     }, [user?.custom.org]);
