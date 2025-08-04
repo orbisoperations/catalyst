@@ -1,5 +1,4 @@
 'use server';
-import { CloudflareEnv } from '@/env';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { IssuedJWTRegistry } from '@catalyst/schema_zod';
 function getEnv() {

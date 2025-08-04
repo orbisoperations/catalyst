@@ -48,7 +48,7 @@ export default function APIKeysComponent({ listIJWTRegistry, deleteIJWTRegistry 
         setHasError(false);
         setIsLoading(true);
         if (user !== undefined && token !== undefined) {
-            setAdminFlag(user && token && user?.custom.isPlatformAdmin);
+            setAdminFlag(!!user?.custom.isPlatformAdmin);
             listIJWTRegistry(token)
                 .then((data) => {
                     setIsLoading(false);
@@ -216,7 +216,8 @@ export default function APIKeysComponent({ listIJWTRegistry, deleteIJWTRegistry 
                             ) : (
                                 <Card>
                                     <CardBody>
-                                        No tokens exist for {user !== undefined ? user.custom.org : 'this user'}!
+                                        No tokens exist for{' '}
+                                        {user !== undefined ? (user.custom.org as string) : 'this user'}!
                                     </CardBody>
                                 </Card>
                             )}

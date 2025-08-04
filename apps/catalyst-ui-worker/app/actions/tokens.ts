@@ -1,5 +1,4 @@
 'use server';
-import { CloudflareEnv } from '@/env';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { JWTRequest } from '../types';
 import { DEFAULT_STANDARD_DURATIONS } from '@catalyst/schema_zod';
