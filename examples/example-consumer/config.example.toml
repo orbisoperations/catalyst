@@ -1,0 +1,20 @@
+[consumer]
+catalyst_endpoint="http://localhost:4010/graphql"
+catalyst_token="valid-api-token"
+catalyst_query= """
+{
+    health
+    errors
+}
+"""
+
+catalyst_query_poll_interval_ms = 10000
+
+[consumer.parser.aircraftWithinDistance.transform]
+uid = "hex"
+lat = "lat"
+lon = "lon"
+hae = "alt_geom"
+
+[consumer.parser.aircraftWithinDistance.overwrite]
+type = "a-f-A"

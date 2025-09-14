@@ -49,7 +49,6 @@ const app = new Hono<{ Bindings: Env }>();
 
 app.use(async (c, next) => {
     console.log('schema: ', printSchema(schema));
-    console.log('c.env: ', c.env);
     if (c.env.CATALYST_GATEWAY_URL == undefined || c.env.CATALYST_DC_ID == undefined) {
         console.error('CATALYST_GATEWAY_URL or CATALYST_DC_ID is undefined: set variables properly in environment');
         return c.json(

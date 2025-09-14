@@ -230,7 +230,7 @@ export async function verifyJwtWithRemoteJwks(
 
     /// check that the issuer is good
     if (payload.iss !== issuer) {
-        console.log('jwt issuer is not expected');
+        console.warn(`JWT issuer mismatch: expected "${issuer}", received "${payload?.iss}"`);
         return {
             errorCode: 'JWT_ISSUER_INVALID',
             message: 'JWT Issuer Invalid',
