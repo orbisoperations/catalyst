@@ -5,7 +5,7 @@
 	"scripts": {
 		"deploymentStaging": "yes | wrangler deploy --env staging",
 		"deploymentDemo": "yes | wrangler deploy --minify --keep-vars --env demo",
-		"dev": "wrangler dev --test-scheduled",
+		"dev": "wrangler dev --test-scheduled --port 4005",
 		"start": "wrangler dev",
 		"triggerScheduled": "curl http://localhost:4005/__scheduled",
 		"test": "bun test"
