@@ -6,7 +6,7 @@
 	"scripts": {
 		"deploymentDemo": "yes | wrangler deploy --minify --keep-vars --env demo",
 		"deploymentStaging": "yes | wrangler deploy --keep-vars --env staging",
-		"dev": "wrangler dev --port 5051",
+		"dev": "wrangler dev --port 4002 --inspector-port 6002",
 		"deploy:uxr": "wrangler deploy --env uxr",
 		"deploy:staging": "wrangler deploy --env staging",
 		"deploy:preview": "wrangler deploy --env preview",

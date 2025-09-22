@@ -297,7 +297,7 @@ importers:
         version: 2.6.2(@emotion/react@11.14.0(@types/react@18.3.21)(react@19.1.0))(@emotion/styled@11.14.0(@emotion/react@11.14.0(@types/react@18.3.21)(react@19.1.0))(@types/react@18.3.21)(react@19.1.0))(react@19.1.0)
       '@chakra-ui/theme-tools':
         specifier: ^2.1.2
-        version: 2.2.6(@chakra-ui/styled-system@2.9.2)(react@19.1.0)
+        version: 2.2.6(@chakra-ui/styled-system@2.12.3(react@19.1.0))(react@19.1.0)
       '@emotion/react':
         specifier: ^11.11.4
         version: 11.14.0(@types/react@18.3.21)(react@19.1.0)
@@ -326,9 +326,6 @@ importers:
       '@cloudflare/vitest-pool-workers':
         specifier: ^0.8.23
         version: 0.8.30(@cloudflare/workers-types@4.20250607.0)(@vitest/runner@3.1.4)(@vitest/snapshot@3.1.4)(vitest@3.1.4(@types/debug@4.1.12)(@types/node@20.17.48)(jiti@2.4.2)(terser@5.16.9)(tsx@4.19.4)(yaml@2.8.0))
-      '@cloudflare/workers-types':
-        specifier: ^4.20250525.0
-        version: 4.20250607.0
       '@eslint/compat':
         specifier: ^1.2.8
         version: 1.2.9(eslint@9.27.0(jiti@2.4.2))
@@ -4893,6 +4890,7 @@ packages:
 
   bun@1.2.13:
     resolution: {integrity: sha512-EhP1MhFbicqtaRSFCbEZdkcFco8Ov47cNJcB9QmKS8U4cojKHfLU+dQR14lCvLYmtBvGgwv/Lp+9SSver2OPzQ==}
+    cpu: [arm64, x64, aarch64]
     os: [darwin, linux, win32]
     hasBin: true
 
@@ -11194,10 +11192,10 @@ snapshots:
       '@chakra-ui/styled-system': 2.9.2
       color2k: 2.0.3
 
-  '@chakra-ui/theme-tools@2.2.6(@chakra-ui/styled-system@2.9.2)(react@19.1.0)':
+  '@chakra-ui/theme-tools@2.2.6(@chakra-ui/styled-system@2.12.3(react@19.1.0))(react@19.1.0)':
     dependencies:
       '@chakra-ui/anatomy': 2.3.4
-      '@chakra-ui/styled-system': 2.9.2
+      '@chakra-ui/styled-system': 2.12.3(react@19.1.0)
       '@chakra-ui/utils': 2.2.2(react@19.1.0)
       color2k: 2.0.3
     transitivePeerDependencies:

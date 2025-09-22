@@ -8,7 +8,7 @@
     "test": "vitest",
     "test:workspace": "vitest run --silent",
     "test:coverage": "vitest --coverage",
-    "dev": "pnpm wrangler dev --port 5053",
+    "dev": "pnpm wrangler dev --port 4004 --inspector-port 6004",
     "deploy": "wrangler deploy --minify src/worker.ts",
     "deploy:uxr": "wrangler deploy --env uxr",
     "deploy:staging": "wrangler deploy --env staging",

@@ -102,17 +102,20 @@ For detailed information about each component, please refer to the individual RE
 
 When running the local development environment using `./run_local_dev.sh`, the following services are started on their respective ports:
 
-| Service                    | Port   | Description                                             |
-| -------------------------- | ------ | ------------------------------------------------------- |
-| `catalyst-ui-worker`       | 4000   | The main web interface for Catalyst.                    |
-| `data_channel_gateway`     | 4008   | Federates data channels into a single GraphQL endpoint. |
-| `authx_authzed_api`        | 5050   | Core authorization service using Authzed/SpiceDB.       |
-| `data_channel_registrar`   | 5053   | Manages data channel discovery and registration.        |
-| `organization_matchmaking` | 8787\* | Manages organization partnerships and invitations.      |
-| `authx_token_api`          | 5051   | Issues and signs service-to-service JWTs.               |
-| `user-credentials-cache`   | 8787\* | Caches user identity information from auth provider.    |
-| `issued-jwt-registry`      | 5054   | Tracks and validates issued JWTs.                       |
-| `authzed-container` (gRPC) | 50051  | The gRPC port for the Authzed/SpiceDB container.        |
-| `authzed-container` (HTTP) | 8449   | The HTTP port for the Authzed/SpiceDB container.        |
+| Service                    | Port | Inspector Port | Description                                             |
+| -------------------------- | ---- | -------------- | ------------------------------------------------------- |
+| `catalyst-ui-worker`       | 4000 | -              | The main web interface for Catalyst.                    |
+| `authx_authzed_api`        | 4001 | 6001           | Core authorization service using Authzed/SpiceDB.       |
+| `authx_token_api`          | 4002 | 6002           | Issues and signs service-to-service JWTs.               |
+| `user-credentials-cache`   | 4003 | 6003           | Caches user identity information from auth provider.    |
+| `data_channel_registrar`   | 4004 | 6004           | Manages data channel discovery and registration.        |
+| `issued-jwt-registry`      | 4005 | 6005           | Tracks and validates issued JWTs.                       |
+| `data_channel_gateway`     | 4006 | 6006           | Federates data channels into a single GraphQL endpoint. |
+| `organization_matchmaking` | 4007 | 6007           | Manages organization partnerships and invitations.      |
 
-_Note: Services running on port 8787 use the default Wrangler port. If multiple services run without a specified port, Wrangler will automatically assign the next available port (e.g., 8788, 8789)._
+Authzed container (if used locally):
+
+| Service                    | Port  |
+| -------------------------- | ----- |
+| `authzed-container` (gRPC) | 50051 |
+| `authzed-container` (HTTP) | 8449  |

@@ -4,7 +4,7 @@
 	"main": "index.ts",
 	"type": "module",
 	"scripts": {
-		"dev": "wrangler dev --port 5054",
+		"dev": "wrangler dev --port 4005 --inspector-port 6005",
 		"deploy:uxr": "wrangler deploy --env uxr",
 		"deploy:staging": "wrangler deploy --env staging",
 		"deploy:preview": "wrangler deploy --env preview",
