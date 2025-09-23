@@ -8,6 +8,7 @@ import {
     OrbisButton,
     OrbisTable,
 } from '@/components/elements';
+import { ValidationButton } from './ValidationStatus';
 import { ListView } from '@/components/layouts';
 import { navigationItems } from '@/utils/nav.utils';
 import { DataChannel } from '@catalyst/schema_zod';
@@ -184,7 +185,7 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
                             ) : channels.length > 0 ? (
                                 <Card>
                                     <OrbisTable
-                                        headers={['Data Channel', 'Description', 'Channel ID', '']}
+                                        headers={['Data Channel', 'Description', 'Channel ID', 'Validation', '']}
                                         rows={channels.map((channel, index) => {
                                             return [
                                                 <Flex
@@ -211,6 +212,12 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
                                                 <APIKeyText allowCopy showAsClearText key={index + '-channel-id'}>
                                                     {channel.id}
                                                 </APIKeyText>,
+                                                <ValidationButton
+                                                    key={index + '-validation'}
+                                                    channelId={channel.id}
+                                                    endpoint={channel.endpoint}
+                                                    organizationId={channel.creatorOrganization}
+                                                />,
                                                 <Menu key={index + '-menu'}>
                                                     <MenuButton
                                                         as={IconButton}
@@ -220,7 +227,7 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
                                                         aria-label="Channel options"
                                                     />
                                                     <MenuList>
-                                                        {channel.creatorOrganization === user?.custom.org && (
+                                                        {channel.creatorOrganization === user?.custom.org ? (
                                                             <MenuItem
                                                                 icon={<TrashIcon width={16} height={16} />}
                                                                 color="red.500"
@@ -228,6 +235,8 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
                                                             >
                                                                 Delete Channel
                                                             </MenuItem>
+                                                        ) : (
+                                                            <MenuItem isDisabled>No actions available</MenuItem>
                                                         )}
                                                     </MenuList>
                                                 </Menu>,
