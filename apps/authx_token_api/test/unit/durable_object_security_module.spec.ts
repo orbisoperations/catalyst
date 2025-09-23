@@ -1,7 +1,7 @@
+import { JWTSigningRequest } from '@catalyst/schema_zod';
 import { env } from 'cloudflare:test';
 import { describe, expect, it } from 'vitest';
-import { JWTSigningRequest } from '@catalyst/schema_zod';
-import { KeyStateSerialized } from '../src/keystate';
+import { KeyStateSerialized } from '../../src/keystate';
 
 describe('JWTKeyProvider', () => {
 	let latestKey: KeyStateSerialized | undefined;
