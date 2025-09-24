@@ -3,7 +3,7 @@
 	"version": "0.0.0",
 	"private": true,
 	"scripts": {
-		"dev": "wrangler dev",
+		"dev": "wrangler dev --port 4007 --inspector-port 6007",
 		"deploy:uxr": "wrangler deploy --env uxr",
 		"deploy:staging": "wrangler deploy --env staging",
 		"deploy:preview": "wrangler deploy --env preview",

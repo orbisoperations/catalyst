@@ -2,7 +2,7 @@
     "name": "@catalyst/data_channel_gateway",
     "type": "module",
     "scripts": {
-        "dev": "wrangler dev --port 4008",
+        "dev": "wrangler dev --port 4006 --inspector-port 6006",
         "deploy:uxr": "wrangler deploy --env uxr",
         "deploy:staging": "wrangler deploy --env staging",
         "deploy:preview": "wrangler deploy --env preview",
