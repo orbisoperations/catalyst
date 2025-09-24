@@ -32,38 +32,18 @@ export default class DataChannelCertifierWorker extends WorkerEntrypoint<DataCha
     console.log('[DataChannelCertifier] Starting scheduled validation run');
 
     try {
-      // Get all registered data channels from the registrar
-      const resp = await this.env.DATA_CHANNEL_REGISTRAR.list('default', { cfToken: undefined });
-      let channels:
-        | {
-            id: string;
-            accessSwitch: boolean;
-            name: string;
-            endpoint: string;
-            description: string;
-            creatorOrganization: string;
-          }
-        | {
-            id: string;
-            accessSwitch: boolean;
-            name: string;
-            endpoint: string;
-            description: string;
-            creatorOrganization: string;
-          }[] = [];
-      if (resp.success) {
-        channels = Array.isArray(resp.data) ? resp.data : [resp.data];
-      }
+      // Get only enabled data channels from the registrar
+      const enabledChannels = await this.env.DATA_CHANNEL_REGISTRAR.listAll('default', true);
 
-      if (!resp || channels?.length === 0) {
-        console.log('[DataChannelCertifier] No channels found to validate');
+      if (!enabledChannels || enabledChannels.length === 0) {
+        console.log('[DataChannelCertifier] No enabled channels to validate');
         return;
       }
 
-      console.log(`[DataChannelCertifier] Validating ${channels.length} channels`);
+      console.log(`[DataChannelCertifier] Validating ${enabledChannels.length} enabled channels`);
 
-      // Validate all channels
-      const results = await this.validateBulkChannels(channels);
+      // Validate only enabled channels
+      const results = await this.validateBulkChannels(enabledChannels);
 
       console.log(`[DataChannelCertifier] Validation complete:`, {
         total: results.totalChannels,
@@ -87,15 +67,12 @@ export default class DataChannelCertifierWorker extends WorkerEntrypoint<DataCha
     const results: ValidationResult[] = [];
 
     try {
-      // If no channels provided, get from registrar
-      if (!channels) {
-        const resp = await this.env.DATA_CHANNEL_REGISTRAR.list('default', { cfToken: undefined });
-
-        channels = resp.success ? (Array.isArray(resp.data) ? resp.data : [resp.data]) : [];
-      }
+      // Resolve channels to a definite array
+      const channelsToValidate =
+        channels ?? (await this.env.DATA_CHANNEL_REGISTRAR.listAll('default', true)) ?? [];
 
       // Validate each channel in parallel with controlled concurrency
-      const validationPromises = channels.map(async (channel) => {
+      const validationPromises = channelsToValidate.map(async (channel) => {
         const request: ValidationRequest = {
           channelId: channel.id,
           endpoint: channel.endpoint,
@@ -115,23 +92,31 @@ export default class DataChannelCertifierWorker extends WorkerEntrypoint<DataCha
           console.error('[DataChannelCertifier] Channel validation failed:', result.reason);
         }
       }
+
+      // Calculate summary statistics
+      const validChannels = results.filter((r) => r.status === 'valid').length;
+      const invalidChannels = results.filter((r) => r.status === 'invalid').length;
+      const errorChannels = results.filter((r) => r.status === 'error').length;
+
+      return {
+        timestamp: startTime,
+        totalChannels: channelsToValidate.length,
+        validChannels,
+        invalidChannels,
+        errorChannels,
+        results,
+      };
     } catch (error) {
       console.error('[DataChannelCertifier] Bulk validation error:', error);
+      return {
+        timestamp: startTime,
+        totalChannels: 0,
+        validChannels: 0,
+        invalidChannels: 0,
+        errorChannels: 0,
+        results: [],
+      };
     }
-
-    // Calculate summary statistics
-    const validChannels = results.filter((r) => r.status === 'valid').length;
-    const invalidChannels = results.filter((r) => r.status === 'invalid').length;
-    const errorChannels = results.filter((r) => r.status === 'error').length;
-
-    return {
-      timestamp: startTime,
-      totalChannels: channels?.length || 0,
-      validChannels,
-      invalidChannels,
-      errorChannels,
-      results,
-    };
   }
 
   /**

@@ -1,7 +1,7 @@
+import { DataChannel, DataChannelActionResponse } from '@catalyst/schema_zod';
 import { env, fetchMock, SELF } from 'cloudflare:test';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { DataChannel, DataChannelActionResponse } from '../../../packages/schema_zod';
-import { TEST_ORG_ID, validUsers } from './utils/authUtils';
+import { TEST_ORG_ID, validUsers } from '../utils/authUtils';
 
 function generateDataChannels(count: number = 5): DataChannel[] {
   const dataChannels: DataChannel[] = [];

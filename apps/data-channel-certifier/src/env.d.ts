@@ -11,7 +11,10 @@ interface Env {
   };
 
   DATA_CHANNEL_REGISTRAR: {
-    list(): Promise<Array<{
+    listAll(
+      doNamespace?: string,
+      filterByAccessSwitch?: boolean
+    ): Promise<Array<{
       id: string;
       name: string;
       endpoint: string;

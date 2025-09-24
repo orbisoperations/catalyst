@@ -6,7 +6,7 @@ import {
   getCatalystToken,
   TEST_ORG_ID,
   validUsers,
-} from './utils/testUtils';
+} from '../utils/testUtils';
 import { env, SELF } from 'cloudflare:test';
 
 describe('Testing the catalyst token access controls to data channels', () => {
