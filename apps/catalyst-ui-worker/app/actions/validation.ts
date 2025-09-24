@@ -1,6 +1,6 @@
 'use server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
-import DataChannelCertifierWorker, { ValidationResult } from '@catalyst/data_channel_certifier';
+import type { ValidationResult } from '@catalyst/schemas';
 
 function getEnv() {
     return getCloudflareContext().env as CloudflareEnv;
