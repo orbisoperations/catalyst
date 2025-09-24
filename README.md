@@ -102,16 +102,17 @@ For detailed information about each component, please refer to the individual RE
 
 When running the local development environment using `./run_local_dev.sh`, the following services are started on their respective ports:
 
-| Service                    | Port | Inspector Port | Description                                             |
-| -------------------------- | ---- | -------------- | ------------------------------------------------------- |
-| `catalyst-ui-worker`       | 4000 | -              | The main web interface for Catalyst.                    |
-| `authx_authzed_api`        | 4001 | 6001           | Core authorization service using Authzed/SpiceDB.       |
-| `authx_token_api`          | 4002 | 6002           | Issues and signs service-to-service JWTs.               |
-| `user-credentials-cache`   | 4003 | 6003           | Caches user identity information from auth provider.    |
-| `data_channel_registrar`   | 4004 | 6004           | Manages data channel discovery and registration.        |
-| `issued-jwt-registry`      | 4005 | 6005           | Tracks and validates issued JWTs.                       |
-| `data_channel_gateway`     | 4006 | 6006           | Federates data channels into a single GraphQL endpoint. |
-| `organization_matchmaking` | 4007 | 6007           | Manages organization partnerships and invitations.      |
+| Service                    | Port | Inspector Port | Description                                                 |
+| -------------------------- | ---- | -------------- | ----------------------------------------------------------- |
+| `catalyst-ui-worker`       | 4000 | -              | The main web interface for Catalyst.                        |
+| `authx_authzed_api`        | 4001 | 6001           | Core authorization service using Authzed/SpiceDB.           |
+| `authx_token_api`          | 4002 | 6002           | Issues and signs service-to-service JWTs.                   |
+| `user-credentials-cache`   | 4003 | 6003           | Caches user identity information from auth provider.        |
+| `data_channel_registrar`   | 4004 | 6004           | Manages data channel discovery and registration.            |
+| `issued-jwt-registry`      | 4005 | 6005           | Tracks and validates issued JWTs.                           |
+| `data_channel_gateway`     | 4006 | 6006           | Federates data channels into a single GraphQL endpoint.     |
+| `organization_matchmaking` | 4007 | 6007           | Manages organization partnerships and invitations.          |
+| `data-channel-certifier`   | 4008 | 6008           | Certifies data channel endpoints (cron + service bindings). |
 
 Authzed container (if used locally):
 

@@ -150,6 +150,7 @@ APP_ORDER=(
   "issued-jwt-registry"      # Management: Tracks issued tokens
   "authx_authzed_api"        # Control: Core authorization service
   "data_channel_registrar"   # Control: Manages data channel discovery
+  "data-channel-certifier"   # Control: Certifies data channel endpoints
   "organization_matchmaking" # Control: Manages organization partnerships
   "data_channel_gateway"     # Data: Federates data channels
   # "datachannel-next"       # Data: Example data channel implementation
