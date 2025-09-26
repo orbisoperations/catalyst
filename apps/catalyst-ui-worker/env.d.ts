@@ -4,6 +4,7 @@ import AuthzedWorker from '../authx_authzed_api/src';
 import UserCredsCacheWorker from '../user-credentials-cache/src';
 import OrganizationMatchmakingWorker from '../organization_matchmaking/src';
 import IssuedJWTRegistryWorker from '@catalyst/issued-jwt-registry/src';
+import DataChannelCertifierWorker from '../data-channel-certifier/src/worker';
 
 declare global {
     interface CloudflareEnv {
@@ -13,6 +14,7 @@ declare global {
         USER_CREDS_CACHE: Service<UserCredsCacheWorker>;
         ORGANIZATION_MATCHMAKING: Service<OrganizationMatchmakingWorker>;
         ISSUED_JWT_WORKER: Service<IssuedJWTRegistryWorker>;
+        DATA_CHANNEL_CERTIFIER: Service<DataChannelCertifierWorker>;
     }
 }
 

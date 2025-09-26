@@ -42,6 +42,10 @@
             "binding": "ORGANIZATION_MATCHMAKING",
             "service": "organization-matchmaking",
         },
+        {
+            "binding": "DATA_CHANNEL_CERTIFIER",
+            "service": "data-channel-certifier",
+        },
     ],
     "env": {
         "preview": {
@@ -80,6 +84,10 @@
                     "binding": "ORGANIZATION_MATCHMAKING",
                     "service": "organization-matchmaking-preview",
                 },
+                {
+                    "binding": "DATA_CHANNEL_CERTIFIER",
+                    "service": "data-channel-certifier-preview",
+                },
             ],
         },
         "staging": {
@@ -106,6 +114,7 @@
                 { "binding": "AUTHX_AUTHZED_API", "service": "authx_authzed_api-staging" },
                 { "binding": "USER_CREDS_CACHE", "service": "user-credentials-cache-staging" },
                 { "binding": "ORGANIZATION_MATCHMAKING", "service": "organization-matchmaking-staging" },
+                { "binding": "DATA_CHANNEL_CERTIFIER", "service": "data-channel-certifier-staging" },
             ],
         },
         // "demo": {
@@ -165,6 +174,10 @@
                     "binding": "ORGANIZATION_MATCHMAKING",
                     "service": "organization-matchmaking-uxr",
                 },
+                {
+                    "binding": "DATA_CHANNEL_CERTIFIER",
+                    "service": "data-channel-certifier-uxr",
+                },
             ],
         },
         "production": {
@@ -188,6 +201,7 @@
                 { "binding": "AUTHX_AUTHZED_API", "service": "authx_authzed_api-production" },
                 { "binding": "USER_CREDS_CACHE", "service": "user-credentials-cache-production" },
                 { "binding": "ORGANIZATION_MATCHMAKING", "service": "organization-matchmaking-production" },
+                { "binding": "DATA_CHANNEL_CERTIFIER", "service": "data-channel-certifier-production" },
             ],
         },
     },
