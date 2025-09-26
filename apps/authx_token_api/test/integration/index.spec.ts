@@ -3,8 +3,8 @@ import { env, SELF } from 'cloudflare:test';
 import { createLocalJWKSet, jwtVerify, SignJWT } from 'jose';
 
 import { beforeEach, describe, expect, it } from 'vitest';
-import { JWT } from '../src/jwt';
-import { KeyState } from '../src/keystate';
+import { JWT } from '../../src/jwt';
+import { KeyState } from '../../src/keystate';
 import {
 	clearAllAuthzedRoles,
 	custodianCreatesDataChannel,
@@ -12,7 +12,7 @@ import {
 	getCatalystToken,
 	TEST_ORG_ID,
 	validUsers,
-} from './utils/testUtils';
+} from '../utils/testUtils';
 
 const KEY_ALG = 'EdDSA';
 

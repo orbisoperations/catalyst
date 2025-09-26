@@ -1,6 +1,6 @@
-import { describe, expect, it, beforeEach } from 'vitest';
-import { KeyState } from '../src/keystate';
-import { JWT } from '../src/jwt';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { JWT } from '../../src/jwt';
+import { KeyState } from '../../src/keystate';
 
 describe('KeyState', () => {
 	let keyState: KeyState;

@@ -1,17 +1,16 @@
 import { WorkerEntrypoint } from 'cloudflare:workers';
+import { JWTPayload } from 'jose';
 import {
 	DataChannel,
 	DataChannelAccessToken,
 	DataChannelMultiAccessResponse,
 	DEFAULT_STANDARD_DURATIONS,
 	JWTRotateResponse,
-	JWTSigningRequest,
-	JWTSigningResponse,
 	Token,
 	User,
 } from '../../../packages/schema_zod';
+import { JWTSigningRequest, JWTSigningResponse } from '../../../packages/schemas';
 import { Env } from './env';
-import { JWTPayload } from 'jose';
 export { JWTKeyProvider } from './durable_object_security_module';
 
 interface CatalystJWTPayload extends JWTPayload {
@@ -309,5 +308,91 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 		const id = this.env.KEY_PROVIDER.idFromName(keyNamespace);
 		const stub = this.env.KEY_PROVIDER.get(id);
 		return await stub.validateToken(token);
+	}
+
+	/**
+	 * Signs a JWT for system services
+	 * This method allows authorized system services to obtain JWTs without user tokens
+	 * @param request System JWT signing request containing service identity and claims
+	 * @param keyNamespace The namespace for signing keys (defaults to 'default')
+	 * @returns Promise containing the signed JWT response
+	 */
+	async signSystemJWT(
+		request: {
+			callingService: string;
+			channelId?: string;
+			channelIds?: string[];
+			purpose: string;
+			duration?: number; // Duration in seconds
+		},
+		keyNamespace: string = 'default',
+	): Promise<JWTSigningResponse> {
+		// Validate calling service
+		// TODO: move this to a configurable list
+		const ALLOWED_SYSTEM_SERVICES = ['data-channel-certifier', 'scheduled-validator'];
+
+		if (!request.callingService || request.callingService.trim() === '') {
+			return JWTSigningResponse.parse({
+				success: false,
+				error: 'callingService is required for system JWT signing',
+			});
+		}
+
+		if (!ALLOWED_SYSTEM_SERVICES.includes(request.callingService)) {
+			return JWTSigningResponse.parse({
+				success: false,
+				error: `Service '${request.callingService}' is not authorized for system JWT signing`,
+			});
+		}
+
+		// Extract channel claims
+		let claims: string[] = [];
+		if (request.channelIds && request.channelIds.length > 0) {
+			claims = request.channelIds;
+		} else if (request.channelId) {
+			claims = [request.channelId];
+		}
+
+		if (claims.length === 0) {
+			return JWTSigningResponse.parse({
+				success: false,
+				error: 'At least one channelId is required for system JWT signing',
+			});
+		}
+
+		// Validate duration (max 1 hour for system tokens)
+		const duration = request.duration !== undefined ? request.duration : 300; // Default 5 minutes
+		if (duration <= 0 || duration > 3600) {
+			return JWTSigningResponse.parse({
+				success: false,
+				error: 'System JWT duration exceeds maximum allowed (3600 seconds)',
+			});
+		}
+
+		// Create system JWT request
+		const jwtRequest: JWTSigningRequest = {
+			entity: `system-${request.callingService}`,
+			claims: claims,
+		};
+
+		// Sign the JWT using the durable object
+		const id = this.env.KEY_PROVIDER.idFromName(keyNamespace);
+		const stub = this.env.KEY_PROVIDER.get(id);
+
+		// Calculate expiry in milliseconds
+		const expiresIn = duration * 1000;
+
+		// Sign the JWT with system-specific parameters
+		const jwt = await stub.signJWT(jwtRequest, expiresIn);
+
+		// Log system token creation for audit
+		console.log(`System JWT created for service: ${request.callingService}, purpose: ${request.purpose}, claims: ${claims.join(',')}`);
+
+		// Return properly formatted response matching JWTSigningResponse schema
+		return JWTSigningResponse.parse({
+			success: true,
+			token: jwt.token,
+			expiration: jwt.expiration,
+		});
 	}
 }

@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
-import { JWT } from '../src/jwt';
 import { JWTPayload } from 'jose';
+import { describe, expect, it } from 'vitest';
+import { JWT } from '../../src/jwt';
 
 describe('JWT', () => {
 	describe('constructor', () => {
