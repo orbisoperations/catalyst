@@ -2,11 +2,12 @@
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { JWTRequest } from '../types';
 import { DEFAULT_STANDARD_DURATIONS } from '@catalyst/schema_zod';
+import AuthxTokenApiWorker from '@catalyst/authx_token_api/src';
 function getEnv() {
     return getCloudflareContext().env as CloudflareEnv;
 }
 function getAuthx() {
-    return getEnv().AUTHX_TOKEN_API;
+    return getEnv().AUTHX_TOKEN_API as Service<AuthxTokenApiWorker>;
 }
 export async function getPublicKey() {
     const tokens = getAuthx();

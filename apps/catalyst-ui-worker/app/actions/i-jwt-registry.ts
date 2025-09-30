@@ -1,11 +1,12 @@
 'use server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { IssuedJWTRegistry } from '@catalyst/schema_zod';
+import IssuedJWTRegistryWorker from '@catalyst/issued-jwt-registry/src';
 function getEnv() {
     return getCloudflareContext().env as CloudflareEnv;
 }
 function getIJWT() {
-    return getEnv().ISSUED_JWT_WORKER;
+    return getEnv().ISSUED_JWT_WORKER as Service<IssuedJWTRegistryWorker>;
 }
 
 export async function listIJWTRegistry(token: string) {

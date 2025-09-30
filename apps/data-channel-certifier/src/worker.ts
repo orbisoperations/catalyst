@@ -1,7 +1,10 @@
+import DataChannelRegistrarWorker from '@catalyst/data_channel_registrar/src/worker';
 import { WorkerEntrypoint } from 'cloudflare:workers';
-import { ValidationEngine, ValidationRequest } from './validation-engine';
-import { ValidationResult, ValidationReport } from './schemas';
-
+import { ValidationReport, ValidationResult } from './schemas';
+import { ValidationEngine, ValidationEnv, ValidationRequest } from './validation-engine';
+import IssuedJWTRegistryWorker from '../../issued-jwt-registry/src';
+import JWTWorker from '@catalyst/authx_token_api/src';
+export { ValidationReport, ValidationResult };
 /**
  * Data Channel Certifier Service
  *
@@ -9,7 +12,12 @@ import { ValidationResult, ValidationReport } from './schemas';
  * Runs on 15-minute cron schedule to certify all accessible data channels.
  * Updates certification status through data_channel_registrar service.
  */
-export default class DataChannelCertifierWorker extends WorkerEntrypoint<Env> {
+export interface DataChannelCertifierWorkerEnv {
+  DATA_CHANNEL_REGISTRAR: Service<DataChannelRegistrarWorker>;
+  AUTHX_TOKEN_API: Service<JWTWorker>;
+  ISSUED_JWT_REGISTRY: Service<IssuedJWTRegistryWorker>;
+}
+export default class DataChannelCertifierWorker extends WorkerEntrypoint<DataChannelCertifierWorkerEnv> {
   /**
    * RPC-only: disable public HTTP endpoints
    */
@@ -25,9 +33,29 @@ export default class DataChannelCertifierWorker extends WorkerEntrypoint<Env> {
 
     try {
       // Get all registered data channels from the registrar
-      const channels = await this.env.DATA_CHANNEL_REGISTRAR.list();
+      const resp = await this.env.DATA_CHANNEL_REGISTRAR.list('default', { cfToken: undefined });
+      let channels:
+        | {
+            id: string;
+            accessSwitch: boolean;
+            name: string;
+            endpoint: string;
+            description: string;
+            creatorOrganization: string;
+          }
+        | {
+            id: string;
+            accessSwitch: boolean;
+            name: string;
+            endpoint: string;
+            description: string;
+            creatorOrganization: string;
+          }[] = [];
+      if (resp.success) {
+        channels = Array.isArray(resp.data) ? resp.data : [resp.data];
+      }
 
-      if (!channels || channels.length === 0) {
+      if (!resp || channels?.length === 0) {
         console.log('[DataChannelCertifier] No channels found to validate');
         return;
       }
@@ -55,14 +83,15 @@ export default class DataChannelCertifierWorker extends WorkerEntrypoint<Env> {
     channels?: Array<{ id: string; endpoint: string; creatorOrganization: string }>
   ): Promise<ValidationReport> {
     const startTime = Date.now();
-    const validationEngine = new ValidationEngine(this.env);
+    const validationEngine = new ValidationEngine(this.env as unknown as ValidationEnv);
     const results: ValidationResult[] = [];
 
     try {
       // If no channels provided, get from registrar
       if (!channels) {
-        const registrarChannels = await this.env.DATA_CHANNEL_REGISTRAR.list();
-        channels = registrarChannels || [];
+        const resp = await this.env.DATA_CHANNEL_REGISTRAR.list('default', { cfToken: undefined });
+
+        channels = resp.success ? (Array.isArray(resp.data) ? resp.data : [resp.data]) : [];
       }
 
       // Validate each channel in parallel with controlled concurrency
@@ -97,7 +126,7 @@ export default class DataChannelCertifierWorker extends WorkerEntrypoint<Env> {
 
     return {
       timestamp: startTime,
-      totalChannels: channels.length,
+      totalChannels: channels?.length || 0,
       validChannels,
       invalidChannels,
       errorChannels,
@@ -109,7 +138,7 @@ export default class DataChannelCertifierWorker extends WorkerEntrypoint<Env> {
    * RPC method: Validate a single channel
    */
   async validateChannel(request: ValidationRequest): Promise<ValidationResult> {
-    const validationEngine = new ValidationEngine(this.env);
+    const validationEngine = new ValidationEngine(this.env as unknown as ValidationEnv);
 
     try {
       // Validate the channel

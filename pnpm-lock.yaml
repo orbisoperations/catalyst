@@ -283,12 +283,30 @@ importers:
       '@apollo/client':
         specifier: ^3.10.1
         version: 3.13.8(@types/react@18.3.21)(graphql-ws@6.0.5(crossws@0.3.5)(graphql@16.11.0)(ws@8.18.2))(graphql@16.11.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      '@catalyst/authx_authzed_api':
+        specifier: workspace:*
+        version: link:../authx_authzed_api
+      '@catalyst/authx_token_api':
+        specifier: workspace:*
+        version: link:../authx_token_api
+      '@catalyst/data_channel_certifier':
+        specifier: workspace:*
+        version: link:../data-channel-certifier
+      '@catalyst/data_channel_registrar':
+        specifier: workspace:*
+        version: link:../data_channel_registrar
       '@catalyst/issued-jwt-registry':
         specifier: workspace:*
         version: link:../issued-jwt-registry
+      '@catalyst/organization-matchmaking':
+        specifier: workspace:*
+        version: link:../organization_matchmaking
       '@catalyst/schema_zod':
         specifier: workspace:*
         version: link:../../packages/schema_zod
+      '@catalyst/user-credentials-cache':
+        specifier: workspace:*
+        version: link:../user-credentials-cache
       '@chakra-ui/button':
         specifier: ^2.1.0
         version: 2.1.0(@chakra-ui/system@2.6.2(@emotion/react@11.14.0(@types/react@18.3.21)(react@19.1.0))(@emotion/styled@11.14.0(@emotion/react@11.14.0(@types/react@18.3.21)(react@19.1.0))(@types/react@18.3.21)(react@19.1.0))(react@19.1.0))(react@19.1.0)
@@ -306,7 +324,7 @@ importers:
         version: 2.6.2(@emotion/react@11.14.0(@types/react@18.3.21)(react@19.1.0))(@emotion/styled@11.14.0(@emotion/react@11.14.0(@types/react@18.3.21)(react@19.1.0))(@types/react@18.3.21)(react@19.1.0))(react@19.1.0)
       '@chakra-ui/theme-tools':
         specifier: ^2.1.2
-        version: 2.2.6(@chakra-ui/styled-system@2.12.3(react@19.1.0))(react@19.1.0)
+        version: 2.2.6(@chakra-ui/styled-system@2.9.2)(react@19.1.0)
       '@emotion/react':
         specifier: ^11.11.4
         version: 11.14.0(@types/react@18.3.21)(react@19.1.0)
@@ -471,6 +489,12 @@ importers:
 
   apps/data-channel-certifier:
     dependencies:
+      '@catalyst/authx_token_api':
+        specifier: workspace:*
+        version: link:../authx_token_api
+      '@catalyst/data_channel_registrar':
+        specifier: workspace:*
+        version: link:../data_channel_registrar
       '@catalyst/schemas':
         specifier: workspace:*
         version: link:../../packages/schemas
@@ -4927,7 +4951,6 @@ packages:
 
   bun@1.2.13:
     resolution: {integrity: sha512-EhP1MhFbicqtaRSFCbEZdkcFco8Ov47cNJcB9QmKS8U4cojKHfLU+dQR14lCvLYmtBvGgwv/Lp+9SSver2OPzQ==}
-    cpu: [arm64, x64, aarch64]
     os: [darwin, linux, win32]
     hasBin: true
 
@@ -11232,10 +11255,10 @@ snapshots:
       '@chakra-ui/styled-system': 2.9.2
       color2k: 2.0.3
 
-  '@chakra-ui/theme-tools@2.2.6(@chakra-ui/styled-system@2.12.3(react@19.1.0))(react@19.1.0)':
+  '@chakra-ui/theme-tools@2.2.6(@chakra-ui/styled-system@2.9.2)(react@19.1.0)':
     dependencies:
       '@chakra-ui/anatomy': 2.3.4
-      '@chakra-ui/styled-system': 2.12.3(react@19.1.0)
+      '@chakra-ui/styled-system': 2.9.2
       '@chakra-ui/utils': 2.2.2(react@19.1.0)
       color2k: 2.0.3
     transitivePeerDependencies:

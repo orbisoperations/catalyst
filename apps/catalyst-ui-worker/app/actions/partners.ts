@@ -1,13 +1,14 @@
 'use server';
 import { OrgInvite } from '@catalyst/schema_zod';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
+import OrganizationMatchmakingWorker from '@catalyst/organization-matchmaking/src';
 
 function getEnv() {
     return getCloudflareContext().env as CloudflareEnv;
 }
 
 function getMatcher() {
-    return getEnv().ORGANIZATION_MATCHMAKING;
+    return getEnv().ORGANIZATION_MATCHMAKING as Service<OrganizationMatchmakingWorker>;
 }
 
 export async function listInvites(token: string) {
