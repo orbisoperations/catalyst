@@ -1,6 +1,6 @@
 'use server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
-import { ValidationResult } from '@catalyst/schema_zod';
+import DataChannelCertifierWorker, { ValidationResult } from '@catalyst/data_channel_certifier';
 
 function getEnv() {
     return getCloudflareContext().env as CloudflareEnv;
@@ -8,7 +8,7 @@ function getEnv() {
 
 function getCertifier() {
     // Service binding to data-channel-certifier
-    return getEnv().DATA_CHANNEL_CERTIFIER;
+    return getEnv().DATA_CHANNEL_CERTIFIER as Service<DataChannelCertifierWorker>;
 }
 
 export async function validateChannel(channelId: string, endpoint: string, organization: string) {

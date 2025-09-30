@@ -1,13 +1,14 @@
 'use server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { DataChannel } from '@catalyst/schema_zod';
+import RegistrarWorker from '@catalyst/data_channel_registrar/src/worker';
 
 function getEnv() {
     return getCloudflareContext().env as CloudflareEnv;
 }
 
 function getRegistar() {
-    return getEnv().CATALYST_DATA_CHANNEL_REGISTRAR_API;
+    return getEnv().CATALYST_DATA_CHANNEL_REGISTRAR_API as Service<RegistrarWorker>;
 }
 
 export async function createDataChannel(formData: FormData, token: string) {

@@ -1,5 +1,5 @@
 {
-  "name": "data-channel-certifier",
+  "name": "@catalyst/data_channel_certifier",
   "version": "1.0.0",
   "private": true,
   "description": "Catalyst data channel certification service - certifies and validates data channel endpoints on schedule",
@@ -20,6 +20,8 @@
   },
   "dependencies": {
     "@catalyst/schemas": "workspace:*",
+    "@catalyst/data_channel_registrar": "workspace:*",
+    "@catalyst/authx_token_api": "workspace:*",
     "zod": "^4.1.11"
   },
   "devDependencies": {
