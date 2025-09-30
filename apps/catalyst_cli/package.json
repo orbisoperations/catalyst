@@ -6,8 +6,8 @@
   "dependencies": {
     "@oclif/core": "catalog:",
     "@oclif/plugin-help": "catalog:",
-    "@oclif/plugin-plugins": "catalog:",
-    "axios": "^1.6.8",
+    "@oclif/plugin-plugins": "5.0.0",
+    "axios": "^1.12.0",
     "graphql-request": "catalog:"
   },
   "description": "Catalyst CLI",
