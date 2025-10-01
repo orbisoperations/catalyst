@@ -1,23 +1,4 @@
-import { ValidationResult } from './schemas';
-
-/**
- * Test result for individual validation tests
- */
-export interface TestResult {
-  testType: 'jwt_validation' | 'introspection' | 'schema_compliance';
-  success: boolean;
-  duration: number;
-  errorDetails?: string;
-}
-
-/**
- * Validation request for a data channel
- */
-export interface ValidationRequest {
-  channelId: string;
-  endpoint: string;
-  organizationId: string;
-}
+import type { ValidationResult, TestResult, ValidationRequest } from '@catalyst/schemas';
 
 /**
  * Environment bindings for the validation engine
@@ -48,16 +29,39 @@ export class ValidationEngine {
     const startTime = Date.now();
     const tests: TestResult[] = [];
 
+    console.log(`[ValidationEngine] Starting validation for channel ${request.channelId}`, {
+      endpoint: request.endpoint,
+      organizationId: request.organizationId,
+      timestamp: new Date(startTime).toISOString(),
+    });
+
     try {
       // 1. JWT Validation Test (MVP - Implemented)
+      console.log(
+        `[ValidationEngine] Running JWT validation test for channel ${request.channelId}`
+      );
       const jwtTest = await this.testJWTValidation(request);
       tests.push(jwtTest);
+
+      console.log(`[ValidationEngine] JWT test completed for channel ${request.channelId}`, {
+        success: jwtTest.success,
+        duration: `${jwtTest.duration}ms`,
+        hasErrors: !!jwtTest.errorDetails,
+      });
 
       // Future tests will be added here as needed
 
       // Determine overall status based on test results
       const allPassed = tests.every((test) => test.success);
       const status = allPassed ? 'valid' : 'invalid';
+
+      const totalDuration = Date.now() - startTime;
+      console.log(`[ValidationEngine] Validation completed for channel ${request.channelId}`, {
+        status,
+        totalDuration: `${totalDuration}ms`,
+        testsRun: tests.length,
+        testsPassed: tests.filter((t) => t.success).length,
+      });
 
       return {
         channelId: request.channelId,
@@ -66,13 +70,21 @@ export class ValidationEngine {
         details: {
           endpoint: request.endpoint,
           organizationId: request.organizationId,
-          duration: Date.now() - startTime,
+          duration: totalDuration,
           tests: tests,
           tokenValidation: jwtTest.success,
           tokenValidationError: jwtTest.errorDetails,
         },
       };
     } catch (error) {
+      const totalDuration = Date.now() - startTime;
+      console.error(`[ValidationEngine] Validation failed for channel ${request.channelId}`, {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        duration: `${totalDuration}ms`,
+        testsCompleted: tests.length,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+
       // Handle unexpected errors
       return {
         channelId: request.channelId,
@@ -82,7 +94,7 @@ export class ValidationEngine {
         details: {
           endpoint: request.endpoint,
           organizationId: request.organizationId,
-          duration: Date.now() - startTime,
+          duration: totalDuration,
           tests: tests,
         },
       };
@@ -96,8 +108,16 @@ export class ValidationEngine {
   private async testJWTValidation(request: ValidationRequest): Promise<TestResult> {
     const testStart = Date.now();
 
+    console.log(`[ValidationEngine:JWT] Starting JWT validation for channel ${request.channelId}`);
+
     try {
       // Step 1: Request a system JWT token for this channel
+      console.log(`[ValidationEngine:JWT] Requesting system JWT from AUTHX_TOKEN_API`, {
+        channelId: request.channelId,
+        callingService: 'data-channel-certifier',
+        purpose: 'channel-validation',
+      });
+
       const tokenResponse = await this.env.AUTHX_TOKEN_API.signSystemJWT({
         callingService: 'data-channel-certifier',
         channelId: request.channelId,
@@ -106,6 +126,11 @@ export class ValidationEngine {
       });
 
       if (!tokenResponse.success || !tokenResponse.token) {
+        console.error(`[ValidationEngine:JWT] Failed to obtain system JWT`, {
+          channelId: request.channelId,
+          error: tokenResponse.error,
+          success: tokenResponse.success,
+        });
         return {
           testType: 'jwt_validation',
           success: false,
@@ -114,27 +139,62 @@ export class ValidationEngine {
         };
       }
 
+      console.log(`[ValidationEngine:JWT] System JWT obtained successfully`, {
+        channelId: request.channelId,
+        tokenExpiration: tokenResponse.expiration,
+      });
+
       // Step 2: Test the channel endpoint with the valid token
+      console.log(`[ValidationEngine:JWT] Testing endpoint with VALID token`, {
+        channelId: request.channelId,
+        endpoint: request.endpoint,
+      });
       const validTokenTest = await this.testChannelWithToken(
         request.endpoint,
         tokenResponse.token,
         true // expecting success
       );
+      console.log(`[ValidationEngine:JWT] Valid token test result`, {
+        channelId: request.channelId,
+        accepted: validTokenTest.accepted,
+        statusCode: validTokenTest.statusCode,
+        error: validTokenTest.error,
+      });
 
       // Step 3: Test the channel endpoint with an invalid token
+      console.log(`[ValidationEngine:JWT] Testing endpoint with INVALID token`, {
+        channelId: request.channelId,
+        endpoint: request.endpoint,
+      });
       const invalidToken = 'invalid.jwt.token';
       const invalidTokenTest = await this.testChannelWithToken(
         request.endpoint,
         invalidToken,
         false // expecting rejection
       );
+      console.log(`[ValidationEngine:JWT] Invalid token test result`, {
+        channelId: request.channelId,
+        accepted: invalidTokenTest.accepted,
+        statusCode: invalidTokenTest.statusCode,
+        error: invalidTokenTest.error,
+      });
 
       // Step 4: Test the channel endpoint with no token
+      console.log(`[ValidationEngine:JWT] Testing endpoint with NO token`, {
+        channelId: request.channelId,
+        endpoint: request.endpoint,
+      });
       const noTokenTest = await this.testChannelWithToken(
         request.endpoint,
         '', // empty token
         false // expecting rejection
       );
+      console.log(`[ValidationEngine:JWT] No token test result`, {
+        channelId: request.channelId,
+        accepted: noTokenTest.accepted,
+        statusCode: noTokenTest.statusCode,
+        error: noTokenTest.error,
+      });
 
       // All tests must pass for JWT validation to succeed:
       // - Valid token should be accepted (authenticated)
@@ -142,13 +202,43 @@ export class ValidationEngine {
       // - No token should be rejected (not authenticated)
       const success = validTokenTest.accepted && invalidTokenTest.accepted && noTokenTest.accepted;
 
+      // Build detailed error message with individual test results
+      const errorDetails = success
+        ? undefined
+        : this.formatJWTTestError(validTokenTest, invalidTokenTest, noTokenTest);
+
+      console.log(`[ValidationEngine:JWT] JWT validation summary`, {
+        channelId: request.channelId,
+        success,
+        validTokenPassed: validTokenTest.accepted,
+        invalidTokenPassed: invalidTokenTest.accepted,
+        noTokenPassed: noTokenTest.accepted,
+        duration: `${Date.now() - testStart}ms`,
+      });
+
       return {
         testType: 'jwt_validation',
         success,
         duration: Date.now() - testStart,
-        errorDetails: success
-          ? undefined
-          : this.formatJWTTestError(validTokenTest, invalidTokenTest, noTokenTest),
+        errorDetails,
+        // Include structured test details for UI display
+        jwtTestDetails: {
+          validToken: {
+            accepted: validTokenTest.accepted,
+            statusCode: validTokenTest.statusCode,
+            error: validTokenTest.error,
+          },
+          invalidToken: {
+            accepted: invalidTokenTest.accepted,
+            statusCode: invalidTokenTest.statusCode,
+            error: invalidTokenTest.error,
+          },
+          noToken: {
+            accepted: noTokenTest.accepted,
+            statusCode: noTokenTest.statusCode,
+            error: noTokenTest.error,
+          },
+        },
       };
     } catch (error) {
       return {
@@ -169,6 +259,41 @@ export class ValidationEngine {
     token: string,
     expectSuccess: boolean
   ): Promise<{ accepted: boolean; statusCode?: number; error?: string }> {
+    const testType = token ? (token === 'invalid.jwt.token' ? 'invalid' : 'valid') : 'none';
+    
+    // Validate endpoint URL format before making request
+    try {
+      const url = new URL(endpoint);
+      
+      // Check for common URL format issues
+      if (!url.hostname || url.hostname.includes('-') && !url.hostname.includes('.')) {
+        console.error(`[ValidationEngine:Test] Malformed endpoint URL - missing domain`, {
+          endpoint,
+          hostname: url.hostname,
+          suggestion: 'URL appears to be missing a proper domain name (e.g., .com, .org, etc.)',
+        });
+        return {
+          accepted: false,
+          error: `Malformed endpoint URL - missing domain: ${endpoint}. Expected format: https://domain.com/path`,
+        };
+      }
+    } catch (urlError) {
+      console.error(`[ValidationEngine:Test] Invalid endpoint URL format`, {
+        endpoint,
+        error: urlError instanceof Error ? urlError.message : 'Invalid URL',
+      });
+      return {
+        accepted: false,
+        error: `Invalid endpoint URL format: ${endpoint}`,
+      };
+    }
+    console.log(`[ValidationEngine:Test] Starting ${testType} token test`, {
+      endpoint,
+      expectSuccess,
+      hasToken: !!token,
+      tokenLength: token ? token.length : 0,
+    });
+
     try {
       // Simple introspection query to test authentication
       const query = {
@@ -188,6 +313,12 @@ export class ValidationEngine {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
+      console.log(`[ValidationEngine:Test] Sending GraphQL introspection query`, {
+        endpoint,
+        hasAuthHeader: !!token,
+        testType,
+      });
+
       const response = await fetch(endpoint, {
         method: 'POST',
         headers,
@@ -195,30 +326,72 @@ export class ValidationEngine {
         signal: AbortSignal.timeout(10000), // 10 second timeout
       });
 
+      console.log(`[ValidationEngine:Test] Received response`, {
+        endpoint,
+        status: response.status,
+        statusText: response.statusText,
+        testType,
+      });
+
       // For JWT validation, we only care about authentication status
       const isAuthenticated = response.status !== 401 && response.status !== 403;
 
+      console.log(`[ValidationEngine:Test] Authentication status evaluated`, {
+        endpoint,
+        testType,
+        isAuthenticated,
+        expectSuccess,
+        testPassed: expectSuccess ? isAuthenticated : !isAuthenticated,
+      });
+
       if (expectSuccess) {
         // Valid token should be authenticated (not 401/403)
-        return {
-          accepted: isAuthenticated,
+        const passed = isAuthenticated;
+        console.log(`[ValidationEngine:Test] Valid token test ${passed ? 'PASSED' : 'FAILED'}`, {
+          endpoint,
+          expected: 'authenticated',
+          actual: isAuthenticated ? 'authenticated' : 'rejected',
           statusCode: response.status,
-          error: isAuthenticated
-            ? undefined
-            : `Valid token rejected with status ${response.status}`,
+        });
+        return {
+          accepted: passed,
+          statusCode: response.status,
+          error: passed ? undefined : `Valid token rejected with status ${response.status}`,
         };
       } else {
         // Invalid token should NOT be authenticated (should be 401/403)
+        const passed = !isAuthenticated;
+        console.log(
+          `[ValidationEngine:Test] Invalid/no token test ${passed ? 'PASSED' : 'FAILED'}`,
+          {
+            endpoint,
+            testType,
+            expected: 'rejected',
+            actual: isAuthenticated ? 'authenticated' : 'rejected',
+            statusCode: response.status,
+          }
+        );
         return {
-          accepted: !isAuthenticated,
+          accepted: passed,
           statusCode: response.status,
-          error: !isAuthenticated
+          error: passed
             ? undefined
-            : `Invalid token accepted with status ${response.status}`,
+            : `${testType === 'none' ? 'Missing' : 'Invalid'} token accepted with status ${response.status}`,
         };
       }
     } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      const isTimeout = error instanceof Error && error.name === 'AbortError';
+
+      console.error(`[ValidationEngine:Test] Test failed with error`, {
+        endpoint,
+        testType,
+        error: errorMsg,
+        isTimeout,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+
+      if (isTimeout) {
         return {
           accepted: false,
           error: 'Request timeout (10s)',
@@ -227,7 +400,7 @@ export class ValidationEngine {
 
       return {
         accepted: false,
-        error: `Network error: ${error instanceof Error ? error.message : 'Unknown'}`,
+        error: `Network error: ${errorMsg}`,
       };
     }
   }

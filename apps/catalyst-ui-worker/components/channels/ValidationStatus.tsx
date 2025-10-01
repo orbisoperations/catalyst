@@ -1,8 +1,23 @@
 'use client';
-import { Badge, Button, Spinner, Tooltip } from '@chakra-ui/react';
+import {
+    Badge,
+    Button,
+    Spinner,
+    Modal,
+    ModalOverlay,
+    ModalContent,
+    ModalHeader,
+    ModalBody,
+    ModalCloseButton,
+    useDisclosure,
+    HStack,
+    Text,
+} from '@chakra-ui/react';
 import { CheckCircleIcon, XCircleIcon, ExclamationCircleIcon, ClockIcon } from '@heroicons/react/20/solid';
 import { useState } from 'react';
 import { validateChannel } from '@/app/actions/validation';
+import { DetailedValidationResult } from './DetailedValidationResult';
+import type { ValidationResult, ValidationStatus } from '@catalyst/schemas';
 
 interface ValidationStatusProps {
     channelId: string;
@@ -15,7 +30,7 @@ interface ValidationStatusProps {
     };
 }
 
-export function ValidationStatusBadge({ status }: { status?: 'valid' | 'invalid' | 'error' | 'pending' }) {
+export function ValidationStatusBadge({ status }: { status?: ValidationStatus }) {
     if (!status) {
         return (
             <Badge colorScheme="gray" display="flex" alignItems="center" gap={1}>
@@ -46,9 +61,14 @@ export function ValidationStatusBadge({ status }: { status?: 'valid' | 'invalid'
             icon: <Spinner size="xs" />,
             label: 'Validating',
         },
+        unknown: {
+            color: 'gray',
+            icon: <ExclamationCircleIcon width={12} height={12} />,
+            label: 'Unknown',
+        },
     };
 
-    const config = configs[status];
+    const config = configs[status as keyof typeof configs];
 
     return (
         <Badge colorScheme={config.color} display="flex" alignItems="center" gap={1}>
@@ -64,55 +84,87 @@ export function ValidationButton({
     organizationId,
 }: Omit<ValidationStatusProps, 'lastValidation'>) {
     const [isValidating, setIsValidating] = useState(false);
-    const [validationStatus, setValidationStatus] = useState<'valid' | 'invalid' | 'error' | undefined>();
-    const [lastError, setLastError] = useState<string>();
+    const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
+    const { isOpen, onOpen, onClose } = useDisclosure();
 
     const handleValidate = async () => {
         setIsValidating(true);
-        setValidationStatus(undefined);
-        setLastError(undefined);
+        setValidationResult(null);
 
         try {
             const result = await validateChannel(channelId, endpoint, organizationId);
+            setValidationResult(result);
 
-            // Map the result status to our badge status
-            if (result.status === 'valid') {
-                setValidationStatus('valid');
-            } else if (result.status === 'invalid') {
-                setValidationStatus('invalid');
-                setLastError(result.error || 'Validation failed');
-            } else {
-                setValidationStatus('error');
-                setLastError(result.error || 'Unknown error');
+            // Open modal to show detailed results if validation failed
+            if (result.status !== 'valid') {
+                onOpen();
             }
         } catch (error) {
             console.error('Validation error:', error);
-            setValidationStatus('error');
-            setLastError('Failed to run validation');
+            setValidationResult({
+                channelId,
+                status: 'error',
+                timestamp: Date.now(),
+                error: 'Failed to run validation',
+                details: {
+                    endpoint,
+                    organizationId,
+                    duration: 0,
+                    tests: [],
+                },
+            });
         } finally {
             setIsValidating(false);
         }
     };
 
+    const getTestsSummary = () => {
+        if (!validationResult?.details?.tests) return null;
+        const passed = validationResult.details.tests.filter((t) => t.success).length;
+        const total = validationResult.details.tests.length;
+        return `${passed}/${total} tests`;
+    };
+
     return (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {validationStatus && (
-                <Tooltip label={lastError} isDisabled={!lastError}>
-                    <div>
-                        <ValidationStatusBadge status={validationStatus} />
-                    </div>
-                </Tooltip>
-            )}
-            <Button
-                size="sm"
-                colorScheme="blue"
-                variant="outline"
-                onClick={handleValidate}
-                isLoading={isValidating}
-                loadingText="Validating..."
-            >
-                Validate
-            </Button>
-        </div>
+        <>
+            <HStack spacing={2}>
+                {validationResult && (
+                    <HStack spacing={2}>
+                        <ValidationStatusBadge status={validationResult.status} />
+                        {validationResult.details?.tests && validationResult.details.tests.length > 0 && (
+                            <Text fontSize="xs" color="gray.600">
+                                {getTestsSummary()}
+                            </Text>
+                        )}
+                        {validationResult.status !== 'valid' && (
+                            <Button size="xs" variant="link" onClick={onOpen} color="blue.500">
+                                View Details
+                            </Button>
+                        )}
+                    </HStack>
+                )}
+                <Button
+                    size="sm"
+                    colorScheme="blue"
+                    variant="outline"
+                    onClick={handleValidate}
+                    isLoading={isValidating}
+                    loadingText="Validating..."
+                >
+                    Validate
+                </Button>
+            </HStack>
+
+            <Modal isOpen={isOpen} onClose={onClose} size="xl">
+                <ModalOverlay />
+                <ModalContent>
+                    <ModalHeader>Validation Results</ModalHeader>
+                    <ModalCloseButton />
+                    <ModalBody pb={6}>
+                        {validationResult && <DetailedValidationResult result={validationResult} />}
+                    </ModalBody>
+                </ModalContent>
+            </Modal>
+        </>
     );
 }

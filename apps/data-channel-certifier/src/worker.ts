@@ -1,10 +1,8 @@
 import DataChannelRegistrarWorker from '@catalyst/data_channel_registrar/src/worker';
 import { WorkerEntrypoint } from 'cloudflare:workers';
-import { ValidationReport, ValidationResult } from './schemas';
-import { ValidationEngine, ValidationEnv, ValidationRequest } from './validation-engine';
-import IssuedJWTRegistryWorker from '../../issued-jwt-registry/src';
-import JWTWorker from '@catalyst/authx_token_api/src';
-export { ValidationReport, ValidationResult };
+import type { ValidationReport, ValidationResult, ValidationRequest } from '@catalyst/schemas';
+import { ValidationEngine, type ValidationEnv } from './validation-engine';
+
 /**
  * Data Channel Certifier Service
  *
@@ -12,12 +10,7 @@ export { ValidationReport, ValidationResult };
  * Runs on 15-minute cron schedule to certify all accessible data channels.
  * Updates certification status through data_channel_registrar service.
  */
-export interface DataChannelCertifierWorkerEnv {
-  DATA_CHANNEL_REGISTRAR: Service<DataChannelRegistrarWorker>;
-  AUTHX_TOKEN_API: Service<JWTWorker>;
-  ISSUED_JWT_REGISTRY: Service<IssuedJWTRegistryWorker>;
-}
-export default class DataChannelCertifierWorker extends WorkerEntrypoint<DataChannelCertifierWorkerEnv> {
+export default class DataChannelCertifierWorker extends WorkerEntrypoint<Env> {
   /**
    * RPC-only: disable public HTTP endpoints
    */
@@ -151,6 +144,8 @@ export default class DataChannelCertifierWorker extends WorkerEntrypoint<DataCha
         details: {
           endpoint: request.endpoint,
           organizationId: request.organizationId,
+          duration: 0,
+          tests: [],
         },
       };
     }
