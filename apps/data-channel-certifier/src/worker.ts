@@ -1,4 +1,3 @@
-import DataChannelRegistrarWorker from '@catalyst/data_channel_registrar/src/worker';
 import { WorkerEntrypoint } from 'cloudflare:workers';
 import type { ValidationReport, ValidationResult, ValidationRequest } from '@catalyst/schemas';
 import { ValidationEngine, type ValidationEnv } from './validation-engine';
