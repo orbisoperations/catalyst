@@ -260,13 +260,13 @@ export class ValidationEngine {
     expectSuccess: boolean
   ): Promise<{ accepted: boolean; statusCode?: number; error?: string }> {
     const testType = token ? (token === 'invalid.jwt.token' ? 'invalid' : 'valid') : 'none';
-    
+
     // Validate endpoint URL format before making request
     try {
       const url = new URL(endpoint);
-      
+
       // Check for common URL format issues
-      if (!url.hostname || url.hostname.includes('-') && !url.hostname.includes('.')) {
+      if (!url.hostname || (url.hostname.includes('-') && !url.hostname.includes('.'))) {
         console.error(`[ValidationEngine:Test] Malformed endpoint URL - missing domain`, {
           endpoint,
           hostname: url.hostname,
@@ -319,12 +319,28 @@ export class ValidationEngine {
         testType,
       });
 
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(query),
-        signal: AbortSignal.timeout(10000), // 10 second timeout
-      });
+      let response: Response;
+      try {
+        response = await fetch(endpoint, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(query),
+          signal: AbortSignal.timeout(10000), // 10 second timeout
+        });
+      } catch (fetchError) {
+        console.error(`[ValidationEngine:Test] Fetch request failed`, {
+          endpoint,
+          testType,
+          error: fetchError instanceof Error ? fetchError.message : 'Unknown fetch error',
+          errorName: fetchError instanceof Error ? fetchError.name : 'Unknown',
+          stack: fetchError instanceof Error ? fetchError.stack : undefined,
+        });
+
+        return {
+          accepted: false,
+          error: `Fetch request failed: ${fetchError instanceof Error ? fetchError.message : 'Unknown error'}`,
+        };
+      }
 
       console.log(`[ValidationEngine:Test] Received response`, {
         endpoint,
