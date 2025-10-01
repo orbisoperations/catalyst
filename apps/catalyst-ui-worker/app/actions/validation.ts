@@ -1,16 +1,11 @@
 'use server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
-import type { ValidationResult } from '@catalyst/schemas';
-import type { User } from '@catalyst/schemas';
+import type { ValidationResult, User, CloudflareEnv } from '@catalyst/schemas';
+import { getAuthzed, getCertifier, getUserCache } from '@catalyst/schemas';
 import { cookies } from 'next/headers';
 
-function getEnv() {
+function getEnv(): CloudflareEnv {
     return getCloudflareContext().env as CloudflareEnv;
-}
-
-function getCertifier() {
-    // Service binding to data-channel-certifier
-    return getEnv().DATA_CHANNEL_CERTIFIER as Service<DataChannelCertifierWorker>;
 }
 
 export async function canUserValidateChannels(): Promise<boolean> {
@@ -24,14 +19,16 @@ export async function canUserValidateChannels(): Promise<boolean> {
         }
 
         // Validate the token and get user details
-        const user: User | undefined = (await env.USER_CREDS_CACHE.getUser(cfToken)) as User | undefined;
+        const userCache = getUserCache(env);
+        const user: User | undefined = (await userCache.getUser(cfToken)) as User | undefined;
         if (!user) {
             return false;
         }
 
         // Check if user has data_channel_update permission (data custodian or admin)
         // This checks create, update, and delete permissions
-        const hasPermission = await env.AUTHX_AUTHZED_API.canCreateUpdateDeleteDataChannel(user.orgId, user.userId);
+        const authzed = getAuthzed(env);
+        const hasPermission = await authzed.canCreateUpdateDeleteDataChannel(user.orgId, user.userId);
 
         return hasPermission;
     } catch (error) {
@@ -41,7 +38,6 @@ export async function canUserValidateChannels(): Promise<boolean> {
 }
 
 export async function validateChannel(channelId: string, endpoint: string, organization: string) {
-    const certifier = getCertifier();
     const env = getEnv();
 
     try {
@@ -52,14 +48,16 @@ export async function validateChannel(channelId: string, endpoint: string, organ
         }
 
         // Validate the token and get user details
-        const user: User | undefined = (await env.USER_CREDS_CACHE.getUser(cfToken)) as User | undefined;
+        const userCache = getUserCache(env);
+        const user: User | undefined = (await userCache.getUser(cfToken)) as User | undefined;
         if (!user) {
             throw new Error('Unauthorized: Invalid authentication token');
         }
 
         // Check if user has data_channel_update permission (data custodian or admin)
         // This checks create, update, and delete permissions
-        const hasPermission = await env.AUTHX_AUTHZED_API.canCreateUpdateDeleteDataChannel(user.orgId, user.userId);
+        const authzed = getAuthzed(env);
+        const hasPermission = await authzed.canCreateUpdateDeleteDataChannel(user.orgId, user.userId);
 
         if (!hasPermission) {
             throw new Error('Unauthorized: You must have data custodian permissions to validate channels');
@@ -71,6 +69,7 @@ export async function validateChannel(channelId: string, endpoint: string, organ
         }
 
         // Call the RPC method directly via service binding
+        const certifier = getCertifier(env);
         const result = await certifier.validateChannel({
             channelId,
             endpoint,

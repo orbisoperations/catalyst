@@ -1,17 +1,16 @@
 'use server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { IssuedJWTRegistry } from '@catalyst/schema_zod';
-import IssuedJWTRegistryWorker from '@catalyst/issued-jwt-registry/src';
-function getEnv() {
+import { CloudflareEnv, getJWTRegistry } from '@catalyst/schemas';
+
+function getEnv(): CloudflareEnv {
     return getCloudflareContext().env as CloudflareEnv;
-}
-function getIJWT() {
-    return getEnv().ISSUED_JWT_WORKER as Service<IssuedJWTRegistryWorker>;
 }
 
 export async function listIJWTRegistry(token: string) {
-    const matcher = getIJWT();
-    const resp = await matcher.list({ cfToken: token });
+    const env = getEnv();
+    const registry = getJWTRegistry(env);
+    const resp = await registry.list({ cfToken: token });
     if (!resp.success) {
         throw new Error('list ijwt registry failed');
     }
@@ -19,8 +18,9 @@ export async function listIJWTRegistry(token: string) {
 }
 
 export async function getIJWTRegistry(token: string, id: string) {
-    const matcher = getIJWT();
-    const getResult = await matcher.get({ cfToken: token }, id);
+    const env = getEnv();
+    const registry = getJWTRegistry(env);
+    const getResult = await registry.get({ cfToken: token }, id);
     if (!getResult.success) {
         throw new Error('get ijwt registry failed');
     }
@@ -28,8 +28,9 @@ export async function getIJWTRegistry(token: string, id: string) {
 }
 
 export async function createIJWTRegistry(token: string, data: Omit<IssuedJWTRegistry, 'id'>) {
-    const matcher = getIJWT();
-    const resp = await matcher.create({ cfToken: token }, data);
+    const env = getEnv();
+    const registry = getJWTRegistry(env);
+    const resp = await registry.create({ cfToken: token }, data);
     if (!resp.success) {
         throw new Error('create ijwt registry failed');
     }
@@ -37,8 +38,9 @@ export async function createIJWTRegistry(token: string, data: Omit<IssuedJWTRegi
 }
 
 export async function updateIJWTRegistry(token: string, data: IssuedJWTRegistry) {
-    const matcher = getIJWT();
-    const resp = await matcher.update({ cfToken: token }, data);
+    const env = getEnv();
+    const registry = getJWTRegistry(env);
+    const resp = await registry.update({ cfToken: token }, data);
     if (!resp.success) {
         throw new Error('update ijwt registry failed');
     }
@@ -46,8 +48,9 @@ export async function updateIJWTRegistry(token: string, data: IssuedJWTRegistry)
 }
 
 export async function deleteIJWTRegistry(token: string, id: string) {
-    const matcher = getIJWT();
-    const resp = await matcher.delete({ cfToken: token }, id);
+    const env = getEnv();
+    const registry = getJWTRegistry(env);
+    const resp = await registry.delete({ cfToken: token }, id);
     if (!resp) {
         throw new Error('delete ijwt registry failed');
     }

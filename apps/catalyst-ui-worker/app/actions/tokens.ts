@@ -1,16 +1,14 @@
 'use server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { JWTRequest } from '../types';
-import { DEFAULT_STANDARD_DURATIONS } from '@catalyst/schema_zod';
-import AuthxTokenApiWorker from '@catalyst/authx_token_api/src';
-function getEnv() {
+import { DEFAULT_STANDARD_DURATIONS, CloudflareEnv, getTokenAPI } from '@catalyst/schemas';
+
+function getEnv(): CloudflareEnv {
     return getCloudflareContext().env as CloudflareEnv;
 }
-function getAuthx() {
-    return getEnv().AUTHX_TOKEN_API as Service<AuthxTokenApiWorker>;
-}
 export async function getPublicKey() {
-    const tokens = getAuthx();
+    const env = getEnv();
+    const tokens = getTokenAPI(env);
 
     return await tokens.getPublicKey();
 }
@@ -19,10 +17,11 @@ export async function getPublicKey() {
  * WARNING - below is an admin function and will invalidate all active tokens
  */
 export async function rotateJWTKeyMaterial(cfToken: string) {
+    const env = getEnv();
     const tokenObject = {
         cfToken: cfToken,
     };
-    const tokens = getAuthx();
+    const tokens = getTokenAPI(env);
 
     return await tokens.rotateKey(tokenObject);
 }
@@ -38,10 +37,11 @@ export async function signJWT(
     },
     cfToken: string
 ) {
+    const env = getEnv();
     const tokenObject = {
         cfToken: cfToken,
     };
-    const tokens = getAuthx();
+    const tokens = getTokenAPI(env);
     if (expiration.unit === 'days' && expiration.value > 365) {
         throw new Error('Expiration time cannot be greater than 365 days');
     }

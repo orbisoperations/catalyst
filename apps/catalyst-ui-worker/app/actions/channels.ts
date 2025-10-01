@@ -1,18 +1,15 @@
 'use server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { DataChannel } from '@catalyst/schema_zod';
-import RegistrarWorker from '@catalyst/data_channel_registrar/src/worker';
+import { CloudflareEnv, getRegistrar } from '@catalyst/schemas';
 
-function getEnv() {
+function getEnv(): CloudflareEnv {
     return getCloudflareContext().env as CloudflareEnv;
 }
 
-function getRegistar() {
-    return getEnv().CATALYST_DATA_CHANNEL_REGISTRAR_API as Service<RegistrarWorker>;
-}
-
 export async function createDataChannel(formData: FormData, token: string) {
-    const api = getRegistar();
+    const env = getEnv();
+    const api = getRegistrar(env);
     const tokenObject = {
         cfToken: token,
     };
@@ -40,7 +37,8 @@ export async function createDataChannel(formData: FormData, token: string) {
 }
 
 export async function listChannels(token: string) {
-    const api = getRegistar();
+    const env = getEnv();
+    const api = getRegistrar(env);
 
     const tokenObject = {
         cfToken: token,
@@ -59,7 +57,8 @@ export async function listPartnersChannels(token: string, partnerId: string) {
 }
 
 export async function getChannel(channelId: string, token: string) {
-    const api = getRegistar();
+    const env = getEnv();
+    const api = getRegistrar(env);
     const tokenObject = {
         cfToken: token,
     };
@@ -72,7 +71,8 @@ export async function getChannel(channelId: string, token: string) {
 }
 
 export async function updateChannel(formData: FormData, token: string) {
-    const api = getRegistar();
+    const env = getEnv();
+    const api = getRegistrar(env);
     const tokenObject = {
         cfToken: token,
     };
@@ -98,7 +98,8 @@ export async function updateChannel(formData: FormData, token: string) {
 }
 
 export async function handleSwitch(channelId: string, accessSwitch: boolean, token: string) {
-    const api = getRegistar();
+    const env = getEnv();
+    const api = getRegistrar(env);
     const tokenObject = {
         cfToken: token,
     };
@@ -116,7 +117,8 @@ export async function handleSwitch(channelId: string, accessSwitch: boolean, tok
 }
 
 export async function deleteChannel(channelID: string, token: string) {
-    const api = getRegistar();
+    const env = getEnv();
+    const api = getRegistrar(env);
     const tokenObject = {
         cfToken: token,
     };
