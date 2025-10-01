@@ -7,6 +7,7 @@
   "type": "module",
   "scripts": {
     "dev": "wrangler dev",
+    "build": "wrangler build",
     "deploy": "wrangler deploy",
     "deploy:preview": "wrangler deploy --env preview",
     "deploy:staging": "wrangler deploy --env staging",
