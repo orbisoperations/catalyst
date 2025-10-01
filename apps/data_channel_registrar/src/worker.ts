@@ -1,4 +1,3 @@
-import { DurableObject, WorkerEntrypoint } from 'cloudflare:workers';
 import {
   DataChannel,
   DataChannelActionResponse,
@@ -7,6 +6,7 @@ import {
   Token,
   User,
 } from '@catalyst/schema_zod';
+import { DurableObject, WorkerEntrypoint } from 'cloudflare:workers';
 import { Env } from './env';
 
 export default class RegistrarWorker extends WorkerEntrypoint<Env> {
@@ -205,6 +205,12 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
     });
   }
 
+  /**
+   * List data channels filtered by user permissions
+   * @param doNamespace - The Durable Object namespace to query (typically 'default')
+   * @param token - User token for authentication and permission filtering
+   * @returns DataChannelActionResponse with filtered list of channels user can access
+   */
   async list(doNamespace: string, token: Token) {
     const { DO } = this.env;
     const doId = DO.idFromName(doNamespace);
@@ -228,6 +234,33 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
       success: true,
       data: listWithPerms,
     });
+  }
+
+  /**
+   * List all channels without permission filtering - for system services only
+   * Used by data-channel-certifier for scheduled validation
+   * @param doNamespace - The Durable Object namespace to query (defaults to 'default')
+   * @param filterByAccessSwitch - When true, return only channels with accessSwitch enabled
+   * @returns Array of all DataChannels in the namespace, or null on error
+   * @warning This method bypasses permission checks - only call from trusted system services
+   */
+  async listAll(
+    doNamespace: string = 'default',
+    filterByAccessSwitch: boolean = false,
+  ): Promise<DataChannel[] | null> {
+    try {
+      const { DO } = this.env;
+      const doId = DO.idFromName(doNamespace);
+      const stub: DurableObjectStub<Registrar> = DO.get(doId);
+      const allChannels: DataChannel[] = await stub.list(filterByAccessSwitch);
+
+      // Return all channels without permission filtering
+      // This method should only be called by trusted system services
+      return allChannels;
+    } catch (error) {
+      console.error('[RegistrarWorker] Error listing all channels:', error);
+      return null;
+    }
   }
 
   async remove(doNamespace: string, dataChannelID: string, token: Token) {

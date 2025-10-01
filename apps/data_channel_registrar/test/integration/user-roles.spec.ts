@@ -1,21 +1,31 @@
-import { env, fetchMock, SELF } from 'cloudflare:test';
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { DataChannel } from '../../../packages/schema_zod';
-import { TEST_ORG_ID, validUsers } from './utils/authUtils';
-import { clearAllAuthzedRoles, custodianCreatesDataChannel } from './utils/testUtils';
-import { generateDataChannels } from './utils/testUtils';
+import { DataChannel } from '@catalyst/schema_zod';
+import { env, SELF } from 'cloudflare:test';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { TEST_ORG_ID, validUsers } from '../utils/authUtils';
+import {
+  clearAllAuthzedRoles,
+  custodianCreatesDataChannel,
+  generateDataChannels,
+} from '../utils/testUtils';
+
+// Type the AUTHZED service properly
+const AUTHZED = env.AUTHZED as {
+  addAdminToOrg: (orgId: string, email: string) => Promise<{ entity: string } | undefined>;
+  addDataCustodianToOrg: (orgId: string, email: string) => Promise<{ entity: string } | undefined>;
+  addUserToOrg: (orgId: string, email: string) => Promise<{ entity: string } | undefined>;
+  deleteUserFromOrg: (orgId: string, email: string) => Promise<unknown>;
+  canReadFromDataChannel: (channelId: string | undefined, email: string) => Promise<boolean>;
+};
 
 // Need better mocking of the clouflare acess service on the vitest.config.ts
 // Need to mock the authzed service
 describe('Data Channel Registrar as Durable Object integration tests', () => {
   beforeAll(async () => {
-    fetchMock.activate();
-    fetchMock.disableNetConnect();
+    vi.stubGlobal('fetch', vi.fn());
   });
 
   afterAll(async () => {
-    fetchMock.deactivate();
-    fetchMock.assertNoPendingInterceptors();
+    vi.unstubAllGlobals();
     await clearAllAuthzedRoles();
   });
 
@@ -24,7 +34,7 @@ describe('Data Channel Registrar as Durable Object integration tests', () => {
 
     beforeAll(async () => {
       const user = validUsers[orgAdminToken];
-      const addAdminToOrg = await env.AUTHZED.addAdminToOrg(TEST_ORG_ID, user.email);
+      const addAdminToOrg = await AUTHZED.addAdminToOrg(TEST_ORG_ID, user.email);
       expect(addAdminToOrg).toBeDefined();
       expect(addAdminToOrg.entity).toEqual(
         `orbisops_catalyst_dev/organization:${TEST_ORG_ID}#admin@orbisops_catalyst_dev/user:${btoa(user.email)}`,
@@ -38,8 +48,12 @@ describe('Data Channel Registrar as Durable Object integration tests', () => {
       });
       expect(listDataChannels).toBeDefined();
       expect(listDataChannels.success).toBe(true);
-      expect(listDataChannels.data).toBeDefined();
-      expect(listDataChannels.data.length).toBe(0);
+      if (listDataChannels.success) {
+        const arr = Array.isArray(listDataChannels.data)
+          ? listDataChannels.data
+          : [listDataChannels.data];
+        expect(arr.length).toBe(0);
+      }
     });
 
     it('can list data channels', async () => {
@@ -54,8 +68,12 @@ describe('Data Channel Registrar as Durable Object integration tests', () => {
 
       expect(listDataChannels).toBeDefined();
       expect(listDataChannels.success).toBe(true);
-      expect(listDataChannels.data).toBeDefined();
-      expect(listDataChannels.data.length).toBe(2);
+      if (listDataChannels.success) {
+        const arr = Array.isArray(listDataChannels.data)
+          ? listDataChannels.data
+          : [listDataChannels.data];
+        expect(arr.length).toBe(2);
+      }
     });
 
     it('cannot create a data channel', async () => {
@@ -66,7 +84,9 @@ describe('Data Channel Registrar as Durable Object integration tests', () => {
         cfToken: adminToken,
       });
       expect(createResponse.success).toBe(false);
-      expect(createResponse.data).toBeUndefined();
+      if (!createResponse.success) {
+        expect('data' in createResponse).toBe(false);
+      }
 
       // assert no channel was created
       const listDataChannels = await SELF.list('default', {
@@ -74,8 +94,12 @@ describe('Data Channel Registrar as Durable Object integration tests', () => {
       });
       expect(listDataChannels).toBeDefined();
       expect(listDataChannels.success).toBe(true);
-      expect(listDataChannels.data).toBeDefined();
-      expect(listDataChannels.data.length).toBe(0);
+      if (listDataChannels.success) {
+        const arr = Array.isArray(listDataChannels.data)
+          ? listDataChannels.data
+          : [listDataChannels.data];
+        expect(arr.length).toBe(0);
+      }
     });
 
     it('cannot update a data channel', async () => {
@@ -93,16 +117,20 @@ describe('Data Channel Registrar as Durable Object integration tests', () => {
         cfToken: adminToken,
       });
       expect(updateResponse.success).toBe(false);
-      expect(updateResponse.error).toBeDefined();
+      if (!updateResponse.success) {
+        expect(updateResponse.error).toBeDefined();
+      }
 
       // assert the channel was not updated
       const readResponse = await SELF.read('default', createResponse.id, {
         cfToken: adminToken,
       });
       expect(readResponse.success).toBe(true);
-      expect(readResponse.data).toBeDefined();
-      expect(readResponse.data.name).toBe(createdDataChannel.name);
-      expect(readResponse.data.description).toBe(createdDataChannel.description);
+      if (readResponse.success) {
+        const rd = Array.isArray(readResponse.data) ? readResponse.data[0] : readResponse.data;
+        expect(rd.name).toBe(createdDataChannel.name);
+        expect(rd.description).toBe(createdDataChannel.description);
+      }
     });
 
     it('cannot delete a data channel', async () => {
@@ -114,7 +142,9 @@ describe('Data Channel Registrar as Durable Object integration tests', () => {
         cfToken: adminToken,
       });
       expect(deleteResponse.success).toBe(false);
-      expect(deleteResponse.error).toBeDefined();
+      if (!deleteResponse.success) {
+        expect(deleteResponse.error).toBeDefined();
+      }
     });
 
     it('can read data channel by id', async () => {
@@ -130,16 +160,20 @@ describe('Data Channel Registrar as Durable Object integration tests', () => {
 
       expect(listDataChannels).toBeDefined();
       expect(listDataChannels.success).toBe(true);
-      expect(listDataChannels?.data).toBeDefined();
-      expect(listDataChannels?.data).toHaveLength(1);
+      if (listDataChannels.success) {
+        const arr = Array.isArray(listDataChannels.data)
+          ? listDataChannels.data
+          : [listDataChannels.data];
+        expect(arr).toHaveLength(1);
+      }
 
       const adminToken = 'cf-org-admin-token';
       const user = validUsers[adminToken];
 
       // add permissions to the admin-user
-      const addAdminToOrg = await env.AUTHZED.addAdminToOrg(TEST_ORG_ID, user.email);
+      const addAdminToOrg = await AUTHZED.addAdminToOrg(TEST_ORG_ID, user.email);
       expect(addAdminToOrg).toBeDefined();
-      const canReadDataChannel = await env.AUTHZED.canReadFromDataChannel(
+      const canReadDataChannel = await AUTHZED.canReadFromDataChannel(
         createdDataChannel?.id,
         user.email,
       );
@@ -159,10 +193,7 @@ describe('Data Channel Registrar as Durable Object integration tests', () => {
      */
     beforeAll(async () => {
       const user = validUsers['cf-custodian-token'];
-      const addDataCustodianToOrg = await env.AUTHZED.addDataCustodianToOrg(
-        TEST_ORG_ID,
-        user.email,
-      );
+      const addDataCustodianToOrg = await AUTHZED.addDataCustodianToOrg(TEST_ORG_ID, user.email);
       expect(addDataCustodianToOrg).toBeDefined();
       expect(addDataCustodianToOrg.entity).toEqual(
         `orbisops_catalyst_dev/organization:${TEST_ORG_ID}#data_custodian@orbisops_catalyst_dev/user:${btoa(user.email)}`,
@@ -178,8 +209,10 @@ describe('Data Channel Registrar as Durable Object integration tests', () => {
       expect(listDataChannels).toBeDefined();
       expect(listDataChannels.success).toBe(true);
       if (listDataChannels.success) {
-        expect(listDataChannels.data).toBeDefined();
-        expect(listDataChannels.data).toHaveLength(0);
+        const arr = Array.isArray(listDataChannels.data)
+          ? listDataChannels.data
+          : [listDataChannels.data];
+        expect(arr.length).toBe(0);
       }
     });
     it('can CREATE a Data Channel', async () => {
@@ -214,8 +247,8 @@ describe('Data Channel Registrar as Durable Object integration tests', () => {
       expect(listResponse.success).toBe(true);
       expect(listResponse).toBeDefined();
       if (listResponse.success) {
-        expect(listResponse?.data).toBeDefined();
-        expect(listResponse?.data).toHaveLength(channelsToCreate.length);
+        const arr = Array.isArray(listResponse.data) ? listResponse.data : [listResponse.data];
+        expect(arr).toHaveLength(channelsToCreate.length);
       }
     });
 
@@ -296,8 +329,8 @@ describe('Data Channel Registrar as Durable Object integration tests', () => {
       });
       expect(listResponse.success).toBe(true);
       if (listResponse.success) {
-        expect(listResponse.data).toBeDefined();
-        expect(listResponse.data).toHaveLength(0);
+        const arr = Array.isArray(listResponse.data) ? listResponse.data : [listResponse.data];
+        expect(arr.length).toBe(0);
       }
     });
   });
@@ -310,7 +343,7 @@ describe('Data Channel Registrar as Durable Object integration tests', () => {
      */
     beforeAll(async () => {
       const user = validUsers[orgUserToken];
-      const addUserToOrg = await env.AUTHZED.addUserToOrg(TEST_ORG_ID, user.email);
+      const addUserToOrg = await AUTHZED.addUserToOrg(TEST_ORG_ID, user.email);
       expect(addUserToOrg).toBeDefined();
       expect(addUserToOrg.entity).toEqual(
         `orbisops_catalyst_dev/organization:${TEST_ORG_ID}#user@orbisops_catalyst_dev/user:${btoa(user.email)}`,
@@ -320,7 +353,7 @@ describe('Data Channel Registrar as Durable Object integration tests', () => {
     // delete the user from the org after the tests
     afterAll(async () => {
       const user = validUsers[orgUserToken];
-      const removeUserFromOrg = await env.AUTHZED.deleteUserFromOrg(TEST_ORG_ID, user.email);
+      const removeUserFromOrg = await AUTHZED.deleteUserFromOrg(TEST_ORG_ID, user.email);
 
       expect(removeUserFromOrg).toBeDefined();
     });
@@ -333,8 +366,10 @@ describe('Data Channel Registrar as Durable Object integration tests', () => {
       expect(listDataChannels).toBeDefined();
       expect(listDataChannels.success).toBe(true);
       if (listDataChannels.success) {
-        expect(listDataChannels.data).toBeDefined();
-        expect(listDataChannels.data).toHaveLength(0);
+        const arr = Array.isArray(listDataChannels.data)
+          ? listDataChannels.data
+          : [listDataChannels.data];
+        expect(arr.length).toBe(0);
       }
     });
 
@@ -364,8 +399,8 @@ describe('Data Channel Registrar as Durable Object integration tests', () => {
       });
       expect(listResponse.success).toBe(true);
       if (listResponse.success) {
-        expect(listResponse.data).toBeDefined();
-        expect(listResponse.data).toHaveLength(dataChannelToCreate.length);
+        const arr = Array.isArray(listResponse.data) ? listResponse.data : [listResponse.data];
+        expect(arr).toHaveLength(dataChannelToCreate.length);
 
         // convert from Data[] or Data => DataChannel[]
         let newList = Array.isArray(listResponse.data) ? listResponse.data : [listResponse.data];
@@ -412,8 +447,8 @@ describe('Data Channel Registrar as Durable Object integration tests', () => {
 
       expect(listResponse.success).toBe(true);
       if (listResponse.success) {
-        expect(listResponse.data).toBeDefined();
-        expect(listResponse.data).toHaveLength(1);
+        const arr = Array.isArray(listResponse.data) ? listResponse.data : [listResponse.data];
+        expect(arr.length).toBe(1);
       }
       ////////////////////////////////////////
 
@@ -438,10 +473,11 @@ describe('Data Channel Registrar as Durable Object integration tests', () => {
       const listResponse = await SELF.list('default', {
         cfToken: 'cf-custodian-token',
       });
+      expect(listResponse).toBeDefined();
       expect(listResponse.success).toBe(true);
       if (listResponse.success) {
-        expect(listResponse.data).toBeDefined();
-        expect(listResponse.data).toHaveLength(1);
+        const arr = Array.isArray(listResponse.data) ? listResponse.data : [listResponse.data];
+        expect(arr.length).toBe(1);
       }
       //////////////////////////////////////
 
@@ -475,8 +511,10 @@ describe('Data Channel Registrar as Durable Object integration tests', () => {
       expect(listDataChannels).toBeDefined();
       expect(listDataChannels.success).toBe(true);
       if (listDataChannels.success) {
-        expect(listDataChannels.data).toBeDefined();
-        expect(listDataChannels.data).toHaveLength(0);
+        const arr = Array.isArray(listDataChannels.data)
+          ? listDataChannels.data
+          : [listDataChannels.data];
+        expect(arr.length).toBe(0);
       }
     });
 
@@ -492,7 +530,8 @@ describe('Data Channel Registrar as Durable Object integration tests', () => {
       });
       expect(listResponse.success).toBe(true);
       if (listResponse.success) {
-        expect(listResponse.data).toEqual([]);
+        const arr = Array.isArray(listResponse.data) ? listResponse.data : [listResponse.data];
+        expect(arr).toEqual([]);
       }
     });
     it('cannot CREATE a data channel', async () => {
@@ -535,8 +574,8 @@ describe('Data Channel Registrar as Durable Object integration tests', () => {
 
       expect(listResponse.success).toBe(true);
       if (listResponse.success) {
-        expect(listResponse.data).toBeDefined();
-        expect(listResponse.data).toHaveLength(1);
+        const arr = Array.isArray(listResponse.data) ? listResponse.data : [listResponse.data];
+        expect(arr.length).toBe(1);
       }
       //////////////////////////////////////
       const deleteResponse = await SELF.remove('default', createdDataChannel?.id, {
@@ -561,10 +600,11 @@ describe('Data Channel Registrar as Durable Object integration tests', () => {
         cfToken: 'cf-custodian-token',
       });
 
+      expect(listResponse).toBeDefined();
       expect(listResponse.success).toBe(true);
       if (listResponse.success) {
-        expect(listResponse.data).toBeDefined();
-        expect(listResponse.data).toHaveLength(1);
+        const arr = Array.isArray(listResponse.data) ? listResponse.data : [listResponse.data];
+        expect(arr.length).toBe(1);
       }
       //////////////////////////////////////
       const updateResponse = await SELF.update('default', createdDataChannel, {
