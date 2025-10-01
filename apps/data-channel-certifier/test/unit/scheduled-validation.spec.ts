@@ -32,25 +32,15 @@ describe('Scheduled Validation', () => {
 
       await worker.scheduled();
 
-      expect(mockEnv.DATA_CHANNEL_REGISTRAR.listAll).toHaveBeenCalledWith();
+      expect(mockEnv.DATA_CHANNEL_REGISTRAR.listAll).toHaveBeenCalledWith('default', true);
       expect(consoleSpy).toHaveBeenCalledWith(
-        '[DataChannelCertifier] No channels found to validate'
+        '[DataChannelCertifier] No enabled channels to validate'
       );
     });
 
     it('should skip validation when no enabled channels exist', async () => {
-      const disabledChannels = [
-        {
-          id: 'channel-1',
-          name: 'Disabled Channel',
-          endpoint: 'https://example.com/graphql',
-          creatorOrganization: 'org-1',
-          accessSwitch: false,
-          description: 'A disabled channel',
-        },
-      ];
-
-      mockEnv.DATA_CHANNEL_REGISTRAR.listAll = vi.fn().mockResolvedValue(disabledChannels);
+      // When asking for only enabled channels, registrar returns empty array
+      mockEnv.DATA_CHANNEL_REGISTRAR.listAll = vi.fn().mockResolvedValue([]);
 
       const consoleSpy = vi.spyOn(console, 'log');
 
@@ -59,14 +49,15 @@ describe('Scheduled Validation', () => {
 
       await worker.scheduled();
 
-      expect(mockEnv.DATA_CHANNEL_REGISTRAR.listAll).toHaveBeenCalled();
+      expect(mockEnv.DATA_CHANNEL_REGISTRAR.listAll).toHaveBeenCalledWith('default', true);
       expect(consoleSpy).toHaveBeenCalledWith(
         '[DataChannelCertifier] No enabled channels to validate'
       );
     });
 
     it('should validate only enabled channels', async () => {
-      const mixedChannels = [
+      // Now the registrar only returns enabled channels when called with true flag
+      const enabledChannels = [
         {
           id: 'channel-1',
           name: 'Enabled Channel 1',
@@ -74,14 +65,6 @@ describe('Scheduled Validation', () => {
           creatorOrganization: 'org-1',
           accessSwitch: true,
           description: 'An enabled channel',
-        },
-        {
-          id: 'channel-2',
-          name: 'Disabled Channel',
-          endpoint: 'https://example2.com/graphql',
-          creatorOrganization: 'org-2',
-          accessSwitch: false,
-          description: 'A disabled channel',
         },
         {
           id: 'channel-3',
@@ -93,7 +76,7 @@ describe('Scheduled Validation', () => {
         },
       ];
 
-      mockEnv.DATA_CHANNEL_REGISTRAR.listAll = vi.fn().mockResolvedValue(mixedChannels);
+      mockEnv.DATA_CHANNEL_REGISTRAR.listAll = vi.fn().mockResolvedValue(enabledChannels);
 
       const worker = Object.create(DataChannelCertifierWorker.prototype);
       worker.env = mockEnv;
@@ -112,10 +95,10 @@ describe('Scheduled Validation', () => {
 
       await worker.scheduled();
 
-      // Should only validate the 2 enabled channels
-      expect(validateSpy).toHaveBeenCalledWith([mixedChannels[0], mixedChannels[2]]);
+      // Should validate the 2 enabled channels returned by registrar
+      expect(validateSpy).toHaveBeenCalledWith(enabledChannels);
       expect(consoleSpy).toHaveBeenCalledWith(
-        '[DataChannelCertifier] Validating 2 enabled channels (3 total)'
+        '[DataChannelCertifier] Validating 2 enabled channels'
       );
     });
 
@@ -222,12 +205,13 @@ describe('Scheduled Validation', () => {
 
       const result = await worker.validateBulkChannels();
 
-      expect(mockEnv.DATA_CHANNEL_REGISTRAR.listAll).toHaveBeenCalled();
+      expect(mockEnv.DATA_CHANNEL_REGISTRAR.listAll).toHaveBeenCalledWith('default', true);
       expect(result.totalChannels).toBe(1);
     });
 
-    it('should filter disabled channels when fetching from registrar', async () => {
-      const mixedChannels = [
+    it('should only receive enabled channels from registrar', async () => {
+      // The registrar with true flag only returns enabled channels
+      const enabledChannels = [
         {
           id: 'channel-1',
           name: 'Enabled Channel',
@@ -236,17 +220,9 @@ describe('Scheduled Validation', () => {
           accessSwitch: true,
           description: 'Enabled',
         },
-        {
-          id: 'channel-2',
-          name: 'Disabled Channel',
-          endpoint: 'https://example2.com/graphql',
-          creatorOrganization: 'org-2',
-          accessSwitch: false,
-          description: 'Disabled',
-        },
       ];
 
-      mockEnv.DATA_CHANNEL_REGISTRAR.listAll = vi.fn().mockResolvedValue(mixedChannels);
+      mockEnv.DATA_CHANNEL_REGISTRAR.listAll = vi.fn().mockResolvedValue(enabledChannels);
 
       // Mock fetch for the validation
       global.fetch = vi.fn().mockResolvedValue({
@@ -258,7 +234,8 @@ describe('Scheduled Validation', () => {
 
       const result = await worker.validateBulkChannels();
 
-      // Should only validate the enabled channel
+      // Should validate the enabled channel returned by registrar
+      expect(mockEnv.DATA_CHANNEL_REGISTRAR.listAll).toHaveBeenCalledWith('default', true);
       expect(result.totalChannels).toBe(1);
     });
   });
