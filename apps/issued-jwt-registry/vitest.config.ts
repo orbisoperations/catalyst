@@ -1,53 +1,20 @@
-import { defineWorkersConfig } from '@cloudflare/vitest-pool-workers/config';
-import path from 'node:path';
+import { defineConfig } from 'vitest/config';
+import { defineWorkersProject } from '@cloudflare/vitest-pool-workers/config';
+import path from 'path';
 
-export default defineWorkersConfig({
-	esbuild: {
-		target: 'ES2022',
-	},
-	optimizeDeps: {
-		entries: ['@graphql-tools/executor-http'],
-	},
-	clearScreen: false,
-	logLevel: 'info',
+export default defineConfig({
 	test: {
-		globalSetup: './global-setup.ts',
-		poolOptions: {
-			workers: {
-				singleWorker: true,
-				wrangler: { configPath: './wrangler.jsonc' },
-				miniflare: {
-					unsafeEphemeralDurableObjects: true,
-					workers: [
-						{
-							name: 'user-credentials-cache',
-							modules: true,
-							modulesRoot: path.resolve('../user-credentials-cache'),
-							scriptPath: path.resolve('../user-credentials-cache/dist/index.js'),
-							compatibilityDate: '2025-04-01',
-							compatibilityFlags: ['nodejs_compat'],
-							entrypoint: 'UserCredsCacheWorker',
-							unsafeEphemeralDurableObjects: true,
-							durableObjects: {
-								CACHE: 'UserCredsCache',
-							},
-						},
-					],
-				},
-			},
-		},
 		coverage: {
-			provider: 'istanbul', // Specified istanbul
-			reporter: ['text', 'html', 'json-summary', 'lcov'], // Added lcov for external services
-			reportsDirectory: './coverage', // Default output directory
-			include: ['src/**/*.{ts,js}'], // Adjust if your source files are elsewhere
+			provider: 'istanbul',
+			reporter: ['text', 'html', 'json-summary', 'lcov'],
+			reportsDirectory: './coverage',
+			include: ['src/**/*.{ts,js}'],
 			exclude: [
-				// Common exclusions
 				'**/node_modules/**',
 				'**/dist/**',
 				'**/test/**',
 				'**/tests/**',
-				'**/*.{test,spec}.?(c|m)[jt]s?(x)', // Exclude test file patterns
+				'**/*.{test,spec}.?(c|m)[jt]s?(x)',
 				'**/wrangler.jsonc',
 				'**/vitest.config.*',
 				'**/.wrangler/**',
@@ -55,5 +22,69 @@ export default defineWorkersConfig({
 				'**/global-setup.ts',
 			],
 		},
+		// Modern projects pattern instead of deprecated workspace
+		projects: [
+			// Unit Tests - Fast, isolated, direct method testing
+			defineWorkersProject({
+				test: {
+					name: 'unit',
+					include: ['tests/unit/**/*.test.ts'],
+					poolOptions: {
+						workers: {
+							main: 'src/index.ts',
+							singleWorker: true,
+							isolatedStorage: true,
+							miniflare: {
+								compatibilityDate: '2025-04-01',
+								compatibilityFlags: ['nodejs_compat'],
+								durableObjects: {
+									ISSUED_JWT_REGISTRY_DO: 'I_JWT_Registry_DO',
+								},
+							},
+						},
+					},
+				},
+			}),
+
+			// Integration Tests - Full service bindings and auxiliary workers
+			defineWorkersProject({
+				test: {
+					name: 'integration',
+					include: ['tests/integration/**/*.spec.ts'],
+					globalSetup: './global-setup.ts',
+					poolOptions: {
+						workers: {
+							wrangler: { configPath: './wrangler.jsonc' },
+							main: 'src/index.ts',
+							singleWorker: true,
+							isolatedStorage: true,
+							miniflare: {
+								compatibilityDate: '2025-04-01',
+								compatibilityFlags: ['nodejs_compat'],
+								unsafeEphemeralDurableObjects: true,
+								durableObjects: {
+									ISSUED_JWT_REGISTRY_DO: 'I_JWT_Registry_DO',
+								},
+								workers: [
+									{
+										name: 'user-credentials-cache',
+										modules: true,
+										modulesRoot: path.resolve('../user-credentials-cache'),
+										scriptPath: path.resolve('../user-credentials-cache/dist/index.js'),
+										compatibilityDate: '2025-04-01',
+										compatibilityFlags: ['nodejs_compat'],
+										entrypoint: 'UserCredsCacheWorker',
+										unsafeEphemeralDurableObjects: true,
+										durableObjects: {
+											CACHE: 'UserCredsCache',
+										},
+									},
+								],
+							},
+						},
+					},
+				},
+			}),
+		],
 	},
 });

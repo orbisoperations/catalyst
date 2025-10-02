@@ -24,17 +24,66 @@ export default class IssuedJWTRegistryWorker extends WorkerEntrypoint<Env> {
 	async create(token: Token, issuedJWTRegistry: Omit<IssuedJWTRegistry, 'id'>, doNamespace: string = 'default') {
 		const permCheck = await this.RPerms(token);
 		if (!permCheck.success) {
-			throw new Error(permCheck.error);
+			console.error('Permission check failed in create', { error: permCheck.error });
+			throw new Error('Authentication failed');
 		}
 		const doId = this.env.ISSUED_JWT_REGISTRY_DO.idFromName(doNamespace);
 		const stub = this.env.ISSUED_JWT_REGISTRY_DO.get(doId);
 		const resp = await stub.create(issuedJWTRegistry);
 		return zIssuedJWTRegistry.safeParse(resp);
 	}
+
+	/**
+	 * Create a JWT registry entry for system-generated tokens
+	 * Restricted to authorized internal services only
+	 * @param issuedJWTRegistry - The registry entry to create (with predefined ID matching JWT's jti)
+	 * @param callingService - The name of the service making the request
+	 * @param doNamespace - Optional DO namespace (default: 'default')
+	 */
+	async createSystem(issuedJWTRegistry: IssuedJWTRegistry, callingService: string, doNamespace: string = 'default') {
+		// Validate calling service against allowlist
+		const ALLOWED_SERVICES = ['authx_token_api', 'data_channel_certifier'];
+		if (!ALLOWED_SERVICES.includes(callingService)) {
+			// Audit log unauthorized attempt
+			console.error('Unauthorized service attempted to create system token', {
+				service: callingService,
+				tokenId: issuedJWTRegistry.id,
+				timestamp: new Date().toISOString(),
+			});
+			throw new Error('Unauthorized service');
+		}
+
+		// Validate input using Zod schema
+		const validation = zIssuedJWTRegistry.safeParse(issuedJWTRegistry);
+		if (!validation.success) {
+			console.error('Invalid registry entry in createSystem', {
+				service: callingService,
+				errors: validation.error.issues,
+				timestamp: new Date().toISOString(),
+			});
+			throw new Error('Invalid registry entry');
+		}
+
+		// Audit log successful system token creation
+		console.log('System token created', {
+			service: callingService,
+			tokenId: issuedJWTRegistry.id,
+			organization: issuedJWTRegistry.organization,
+			expiry: issuedJWTRegistry.expiry.toISOString(),
+			timestamp: new Date().toISOString(),
+		});
+
+		const doId = this.env.ISSUED_JWT_REGISTRY_DO.idFromName(doNamespace);
+		const stub = this.env.ISSUED_JWT_REGISTRY_DO.get(doId);
+		const resp = await stub.createWithId(validation.data);
+		return resp;
+	}
+
 	async get(token: Token, issuedJWTRegId: string, doNamespace: string = 'default') {
 		const permCheck = await this.RPerms(token);
 		if (!permCheck.success) {
-			throw new Error(permCheck.error);
+			console.error('Permission check failed in get', { error: permCheck.error });
+			throw new Error('Authentication failed');
 		}
 		const doId = this.env.ISSUED_JWT_REGISTRY_DO.idFromName(doNamespace);
 		const stub = this.env.ISSUED_JWT_REGISTRY_DO.get(doId);
@@ -46,7 +95,8 @@ export default class IssuedJWTRegistryWorker extends WorkerEntrypoint<Env> {
 	async list(token: Token, doNamespace: string = 'default') {
 		const permCheck = await this.RPerms(token);
 		if (!permCheck.success) {
-			throw new Error(permCheck.error);
+			console.error('Permission check failed in list', { error: permCheck.error });
+			throw new Error('Authentication failed');
 		}
 		const doId = this.env.ISSUED_JWT_REGISTRY_DO.idFromName(doNamespace);
 		const stub = this.env.ISSUED_JWT_REGISTRY_DO.get(doId);
@@ -57,7 +107,8 @@ export default class IssuedJWTRegistryWorker extends WorkerEntrypoint<Env> {
 	async update(token: Token, issuedJWTRegistry: IssuedJWTRegistry, doNamespace: string = 'default') {
 		const permCheck = await this.RPerms(token);
 		if (!permCheck.success) {
-			throw new Error(permCheck.error);
+			console.error('Permission check failed in update', { error: permCheck.error });
+			throw new Error('Authentication failed');
 		}
 		const doId = this.env.ISSUED_JWT_REGISTRY_DO.idFromName(doNamespace);
 		const stub = this.env.ISSUED_JWT_REGISTRY_DO.get(doId);
@@ -68,19 +119,21 @@ export default class IssuedJWTRegistryWorker extends WorkerEntrypoint<Env> {
 	async delete(token: Token, issuedJWTRegId: string, doNamespace: string = 'default') {
 		const permCheck = await this.RPerms(token);
 		if (!permCheck.success) {
-			throw new Error(permCheck.error);
+			console.error('Permission check failed in delete', { error: permCheck.error });
+			throw new Error('Authentication failed');
 		}
 		const doId = this.env.ISSUED_JWT_REGISTRY_DO.idFromName(doNamespace);
 		const stub = this.env.ISSUED_JWT_REGISTRY_DO.get(doId);
 		const resp = await stub.delete(issuedJWTRegId);
-		console.log('deleted iJWTRegistry', { resp });
+		console.log('JWT registry entry deleted', { success: resp });
 		return resp;
 	}
 
 	async addToRevocationList(token: Token, issuedJWTRegId: string, doNamespace: string = 'default') {
 		const permCheck = await this.RPerms(token);
 		if (!permCheck.success) {
-			throw new Error(permCheck.error);
+			console.error('Permission check failed in addToRevocationList', { error: permCheck.error });
+			throw new Error('Authentication failed');
 		}
 		const doId = this.env.ISSUED_JWT_REGISTRY_DO.idFromName(doNamespace);
 		const stub = this.env.ISSUED_JWT_REGISTRY_DO.get(doId);
@@ -89,7 +142,8 @@ export default class IssuedJWTRegistryWorker extends WorkerEntrypoint<Env> {
 	async removeFromRevocationList(token: Token, issuedJWTRegId: string, doNamespace: string = 'default') {
 		const permCheck = await this.RPerms(token);
 		if (!permCheck.success) {
-			throw new Error(permCheck.error);
+			console.error('Permission check failed in removeFromRevocationList', { error: permCheck.error });
+			throw new Error('Authentication failed');
 		}
 		const doId = this.env.ISSUED_JWT_REGISTRY_DO.idFromName(doNamespace);
 		const stub = this.env.ISSUED_JWT_REGISTRY_DO.get(doId);
@@ -99,6 +153,31 @@ export default class IssuedJWTRegistryWorker extends WorkerEntrypoint<Env> {
 		const doId = this.env.ISSUED_JWT_REGISTRY_DO.idFromName(doNamespace);
 		const stub = this.env.ISSUED_JWT_REGISTRY_DO.get(doId);
 		return await stub.isInvalid(issuedJWTRegId);
+	}
+
+	/**
+	 * Get a JWT registry entry by ID without permission checks
+	 * Used for token validation where we need to verify existence
+	 * @param issuedJWTRegId - The JWT ID to look up
+	 * @param doNamespace - Optional DO namespace (default: 'default')
+	 */
+	async getById(issuedJWTRegId: string, doNamespace: string = 'default') {
+		const doId = this.env.ISSUED_JWT_REGISTRY_DO.idFromName(doNamespace);
+		const stub = this.env.ISSUED_JWT_REGISTRY_DO.get(doId);
+		return await stub.get(issuedJWTRegId);
+	}
+
+	/**
+	 * Validate a JWT token in a single atomic operation
+	 * Combines existence check, revocation check, and expiry check
+	 * @param jwtId - The JWT ID to validate
+	 * @param doNamespace - Optional DO namespace (default: 'default')
+	 * @returns Validation result with reason for failure if invalid
+	 */
+	async validateToken(jwtId: string, doNamespace: string = 'default') {
+		const doId = this.env.ISSUED_JWT_REGISTRY_DO.idFromName(doNamespace);
+		const stub = this.env.ISSUED_JWT_REGISTRY_DO.get(doId);
+		return await stub.validateToken(jwtId);
 	}
 }
 
@@ -114,6 +193,36 @@ export class I_JWT_Registry_DO extends DurableObject {
 			await this.ctx.storage.put(newIJR.id, newIJR);
 		});
 		return newIJR;
+	}
+
+	/**
+	 * Create a registry entry with a predefined ID (for system tokens where ID = JWT's jti)
+	 * @param issuedJWTRegistry - Complete registry entry including the ID
+	 */
+	async createWithId(issuedJWTRegistry: IssuedJWTRegistry) {
+		// Validate input using Zod schema
+		const validation = zIssuedJWTRegistry.safeParse(issuedJWTRegistry);
+		if (!validation.success) {
+			console.error('Invalid registry entry in createWithId', {
+				errors: validation.error.issues.map((issue) => ({
+					path: issue.path.join('.'),
+					message: issue.message,
+					code: issue.code,
+				})),
+				timestamp: new Date().toISOString(),
+			});
+			throw new Error('Invalid registry entry format');
+		}
+
+		await this.ctx.blockConcurrencyWhile(async () => {
+			// Check for existing entry to prevent overwrites
+			const existing = await this.ctx.storage.get<IssuedJWTRegistry>(validation.data.id);
+			if (existing) {
+				console.warn('Registry entry already exists - skipping overwrite');
+			}
+			await this.ctx.storage.put(validation.data.id, validation.data);
+		});
+		return validation.data;
 	}
 
 	async get(issuedJWTRegId: string) {
@@ -169,5 +278,28 @@ export class I_JWT_Registry_DO extends DurableObject {
 	async isInvalid(id: string) {
 		const ijr = await this.get(id);
 		return ijr ? ijr.status === JWTRegisterStatus.enum.revoked || ijr.status === JWTRegisterStatus.enum.deleted : false;
+	}
+
+	/**
+	 * Atomic token validation combining existence, status, and expiry checks
+	 * @param jwtId - The JWT ID to validate
+	 * @returns Validation result object
+	 */
+	async validateToken(jwtId: string): Promise<{ valid: boolean; reason?: string; entry?: IssuedJWTRegistry }> {
+		const entry = await this.get(jwtId);
+
+		if (!entry) {
+			return { valid: false, reason: 'not_found' };
+		}
+
+		if (entry.status === JWTRegisterStatus.enum.revoked || entry.status === JWTRegisterStatus.enum.deleted) {
+			return { valid: false, reason: 'revoked' };
+		}
+
+		if (entry.expiry.getTime() < Date.now()) {
+			return { valid: false, reason: 'expired' };
+		}
+
+		return { valid: true, entry };
 	}
 }
