@@ -1,1 +1,0 @@
-{"root":["./src/index.ts","./src/commands/data-channels/create.ts","./src/commands/data-channels/delete.ts","./src/commands/data-channels/index.ts","./src/commands/data-channels/list.ts","./src/commands/data-channels/read.ts","./src/commands/data-channels/update.ts","./src/utils/config.ts","./src/utils/graphql.ts","./src/utils/tables.ts"],"errors":true,"version":"5.8.3"}

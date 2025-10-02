@@ -25,7 +25,7 @@ export interface CloudflareEnv {
     AUTHX_AUTHZED_API: Service<unknown>;
     AUTHX_TOKEN_API: Service<unknown>;
     USER_CREDS_CACHE: Service<unknown>;
-    ISSUED_JWT_WORKER: Service<unknown>;
+    ISSUED_JWT_REGISTRY: Service<unknown>;
     CATALYST_DATA_CHANNEL_REGISTRAR_API: Service<unknown>;
     DATA_CHANNEL_CERTIFIER: Service<unknown>;
     ORGANIZATION_MATCHMAKING: Service<unknown>;
@@ -47,7 +47,7 @@ export type ServiceName =
     | 'AUTHX_AUTHZED_API'
     | 'AUTHX_TOKEN_API'
     | 'USER_CREDS_CACHE'
-    | 'ISSUED_JWT_WORKER'
+    | 'ISSUED_JWT_REGISTRY'
     | 'CATALYST_DATA_CHANNEL_REGISTRAR_API'
     | 'DATA_CHANNEL_CERTIFIER'
     | 'ORGANIZATION_MATCHMAKING';
