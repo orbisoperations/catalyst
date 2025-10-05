@@ -1,8 +1,8 @@
 // test/index.spec.ts
 import { env, runInDurableObject, SELF } from 'cloudflare:test';
-import { assert, describe, expect, it, beforeEach } from 'vitest';
-import { OrgInvite, OrgInviteResponse, OrgInviteStatus } from '../../../packages/schema_zod';
-import { User } from '../../../packages/schema_zod';
+import { describe, expect, it, beforeEach } from 'vitest';
+import { OrgInvite, OrgInviteStatusSchema } from '@catalyst/schemas';
+import { User } from '@catalyst/schema_zod';
 
 const SENDER_ORGANIZATION = 'default';
 
@@ -42,16 +42,6 @@ function generateInvites(maxCount?: number) {
 	return invites;
 }
 
-// Add type guard for successful response
-function isSuccessfulResponse(response: OrgInviteResponse): response is { success: true; invite: OrgInvite | OrgInvite[] } {
-	return response.success === true;
-}
-
-// Add type guard for array of invites
-function isInviteArray(invite: OrgInvite | OrgInvite[]): invite is OrgInvite[] {
-	return Array.isArray(invite);
-}
-
 // Standardize mock user creation
 const createMockUser = (orgId: string) =>
 	({
@@ -67,44 +57,33 @@ describe('organization matchmaking worker', () => {
 		expect(worker).toBeDefined();
 	});
 
-	// send invite
+	// send invite (DO method returns entity directly)
 	it('should be able to send an invite', async () => {
 		const id = await env.ORG_MATCHMAKING.idFromName('default');
 		const stub = await env.ORG_MATCHMAKING.get(id);
 
 		const inviteToSend = generateInvites(1)[0];
-		const response: OrgInviteResponse = await stub.send(inviteToSend.sender, inviteToSend.receiver, inviteToSend.message);
+		const invite: OrgInvite = await stub.send(inviteToSend.sender, inviteToSend.receiver, inviteToSend.message);
 
-		const parsedResult = OrgInviteResponse.safeParse(response);
-		expect(parsedResult.success).toBe(true);
-
-		expect(response.success).toBe(true);
-		if (isSuccessfulResponse(response)) {
-			const inviteResponse = isInviteArray(response.invite) ? response.invite[0] : response.invite;
-			expect(inviteResponse).toBeDefined();
-		}
+		expect(invite).toBeDefined();
+		expect(invite.sender).toBe(inviteToSend.sender);
+		expect(invite.receiver).toBe(inviteToSend.receiver);
+		expect(invite.message).toBe(inviteToSend.message);
+		expect(invite.status).toBe('pending');
 	});
 
-	// test list invites
+	// test list invites (DO method returns array directly)
 	it('should be able to list invites', async () => {
 		const id = env.ORG_MATCHMAKING.idFromName('default');
 		const stub = env.ORG_MATCHMAKING.get(id);
 
 		const invite = generateInvites(1)[0];
 
-		const response: OrgInviteResponse = await stub.list(invite.sender);
+		const invites: OrgInvite[] = await stub.list(invite.sender);
 
-		// check if the response is a valid OrgInviteResponse
-		const parsedResult = OrgInviteResponse.safeParse(response);
-		expect(parsedResult.success).toBe(true);
-
-		// check if the response is a valid OrgInviteResponse
-		expect(response.success).toBe(true);
-
-		// @ts-expect-error: ts complains about the type of the invite because no check before
-		expect(response.invite).toBeInstanceOf(Array);
-		// @ts-expect-error: ts complains about the type of the invite because no check before
-		expect(response.invite.length).toBe(1);
+		// check if the response is an array
+		expect(invites).toBeInstanceOf(Array);
+		expect(invites.length).toBe(1);
 	});
 
 	// create more invites
@@ -113,42 +92,25 @@ describe('organization matchmaking worker', () => {
 		const stub = env.ORG_MATCHMAKING.get(id);
 
 		// clear the storage if any invites are present
-		await runInDurableObject(stub, async (instance, state) => {
+		await runInDurableObject(stub, async (_instance: unknown, state: DurableObjectState) => {
 			await state.storage.deleteAll();
 		});
 
 		const invites = generateInvites();
 
 		for (const invite of invites) {
-			const response: OrgInviteResponse = await stub.send(invite.sender, invite.receiver, invite.message);
-			expect(response.success).toBe(true); // check if the invite was sent successfully
+			const createdInvite: OrgInvite = await stub.send(invite.sender, invite.receiver, invite.message);
+			expect(createdInvite).toBeDefined(); // check if the invite was sent successfully
 		}
 
-		const response: OrgInviteResponse = await stub.list('default');
-		expect(response.success).toBe(true);
-
-		// @ts-expect-error: ts complains about the type of the invite because no check before
+		const senderInvites: OrgInvite[] = await stub.list('default');
 		// SENDER ORGANIZATION should have the same number of invites as the number of invites sent
-		expect(response.invite.length).toBe(invites.length);
+		expect(senderInvites.length).toBe(invites.length);
 
 		// check if all the invites exists in the mailbox of the receiver
-		if (!response.success) {
-			assert(false);
-		}
-
-		const mailboxInvites = response.invite as OrgInvite[];
-		if (!Array.isArray(mailboxInvites)) {
-			throw new Error('Expected response.invite to be an array');
-		}
-
-		for (const invite of mailboxInvites) {
-			const receiverMailbox = await stub.list(invite.receiver);
-			expect(receiverMailbox.success).toBe(true);
-			if (!receiverMailbox.success) {
-				throw new Error('Failed to list receiver mailbox');
-			}
-			const receiverInvites = receiverMailbox.invite as OrgInvite[];
-			expect(receiverInvites.length).toBe(1);
+		for (const invite of senderInvites) {
+			const receiverMailbox: OrgInvite[] = await stub.list(invite.receiver);
+			expect(receiverMailbox.length).toBe(1);
 		}
 	});
 
@@ -157,29 +119,11 @@ describe('organization matchmaking worker', () => {
 		const id = env.ORG_MATCHMAKING.idFromName('default');
 		const stub = env.ORG_MATCHMAKING.get(id);
 
-		const response = await stub.list('default');
-		const parsedResponse = OrgInviteResponse.parse(response);
-		expect(parsedResponse.success).toBe(true);
-		if (!parsedResponse.success) {
-			throw new Error('Failed to list invites');
-		}
-
-		// At this point TypeScript knows parsedResponse.success is true
-		const listInvites = Array.isArray(parsedResponse.invite) ? parsedResponse.invite : [parsedResponse.invite];
-		if (!Array.isArray(listInvites)) {
-			throw new Error('Expected response.invite to be an array');
-		}
+		const listInvites: OrgInvite[] = await stub.list('default');
+		expect(listInvites.length).toBeGreaterThan(0);
 
 		for (const invite of listInvites) {
-			const readResponse = await stub.read('default', invite.id);
-			const parsedReadResponse = OrgInviteResponse.parse(readResponse);
-			expect(parsedReadResponse.success).toBe(true);
-			if (!parsedReadResponse.success) {
-				throw new Error('Failed to read invite');
-			}
-
-			// At this point TypeScript knows parsedReadResponse.success is true
-			const readInvite = Array.isArray(parsedReadResponse.invite) ? parsedReadResponse.invite[0] : parsedReadResponse.invite;
+			const readInvite: OrgInvite = await stub.read('default', invite.id);
 			expect(readInvite.id).toStrictEqual(invite.id);
 		}
 	});
@@ -189,21 +133,17 @@ describe('organization matchmaking worker', () => {
 		const stub = env.ORG_MATCHMAKING.get(id);
 
 		// clear the storage if any invites are present
-		await runInDurableObject(stub, async (instance, state) => {
+		await runInDurableObject(stub, async (_instance: unknown, state: DurableObjectState) => {
 			await state.storage.deleteAll();
 		});
 
 		const inviteToSend = generateInvites(1)[0];
 
-		const inviteSentResponse: OrgInviteResponse = await stub.send(inviteToSend.sender, inviteToSend.receiver, inviteToSend.message);
-		expect(inviteSentResponse.success).toBe(true);
+		const createdInvite: OrgInvite = await stub.send(inviteToSend.sender, inviteToSend.receiver, inviteToSend.message);
+		expect(createdInvite).toBeDefined();
 
-		// @ts-expect-error: ts complains about the type of the invite because no check before
-		const inviteResponse = inviteSentResponse.invite;
-		expect(inviteResponse).toBeDefined();
-
-		const response: OrgInviteResponse = await stub.respond(inviteToSend.receiver, inviteResponse.id, OrgInviteStatus.enum.accepted);
-		expect(response.success).toBe(true);
+		const acceptedInvite: OrgInvite = await stub.respond(inviteToSend.receiver, createdInvite.id, OrgInviteStatusSchema.enum.accepted);
+		expect(acceptedInvite.status).toBe('accepted');
 	});
 
 	it('organization should be able to respond DECLINE to an invite', async () => {
@@ -211,33 +151,25 @@ describe('organization matchmaking worker', () => {
 		const stub = env.ORG_MATCHMAKING.get(id);
 
 		// clear the storage if any invites are present
-		await runInDurableObject(stub, async (_, state) => {
+		await runInDurableObject(stub, async (_: unknown, state: DurableObjectState) => {
 			await state.storage.deleteAll();
 		});
 
 		const inviteToSend = generateInvites(1)[0];
 
-		const inviteSentRespone: OrgInviteResponse = await stub.send(inviteToSend.sender, inviteToSend.receiver, inviteToSend.message);
-		expect(inviteSentRespone.success).toBe(true);
+		const createdInvite: OrgInvite = await stub.send(inviteToSend.sender, inviteToSend.receiver, inviteToSend.message);
+		expect(createdInvite).toBeDefined();
 
-		// @ts-expect-error: ts complains about the type of the invite because no check before
-		const inviteResponse = inviteSentRespone.invite;
-		expect(inviteResponse).toBeDefined();
+		const declinedInvite: OrgInvite = await stub.respond(inviteToSend.receiver, createdInvite.id, OrgInviteStatusSchema.enum.declined);
+		expect(declinedInvite.status).toBe('declined');
 
-		const response: OrgInviteResponse = await stub.respond(inviteToSend.receiver, inviteResponse.id, OrgInviteStatus.enum.declined);
-		expect(response.success).toBe(true);
+		// check if the invite is still in the sender's mailbox (should be removed)
+		const senderMailbox: OrgInvite[] = await stub.list(inviteToSend.sender);
+		expect(senderMailbox.length).toStrictEqual(0);
 
-		// check if the invite is still in the sender's mailbox
-		const senderMailbox: OrgInviteResponse = await stub.list(inviteToSend.sender);
-		expect(senderMailbox.success).toBe(true);
-		// @ts-expect-error: TypeScript doesn't know success is true here
-		expect(senderMailbox.invite.length).toStrictEqual(0);
-
-		// check if the invite is still in receiver's mailbox
-		const receiverMailbox: OrgInviteResponse = await stub.list(inviteToSend.receiver);
-		expect(receiverMailbox.success).toBe(true);
-		// @ts-expect-error: TypeScript doesn't know success is true here
-		expect(receiverMailbox.invite.length).toStrictEqual(0);
+		// check if the invite is still in receiver's mailbox (should be removed)
+		const receiverMailbox: OrgInvite[] = await stub.list(inviteToSend.receiver);
+		expect(receiverMailbox.length).toStrictEqual(0);
 	});
 
 	it('organization cannot respond to ACCEPT/DECLINE to their own invite', async () => {
@@ -246,20 +178,23 @@ describe('organization matchmaking worker', () => {
 		const stub = env.ORG_MATCHMAKING.get(id);
 
 		// clear the storage if any invites are present
-		await runInDurableObject(stub, async (_, state) => {
+		await runInDurableObject(stub, async (_: unknown, state: DurableObjectState) => {
 			await state.storage.deleteAll();
 		});
 
 		const inviteToSend = generateInvites(1)[0];
 
-		const inviteSentRespone: OrgInviteResponse = await stub.send(inviteToSend.sender, inviteToSend.receiver, inviteToSend.message);
+		const createdInvite: OrgInvite = await stub.send(inviteToSend.sender, inviteToSend.receiver, inviteToSend.message);
+		expect(createdInvite).toBeDefined();
 
-		// @ts-expect-error: ts complains about the type of the invite because no check before
-		const invite: OrgInvite = inviteSentRespone.invite;
-		expect(invite).toBeDefined();
-
-		const response: OrgInviteResponse = await stub.respond('default', invite.id, OrgInviteStatus.enum.accepted);
-		expect(response.success, 'Organization should not be able to respond to an invite it made; default').toBe(false);
+		// Try to accept as sender - should throw
+		try {
+			await stub.respond('default', createdInvite.id, OrgInviteStatusSchema.enum.accepted);
+			expect.fail('Should have thrown error when sender tries to accept their own invite');
+		} catch (error) {
+			expect(error).toBeDefined();
+			expect((error as Error).message).toContain('cannot accept their own invite');
+		}
 	});
 
 	// be able to toggle an invite
@@ -268,31 +203,21 @@ describe('organization matchmaking worker', () => {
 		const stub = env.ORG_MATCHMAKING.get(id);
 
 		// clear the storage if any invites are present
-		await runInDurableObject(stub, async (_, state) => {
+		await runInDurableObject(stub, async (_: unknown, state: DurableObjectState) => {
 			await state.storage.deleteAll();
 		});
 
 		const inviteToSend = generateInvites(1)[0];
 
-		const inviteSentRespone: OrgInviteResponse = await stub.send(inviteToSend.sender, inviteToSend.receiver, inviteToSend.message);
-		expect(inviteSentRespone.success).toBe(true);
-
-		// @ts-expect-error: ts complains about the type of the invite because no check before
-		const createdInvite = inviteSentRespone.invite as OrgInvite;
+		const createdInvite: OrgInvite = await stub.send(inviteToSend.sender, inviteToSend.receiver, inviteToSend.message);
+		expect(createdInvite).toBeDefined();
 
 		// get the invite from the sender's mailbox
 		// validate that status is pending
-		const readResponse: OrgInviteResponse = await stub.read(inviteToSend.sender, createdInvite.id);
-		expect(readResponse.success).toBe(true);
-		// @ts-expect-error: ts complains about the type of the invite because no check before
-		expect(readResponse.invite.status).toBe(OrgInviteStatus.enum.pending);
+		const readInvite: OrgInvite = await stub.read(inviteToSend.sender, createdInvite.id);
+		expect(readInvite.status).toBe(OrgInviteStatusSchema.enum.pending);
 
-		const toggledInviteResponse: OrgInviteResponse = await stub.togglePartnership('default', createdInvite.id);
-
-		// @ts-expect-error: ts complains about the type of the invite because no check before
-		const toggledInvite = toggledInviteResponse.invite as OrgInvite;
-		// @ts-expect-error: ts complains about the type of the invite because no check before
-		const readInvite = readResponse.invite as OrgInvite;
+		const toggledInvite: OrgInvite = await stub.togglePartnership('default', createdInvite.id);
 
 		// validate that the invite is toggled
 		expect(toggledInvite.isActive).toBe(!readInvite.isActive);
@@ -303,18 +228,17 @@ describe('organization matchmaking worker', () => {
 		const stub = env.ORG_MATCHMAKING.get(id);
 
 		// clear the storage if any invites are present
-		await runInDurableObject(stub, async (_, state) => {
+		await runInDurableObject(stub, async (_: unknown, state: DurableObjectState) => {
 			await state.storage.deleteAll();
 		});
 
-		// Try to read a non-existent invite
-		const response = await stub.read('default', 'non-existent-invite-id');
-		const parsedResponse = OrgInviteResponse.parse(response);
-
-		// Verify the response
-		expect(parsedResponse.success).toBe(false);
-		if (!parsedResponse.success) {
-			expect(parsedResponse.error).toBe('catalyst cannot find the invite');
+		// Try to read a non-existent invite - DO method should throw
+		try {
+			await stub.read('default', 'non-existent-invite-id');
+			expect.fail('Should have thrown InviteNotFoundError');
+		} catch (error) {
+			expect(error).toBeDefined();
+			expect((error as Error).message).toContain('not found');
 		}
 	});
 
@@ -323,18 +247,17 @@ describe('organization matchmaking worker', () => {
 		const stub = env.ORG_MATCHMAKING.get(id);
 
 		// clear the storage if any invites are present
-		await runInDurableObject(stub, async (_, state) => {
+		await runInDurableObject(stub, async (_: unknown, state: DurableObjectState) => {
 			await state.storage.deleteAll();
 		});
 
-		// Try to toggle a non-existent invite
-		const response = await stub.togglePartnership('default', 'non-existent-invite-id');
-		const parsedResponse = OrgInviteResponse.parse(response);
-
-		// Verify the response
-		expect(parsedResponse.success).toBe(false);
-		if (!parsedResponse.success) {
-			expect(parsedResponse.error).toBe('catalyst cannot find the invite');
+		// Try to toggle a non-existent invite - DO method should throw
+		try {
+			await stub.togglePartnership('default', 'non-existent-invite-id');
+			expect.fail('Should have thrown InviteNotFoundError');
+		} catch (error) {
+			expect(error).toBeDefined();
+			expect((error as Error).message).toContain('not found');
 		}
 	});
 
@@ -343,29 +266,22 @@ describe('organization matchmaking worker', () => {
 		const stub = env.ORG_MATCHMAKING.get(id);
 
 		// clear the storage if any invites are present
-		await runInDurableObject(stub, async (_, state) => {
+		await runInDurableObject(stub, async (_: unknown, state: DurableObjectState) => {
 			await state.storage.deleteAll();
 		});
 
 		// Create an invite
 		const inviteToSend = generateInvites(1)[0];
-		const inviteSentResponse = await stub.send(inviteToSend.sender, inviteToSend.receiver, inviteToSend.message);
-		expect(inviteSentResponse.success).toBe(true);
-		if (!inviteSentResponse.success) {
-			throw new Error('Failed to send invite');
-		}
-
-		// Get the invite ID
-		const invite = Array.isArray(inviteSentResponse.invite) ? inviteSentResponse.invite[0] : inviteSentResponse.invite;
+		const createdInvite: OrgInvite = await stub.send(inviteToSend.sender, inviteToSend.receiver, inviteToSend.message);
+		expect(createdInvite).toBeDefined();
 
 		// Try to change status back to pending (which should fail)
-		const response = await stub.respond(inviteToSend.receiver, invite.id, OrgInviteStatus.enum.pending);
-		const parsedResponse = OrgInviteResponse.parse(response);
-
-		// Verify the response
-		expect(parsedResponse.success).toBe(false);
-		if (!parsedResponse.success) {
-			expect(parsedResponse.error).toBe('cannot change back to pending');
+		try {
+			await stub.respond(inviteToSend.receiver, createdInvite.id, OrgInviteStatusSchema.enum.pending);
+			expect.fail('Should have thrown error when trying to change back to pending');
+		} catch (error) {
+			expect(error).toBeDefined();
+			expect((error as Error).message).toContain('Cannot change back to pending');
 		}
 	});
 
@@ -374,7 +290,7 @@ describe('organization matchmaking worker', () => {
 		const stub = env.ORG_MATCHMAKING.get(id);
 
 		// clear the storage if any invites are present
-		await runInDurableObject(stub, async (_, state) => {
+		await runInDurableObject(stub, async (_: unknown, state: DurableObjectState) => {
 			await state.storage.deleteAll();
 		});
 
@@ -386,55 +302,23 @@ describe('organization matchmaking worker', () => {
 
 		const sentInvites: OrgInvite[] = [];
 		for (const invite of invites) {
-			const response = await stub.send(invite.sender, invite.receiver, invite.message);
-			expect(response.success).toBe(true);
-			if (!response.success) {
-				throw new Error('Failed to send invite');
-			}
-			const sentInvite = Array.isArray(response.invite) ? response.invite[0] : response.invite;
-			sentInvites.push(sentInvite);
+			const createdInvite: OrgInvite = await stub.send(invite.sender, invite.receiver, invite.message);
+			sentInvites.push(createdInvite);
 		}
 
 		// Get the invite from both mailboxes before toggle
-		const senderReadResponse = await stub.read(invites[1].sender, sentInvites[1].id);
-		const receiverReadResponse = await stub.read(invites[1].receiver, sentInvites[1].id);
-		expect(senderReadResponse.success).toBe(true);
-		expect(receiverReadResponse.success).toBe(true);
-		if (!senderReadResponse.success || !receiverReadResponse.success) {
-			throw new Error('Failed to read invite');
-		}
-		const senderReadInvite = Array.isArray(senderReadResponse.invite) ? senderReadResponse.invite[0] : senderReadResponse.invite;
-		const receiverReadInvite = Array.isArray(receiverReadResponse.invite) ? receiverReadResponse.invite[0] : receiverReadResponse.invite;
+		const senderReadInvite: OrgInvite = await stub.read(invites[1].sender, sentInvites[1].id);
+		const receiverReadInvite: OrgInvite = await stub.read(invites[1].receiver, sentInvites[1].id);
 		expect(senderReadInvite.isActive).toBe(true);
 		expect(receiverReadInvite.isActive).toBe(true);
 
 		// Toggle the invite
-		const toggledInviteResponse = await stub.togglePartnership(invites[1].sender, sentInvites[1].id);
-		expect(toggledInviteResponse.success).toBe(true);
-		if (!toggledInviteResponse.success) {
-			throw new Error('Failed to toggle invite');
-		}
-
-		const toggledInvite = Array.isArray(toggledInviteResponse.invite) ? toggledInviteResponse.invite[0] : toggledInviteResponse.invite;
+		const toggledInvite: OrgInvite = await stub.togglePartnership(invites[1].sender, sentInvites[1].id);
 		expect(toggledInvite.isActive).toBe(false);
 
 		// Verify the toggle in both mailboxes
-		const receiverListResponse = await stub.list(invites[1].receiver);
-		const senderListResponse = await stub.list(invites[1].sender);
-
-		const parsedReceiverResponse = OrgInviteResponse.parse(receiverListResponse);
-		const parsedSenderResponse = OrgInviteResponse.parse(senderListResponse);
-
-		expect(parsedReceiverResponse.success).toBe(true);
-		expect(parsedSenderResponse.success).toBe(true);
-		if (!parsedReceiverResponse.success || !parsedSenderResponse.success) {
-			throw new Error('Failed to list invites');
-		}
-
-		const receiverMailboxInvites = Array.isArray(parsedReceiverResponse.invite)
-			? parsedReceiverResponse.invite
-			: [parsedReceiverResponse.invite];
-		const senderMailboxInvites = Array.isArray(parsedSenderResponse.invite) ? parsedSenderResponse.invite : [parsedSenderResponse.invite];
+		const receiverMailboxInvites: OrgInvite[] = await stub.list(invites[1].receiver);
+		const senderMailboxInvites: OrgInvite[] = await stub.list(invites[1].sender);
 
 		expect(receiverMailboxInvites.length).toBe(3);
 		expect(senderMailboxInvites.length).toBe(3);
@@ -462,17 +346,17 @@ describe('organization matchmaking worker', () => {
 		const stub = env.ORG_MATCHMAKING.get(id);
 
 		// clear the storage if any invites are present
-		await runInDurableObject(stub, async (_, state) => {
+		await runInDurableObject(stub, async (_: unknown, state: DurableObjectState) => {
 			await state.storage.deleteAll();
 		});
 
-		// Try to respond to a non-existent invite
-		const response = await stub.respond('default', 'non-existent-id', OrgInviteStatus.enum.accepted);
-
-		// Verify the response
-		expect(response.success).toBe(false);
-		if (!response.success) {
-			expect(response.error).toBe('catalyst cannot find the invite');
+		// Try to respond to a non-existent invite - DO method should throw
+		try {
+			await stub.respond('default', 'non-existent-id', OrgInviteStatusSchema.enum.accepted);
+			expect.fail('Should have thrown InviteNotFoundError');
+		} catch (error) {
+			expect(error).toBeDefined();
+			expect((error as Error).message).toContain('not found');
 		}
 	});
 
@@ -481,28 +365,22 @@ describe('organization matchmaking worker', () => {
 		const stub = env.ORG_MATCHMAKING.get(id);
 
 		// clear the storage if any invites are present
-		await runInDurableObject(stub, async (_, state) => {
+		await runInDurableObject(stub, async (_: unknown, state: DurableObjectState) => {
 			await state.storage.deleteAll();
 		});
 
 		// Create an invite
 		const inviteToSend = generateInvites(1)[0];
-		const inviteSentResponse = await stub.send(inviteToSend.sender, inviteToSend.receiver, inviteToSend.message);
-		expect(inviteSentResponse.success).toBe(true);
-		if (!inviteSentResponse.success) {
-			throw new Error('Failed to send invite');
-		}
+		const createdInvite: OrgInvite = await stub.send(inviteToSend.sender, inviteToSend.receiver, inviteToSend.message);
+		expect(createdInvite).toBeDefined();
 
-		// Get the invite ID
-		const invite = Array.isArray(inviteSentResponse.invite) ? inviteSentResponse.invite[0] : inviteSentResponse.invite;
-
-		// Try to accept the invite as the sender
-		const response = await stub.respond(inviteToSend.sender, invite.id, OrgInviteStatus.enum.accepted);
-
-		// Verify the response
-		expect(response.success).toBe(false);
-		if (!response.success) {
-			expect(response.error).toBe('sender cannot accept their own invite');
+		// Try to accept the invite as the sender - DO method should throw
+		try {
+			await stub.respond(inviteToSend.sender, createdInvite.id, OrgInviteStatusSchema.enum.accepted);
+			expect.fail('Should have thrown error when sender tries to accept their own invite');
+		} catch (error) {
+			expect(error).toBeDefined();
+			expect((error as Error).message).toContain('cannot accept their own invite');
 		}
 	});
 
@@ -511,37 +389,31 @@ describe('organization matchmaking worker', () => {
 		const stub = env.ORG_MATCHMAKING.get(id);
 
 		// clear the storage if any invites are present
-		await runInDurableObject(stub, async (_, state) => {
+		await runInDurableObject(stub, async (_: unknown, state: DurableObjectState) => {
 			await state.storage.deleteAll();
 		});
 
 		// Create an invite
 		const inviteToSend = generateInvites(1)[0];
-		const inviteSentResponse = await stub.send(inviteToSend.sender, inviteToSend.receiver, inviteToSend.message);
-		expect(inviteSentResponse.success).toBe(true);
-		if (!inviteSentResponse.success) {
-			throw new Error('Failed to send invite');
-		}
-
-		// Get the invite ID
-		const invite = Array.isArray(inviteSentResponse.invite) ? inviteSentResponse.invite[0] : inviteSentResponse.invite;
+		const createdInvite: OrgInvite = await stub.send(inviteToSend.sender, inviteToSend.receiver, inviteToSend.message);
+		expect(createdInvite).toBeDefined();
 
 		// Manually delete the invite from the sender's mailbox to simulate inconsistency
-		await runInDurableObject(stub, async (_, state) => {
-			const senderMailbox = (await state.storage.get<OrgInvite[]>(inviteToSend.sender)) ?? [];
+		await runInDurableObject(stub, async (_: unknown, state: DurableObjectState) => {
+			const senderMailbox = ((await state.storage.get(inviteToSend.sender)) as OrgInvite[]) ?? [];
 			await state.storage.put(
 				inviteToSend.sender,
-				senderMailbox.filter((i) => i.id !== invite.id),
+				senderMailbox.filter((i: OrgInvite) => i.id !== createdInvite.id),
 			);
 		});
 
-		// Try to respond to the invite as the receiver
-		const response = await stub.respond(inviteToSend.receiver, invite.id, OrgInviteStatus.enum.accepted);
-
-		// Verify the response
-		expect(response.success).toBe(false);
-		if (!response.success) {
-			expect(response.error).toBe('catalyst cannot find the other invite');
+		// Try to respond to the invite as the receiver - DO method should throw
+		try {
+			await stub.respond(inviteToSend.receiver, createdInvite.id, OrgInviteStatusSchema.enum.accepted);
+			expect.fail('Should have thrown InviteNotFoundError');
+		} catch (error) {
+			expect(error).toBeDefined();
+			expect((error as Error).message).toContain('not found');
 		}
 	});
 
@@ -552,14 +424,8 @@ describe('organization matchmaking worker', () => {
 
 			// Create an invite first
 			const inviteToSend = generateInvites(1)[0];
-			const inviteSentResponse = await stub.send(inviteToSend.sender, inviteToSend.receiver, inviteToSend.message);
-			expect(inviteSentResponse.success).toBe(true);
-			if (!inviteSentResponse.success) {
-				throw new Error('Failed to send invite');
-			}
-
-			// Get the invite ID
-			const invite = Array.isArray(inviteSentResponse.invite) ? inviteSentResponse.invite[0] : inviteSentResponse.invite;
+			const createdInvite: OrgInvite = await stub.send(inviteToSend.sender, inviteToSend.receiver, inviteToSend.message);
+			expect(createdInvite).toBeDefined();
 
 			const mockUser: User = {
 				userId: 'test-user',
@@ -567,20 +433,21 @@ describe('organization matchmaking worker', () => {
 			} as User;
 
 			// Mock the USERCACHE binding used inside the worker
-			// @ts-expect-error: Mock implementation doesn't match expected type
 			env.USERCACHE.getUser = async () => mockUser;
 			env.AUTHZED.canUpdateOrgPartnersInOrg = async () => true;
 
 			// Read the invite using the worker
 			const worker = SELF;
-			const response = await worker.readInvite(invite.id, { cfToken: 'valid-token' });
+			const response = await worker.readInvite(createdInvite.id, { cfToken: 'valid-token' });
 
 			expect(response.success).toBe(true);
 			if (!response.success) {
 				throw new Error('Failed to read invite');
 			}
-			// @ts-expect-error: TypeScript doesn't know invite is a single object here
-			expect(response.invite.id).toBe(invite.id);
+			expect(response.data).toBeDefined();
+			// data should be a single OrgInvite, not an array
+			const invite = response.data as OrgInvite;
+			expect(invite.id).toBe(createdInvite.id);
 		});
 
 		it('should return error when token is missing', async () => {
@@ -589,7 +456,7 @@ describe('organization matchmaking worker', () => {
 
 			expect(response.success).toBe(false);
 			if (!response.success) {
-				expect(response.error).toBe('catalyst did not find a verifiable credential');
+				expect(response.error).toBe('No verifiable credential found');
 			}
 		});
 
@@ -602,7 +469,7 @@ describe('organization matchmaking worker', () => {
 
 			expect(response.success).toBe(false);
 			if (!response.success) {
-				expect(response.error).toBe('catalyst did not find a valid user');
+				expect(response.error).toBe('Invalid or non-existent user');
 			}
 		});
 
@@ -612,30 +479,23 @@ describe('organization matchmaking worker', () => {
 
 			// Create an invite first
 			const inviteToSend = generateInvites(1)[0];
-			const inviteSentResponse = await stub.send(inviteToSend.sender, inviteToSend.receiver, inviteToSend.message);
-			expect(inviteSentResponse.success).toBe(true);
-			if (!inviteSentResponse.success) {
-				throw new Error('Failed to send invite');
-			}
-
-			// Get the invite ID
-			const invite = Array.isArray(inviteSentResponse.invite) ? inviteSentResponse.invite[0] : inviteSentResponse.invite;
+			const createdInvite: OrgInvite = await stub.send(inviteToSend.sender, inviteToSend.receiver, inviteToSend.message);
+			expect(createdInvite).toBeDefined();
 
 			// Mock the USERCACHE binding with a user
 			const mockUser = {
 				userId: 'test-user',
 				orgId: inviteToSend.sender,
 			} as User;
-			// @ts-expect-error: Mock implementation doesn't match expected type
 			env.USERCACHE.getUser = async () => mockUser;
 			env.AUTHZED.canUpdateOrgPartnersInOrg = async () => false;
 
 			const worker = SELF;
-			const response = await worker.readInvite(invite.id, { cfToken: 'valid-token' });
+			const response = await worker.readInvite(createdInvite.id, { cfToken: 'valid-token' });
 
 			expect(response.success).toBe(false);
 			if (!response.success) {
-				expect(response.error).toBe('catalyst rejects users ability to add an org partner');
+				expect(response.error).toBe('Permission denied: update org partners');
 			}
 		});
 	});
@@ -646,7 +506,7 @@ describe('organization matchmaking worker', () => {
 			const stub = env.ORG_MATCHMAKING.get(id);
 
 			// Clear storage before each test
-			await runInDurableObject(stub, async (_, state) => {
+			await runInDurableObject(stub, async (_: unknown, state: DurableObjectState) => {
 				await state.storage.deleteAll();
 			});
 		});
@@ -657,13 +517,8 @@ describe('organization matchmaking worker', () => {
 
 			// Create an invite
 			const inviteToSend = generateInvites(1)[0];
-			const inviteSentResponse = await stub.send(inviteToSend.sender, inviteToSend.receiver, inviteToSend.message);
-			expect(inviteSentResponse.success).toBe(true);
-			if (!inviteSentResponse.success) {
-				throw new Error('Failed to send invite');
-			}
-
-			const invite = Array.isArray(inviteSentResponse.invite) ? inviteSentResponse.invite[0] : inviteSentResponse.invite;
+			const createdInvite: OrgInvite = await stub.send(inviteToSend.sender, inviteToSend.receiver, inviteToSend.message);
+			expect(createdInvite).toBeDefined();
 
 			// Mock the USERCACHE binding with a user
 			const mockUser = {
@@ -673,20 +528,19 @@ describe('organization matchmaking worker', () => {
 
 			await env.AUTHZED.addUserToOrg(inviteToSend.sender, mockUser.userId);
 
-			// @ts-expect-error: Mock implementation doesn't match expected type
 			env.USERCACHE.getUser = async () => mockUser;
 			env.AUTHZED.canUpdateOrgPartnersInOrg = async () => true;
 
 			// Toggle the invite using the worker
 			const worker = SELF;
-			const response = await worker.togglePartnership(invite.id, { cfToken: 'valid-token' });
+			const response = await worker.togglePartnership(createdInvite.id, { cfToken: 'valid-token' });
 			expect(response.success).toBe(true);
 			if (!response.success) {
 				throw new Error('Failed to toggle invite');
 			}
 
 			// Verify the toggle
-			const toggledInvite = Array.isArray(response.invite) ? response.invite[0] : response.invite;
+			const toggledInvite = response.data as OrgInvite;
 			expect(toggledInvite.isActive).toBe(false);
 		});
 
@@ -696,7 +550,7 @@ describe('organization matchmaking worker', () => {
 
 			expect(response.success).toBe(false);
 			if (!response.success) {
-				expect(response.error).toBe('catalyst did not find a verifiable credential');
+				expect(response.error).toBe('No verifiable credential found');
 			}
 		});
 
@@ -709,7 +563,7 @@ describe('organization matchmaking worker', () => {
 
 			expect(response.success).toBe(false);
 			if (!response.success) {
-				expect(response.error).toBe('catalyst did not find a valid user');
+				expect(response.error).toBe('Invalid or non-existent user');
 			}
 		});
 
@@ -719,29 +573,23 @@ describe('organization matchmaking worker', () => {
 
 			// Create an invite
 			const inviteToSend = generateInvites(1)[0];
-			const inviteSentResponse = await stub.send(inviteToSend.sender, inviteToSend.receiver, inviteToSend.message);
-			expect(inviteSentResponse.success).toBe(true);
-			if (!inviteSentResponse.success) {
-				throw new Error('Failed to send invite');
-			}
-
-			const invite = Array.isArray(inviteSentResponse.invite) ? inviteSentResponse.invite[0] : inviteSentResponse.invite;
+			const createdInvite: OrgInvite = await stub.send(inviteToSend.sender, inviteToSend.receiver, inviteToSend.message);
+			expect(createdInvite).toBeDefined();
 
 			// Mock the USERCACHE binding with a user
 			const mockUser = {
 				userId: 'test-user',
 				orgId: inviteToSend.sender,
 			} as User;
-			// @ts-expect-error: Mock implementation doesn't match expected type
 			env.USERCACHE.getUser = async () => mockUser;
 			env.AUTHZED.canUpdateOrgPartnersInOrg = async () => false;
 
 			const worker = SELF;
-			const response = await worker.togglePartnership(invite.id, { cfToken: 'valid-token' });
+			const response = await worker.togglePartnership(createdInvite.id, { cfToken: 'valid-token' });
 
 			expect(response.success).toBe(false);
 			if (!response.success) {
-				expect(response.error).toBe('catalyst rejects users ability to add an org partner');
+				expect(response.error).toBe('Permission denied: update org partners');
 			}
 		});
 
@@ -751,7 +599,6 @@ describe('organization matchmaking worker', () => {
 				userId: 'test-user',
 				orgId: SENDER_ORGANIZATION,
 			} as User;
-			// @ts-expect-error: Mock implementation doesn't match expected type
 			env.USERCACHE.getUser = async () => mockUser;
 			env.AUTHZED.canUpdateOrgPartnersInOrg = async () => true;
 
@@ -760,7 +607,7 @@ describe('organization matchmaking worker', () => {
 
 			expect(response.success).toBe(false);
 			if (!response.success) {
-				expect(response.error).toBe('catalyst cannot find the invite');
+				expect(response.error).toContain('not found');
 			}
 		});
 	});
@@ -772,7 +619,7 @@ describe('Invite Management', () => {
 		const stub = env.ORG_MATCHMAKING.get(id);
 
 		// Clear storage before each test
-		await runInDurableObject(stub, async (_, state) => {
+		await runInDurableObject(stub, async (_: unknown, state: DurableObjectState) => {
 			await state.storage.deleteAll();
 		});
 	});
@@ -783,7 +630,6 @@ describe('Invite Management', () => {
 			const mockUser = createMockUser('default');
 
 			await env.AUTHZED.addUserToOrg(mockUser.orgId, mockUser.userId);
-			// @ts-expect-error: Mock implementation doesn't match expected type
 			env.USERCACHE.getUser = async () => mockUser;
 			env.AUTHZED.canUpdateOrgPartnersInOrg = async () => true;
 
@@ -795,7 +641,7 @@ describe('Invite Management', () => {
 				throw new Error('Failed to send invite');
 			}
 
-			const invite = Array.isArray(response.invite) ? response.invite[0] : response.invite;
+			const invite = response.data as OrgInvite;
 			expect(invite.sender).toBe(inviteToSend.sender);
 			expect(invite.receiver).toBe(inviteToSend.receiver);
 			expect(invite.message).toBe(inviteToSend.message);
@@ -809,7 +655,7 @@ describe('Invite Management', () => {
 
 			expect(response.success).toBe(false);
 			if (!response.success) {
-				expect(response.error).toBe('catalyst did not find a verifiable credential');
+				expect(response.error).toBe('No verifiable credential found');
 			}
 		});
 
@@ -819,7 +665,6 @@ describe('Invite Management', () => {
 
 			// Add user to org first
 			await env.AUTHZED.addUserToOrg(mockUser.orgId, mockUser.userId);
-			// @ts-expect-error: Mock implementation doesn't match expected type
 			env.USERCACHE.getUser = async () => mockUser;
 			env.AUTHZED.canUpdateOrgPartnersInOrg = async () => false;
 
@@ -827,7 +672,7 @@ describe('Invite Management', () => {
 
 			expect(response.success).toBe(false);
 			if (!response.success) {
-				expect(response.error).toBe('catalyst rejects users abiltiy to add an org partner');
+				expect(response.error).toBe('Permission denied: send org invites');
 			}
 		});
 	});
@@ -841,7 +686,6 @@ describe('Invite Management', () => {
 			await env.AUTHZED.addUserToOrg(senderUser.orgId, senderUser.userId);
 			await env.AUTHZED.addUserToOrg(receiverUser.orgId, receiverUser.userId);
 
-			// @ts-expect-error: Mock implementation doesn't match expected type
 			env.USERCACHE.getUser = async () => senderUser;
 			env.AUTHZED.canUpdateOrgPartnersInOrg = async () => true;
 
@@ -853,9 +697,8 @@ describe('Invite Management', () => {
 				throw new Error('Failed to send invite');
 			}
 
-			const invite = Array.isArray(sendResponse.invite) ? sendResponse.invite[0] : sendResponse.invite;
+			const invite = sendResponse.data as OrgInvite;
 
-			// @ts-expect-error: Mock implementation doesn't match expected type
 			env.USERCACHE.getUser = async () => receiverUser;
 			env.AUTHZED.canUpdateOrgPartnersInOrg = async () => true;
 
@@ -866,7 +709,7 @@ describe('Invite Management', () => {
 				throw new Error('Failed to accept invite');
 			}
 
-			const acceptedInvite = Array.isArray(acceptResponse.invite) ? acceptResponse.invite[0] : acceptResponse.invite;
+			const acceptedInvite = acceptResponse.data as OrgInvite;
 			expect(acceptedInvite.status).toBe('accepted');
 		});
 
@@ -876,7 +719,6 @@ describe('Invite Management', () => {
 
 			// First send an invite
 			await env.AUTHZED.addUserToOrg(mockUser.orgId, mockUser.userId);
-			// @ts-expect-error: Mock implementation doesn't match expected type
 			env.USERCACHE.getUser = async () => mockUser;
 			env.AUTHZED.canUpdateOrgPartnersInOrg = async () => true;
 
@@ -888,14 +730,14 @@ describe('Invite Management', () => {
 				throw new Error('Failed to send invite');
 			}
 
-			const invite = Array.isArray(sendResponse.invite) ? sendResponse.invite[0] : sendResponse.invite;
+			const invite = sendResponse.data as OrgInvite;
 
 			// Try to accept as sender
 			const acceptResponse = await worker.acceptInvite(invite.id, { cfToken: 'valid-token' });
 
 			expect(acceptResponse.success).toBe(false);
 			if (!acceptResponse.success) {
-				expect(acceptResponse.error).toBe('sender cannot accept their own invite');
+				expect(acceptResponse.error).toContain('cannot accept their own invite');
 			}
 		});
 	});
@@ -909,7 +751,6 @@ describe('Invite Management', () => {
 			await env.AUTHZED.addUserToOrg(senderUser.orgId, senderUser.userId);
 			await env.AUTHZED.addUserToOrg(receiverUser.orgId, receiverUser.userId);
 
-			// @ts-expect-error: Mock implementation doesn't match expected type
 			env.USERCACHE.getUser = async () => senderUser;
 			env.AUTHZED.canUpdateOrgPartnersInOrg = async () => true;
 
@@ -921,9 +762,8 @@ describe('Invite Management', () => {
 				throw new Error('Failed to send invite');
 			}
 
-			const invite = Array.isArray(sendResponse.invite) ? sendResponse.invite[0] : sendResponse.invite;
+			const invite = sendResponse.data as OrgInvite;
 
-			// @ts-expect-error: Mock implementation doesn't match expected type
 			env.USERCACHE.getUser = async () => receiverUser;
 			env.AUTHZED.canUpdateOrgPartnersInOrg = async () => true;
 
@@ -934,7 +774,7 @@ describe('Invite Management', () => {
 				throw new Error('Failed to decline invite');
 			}
 
-			const declinedInvite = Array.isArray(declineResponse.invite) ? declineResponse.invite[0] : declineResponse.invite;
+			const declinedInvite = declineResponse.data as OrgInvite;
 			expect(declinedInvite.status).toBe('declined');
 		});
 	});
@@ -945,7 +785,6 @@ describe('Invite Management', () => {
 			const mockUser = createMockUser('default');
 
 			await env.AUTHZED.addUserToOrg(mockUser.orgId, mockUser.userId);
-			// @ts-expect-error: Mock implementation doesn't match expected type
 			env.USERCACHE.getUser = async () => mockUser;
 			env.AUTHZED.canUpdateOrgPartnersInOrg = async () => true;
 
@@ -963,7 +802,7 @@ describe('Invite Management', () => {
 				throw new Error('Failed to list invites');
 			}
 
-			const listedInvites = Array.isArray(listResponse.invite) ? listResponse.invite : [listResponse.invite];
+			const listedInvites = listResponse.data as OrgInvite[];
 			expect(listedInvites).toHaveLength(invites.length);
 
 			// Verify each invite
@@ -982,7 +821,7 @@ describe('Invite Management', () => {
 
 			expect(response.success).toBe(false);
 			if (!response.success) {
-				expect(response.error).toBe('catalyst did not find a verifiable credential');
+				expect(response.error).toBe('No verifiable credential found');
 			}
 		});
 
@@ -994,7 +833,7 @@ describe('Invite Management', () => {
 
 			expect(response.success).toBe(false);
 			if (!response.success) {
-				expect(response.error).toBe('catalyst did not find a valid user');
+				expect(response.error).toBe('Invalid or non-existent user');
 			}
 		});
 
@@ -1004,7 +843,6 @@ describe('Invite Management', () => {
 
 			// Add user to org first
 			await env.AUTHZED.addUserToOrg(mockUser.orgId, mockUser.userId);
-			// @ts-expect-error: Mock implementation doesn't match expected type
 			env.USERCACHE.getUser = async () => mockUser;
 			env.AUTHZED.canUpdateOrgPartnersInOrg = async () => false;
 
@@ -1012,7 +850,7 @@ describe('Invite Management', () => {
 
 			expect(response.success).toBe(false);
 			if (!response.success) {
-				expect(response.error).toBe('catalyst rejects users abiltiy to add an org partner');
+				expect(response.error).toBe('Permission denied: list org invites');
 			}
 		});
 	});
