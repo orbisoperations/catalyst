@@ -245,5 +245,105 @@ describe('Durable Object: Storage Operations', () => {
 				expect(result).toBe(false);
 			});
 		});
+
+		it('respects guard: cannot delete tokens with status "expired"', async () => {
+			const stub = env.ISSUED_JWT_REGISTRY_DO.get(doId);
+
+			await runInDurableObject(stub, async (instance: I_JWT_Registry_DO, state) => {
+				const expiredEntry: IssuedJWTRegistry = {
+					id: 'expired-status-token',
+					name: 'Expired Token',
+					description: 'Token with expired status',
+					claims: [],
+					expiry: new Date(Date.now() + 1000 * 60 * 60), // Future expiry, but status is expired
+					organization: 'test-org',
+					status: 'expired',
+				};
+				await state.storage.put(expiredEntry.id, expiredEntry);
+
+				const result = await instance.delete('expired-status-token');
+
+				expect(result).toBe(false);
+
+				// Verify status unchanged
+				const entry = await state.storage.get<IssuedJWTRegistry>('expired-status-token');
+				expect(entry?.status).toBe('expired');
+			});
+		});
+
+		it('respects guard: cannot delete tokens past their expiry date', async () => {
+			const stub = env.ISSUED_JWT_REGISTRY_DO.get(doId);
+
+			await runInDurableObject(stub, async (instance: I_JWT_Registry_DO, state) => {
+				const pastExpiryEntry: IssuedJWTRegistry = {
+					id: 'past-expiry-token',
+					name: 'Past Expiry Token',
+					description: 'Token past its expiry date',
+					claims: [],
+					expiry: new Date(Date.now() - 1000 * 60 * 60), // 1 hour in the past
+					organization: 'test-org',
+					status: 'active',
+				};
+				await state.storage.put(pastExpiryEntry.id, pastExpiryEntry);
+
+				const result = await instance.delete('past-expiry-token');
+
+				expect(result).toBe(false);
+
+				// Verify token was marked expired instead
+				const entry = await state.storage.get<IssuedJWTRegistry>('past-expiry-token');
+				expect(entry?.status).toBe('active'); // Guard prevents any modification
+			});
+		});
+
+		it('respects guard: cannot delete already-deleted tokens', async () => {
+			const stub = env.ISSUED_JWT_REGISTRY_DO.get(doId);
+
+			await runInDurableObject(stub, async (instance: I_JWT_Registry_DO, state) => {
+				const deletedEntry: IssuedJWTRegistry = {
+					id: 'already-deleted-token',
+					name: 'Already Deleted',
+					description: 'Already marked as deleted',
+					claims: [],
+					expiry: new Date(Date.now() + 1000 * 60 * 60),
+					organization: 'test-org',
+					status: 'deleted',
+				};
+				await state.storage.put(deletedEntry.id, deletedEntry);
+
+				const result = await instance.delete('already-deleted-token');
+
+				expect(result).toBe(false);
+
+				// Verify status unchanged
+				const entry = await state.storage.get<IssuedJWTRegistry>('already-deleted-token');
+				expect(entry?.status).toBe('deleted');
+			});
+		});
+
+		it('respects guard: can delete revoked tokens', async () => {
+			const stub = env.ISSUED_JWT_REGISTRY_DO.get(doId);
+
+			await runInDurableObject(stub, async (instance: I_JWT_Registry_DO, state) => {
+				const revokedEntry: IssuedJWTRegistry = {
+					id: 'revoked-token',
+					name: 'Revoked Token',
+					description: 'Token in revoked status',
+					claims: [],
+					expiry: new Date(Date.now() + 1000 * 60 * 60),
+					organization: 'test-org',
+					status: 'revoked',
+				};
+				await state.storage.put(revokedEntry.id, revokedEntry);
+
+				const result = await instance.delete('revoked-token');
+
+				expect(result).toBe(true);
+
+				// Verify status changed to deleted
+				const entry = await state.storage.get<IssuedJWTRegistry>('revoked-token');
+				expect(entry?.status).toBe('deleted');
+			});
+		});
 	});
 });
