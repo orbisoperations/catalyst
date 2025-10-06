@@ -36,6 +36,8 @@ catalog:
   "@types/chai": ^4
   "@types/mocha": ^10
   "@types/uuid": ^9.0.8
+  "@typescript-eslint/eslint-plugin": ^8.29.1
+  "@typescript-eslint/parser": ^8.29.1
   "@urql/core": ^4.3.0
   autoprefixer: ^10.4.19
   base64url: ^3.0.1

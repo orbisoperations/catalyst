@@ -20,18 +20,18 @@
 		"build": "wrangler build"
 	},
 	"devDependencies": {
-		"@cloudflare/vitest-pool-workers": "^0.9.9",
-		"@cloudflare/workers-types": "^4.20251001.0",
-		"@eslint/js": "^9.25.1",
-		"@typescript-eslint/eslint-plugin": "^8.29.1",
-		"@typescript-eslint/parser": "^8.29.1",
-		"@vitest/coverage-istanbul": "^3.2.4",
-		"eslint": "^9.25.1",
-		"prettier": "^3.5.3",
-		"tsx": "^4.19.4",
-		"typescript": "^5.8.3",
-		"vitest": "^3.2.4",
-		"wrangler": "^4.19.1"
+		"@cloudflare/vitest-pool-workers": "catalog:",
+		"@cloudflare/workers-types": "catalog:",
+		"@eslint/js": "catalog:",
+		"@typescript-eslint/eslint-plugin": "catalog:",
+		"@typescript-eslint/parser": "catalog:",
+		"@vitest/coverage-istanbul": "catalog:",
+		"eslint": "catalog:",
+		"prettier": "catalog:",
+		"tsx": "catalog:",
+		"typescript": "catalog:",
+		"vitest": "catalog:",
+		"wrangler": "catalog:"
 	},
 	"dependencies": {
 		"@catalyst/schema_zod": "workspace:*",
