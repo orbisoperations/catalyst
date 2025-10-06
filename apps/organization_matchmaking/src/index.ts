@@ -12,8 +12,10 @@ import {
 	InvalidUserError,
 	PermissionDeniedError,
 	CatalystError,
+	Token,
+	User,
+	OrgId,
 } from '@catalyst/schemas';
-import { Token, User, OrgId } from '@catalyst/schema_zod';
 import { Env } from './env';
 
 /**
