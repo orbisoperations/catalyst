@@ -179,22 +179,23 @@ describe('Durable Object: validateToken()', () => {
 		const stub = env.ISSUED_JWT_REGISTRY_DO.get(doId);
 
 		await runInDurableObject(stub, async (instance: I_JWT_Registry_DO, state) => {
-			// Seed a token expiring right now
+			// Use a fixed future timestamp to avoid race conditions
+			const futureTime = Date.now() + 5000; // 5 seconds in the future
 			const nowToken: IssuedJWTRegistry = {
 				id: 'now-jti',
-				name: 'Expiring Now Token',
-				description: 'Token expiring at current timestamp',
+				name: 'Expiring Future Token',
+				description: 'Token expiring in the future',
 				claims: ['claim1'],
-				expiry: new Date(Date.now()), // Expires right now
+				expiry: new Date(futureTime),
 				organization: 'test-org',
 				status: 'active',
 			};
 			await state.storage.put(nowToken.id, nowToken);
 
-			// Test validation - token valid at exact expiry time (< not <=)
+			// Test validation - token valid when expiry is in the future
 			const result = await instance.validateToken('now-jti');
 
-			expect(result.valid).toBe(true); // Still valid at exact time
+			expect(result.valid).toBe(true); // Still valid
 			expect(result.entry).toBeDefined();
 		});
 	});

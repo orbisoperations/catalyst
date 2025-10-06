@@ -233,37 +233,25 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 			};
 		}
 
-		// data channels that this Catalyst Token Has Access to
-		const validDataChannels = await this.env.DATA_CHANNEL_REGISTRAR.list(keyNamespace, { catalystToken });
-		if (!validDataChannels.success) {
-			console.error(validDataChannels.error);
-			// return a vague error message for security purposes
+		// Use listAll() instead of list() to avoid circular dependency
+		// listAll() doesn't require token validation, which breaks the circular call to validateToken
+		// Filter for enabled channels (accessSwitch === true)
+		const allChannels = await this.env.DATA_CHANNEL_REGISTRAR.listAll(keyNamespace, true);
+		if (!allChannels || allChannels.length === 0) {
 			return { success: false, error: 'no resources found' };
 		}
 
-		// map this the validDataChannels to a list of DataChannel objects and fail if
-		// any of the data channels are not valid form of DataChannel
-		let readableDataChannels: DataChannel[] = [];
-		if (Array.isArray(validDataChannels.data)) {
-			const result = DataChannel.array().safeParse(validDataChannels.data);
-			if (!result.success) {
-				console.error('Failed to parse array of data channels:', result.error.format());
-				return DataChannelMultiAccessResponse.parse({ success: false, error: 'internal error processing channel information' });
-			}
-			readableDataChannels = result.data;
-		} else {
-			const result = DataChannel.safeParse(validDataChannels.data);
-			if (!result.success) {
-				console.error('Failed to parse single data channel:', result.error.format());
-				return DataChannelMultiAccessResponse.parse({ success: false, error: 'internal error processing channel information' });
-			}
-			readableDataChannels = [result.data];
+		// Validate the channels array
+		const result = DataChannel.array().safeParse(allChannels);
+		if (!result.success) {
+			console.error('Failed to parse array of data channels:', result.error.format());
+			return DataChannelMultiAccessResponse.parse({ success: false, error: 'internal error processing channel information' });
 		}
 
 		// NOTE: claims are channel.id
-		// filter out readable channels that are not in the claims
+		// Filter channels by claims already extracted from the validated token
 		const claims = parsedTokenResult.claims;
-		const dataChannels = readableDataChannels.filter((dataChannel) => claims.includes(dataChannel.id));
+		const dataChannels = result.data.filter((dataChannel) => claims.includes(dataChannel.id));
 		if (dataChannels.length === 0) {
 			// no resources found
 			return DataChannelMultiAccessResponse.parse({
@@ -274,6 +262,19 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 
 		const singleUseTokens: DataChannelAccessToken[] = [];
 		for (const claim of parsedTokenResult.claims) {
+			// Check if this claim has a corresponding channel
+			const matchingChannel = dataChannels.find((dataChannel) => dataChannel.id === claim);
+
+			if (!matchingChannel) {
+				// Channel doesn't exist or is disabled - fail this claim
+				singleUseTokens.push({
+					success: false,
+					claim: claim,
+					error: 'Channel not found or not accessible',
+				});
+				continue;
+			}
+
 			const singleUseToken = await this.signSingleUseJWT(claim, { catalystToken }, keyNamespace);
 			// fail and log the error on a per claim basis, but continue to sign other claims
 			// intended for silent failing when not able to sign a single use token
@@ -286,7 +287,7 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 				singleUseTokens.push({
 					success: true,
 					claim: claim,
-					dataChannel: dataChannels.find((dataChannel) => dataChannel.id === claim)!,
+					dataChannel: matchingChannel,
 					singleUseToken: singleUseToken.token,
 				});
 			}
@@ -302,12 +303,13 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 	 * Validates a JWT token using the key provider
 	 * @param token The JWT token string to validate
 	 * @param keyNamespace The namespace for verification keys (defaults to 'default')
+	 * @param clockTolerance Clock tolerance for expiration validation (defaults to '5 minutes')
 	 * @returns Promise containing the token validation result
 	 */
-	async validateToken(token: string, keyNamespace: string = 'default') {
+	async validateToken(token: string, keyNamespace: string = 'default', clockTolerance: string = '5 minutes') {
 		const id = this.env.KEY_PROVIDER.idFromName(keyNamespace);
 		const stub = this.env.KEY_PROVIDER.get(id);
-		return await stub.validateToken(token);
+		return await stub.validateToken(token, clockTolerance);
 	}
 
 	/**

@@ -40,6 +40,19 @@ export default defineConfig({
 								durableObjects: {
 									ISSUED_JWT_REGISTRY_DO: 'I_JWT_Registry_DO',
 								},
+								serviceBindings: {
+									// Use mock worker for faster, isolated unit tests
+									USERCACHE: 'mock-usercache',
+								},
+								workers: [
+									{
+										name: 'mock-usercache',
+										modules: true,
+										scriptPath: path.resolve('./tests/unit/__mocks__/usercache.js'),
+										compatibilityDate: '2025-04-01',
+										compatibilityFlags: ['nodejs_compat'],
+									},
+								],
 							},
 						},
 					},
