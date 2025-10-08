@@ -1,8 +1,7 @@
 // test/index.spec.ts
 import { env, runInDurableObject, SELF } from 'cloudflare:test';
 import { describe, expect, it, beforeEach } from 'vitest';
-import { OrgInvite, OrgInviteStatusSchema } from '@catalyst/schemas';
-import { User } from '@catalyst/schema_zod';
+import { OrgInvite, OrgInviteStatusSchema, User } from '@catalyst/schemas';
 
 const SENDER_ORGANIZATION = 'default';
 
