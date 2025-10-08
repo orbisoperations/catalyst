@@ -103,6 +103,7 @@ export default defineConfig({
 							singleWorker: true,
 							isolatedStorage: true,
 							miniflare: {
+								name: 'authx_token_api',
 								compatibilityDate: '2025-04-01',
 								compatibilityFlags: ['nodejs_compat'],
 								durableObjects: {

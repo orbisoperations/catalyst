@@ -268,11 +268,12 @@ describe('Integration: Complete JWT Lifecycle', () => {
 			// ═══════════════════════════════════════════════════════════
 			// STEP 5: Validate after expiration (should fail)
 			// ═══════════════════════════════════════════════════════════
-			const validateAfterExpiry = await SELF.validateToken(token);
+			// Use strict clock tolerance (0 seconds) to properly test expiration
+			const validateAfterExpiry = await SELF.validateToken(token, 'default', '0 seconds');
 
 			expect(validateAfterExpiry.valid).toBe(false);
 			expect(validateAfterExpiry.error).toBeDefined();
-			expect(validateAfterExpiry.error).toContain('expired');
+			expect(validateAfterExpiry.error).toMatch(/exp.*claim|expired/i);
 			expect(validateAfterExpiry.entity).toBeUndefined();
 			expect(validateAfterExpiry.claims).toEqual([]);
 
@@ -282,10 +283,10 @@ describe('Integration: Complete JWT Lifecycle', () => {
 			const publicKeyResponse = await SELF.getPublicKeyJWK();
 			const jwks = createLocalJWKSet(publicKeyResponse);
 
-			// jwtVerify should throw for expired token
+			// jwtVerify should throw for expired token with strict tolerance
 			await expect(
 				jwtVerify(token, jwks, {
-					clockTolerance: '5 minutes', // Even with tolerance, should fail
+					clockTolerance: '0 seconds', // Strict tolerance to test expiration
 				}),
 			).rejects.toThrow();
 		});

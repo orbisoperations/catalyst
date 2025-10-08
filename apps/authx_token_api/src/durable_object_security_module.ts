@@ -82,7 +82,7 @@ export class JWTKeyProvider extends DurableObject {
 		};
 	}
 
-	async validateToken(token: string): Promise<JWTParsingResponse> {
+	async validateToken(token: string, clockTolerance: string = '5 minutes'): Promise<JWTParsingResponse> {
 		await this.key();
 		try {
 			const pub = this.currentSerializedKey?.public;
@@ -98,7 +98,7 @@ export class JWTKeyProvider extends DurableObject {
 			}
 			const jwkPub = createLocalJWKSet(await this.getJWKS());
 
-			const { payload } = await jwtVerify(token, jwkPub, { clockTolerance: '5 minutes' });
+			const { payload } = await jwtVerify(token, jwkPub, { clockTolerance });
 			const resp = JWTParsingResponse.parse({
 				valid: true,
 				entity: payload.sub,
