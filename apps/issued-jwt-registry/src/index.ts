@@ -252,12 +252,20 @@ export class I_JWT_Registry_DO extends DurableObject {
 	}
 
 	async delete(issuedJWTRegId: string) {
-		const currentIjr = await this.ctx.storage.get<IssuedJWTRegistry>(issuedJWTRegId);
-		if (!currentIjr) return false;
-
-		currentIjr.status = JWTRegisterStatus.enum.deleted;
-		await this.ctx.storage.put(currentIjr.id, currentIjr);
-		return true;
+		let deleted: boolean = false;
+		await this.ctx.blockConcurrencyWhile(async () => {
+			const currentIjr = await this.ctx.storage.get<IssuedJWTRegistry>(issuedJWTRegId);
+			if (!currentIjr) {
+				return;
+			}
+			const [canEdit, needsToBeExpired] = await this.JWTRegistryItemGuard(currentIjr);
+			if (canEdit) {
+				currentIjr.status = needsToBeExpired ? JWTRegisterStatus.enum.expired : JWTRegisterStatus.enum.deleted;
+				await this.ctx.storage.put(currentIjr.id, currentIjr);
+				deleted = true;
+			}
+		});
+		return deleted;
 	}
 
 	async addToRevocationList(id: string) {
