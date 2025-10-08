@@ -10,7 +10,7 @@ describe('organization matchmaking', () => {
             const invite = await stub.send('org1', 'org2');
             expect(invite.success).toBeTruthy();
             if (invite.success) {
-                const sendInviteParse = OrgInvite.safeParse(invite.invite);
+                const sendInviteParse = OrgInvite.safeParse(invite.data);
                 expect(sendInviteParse.success).toBeTruthy();
                 if (sendInviteParse.success) {
                     expect(sendInviteParse.data.sender).toBe('org1');
@@ -26,7 +26,7 @@ describe('organization matchmaking', () => {
             const org1ListResp = await stub.list('org1');
             expect(org1ListResp.success).toBeTruthy();
             if (org1ListResp.success) {
-                const org1ListParse = OrgInvite.array().safeParse(org1ListResp.invite);
+                const org1ListParse = OrgInvite.array().safeParse(org1ListResp.data);
                 expect(org1ListParse.success).toBeTruthy();
                 if (org1ListParse.success) {
                     const org1List = org1ListParse.data;
@@ -41,7 +41,7 @@ describe('organization matchmaking', () => {
             if (!inviteResp.success) {
                 throw new Error('this should have been a success');
             }
-            const invite = OrgInvite.parse(inviteResp.invite);
+            const invite = OrgInvite.parse(inviteResp.data);
             // org1 try to accept invite
             const failedResp = await stub.respond('org1', invite.id, OrgInviteStatus.enum.accepted);
             expect(failedResp.success).toBeFalsy();
@@ -50,7 +50,7 @@ describe('organization matchmaking', () => {
             if (!acceptedResp.success) {
                 throw new Error('this should be true');
             }
-            const acceptedInvite = OrgInvite.parse(acceptedResp.invite);
+            const acceptedInvite = OrgInvite.parse(acceptedResp.data);
             expect(acceptedInvite.status).toBe(OrgInviteStatus.enum.accepted);
 
             const listAcceptedResp = await stub.list('org1');
@@ -58,7 +58,7 @@ describe('organization matchmaking', () => {
                 throw new Error('this should be true');
             }
 
-            const listInvites = OrgInvite.array().parse(listAcceptedResp.invite);
+            const listInvites = OrgInvite.array().parse(listAcceptedResp.data);
             expect(listInvites).toHaveLength(1);
             expect(listInvites[0].status).toBe(OrgInviteStatus.enum.accepted);
         });
@@ -69,7 +69,7 @@ describe('organization matchmaking', () => {
             if (!inviteResp.success) {
                 throw new Error('this should be success');
             }
-            const invite = OrgInvite.parse(inviteResp.invite);
+            const invite = OrgInvite.parse(inviteResp.data);
             const org1DeclineResp = await stub.respond('org1', invite.id, OrgInviteStatus.enum.declined);
             expect(org1DeclineResp.success).toBeTruthy();
 
@@ -79,8 +79,8 @@ describe('organization matchmaking', () => {
                 throw new Error('these should be true');
             }
 
-            expect(OrgInvite.array().parse(org1ListResp.invite)).toHaveLength(0);
-            expect(OrgInvite.array().parse(org2ListResp.invite)).toHaveLength(0);
+            expect(OrgInvite.array().parse(org1ListResp.data)).toHaveLength(0);
+            expect(OrgInvite.array().parse(org2ListResp.data)).toHaveLength(0);
         });
         it('decline an invitation - org 2', async () => {
             const id = env.ORG_MATCHMAKING.idFromName('basic-decline-1');
@@ -89,7 +89,7 @@ describe('organization matchmaking', () => {
             if (!inviteResp.success) {
                 throw new Error('this should be success');
             }
-            const invite = OrgInvite.parse(inviteResp.invite);
+            const invite = OrgInvite.parse(inviteResp.data);
             const org2DeclineResp = await stub.respond('org2', invite.id, OrgInviteStatus.enum.declined);
             expect(org2DeclineResp.success).toBeTruthy();
 
@@ -99,8 +99,8 @@ describe('organization matchmaking', () => {
                 throw new Error('these should be true');
             }
 
-            expect(OrgInvite.array().parse(org1ListResp.invite)).toHaveLength(0);
-            expect(OrgInvite.array().parse(org2ListResp.invite)).toHaveLength(0);
+            expect(OrgInvite.array().parse(org1ListResp.data)).toHaveLength(0);
+            expect(OrgInvite.array().parse(org2ListResp.data)).toHaveLength(0);
         });
     });
 });

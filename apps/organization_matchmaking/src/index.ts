@@ -1,5 +1,19 @@
 import { DurableObject, WorkerEntrypoint } from 'cloudflare:workers';
-import { OrgId, OrgInvite, OrgInviteResponse, OrgInviteStatus, Token, User } from '@catalyst/schema_zod';
+import {
+	OrgInviteSchema,
+	OrgInvite,
+	OrgInviteStatusSchema,
+	OrgInviteStatus,
+	OrgInviteResponseSchema,
+	OrgInviteResponse,
+	InviteNotFoundError,
+	InvalidOperationError,
+	UnauthorizedError,
+	InvalidUserError,
+	PermissionDeniedError,
+	CatalystError,
+} from '@catalyst/schemas';
+import { Token, User, OrgId } from '@catalyst/schema_zod';
 import { Env } from './env';
 
 /**
@@ -28,12 +42,13 @@ import { Env } from './env';
  */
 
 export class OrganizationMatchmakingDO extends DurableObject {
-	async send(sender: OrgId, receiver: OrgId, message: string = '') {
-		const newInvite = OrgInvite.parse({
+	async send(sender: OrgId, receiver: OrgId, message: string = ''): Promise<OrgInvite> {
+		// Validate entity creation at boundary
+		const newInvite = OrgInviteSchema.parse({
 			id: crypto.randomUUID(),
-			sender: sender,
-			receiver: receiver,
-			status: OrgInviteStatus.enum.pending,
+			sender,
+			receiver,
+			status: 'pending',
 			message,
 			isActive: true,
 			createdAt: Date.now(),
@@ -41,26 +56,19 @@ export class OrganizationMatchmakingDO extends DurableObject {
 		});
 
 		await this.ctx.blockConcurrencyWhile(async () => {
-			const senderMailbox = (await this.ctx.storage.get<OrgInvite[]>(sender)) ?? new Array<OrgInvite>();
-			const receiverMailbox = (await this.ctx.storage.get<OrgInvite[]>(receiver)) ?? new Array<OrgInvite>();
+			const senderMailbox = (await this.ctx.storage.get<OrgInvite[]>(sender)) ?? [];
+			const receiverMailbox = (await this.ctx.storage.get<OrgInvite[]>(receiver)) ?? [];
 			senderMailbox.push(newInvite);
 			receiverMailbox.push(newInvite);
 			await this.ctx.storage.put(sender, senderMailbox);
 			await this.ctx.storage.put(receiver, receiverMailbox);
 		});
 
-		return OrgInviteResponse.parse({
-			success: true,
-			invite: newInvite,
-		});
+		return newInvite;
 	}
 
-	async list(orgId: OrgId) {
-		const listMailbox = (await this.ctx.storage.get<OrgInvite[]>(orgId)) ?? new Array<OrgInvite>();
-		return OrgInviteResponse.parse({
-			success: true,
-			invite: listMailbox,
-		});
+	async list(orgId: OrgId): Promise<OrgInvite[]> {
+		return (await this.ctx.storage.get<OrgInvite[]>(orgId)) ?? [];
 	}
 
 	/**
@@ -68,21 +76,17 @@ export class OrganizationMatchmakingDO extends DurableObject {
 	 * @param orgId - The org id to read the invite from
 	 * @param inviteId - The invite id to read
 	 * @returns The invite
+	 * @throws {InviteNotFoundError} If invite is not found
 	 */
-	async read(orgId: OrgId, inviteId: string) {
-		const listMailbox = (await this.ctx.storage.get<OrgInvite[]>(orgId)) ?? new Array<OrgInvite>();
-		const filteredInvites = listMailbox.filter((invite) => invite.id == inviteId);
-		if (filteredInvites.length != 1) {
-			return OrgInviteResponse.parse({
-				success: false,
-				error: 'catalyst cannot find the invite',
-			});
+	async read(orgId: OrgId, inviteId: string): Promise<OrgInvite> {
+		const mailbox = (await this.ctx.storage.get<OrgInvite[]>(orgId)) ?? [];
+		const invite = mailbox.find((inv) => inv.id === inviteId);
+
+		if (!invite) {
+			throw new InviteNotFoundError(inviteId);
 		}
 
-		return OrgInviteResponse.parse({
-			success: true,
-			invite: filteredInvites[0],
-		});
+		return invite;
 	}
 
 	/**
@@ -90,364 +94,305 @@ export class OrganizationMatchmakingDO extends DurableObject {
 	 *
 	 * @param orgId - The ID of the organization whose mailbox contains the invite
 	 * @param inviteId - The unique identifier of the invite to toggle
-	 * @returns A response containing the updated invite if successful, or an error message if the invite is not found
+	 * @returns The updated invite
+	 * @throws {InviteNotFoundError} If invite is not found in either mailbox
 	 *
 	 * @example
 	 * ```typescript
-	 * const response = await durableObject.togglePartnership('org-123', 'invite-456');
-	 * if (response.success) {
-	 *   console.log('Invite status toggled:', response.invite.isActive);
-	 * } else {
-	 *   console.error('Failed to toggle invite:', response.error);
-	 * }
+	 * const invite = await durableObject.togglePartnership('org-123', 'invite-456');
+	 * console.log('Invite status toggled:', invite.isActive);
 	 * ```
 	 */
-	async togglePartnership(orgId: OrgId, inviteId: string) {
-		// get invite from org mailbox
-		const orgMailbox = (await this.ctx.storage.get<OrgInvite[]>(orgId)) ?? new Array<OrgInvite>();
-		const filteredInvites = orgMailbox.filter((invite) => invite.id == inviteId);
-		if (filteredInvites.length != 1) {
-			return OrgInviteResponse.parse({
-				success: false,
-				error: 'catalyst cannot find the invite',
-			});
-		}
-		// toggle invite value
-		const invite = filteredInvites[0];
-		const otherOrg = invite.sender == orgId ? invite.receiver : invite.sender;
-		const otherMailbox = (await this.ctx.storage.get<OrgInvite[]>(otherOrg)) ?? new Array<OrgInvite>();
+	async togglePartnership(orgId: OrgId, inviteId: string): Promise<OrgInvite> {
+		const orgMailbox = (await this.ctx.storage.get<OrgInvite[]>(orgId)) ?? [];
+		const invite = orgMailbox.find((inv) => inv.id === inviteId);
 
-		if (otherMailbox.filter((invite) => invite.id == inviteId).length != 1) {
-			return OrgInviteResponse.parse({
-				success: false,
-				error: 'catalyst cannot find the other invite',
-			});
+		if (!invite) {
+			throw new InviteNotFoundError(inviteId);
 		}
 
-		invite.isActive = !invite.isActive;
+		const otherOrg = invite.sender === orgId ? invite.receiver : invite.sender;
+		const otherMailbox = (await this.ctx.storage.get<OrgInvite[]>(otherOrg)) ?? [];
+
+		if (!otherMailbox.find((inv) => inv.id === inviteId)) {
+			throw new InviteNotFoundError(inviteId);
+		}
+
+		// Validate updated entity before storing
+		const updatedInvite = OrgInviteSchema.parse({ ...invite, isActive: !invite.isActive });
+
 		await this.ctx.blockConcurrencyWhile(async () => {
-			// update both mailboxes
 			await this.ctx.storage.put(
 				orgId,
-				orgMailbox.map((inviteF) => {
-					if (inviteF.id == inviteId) {
-						return invite;
-					} else {
-						return inviteF;
-					}
-				}),
+				orgMailbox.map((inv) => (inv.id === inviteId ? updatedInvite : inv)),
 			);
 			await this.ctx.storage.put(
 				otherOrg,
-				otherMailbox.map((inviteF) => {
-					if (inviteF.id == inviteId) {
-						return invite;
-					} else {
-						return inviteF;
-					}
-				}),
+				otherMailbox.map((inv) => (inv.id === inviteId ? updatedInvite : inv)),
 			);
 		});
 
-		return OrgInviteResponse.parse({
-			success: true,
-			invite,
-		});
+		return updatedInvite;
 	}
 
-	async respond(orgId: OrgId, inviteId: string, status: OrgInviteStatus) {
-		const responder = (await this.ctx.storage.get<OrgInvite[]>(orgId)) ?? new Array<OrgInvite>();
-		const filteredInvites = responder.filter((invite) => invite.id == inviteId);
-		if (filteredInvites.length != 1) {
-			return OrgInviteResponse.parse({
-				success: false,
-				error: 'catalyst cannot find the invite',
-			});
+	async respond(orgId: OrgId, inviteId: string, status: OrgInviteStatus): Promise<OrgInvite> {
+		// Validate external input at boundary
+		const validatedStatus = OrgInviteStatusSchema.parse(status);
+
+		const responder = (await this.ctx.storage.get<OrgInvite[]>(orgId)) ?? [];
+		const invite = responder.find((inv) => inv.id === inviteId);
+
+		if (!invite) {
+			throw new InviteNotFoundError(inviteId);
 		}
 
-		const invite = filteredInvites[0];
-		const otherOrg = invite.sender == orgId ? invite.receiver : invite.sender;
-		const otherMailbox = (await this.ctx.storage.get<OrgInvite[]>(otherOrg)) ?? new Array<OrgInvite>();
+		const otherOrg = invite.sender === orgId ? invite.receiver : invite.sender;
+		const otherMailbox = (await this.ctx.storage.get<OrgInvite[]>(otherOrg)) ?? [];
 
-		if (otherMailbox.filter((invite) => invite.id == inviteId).length != 1) {
-			return OrgInviteResponse.parse({
-				success: false,
-				error: 'catalyst cannot find the other invite',
-			});
+		if (!otherMailbox.find((inv) => inv.id === inviteId)) {
+			throw new InviteNotFoundError(inviteId);
 		}
 
-		// from this point on we have both mailboxes and both have the invite
-
-		// everyone can decline
-		if (status == OrgInviteStatus.enum.declined) {
+		// Everyone can decline
+		if (validatedStatus === 'declined') {
 			await this.ctx.blockConcurrencyWhile(async () => {
 				await this.ctx.storage.put(
 					orgId,
-					responder.filter((inviteF) => {
-						return inviteF.id != inviteId;
-					}),
+					responder.filter((inv) => inv.id !== inviteId),
 				);
 				await this.ctx.storage.put(
 					otherOrg,
-					otherMailbox.filter((inviteF) => {
-						return inviteF.id != inviteId;
-					}),
+					otherMailbox.filter((inv) => inv.id !== inviteId),
 				);
 			});
-			return OrgInviteResponse.parse({
-				success: true,
-				invite: Object.assign(invite, { status: status }),
-			});
-		} else if (status == OrgInviteStatus.enum.accepted) {
-			// only the receiver can accept
-			if (invite.sender == orgId) {
-				return OrgInviteResponse.parse({
-					success: false,
-					error: 'sender cannot accept their own invite',
-				});
+			// Validate updated entity before returning
+			return OrgInviteSchema.parse({ ...invite, status: validatedStatus });
+		}
+
+		// Only receiver can accept
+		if (validatedStatus === 'accepted') {
+			if (invite.sender === orgId) {
+				throw new InvalidOperationError('Sender cannot accept their own invite');
 			}
 
+			// Validate updated entity before storing
+			const updatedInvite = OrgInviteSchema.parse({ ...invite, status: validatedStatus });
 			await this.ctx.blockConcurrencyWhile(async () => {
 				await this.ctx.storage.put(
 					orgId,
-					responder.map((inviteF) => {
-						if (inviteF.id == inviteId) {
-							return Object.assign(inviteF, { status: status });
-						} else {
-							return inviteF;
-						}
-					}),
+					responder.map((inv) => (inv.id === inviteId ? updatedInvite : inv)),
 				);
 				await this.ctx.storage.put(
 					otherOrg,
-					otherMailbox.map((inviteF) => {
-						if (inviteF.id == inviteId) {
-							return Object.assign(inviteF, { status: status });
-						} else {
-							return inviteF;
-						}
-					}),
+					otherMailbox.map((inv) => (inv.id === inviteId ? updatedInvite : inv)),
 				);
 			});
 
-			return OrgInviteResponse.parse({
-				success: true,
-				invite: Object.assign(invite, { status: status }),
-			});
-		} else {
-			return OrgInviteResponse.parse({
-				success: false,
-				error: 'cannot change back to pending',
-			});
+			return updatedInvite;
 		}
+
+		throw new InvalidOperationError('Cannot change back to pending status');
 	}
 }
 
 export default class OrganizationMatchmakingWorker extends WorkerEntrypoint<Env> {
-	async readInvite(inviteId: string, token: Token, doNamespace: string = 'default') {
-		if (!token.cfToken) {
-			return OrgInviteResponse.parse({
-				success: false,
-				error: 'catalyst did not find a verifiable credential',
-			});
-		}
+	async readInvite(inviteId: string, token: Token, doNamespace: string = 'default'): Promise<OrgInviteResponse> {
+		try {
+			if (!token.cfToken) {
+				throw new UnauthorizedError();
+			}
 
-		const user = (await this.env.USERCACHE.getUser(token.cfToken)) as User | undefined;
-		if (!user) {
-			return OrgInviteResponse.parse({
-				success: false,
-				error: 'catalyst did not find a valid user',
-			});
-		}
+			const user = (await this.env.USERCACHE.getUser(token.cfToken)) as User | undefined;
+			if (!user) {
+				throw new InvalidUserError();
+			}
 
-		const permCheck = await this.env.AUTHZED.canUpdateOrgPartnersInOrg(user.orgId, user.userId);
-		if (!permCheck) {
-			return OrgInviteResponse.parse({
+			const permCheck = await this.env.AUTHZED.canUpdateOrgPartnersInOrg(user.orgId, user.userId);
+			if (!permCheck) {
+				throw new PermissionDeniedError('update org partners');
+			}
+
+			const id = this.env.ORG_MATCHMAKING.idFromName(doNamespace);
+			const stub = this.env.ORG_MATCHMAKING.get(id);
+			const data = await stub.read(user.orgId, inviteId);
+
+			// Validate response at Worker boundary
+			return OrgInviteResponseSchema.parse({ success: true, data });
+		} catch (error) {
+			// Validate error response
+			return OrgInviteResponseSchema.parse({
 				success: false,
-				error: 'catalyst rejects users ability to add an org partner',
+				error: error instanceof CatalystError ? error.message : error instanceof Error ? error.message : 'Unknown error',
 			});
 		}
-		const id = this.env.ORG_MATCHMAKING.idFromName(doNamespace);
-		const stub = this.env.ORG_MATCHMAKING.get(id);
-		return await stub.read(user.orgId, inviteId);
 	}
-	async togglePartnership(inviteId: string, token: Token, doNamespace: string = 'default') {
-		if (!token.cfToken) {
-			return OrgInviteResponse.parse({
-				success: false,
-				error: 'catalyst did not find a verifiable credential',
-			});
-		}
+	async togglePartnership(inviteId: string, token: Token, doNamespace: string = 'default'): Promise<OrgInviteResponse> {
+		try {
+			if (!token.cfToken) {
+				throw new UnauthorizedError();
+			}
 
-		const user = (await this.env.USERCACHE.getUser(token.cfToken)) as User | undefined;
-		if (!user) {
-			return OrgInviteResponse.parse({
-				success: false,
-				error: 'catalyst did not find a valid user',
-			});
-		}
+			const user = (await this.env.USERCACHE.getUser(token.cfToken)) as User | undefined;
+			if (!user) {
+				throw new InvalidUserError();
+			}
 
-		const permCheck = await this.env.AUTHZED.canUpdateOrgPartnersInOrg(user.orgId, user.userId);
-		if (!permCheck) {
-			return OrgInviteResponse.parse({
-				success: false,
-				error: 'catalyst rejects users ability to add an org partner',
-			});
-		}
-		const id = this.env.ORG_MATCHMAKING.idFromName(doNamespace);
-		const stub = this.env.ORG_MATCHMAKING.get(id);
-		const inviteOperation = await stub.togglePartnership(user.orgId, inviteId);
-		if (inviteOperation.success) {
-			const invite = OrgInvite.parse(inviteOperation.invite);
+			const permCheck = await this.env.AUTHZED.canUpdateOrgPartnersInOrg(user.orgId, user.userId);
+			if (!permCheck) {
+				throw new PermissionDeniedError('update org partners');
+			}
+
+			const id = this.env.ORG_MATCHMAKING.idFromName(doNamespace);
+			const stub = this.env.ORG_MATCHMAKING.get(id);
+			const invite = await stub.togglePartnership(user.orgId, inviteId);
+
 			console.log({ invite });
 			const partner = user.orgId === invite.sender ? invite.receiver : invite.sender;
 			const resp = invite.isActive
 				? await this.env.AUTHZED.addPartnerToOrg(user.orgId, partner)
 				: await this.env.AUTHZED.deletePartnerInOrg(user.orgId, partner);
 			console.log({ resp });
-		}
-		return inviteOperation;
-	}
-	async sendInvite(receivingOrg: OrgId, token: Token, message: string, doNamespace: string = 'default') {
-		if (!token.cfToken) {
-			return OrgInviteResponse.parse({
-				success: false,
-				error: 'catalyst did not find a verifiable credential',
-			});
-		}
 
-		const user = (await this.env.USERCACHE.getUser(token.cfToken)) as User | undefined;
-		if (!user) {
-			return OrgInviteResponse.parse({
+			// Validate response at Worker boundary
+			return OrgInviteResponseSchema.parse({ success: true, data: invite });
+		} catch (error) {
+			// Validate error response
+			return OrgInviteResponseSchema.parse({
 				success: false,
-				error: 'catalyst did not find a valid user',
+				error: error instanceof CatalystError ? error.message : error instanceof Error ? error.message : 'Unknown error',
 			});
-		}
-
-		// check token for permission
-		const permCheck = await this.env.AUTHZED.canUpdateOrgPartnersInOrg(user.orgId, user.userId);
-		if (!permCheck) {
-			return OrgInviteResponse.parse({
-				success: false,
-				error: 'catalyst rejects users abiltiy to add an org partner',
-			});
-		}
-
-		const id = this.env.ORG_MATCHMAKING.idFromName(doNamespace);
-		const stub = this.env.ORG_MATCHMAKING.get(id);
-		// Im using this to mock incoming invitations
-		// return await stub.send(receivingOrg, user.orgId, message);
-		// this is the right one
-		return await stub.send(user.orgId, receivingOrg, message);
-	}
-	async acceptInvite(inviteId: string, token: Token, doNamespace: string = 'default') {
-		// check token for perms
-		if (!token.cfToken) {
-			return OrgInviteResponse.parse({
-				success: false,
-				error: 'catalyst did not find a verifiable credential',
-			});
-		}
-		const user = (await this.env.USERCACHE.getUser(token.cfToken)) as User | undefined;
-		if (!user) {
-			return OrgInviteResponse.parse({
-				success: false,
-				error: 'catalyst did not find a valid user',
-			});
-		}
-		// check token for permission
-		const permCheck = await this.env.AUTHZED.canUpdateOrgPartnersInOrg(user.orgId, user.userId);
-		if (!permCheck) {
-			return OrgInviteResponse.parse({
-				success: false,
-				error: 'catalyst rejects users abiltiy to add an org partner',
-			});
-		}
-
-		const id = this.env.ORG_MATCHMAKING.idFromName(doNamespace);
-		const stub = this.env.ORG_MATCHMAKING.get(id);
-		const inviteResp = await stub.respond(user.orgId, inviteId, 'accepted');
-		if (inviteResp.success) {
-			const invite = OrgInvite.parse(inviteResp.invite);
-			const partnerWrites = await Promise.all([
-				await this.env.AUTHZED.addPartnerToOrg(invite.sender, invite.receiver),
-				await this.env.AUTHZED.addPartnerToOrg(invite.receiver, invite.sender),
-			]);
-			console.log(partnerWrites);
-			return inviteResp;
-		} else {
-			return inviteResp;
 		}
 	}
-	async declineInvite(inviteId: string, token: Token, doNamespace: string = 'default') {
-		if (!token.cfToken) {
-			return OrgInviteResponse.parse({
-				success: false,
-				error: 'catalyst did not find a verifiable credential',
-			});
-		}
-		const user = (await this.env.USERCACHE.getUser(token.cfToken)) as User | undefined;
-		if (!user) {
-			return OrgInviteResponse.parse({
-				success: false,
-				error: 'catalyst did not find a valid user',
-			});
-		}
-		// check token for permission
-		const permCheck = await this.env.AUTHZED.canUpdateOrgPartnersInOrg(user.orgId, user.userId);
-		if (!permCheck) {
-			return OrgInviteResponse.parse({
-				success: false,
-				error: 'catalyst rejects users abiltiy to add an org partner',
-			});
-		}
-		// check token for perms
-		const id = this.env.ORG_MATCHMAKING.idFromName(doNamespace);
-		const stub = this.env.ORG_MATCHMAKING.get(id);
-		const inviteResp = await stub.respond(user.orgId, inviteId, 'declined');
-		if (inviteResp.success) {
-			const invite = OrgInvite.parse(inviteResp.invite);
-			const partnerWrites = await Promise.all([
-				await this.env.AUTHZED.deletePartnerInOrg(invite.sender, invite.receiver),
-				await this.env.AUTHZED.deletePartnerInOrg(invite.receiver, invite.sender),
-			]);
-			console.log(partnerWrites);
-			return inviteResp;
-		} else {
-			return inviteResp;
-		}
-	}
-	async listInvites(token: Token, doNamespace: string = 'default') {
+	async sendInvite(receivingOrg: OrgId, token: Token, message: string, doNamespace: string = 'default'): Promise<OrgInviteResponse> {
 		try {
 			if (!token.cfToken) {
-				return OrgInviteResponse.parse({
-					success: false,
-					error: 'catalyst did not find a verifiable credential',
-				});
+				throw new UnauthorizedError();
 			}
+
 			const user = (await this.env.USERCACHE.getUser(token.cfToken)) as User | undefined;
 			if (!user) {
-				return OrgInviteResponse.parse({
-					success: false,
-					error: 'catalyst did not find a valid user',
-				});
+				throw new InvalidUserError();
 			}
-			// check token for permission
+
 			const permCheck = await this.env.AUTHZED.canUpdateOrgPartnersInOrg(user.orgId, user.userId);
 			if (!permCheck) {
-				return OrgInviteResponse.parse({
-					success: false,
-					error: 'catalyst rejects users abiltiy to add an org partner',
-				});
+				throw new PermissionDeniedError('send org invites');
 			}
+
 			const id = this.env.ORG_MATCHMAKING.idFromName(doNamespace);
 			const stub = this.env.ORG_MATCHMAKING.get(id);
-			return await stub.list(user.orgId);
-		} catch (e) {
-			console.error(e);
-			return OrgInviteResponse.parse({
+			const data = await stub.send(user.orgId, receivingOrg, message);
+
+			// Validate response at Worker boundary
+			return OrgInviteResponseSchema.parse({ success: true, data });
+		} catch (error) {
+			// Validate error response
+			return OrgInviteResponseSchema.parse({
 				success: false,
-				error: `Failed to list invites: ${e}`,
+				error: error instanceof CatalystError ? error.message : error instanceof Error ? error.message : 'Unknown error',
+			});
+		}
+	}
+	async acceptInvite(inviteId: string, token: Token, doNamespace: string = 'default'): Promise<OrgInviteResponse> {
+		try {
+			if (!token.cfToken) {
+				throw new UnauthorizedError();
+			}
+
+			const user = (await this.env.USERCACHE.getUser(token.cfToken)) as User | undefined;
+			if (!user) {
+				throw new InvalidUserError();
+			}
+
+			const permCheck = await this.env.AUTHZED.canUpdateOrgPartnersInOrg(user.orgId, user.userId);
+			if (!permCheck) {
+				throw new PermissionDeniedError('accept org invites');
+			}
+
+			const id = this.env.ORG_MATCHMAKING.idFromName(doNamespace);
+			const stub = this.env.ORG_MATCHMAKING.get(id);
+			const invite = await stub.respond(user.orgId, inviteId, 'accepted');
+
+			const partnerWrites = await Promise.all([
+				this.env.AUTHZED.addPartnerToOrg(invite.sender, invite.receiver),
+				this.env.AUTHZED.addPartnerToOrg(invite.receiver, invite.sender),
+			]);
+			console.log(partnerWrites);
+
+			// Validate response at Worker boundary
+			return OrgInviteResponseSchema.parse({ success: true, data: invite });
+		} catch (error) {
+			// Validate error response
+			return OrgInviteResponseSchema.parse({
+				success: false,
+				error: error instanceof CatalystError ? error.message : error instanceof Error ? error.message : 'Unknown error',
+			});
+		}
+	}
+	async declineInvite(inviteId: string, token: Token, doNamespace: string = 'default'): Promise<OrgInviteResponse> {
+		try {
+			if (!token.cfToken) {
+				throw new UnauthorizedError();
+			}
+
+			const user = (await this.env.USERCACHE.getUser(token.cfToken)) as User | undefined;
+			if (!user) {
+				throw new InvalidUserError();
+			}
+
+			const permCheck = await this.env.AUTHZED.canUpdateOrgPartnersInOrg(user.orgId, user.userId);
+			if (!permCheck) {
+				throw new PermissionDeniedError('decline org invites');
+			}
+
+			const id = this.env.ORG_MATCHMAKING.idFromName(doNamespace);
+			const stub = this.env.ORG_MATCHMAKING.get(id);
+			const invite = await stub.respond(user.orgId, inviteId, 'declined');
+
+			const partnerWrites = await Promise.all([
+				this.env.AUTHZED.deletePartnerInOrg(invite.sender, invite.receiver),
+				this.env.AUTHZED.deletePartnerInOrg(invite.receiver, invite.sender),
+			]);
+			console.log(partnerWrites);
+
+			// Validate response at Worker boundary
+			return OrgInviteResponseSchema.parse({ success: true, data: invite });
+		} catch (error) {
+			// Validate error response
+			return OrgInviteResponseSchema.parse({
+				success: false,
+				error: error instanceof CatalystError ? error.message : error instanceof Error ? error.message : 'Unknown error',
+			});
+		}
+	}
+	async listInvites(token: Token, doNamespace: string = 'default'): Promise<OrgInviteResponse> {
+		try {
+			if (!token.cfToken) {
+				throw new UnauthorizedError();
+			}
+
+			const user = (await this.env.USERCACHE.getUser(token.cfToken)) as User | undefined;
+			if (!user) {
+				throw new InvalidUserError();
+			}
+
+			const permCheck = await this.env.AUTHZED.canUpdateOrgPartnersInOrg(user.orgId, user.userId);
+			if (!permCheck) {
+				throw new PermissionDeniedError('list org invites');
+			}
+
+			const id = this.env.ORG_MATCHMAKING.idFromName(doNamespace);
+			const stub = this.env.ORG_MATCHMAKING.get(id);
+			const data = await stub.list(user.orgId);
+
+			// Validate response at Worker boundary
+			return OrgInviteResponseSchema.parse({ success: true, data });
+		} catch (error) {
+			console.error(error);
+			// Validate error response
+			return OrgInviteResponseSchema.parse({
+				success: false,
+				error: error instanceof CatalystError ? error.message : error instanceof Error ? error.message : 'Unknown error',
 			});
 		}
 	}
