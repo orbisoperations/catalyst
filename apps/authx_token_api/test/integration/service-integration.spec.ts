@@ -309,18 +309,21 @@ describe('Integration: Cross-Service Interactions', () => {
 			// STEP 2: Create catalyst token with all 3 channel claims
 			const channelIds = createdChannels.map((ch) => ch.id);
 
-			// Get catalyst token (helper creates it via KEY_PROVIDER directly)
-			const catalystToken = await (async () => {
-				const id = env.KEY_PROVIDER.idFromName('default');
-				const stub = env.KEY_PROVIDER.get(id);
-				return stub.signJWT(
-					{
-						entity: `${TEST_ORG_ID}/${CUSTODIAN_USER.email}`,
-						claims: channelIds,
-					},
-					3600 * 1000,
-				);
-			})();
+			// Use SELF.signJWT() to ensure proper token registration (FR-001)
+			const signResponse = await SELF.signJWT(
+				{
+					entity: CUSTODIAN_USER.email,
+					claims: channelIds,
+				},
+				3600 * 1000, // 1 hour
+				{ cfToken: CUSTODIAN_CF_TOKEN },
+			);
+
+			expect(signResponse.success).toBe(true);
+			const catalystToken = {
+				token: signResponse.token!,
+				expiration: signResponse.expiration!,
+			};
 
 			// STEP 3: Split catalyst token into single-use tokens
 			const splitResponse = await SELF.splitTokenIntoSingleUseTokens(catalystToken.token);
@@ -362,17 +365,21 @@ describe('Integration: Cross-Service Interactions', () => {
 			// Create catalyst token with only 2 channel claims
 			const selectedChannels = [createdChannels[0].id, createdChannels[2].id];
 
-			const catalystToken = await (async () => {
-				const id = env.KEY_PROVIDER.idFromName('default');
-				const stub = env.KEY_PROVIDER.get(id);
-				return stub.signJWT(
-					{
-						entity: `${TEST_ORG_ID}/${CUSTODIAN_USER.email}`,
-						claims: selectedChannels,
-					},
-					3600 * 1000,
-				);
-			})();
+			// Use SELF.signJWT() to ensure proper token registration (FR-001)
+			const signResponse = await SELF.signJWT(
+				{
+					entity: CUSTODIAN_USER.email,
+					claims: selectedChannels,
+				},
+				3600 * 1000, // 1 hour
+				{ cfToken: CUSTODIAN_CF_TOKEN },
+			);
+
+			expect(signResponse.success).toBe(true);
+			const catalystToken = {
+				token: signResponse.token!,
+				expiration: signResponse.expiration!,
+			};
 
 			// Split token
 			const splitResponse = await SELF.splitTokenIntoSingleUseTokens(catalystToken.token);
@@ -385,30 +392,27 @@ describe('Integration: Cross-Service Interactions', () => {
 			expect(returnedClaims).toEqual(expect.arrayContaining(selectedChannels));
 		});
 
-		it('should return error when registrar returns no channels', async () => {
+		it('should reject token creation with non-existent channels', async () => {
 			// ═══════════════════════════════════════════════════════════
-			// SCENARIO: Catalyst token has claims, but channels
-			// don't exist in registrar. Should return error.
+			// SCENARIO: Attempt to create token with claims for channels
+			// that don't exist. Should fail at token creation time (FR-001).
 			// ═══════════════════════════════════════════════════════════
 
-			// Create catalyst token with non-existent channel claims
-			const catalystToken = await (async () => {
-				const id = env.KEY_PROVIDER.idFromName('default');
-				const stub = env.KEY_PROVIDER.get(id);
-				return stub.signJWT(
-					{
-						entity: `${TEST_ORG_ID}/${CUSTODIAN_USER.email}`,
-						claims: ['non-existent-channel-1', 'non-existent-channel-2'],
-					},
-					3600 * 1000,
-				);
-			})();
+			await env.AUTHZED.addDataCustodianToOrg(TEST_ORG_ID, CUSTODIAN_USER.email);
 
-			// Attempt to split
-			const splitResponse = await SELF.splitTokenIntoSingleUseTokens(catalystToken.token);
+			// Attempt to create token with non-existent channel claims
+			const signResponse = await SELF.signJWT(
+				{
+					entity: CUSTODIAN_USER.email,
+					claims: ['non-existent-channel-1', 'non-existent-channel-2'],
+				},
+				3600 * 1000, // 1 hour
+				{ cfToken: CUSTODIAN_CF_TOKEN },
+			);
 
-			expect(splitResponse.success).toBe(false);
-			expect(splitResponse.error).toBe('no resources found');
+			// Should fail - cannot create token with claims for non-existent channels
+			expect(signResponse.success).toBe(false);
+			expect(signResponse.error).toContain('catalyst is unable to validate user to all claims');
 		});
 	});
 

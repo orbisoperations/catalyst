@@ -67,6 +67,7 @@ export default defineConfig({
 								},
 								serviceBindings: {
 									USERCACHE: 'user-credentials-cache',
+									ISSUED_JWT_REGISTRY: 'issued-jwt-registry',
 								},
 								workers: [
 									{
@@ -82,6 +83,21 @@ export default defineConfig({
 											CACHE: 'UserCredsCache',
 										},
 										outboundService: handleCloudflareAccessAuthServiceOutbound,
+									},
+									{
+										name: 'issued-jwt-registry',
+										modules: true,
+										modulesRoot: path.resolve('../issued-jwt-registry'),
+										scriptPath: path.resolve('../issued-jwt-registry/dist/index.js'),
+										compatibilityDate: '2025-04-01',
+										compatibilityFlags: ['nodejs_compat'],
+										entrypoint: 'IssuedJWTRegistryWorker',
+										durableObjects: {
+											ISSUED_JWT_REGISTRY_DO: 'I_JWT_Registry_DO',
+										},
+										serviceBindings: {
+											USERCACHE: 'user-credentials-cache',
+										},
 									},
 								],
 							},

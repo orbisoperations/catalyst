@@ -1,9 +1,9 @@
 import { z } from 'zod';
 
 /**
- * Data Channel Validation Schemas
+ * Data Channel Certification Schemas
  *
- * Schemas for certifying and validating data channel endpoints
+ * Schemas for certifying data channel endpoints for Catalyst compliance
  */
 
 /**
@@ -33,7 +33,7 @@ export type JWTTestDetails = z.infer<typeof JWTTestDetailsSchema>;
  * Test Result - Individual validation test result
  */
 export const TestResultSchema = z.object({
-    testType: z.enum(['jwt_validation', 'introspection', 'schema_compliance']),
+    testType: z.enum(['jwt_validation', 'introspection', 'schema_compliance'] as const),
     success: z.boolean(),
     duration: z.number(),
     errorDetails: z.string().optional(),
@@ -45,7 +45,7 @@ export type TestResult = z.infer<typeof TestResultSchema>;
 /**
  * Validation Status
  */
-export const ValidationStatusSchema = z.enum(['valid', 'invalid', 'error', 'pending', 'unknown']);
+export const ValidationStatusSchema = z.enum(['valid', 'invalid', 'error', 'pending', 'unknown'] as const);
 
 export type ValidationStatus = z.infer<typeof ValidationStatusSchema>;
 
@@ -88,7 +88,7 @@ export type ValidationReport = z.infer<typeof ValidationReportSchema>;
  */
 export const ValidationRequestSchema = z.object({
     channelId: z.string(),
-    endpoint: z.string().url(),
+    endpoint: z.url(),
     organizationId: z.string(),
 });
 

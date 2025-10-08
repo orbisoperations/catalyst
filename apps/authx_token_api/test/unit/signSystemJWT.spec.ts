@@ -546,7 +546,8 @@ describe('signSystemJWT - System Service JWT Signing', () => {
 
 		it('should handle very long channelId', async () => {
 			// Arrange
-			const longChannelId = 'a'.repeat(1000);
+			// Registry has a 255 character limit per claim, so use a valid long channelId
+			const longChannelId = 'a'.repeat(250); // Within the 255 char limit
 			const request = {
 				callingService: SYSTEM_SERVICE_NAME,
 				channelId: longChannelId,
@@ -563,7 +564,8 @@ describe('signSystemJWT - System Service JWT Signing', () => {
 
 		it('should handle many channelIds', async () => {
 			// Arrange
-			const manyChannelIds = Array.from({ length: 100 }, (_, i) => `channel-${i}`);
+			// Registry has a 50 claim maximum, so use 50 channels
+			const manyChannelIds = Array.from({ length: 50 }, (_, i) => `channel-${i}`);
 			const request = {
 				callingService: SYSTEM_SERVICE_NAME,
 				channelIds: manyChannelIds,

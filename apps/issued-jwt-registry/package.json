@@ -34,6 +34,7 @@
 		"wrangler": "catalog:"
 	},
 	"dependencies": {
+		"@catalyst/schemas": "workspace:*",
 		"@catalyst/schema_zod": "workspace:*",
 		"@catalyst/user-credentials-cache": "workspace:*"
 	}

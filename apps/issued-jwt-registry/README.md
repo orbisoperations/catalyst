@@ -45,10 +45,14 @@ The application is structured around two main components:
 ### JWT Management
 
 - **Create**: Register new JWT tokens with metadata (name, description, claims, organization)
+  - User-initiated: Requires authentication via `create()` method
+  - System-initiated: Bypasses auth via `createSystem()` for authorized services only
 - **Read**: Retrieve JWT registration details
+  - Authenticated: Requires user token via `get()` method
+  - Unauthenticated: Available via `getById()` for validation purposes
 - **List**: List all JWT registrations for an organization
 - **Update Status**: Change JWT status (e.g., active, revoked)
-- **Delete**: Mark a JWT as deleted
+- **Delete**: Mark a JWT as deleted (**non-idempotent**, see Error Handling below)
 
 ### Revocation System
 
@@ -61,6 +65,44 @@ The application is structured around two main components:
 - **Permission Checks**: All operations require valid user tokens
 - **Organization Isolation**: Each organization can only access its own JWT registrations
 - **Expiration Handling**: Automatic handling of JWT expiry
+- **System Token Authorization**: `createSystem()` only allows specific services (`authx_token_api`, `data_channel_certifier`)
+
+### Error Handling
+
+The delete operation is **non-idempotent** and provides explicit error feedback:
+
+**Delete Behavior** (`delete()` method):
+
+- **Success**: First deletion of an active/revoked token returns `true`
+- **"Token already deleted"**: Thrown when attempting to delete a token that's already deleted (idempotency check)
+- **"Token not found"**: Thrown when the JWT ID doesn't exist in the registry
+
+**Best Practices**:
+
+```typescript
+try {
+	const deleted = await registry.delete(token, jwtId);
+	console.log('Token deleted successfully');
+} catch (error) {
+	if (error.message === 'Token already deleted') {
+		// Handle double-delete attempt
+		console.warn('Token was already deleted');
+	} else if (error.message === 'Token not found') {
+		// Handle non-existent token
+		console.error('Token does not exist');
+	} else {
+		// Handle other errors
+		console.error('Unexpected error:', error);
+	}
+}
+```
+
+**Token Validation** (`validateToken()` method):
+
+- Returns `{ valid: false, reason: 'not_found' }` if token not in registry
+- Returns `{ valid: false, reason: 'revoked' }` if token deleted or revoked
+- Returns `{ valid: false, reason: 'expired' }` if token past expiry date
+- Returns `{ valid: true, entry: IssuedJWTRegistry }` if token is active
 
 ## Integration
 

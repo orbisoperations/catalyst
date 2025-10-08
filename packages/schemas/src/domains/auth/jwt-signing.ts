@@ -1,8 +1,7 @@
 import { z } from 'zod/v4';
-import { createResponseSchema } from '../../core/common';
 import { preprocess, preprocessors } from '../../core/performance';
 
-export const JWTSigningRequest = z.object({
+export const JWTSigningRequestSchema = z.object({
     entity: preprocess(
         preprocessors.trimString,
         z
@@ -21,7 +20,7 @@ export const JWTSigningRequest = z.object({
         .max(86400 * 365, 'Maximum expiration is 1 year')
         .optional(),
 });
-export type JWTSigningRequest = z.infer<typeof JWTSigningRequest>;
+export type JWTSigningRequest = z.infer<typeof JWTSigningRequestSchema>;
 
 // Backward-compatible response schemas
 export const JWTSigningSuccess = z.object({
@@ -37,12 +36,3 @@ export const JWTSigningError = z.object({
 
 export const JWTSigningResponse = z.discriminatedUnion('success', [JWTSigningSuccess, JWTSigningError]);
 export type JWTSigningResponse = z.infer<typeof JWTSigningResponse>;
-
-// Alternative standardized response schema for new code
-const JWTSigningResult = z.object({
-    token: z.string().min(1, 'Token is required'),
-    expiration: z.number().int('Expiration must be an integer').positive('Expiration must be positive'),
-});
-
-export const JWTSigningStandardResponse = createResponseSchema(JWTSigningResult);
-export type JWTSigningStandardResponse = z.infer<typeof JWTSigningStandardResponse>;

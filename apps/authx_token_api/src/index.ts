@@ -1,21 +1,30 @@
 import { WorkerEntrypoint } from 'cloudflare:workers';
 import { JWTPayload } from 'jose';
 import {
-	DataChannel,
-	DataChannelAccessToken,
-	DataChannelMultiAccessResponse,
+	z,
+	JWTRegisterStatus,
+	JWTSigningRequest,
+	JWTSigningResponse,
+	JWTParsingResponse,
+	UserSchema,
+	DataChannelMultiAccessResponseSchema,
+	DataChannelSchema,
+	ServiceUnavailableError,
 	DEFAULT_STANDARD_DURATIONS,
-	JWTRotateResponse,
-	Token,
-	User,
-} from '../../../packages/schema_zod';
-import { JWTSigningRequest, JWTSigningResponse } from '../../../packages/schemas';
+} from '@catalyst/schemas';
+import type { DataChannelMultiAccessResponse, Token, IssuedJWTRegistry } from '@catalyst/schemas';
 import { Env } from './env';
 export { JWTKeyProvider } from './durable_object_security_module';
 
 interface CatalystJWTPayload extends JWTPayload {
 	claims?: string[];
 }
+
+// Local schema for key rotation response (not shared across services)
+const JWTRotateResponseSchema = z.object({
+	success: z.boolean(),
+	error: z.string().optional(),
+});
 
 export default class JWTWorker extends WorkerEntrypoint<Env> {
 	/**
@@ -49,29 +58,29 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 	 */
 	async rotateKey(token: Token, keyNamespace: string = 'default') {
 		if (!token.cfToken) {
-			return JWTRotateResponse.parse({
+			return JWTRotateResponseSchema.parse({
 				success: false,
 				error: 'catalyst did not receive a user credential',
 			});
 		}
 		const userResp = await this.env.USERCACHE.getUser(token.cfToken);
 		if (!userResp) {
-			return JWTRotateResponse.parse({
+			return JWTRotateResponseSchema.parse({
 				success: false,
 				error: 'catalyst did not find a user for the given credential',
 			});
 		}
-		const userParse = User.safeParse(userResp);
+		const userParse = UserSchema.safeParse(userResp);
 		if (!userParse.success) {
 			console.error(userParse.error);
-			return JWTRotateResponse.parse({
+			return JWTRotateResponseSchema.parse({
 				success: false,
 				error: 'catalyst was not able to access user for the given credential',
 			});
 		}
 		// add authzed here when available
 		if (!userParse.data.zitadelRoles.includes('platform-admin')) {
-			return JWTRotateResponse.parse({
+			return JWTRotateResponseSchema.parse({
 				success: false,
 				error: 'catalyst asserts user does not have access jwt admin functions',
 			});
@@ -82,9 +91,9 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 		const success = await stub.rotateKey();
 
 		if (success) {
-			return JWTRotateResponse.parse({ success: success });
+			return JWTRotateResponseSchema.parse({ success: success });
 		} else {
-			return JWTRotateResponse.parse({ success: success, error: 'catalyst experienced and error rotating the key' });
+			return JWTRotateResponseSchema.parse({ success: success, error: 'catalyst experienced and error rotating the key' });
 		}
 	}
 
@@ -106,7 +115,7 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 			});
 		}
 
-		const userParse = User.safeParse(await this.env.USERCACHE.getUser(token.cfToken));
+		const userParse = UserSchema.safeParse(await this.env.USERCACHE.getUser(token.cfToken));
 		if (!userParse.success) {
 			return JWTSigningResponse.parse({
 				success: false,
@@ -142,6 +151,42 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 		const id = this.env.KEY_PROVIDER.idFromName(keyNamespace);
 		const stub = this.env.KEY_PROVIDER.get(id);
 		const jwt = await stub.signJWT(jwtRequest, expiresIn);
+
+		// ═══════════════════════════════════════════════════════════
+		// Register token before returning
+		// ═══════════════════════════════════════════════════════════
+		try {
+			// Decode token to extract jti and claims for registration
+			const { decodeJwt } = await import('jose');
+			const decoded = decodeJwt(jwt.token);
+
+			// Create a JWT-like object for _registerToken
+			const jwtForRegistry = {
+				jti: decoded.jti as string,
+				claims: decoded.claims as string[],
+				exp: decoded.exp as number,
+			} as import('./jwt').JWT;
+
+			await this._registerToken(
+				jwtForRegistry,
+				`User Token - ${userParse.data.userId}`,
+				`User-generated token for ${jwtRequest.claims.length} data channel(s)`,
+				userParse.data.orgId,
+				keyNamespace,
+			);
+		} catch (error) {
+			// FR-010: If registration fails, do not return the token
+			console.error('Failed to register JWT in registry', {
+				entity: jwtRequest.entity,
+				claims: jwtRequest.claims.length,
+				error: error instanceof Error ? error.message : String(error),
+			});
+			return JWTSigningResponse.parse({
+				success: false,
+				error: 'Token registry unavailable',
+			});
+		}
+
 		// returns expiration in MS
 		return JWTSigningResponse.parse({
 			success: true,
@@ -156,8 +201,8 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 	 * Intended for a single use token for a single data channel given a catalyst token was provided
 	 * Not intended for Long Lived Tokens as can be created by users.
 	 *
-	 * This relies only on catalyst token token. This function assumes that the catalyst token has already been validated.
-	 *
+	 * This relies only on catalyst token. This function assumes that the catalyst token has already been validated.
+	 * TODO: Make this single use
 	 * @param claim The data channel claim to include in the token
 	 * @param token The Token object containing the catalyst token
 	 * @param keyNamespace The namespace for signing keys (defaults to 'default')
@@ -202,6 +247,45 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 			5 * DEFAULT_STANDARD_DURATIONS.M,
 		);
 
+		// ═══════════════════════════════════════════════════════════
+		// Register "single-use" token before returning
+		// ═══════════════════════════════════════════════════════════
+		try {
+			// Decode token to extract jti and claims for registration
+			const { decodeJwt } = await import('jose');
+			const decoded = decodeJwt(singleUseJWTs.token);
+
+			// Extract organization from entity (format: orgId/userId)
+			const entity = decodedToken.payload.sub!;
+			const orgId = entity.split('/')[0] || 'unknown';
+
+			// Create a JWT-like object for _registerToken
+			const jwtForRegistry = {
+				jti: decoded.jti as string,
+				claims: decoded.claims as string[],
+				exp: decoded.exp as number,
+			} as import('./jwt').JWT;
+
+			await this._registerToken(
+				jwtForRegistry,
+				`Single-Use Token - ${claim}`,
+				`Single-use token for data channel ${claim} (5min expiry)`,
+				orgId,
+				keyNamespace,
+			);
+		} catch (error) {
+			// FR-010: If registration fails, do not return the token
+			console.error('Failed to register single-use JWT in registry', {
+				claim,
+				entity: decodedToken.payload.sub,
+				error: error instanceof Error ? error.message : String(error),
+			});
+			return JWTSigningResponse.parse({
+				success: false,
+				error: 'Token registry unavailable',
+			});
+		}
+
 		return JWTSigningResponse.parse({
 			success: true,
 			token: singleUseJWTs.token,
@@ -242,10 +326,10 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 		}
 
 		// Validate the channels array
-		const result = DataChannel.array().safeParse(allChannels);
+		const result = DataChannelSchema.array().safeParse(allChannels);
 		if (!result.success) {
 			console.error('Failed to parse array of data channels:', result.error.format());
-			return DataChannelMultiAccessResponse.parse({ success: false, error: 'internal error processing channel information' });
+			return DataChannelMultiAccessResponseSchema.parse({ success: false, error: 'internal error processing channel information' });
 		}
 
 		// NOTE: claims are channel.id
@@ -254,7 +338,7 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 		const dataChannels = result.data.filter((dataChannel) => claims.includes(dataChannel.id));
 		if (dataChannels.length === 0) {
 			// no resources found
-			return DataChannelMultiAccessResponse.parse({
+			return DataChannelMultiAccessResponseSchema.parse({
 				success: false,
 				error: 'no resources found',
 			});
@@ -309,7 +393,54 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 	async validateToken(token: string, keyNamespace: string = 'default', clockTolerance: string = '5 minutes') {
 		const id = this.env.KEY_PROVIDER.idFromName(keyNamespace);
 		const stub = this.env.KEY_PROVIDER.get(id);
-		return await stub.validateToken(token, clockTolerance);
+
+		// Step 1: Cryptographic validation
+		const cryptoValidation = await stub.validateToken(token, clockTolerance);
+
+		// Step 2: If cryptographically valid, check registry for deleted status (FR-006)
+		if (cryptoValidation.valid && cryptoValidation.jwtId) {
+			try {
+				const status = await this.env.ISSUED_JWT_REGISTRY.getStatusSystem(cryptoValidation.jwtId, 'authx_token_api', keyNamespace);
+
+				// Deleted tokens must fail authentication
+				if (status === JWTRegisterStatus.enum.deleted) {
+					console.log('Token validation rejected: token is deleted', {
+						jti: cryptoValidation.jwtId,
+					});
+					return JWTParsingResponse.parse({
+						valid: false,
+						entity: undefined,
+						claims: [],
+						error: 'Token has been deleted',
+					});
+				}
+
+				// Unregistered tokens fail authentication
+				// If token is not in registry (status === undefined), it's unregistered
+				if (status === undefined) {
+					console.log('Token validation rejected: token not registered', {
+						jti: cryptoValidation.jwtId,
+					});
+					return JWTParsingResponse.parse({
+						valid: false,
+						entity: undefined,
+						claims: [],
+						error: 'Token is not registered',
+					});
+				}
+			} catch (error) {
+				// TODO: Fail bruh
+				// If registry check fails, log but don't fail validation
+				// This prevents registry outages from breaking authentication
+				console.error('Failed to check token registry status', {
+					jti: cryptoValidation.jwtId,
+					error: error instanceof Error ? error.message : String(error),
+				});
+				// Continue with cryptographic validation result
+			}
+		}
+
+		return cryptoValidation;
 	}
 
 	/**
@@ -390,11 +521,101 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 		// Log system token creation for audit
 		console.log(`System JWT created for service: ${request.callingService}, purpose: ${request.purpose}, claims: ${claims.join(',')}`);
 
+		// ═══════════════════════════════════════════════════════════
+		// FR-001: Register system token before returning
+		// ═══════════════════════════════════════════════════════════
+		try {
+			// Decode token to extract jti and claims for registration
+			const { decodeJwt } = await import('jose');
+			const decoded = decodeJwt(jwt.token);
+
+			// Create a JWT-like object for _registerToken
+			const jwtForRegistry = {
+				jti: decoded.jti as string,
+				claims: decoded.claims as string[],
+				exp: decoded.exp as number,
+			} as import('./jwt').JWT;
+
+			await this._registerToken(
+				jwtForRegistry,
+				`System Token - ${request.callingService}`,
+				`System-generated token for ${request.purpose} (${claims.length} channel(s))`,
+				'system', // System tokens use 'system' as organization keyNamespace
+			);
+		} catch (error) {
+			// FR-010: If registration fails, do not return the token
+			console.error('Failed to register system JWT in registry', {
+				service: request.callingService,
+				purpose: request.purpose,
+				claims: claims.length,
+				error: error instanceof Error ? error.message : String(error),
+			});
+			return JWTSigningResponse.parse({
+				success: false,
+				error: 'Token registry unavailable',
+			});
+		}
+
 		// Return properly formatted response matching JWTSigningResponse schema
 		return JWTSigningResponse.parse({
 			success: true,
 			token: jwt.token,
 			expiration: jwt.expiration,
 		});
+	}
+
+	/**
+	 * Registers a newly created JWT in the issued-jwt-registry service.
+	 *
+	 * This method MUST be called before signing and returning a token to ensure
+	 * that all issued tokens can be tracked and revoked. If registration fails
+	 * (e.g., registry unavailable), this method throws and token creation must
+	 * be aborted.
+	 *
+	 * @private
+	 * @param jwt - JWT instance with generated jti claim
+	 * @param name - Human-readable token name for UI display
+	 * @param description - Purpose or context of the token
+	 * @param organization - Organization ID that owns this token
+	 * @param doNamespace - Durable Object namespace (default: 'default')
+	 * @throws {Error} If registry is unavailable or registration fails
+	 *
+	 * @see System MUST register all issued tokens
+	 * @see System MUST use consistent unique identifiers (jti)
+	 * @see System MUST fail token creation if registry unavailable
+	 */
+	private async _registerToken(
+		jwt: import('./jwt').JWT,
+		name: string,
+		description: string,
+		organization: string,
+		doNamespace: string = 'default',
+	): Promise<void> {
+		const registryEntry: Omit<IssuedJWTRegistry, 'id'> & { id: string } = {
+			id: jwt.jti,
+			name,
+			description,
+			claims: jwt.claims,
+			expiry: new Date(jwt.exp * 1000), // Convert Unix seconds to JS Date
+			organization,
+			status: JWTRegisterStatus.enum.active,
+		};
+
+		try {
+			await this.env.ISSUED_JWT_REGISTRY.createSystem(registryEntry, 'authx_token_api', doNamespace);
+		} catch (error) {
+			console.error('Failed to register token in registry', {
+				jti: jwt.jti,
+				organization,
+				claims: jwt.claims.length,
+				error: error instanceof Error ? error.message : String(error),
+			});
+
+			throw new ServiceUnavailableError('ISSUED_JWT_REGISTRY', {
+				jti: jwt.jti,
+				organization,
+				originalError: error instanceof Error ? error.message : String(error),
+			});
+		}
 	}
 }

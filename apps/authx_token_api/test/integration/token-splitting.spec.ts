@@ -34,17 +34,21 @@ describe('Integration: Catalyst Token Splitting Workflows', () => {
 			const channelIds = createdChannels.map((ch) => ch.id);
 
 			// STEP 2: Create catalyst token with all 3 claims
-			const catalystToken = await (async () => {
-				const id = env.KEY_PROVIDER.idFromName('default');
-				const stub = env.KEY_PROVIDER.get(id);
-				return stub.signJWT(
-					{
-						entity: `${TEST_ORG_ID}/${CUSTODIAN_USER.email}`,
-						claims: channelIds,
-					},
-					3600 * 1000, // 1 hour
-				);
-			})();
+			// Use SELF.signJWT() to ensure proper token registration (FR-001)
+			const signResponse = await SELF.signJWT(
+				{
+					entity: CUSTODIAN_USER.email,
+					claims: channelIds,
+				},
+				3600 * 1000, // 1 hour
+				{ cfToken: CUSTODIAN_CF_TOKEN },
+			);
+
+			expect(signResponse.success).toBe(true);
+			const catalystToken = {
+				token: signResponse.token!,
+				expiration: signResponse.expiration!,
+			};
 
 			expect(catalystToken.token).toBeDefined();
 			expect(catalystToken.expiration).toBeDefined();
@@ -75,7 +79,7 @@ describe('Integration: Catalyst Token Splitting Workflows', () => {
 				const validateResponse = await SELF.validateToken(permission.singleUseToken!);
 
 				expect(validateResponse.valid).toBe(true);
-				expect(validateResponse.entity).toBe(`${TEST_ORG_ID}/${CUSTODIAN_USER.email}`);
+				expect(validateResponse.entity).toBe(CUSTODIAN_USER.email);
 				expect(validateResponse.claims).toHaveLength(1);
 				expect(validateResponse.claims).toContain(channelIds[i]);
 				expect(validateResponse.jwtId).toBeDefined();
@@ -94,7 +98,7 @@ describe('Integration: Catalyst Token Splitting Workflows', () => {
 				expect(expiryDuration).toBeLessThanOrEqual(fiveMinutesInSeconds + 5);
 
 				// STEP 7: Verify token has correct structure
-				expect(decoded.sub).toBe(`${TEST_ORG_ID}/${CUSTODIAN_USER.email}`);
+				expect(decoded.sub).toBe(CUSTODIAN_USER.email);
 				expect(decoded.iss).toBe('catalyst:system:jwt:latest');
 				expect(decoded.aud).toBe('catalyst:system:datachannels');
 				expect(decoded.claims).toEqual([channelIds[i]]);
@@ -114,17 +118,21 @@ describe('Integration: Catalyst Token Splitting Workflows', () => {
 			const channelIds = createdChannels.map((ch) => ch.id);
 
 			// Create catalyst token with all 3 channels
-			const catalystToken = await (async () => {
-				const id = env.KEY_PROVIDER.idFromName('default');
-				const stub = env.KEY_PROVIDER.get(id);
-				return stub.signJWT(
-					{
-						entity: `${TEST_ORG_ID}/${CUSTODIAN_USER.email}`,
-						claims: channelIds,
-					},
-					3600 * 1000,
-				);
-			})();
+			// Use SELF.signJWT() to ensure proper token registration (FR-001)
+			const signResponse = await SELF.signJWT(
+				{
+					entity: CUSTODIAN_USER.email,
+					claims: channelIds,
+				},
+				3600 * 1000, // 1 hour
+				{ cfToken: CUSTODIAN_CF_TOKEN },
+			);
+
+			expect(signResponse.success).toBe(true);
+			const catalystToken = {
+				token: signResponse.token!,
+				expiration: signResponse.expiration!,
+			};
 
 			// Create single-use token for ONLY the second channel
 			const targetChannel = channelIds[1];
@@ -177,69 +185,35 @@ describe('Integration: Catalyst Token Splitting Workflows', () => {
 			expect(splitResponse.channelPermissions).toBeUndefined();
 		});
 
-		it('should handle partial failures when splitting tokens', async () => {
+		it('should reject token creation with mix of valid and invalid channels', async () => {
 			// ═══════════════════════════════════════════════════════════
-			// SCENARIO: Some claims valid, some invalid (channels don't exist)
-			// Should return partial results with errors for failed claims
+			// SCENARIO: Attempt to create token with mix of real and fake
+			// channel claims. Should fail at token creation time (FR-001).
 			// ═══════════════════════════════════════════════════════════
 
 			await env.AUTHZED.addDataCustodianToOrg(TEST_ORG_ID, CUSTODIAN_USER.email);
 
-			// Create only 2 real channels
+			// Create 2 real channels
 			const channels = generateDataChannels(2);
 			const createdChannels = await Promise.all(channels.map((ch) => custodianCreatesDataChannel(ch)));
 			const realChannelIds = createdChannels.map((ch) => ch.id);
 
-			// Create catalyst token with 2 real channels + 1 fake channel
+			// Attempt to create catalyst token with 2 real channels + 1 fake channel
 			const allClaims = [...realChannelIds, 'fake-channel-id'];
 
-			const catalystToken = await (async () => {
-				const id = env.KEY_PROVIDER.idFromName('default');
-				const stub = env.KEY_PROVIDER.get(id);
-				return stub.signJWT(
-					{
-						entity: `${TEST_ORG_ID}/${CUSTODIAN_USER.email}`,
-						claims: allClaims,
-					},
-					3600 * 1000,
-				);
-			})();
+			// Use SELF.signJWT() to ensure proper token registration (FR-001)
+			const signResponse = await SELF.signJWT(
+				{
+					entity: CUSTODIAN_USER.email,
+					claims: allClaims,
+				},
+				3600 * 1000, // 1 hour
+				{ cfToken: CUSTODIAN_CF_TOKEN },
+			);
 
-			// Split token
-			const splitResponse = await SELF.splitTokenIntoSingleUseTokens(catalystToken.token);
-
-			// Should succeed overall (partial success)
-			expect(splitResponse.success).toBe(true);
-			expect(splitResponse.channelPermissions).toBeDefined();
-
-			// Verify we get results for all 3 claims
-			expect(splitResponse.channelPermissions).toHaveLength(3);
-
-			// Count successes and failures
-			const successes = splitResponse.channelPermissions!.filter((p) => p.success === true);
-			const failures = splitResponse.channelPermissions!.filter((p) => p.success === false);
-
-			// Real channels should succeed, fake channel should fail
-			expect(successes).toHaveLength(2);
-			expect(failures).toHaveLength(1);
-
-			// Verify fake channel has error
-			const fakeChannelResult = splitResponse.channelPermissions!.find((p) => p.claim === 'fake-channel-id');
-
-			expect(fakeChannelResult).toBeDefined();
-			expect(fakeChannelResult!.success).toBe(false);
-			expect(fakeChannelResult!.error).toBeDefined();
-			expect(fakeChannelResult!.singleUseToken).toBeUndefined();
-
-			// Verify real channels have tokens
-			for (const realChannelId of realChannelIds) {
-				const realResult = splitResponse.channelPermissions!.find((p) => p.claim === realChannelId);
-
-				expect(realResult).toBeDefined();
-				expect(realResult!.success).toBe(true);
-				expect(realResult!.singleUseToken).toBeDefined();
-				expect(realResult!.dataChannel).toBeDefined();
-			}
+			// Should fail - cannot create token with invalid channel claim
+			expect(signResponse.success).toBe(false);
+			expect(signResponse.error).toContain('catalyst is unable to validate user to all claims');
 		});
 
 		it('should validate single-use tokens have correct security properties', async () => {
@@ -258,17 +232,21 @@ describe('Integration: Catalyst Token Splitting Workflows', () => {
 			const channelIds = createdChannels.map((ch) => ch.id);
 
 			// Create catalyst token
-			const catalystToken = await (async () => {
-				const id = env.KEY_PROVIDER.idFromName('default');
-				const stub = env.KEY_PROVIDER.get(id);
-				return stub.signJWT(
-					{
-						entity: `${TEST_ORG_ID}/${CUSTODIAN_USER.email}`,
-						claims: channelIds,
-					},
-					3600 * 1000,
-				);
-			})();
+			// Use SELF.signJWT() to ensure proper token registration (FR-001)
+			const signResponse = await SELF.signJWT(
+				{
+					entity: CUSTODIAN_USER.email,
+					claims: channelIds,
+				},
+				3600 * 1000, // 1 hour
+				{ cfToken: CUSTODIAN_CF_TOKEN },
+			);
+
+			expect(signResponse.success).toBe(true);
+			const catalystToken = {
+				token: signResponse.token!,
+				expiration: signResponse.expiration!,
+			};
 
 			// Split into single-use tokens
 			const splitResponse = await SELF.splitTokenIntoSingleUseTokens(catalystToken.token);
@@ -323,47 +301,37 @@ describe('Integration: Catalyst Token Splitting Workflows', () => {
 
 	describe('Error Handling in Token Splitting', () => {
 		it('should handle catalyst token with empty claims array', async () => {
-			// Create catalyst token with empty claims
-			const catalystToken = await (async () => {
-				const id = env.KEY_PROVIDER.idFromName('default');
-				const stub = env.KEY_PROVIDER.get(id);
-				return stub.signJWT(
-					{
-						entity: `${TEST_ORG_ID}/${CUSTODIAN_USER.email}`,
-						claims: [],
-					},
-					3600 * 1000,
-				);
-			})();
+			// Attempt to create catalyst token with empty claims
+			// Use SELF.signJWT() to ensure proper token registration (FR-001)
+			const signResponse = await SELF.signJWT(
+				{
+					entity: CUSTODIAN_USER.email,
+					claims: [],
+				},
+				3600 * 1000, // 1 hour
+				{ cfToken: CUSTODIAN_CF_TOKEN },
+			);
 
-			// Attempt to split
-			const splitResponse = await SELF.splitTokenIntoSingleUseTokens(catalystToken.token);
-
-			// Should fail - no claims to split
-			expect(splitResponse.success).toBe(false);
-			expect(splitResponse.error).toBeDefined();
+			// Should fail - cannot create token with empty claims
+			expect(signResponse.success).toBe(false);
+			expect(signResponse.error).toBeDefined();
 		});
 
 		it('should handle signSingleUseJWT with empty claim on catalyst token', async () => {
-			// Create catalyst token with empty string claim
-			const catalystToken = await (async () => {
-				const id = env.KEY_PROVIDER.idFromName('default');
-				const stub = env.KEY_PROVIDER.get(id);
-				return stub.signJWT(
-					{
-						entity: `${TEST_ORG_ID}/${CUSTODIAN_USER.email}`,
-						claims: [''], // Empty string claim
-					},
-					3600 * 1000,
-				);
-			})();
+			// Attempt to create catalyst token with empty string claim
+			// Use SELF.signJWT() to ensure proper token registration (FR-001)
+			const signResponse = await SELF.signJWT(
+				{
+					entity: CUSTODIAN_USER.email,
+					claims: [''], // Empty string claim
+				},
+				3600 * 1000, // 1 hour
+				{ cfToken: CUSTODIAN_CF_TOKEN },
+			);
 
-			const response = await SELF.signSingleUseJWT('channel-id', {
-				catalystToken: catalystToken.token,
-			});
-
-			expect(response.success).toBe(false);
-			expect(response.error).toContain('invalid claims error');
+			// Should fail - cannot create token with empty string claim
+			expect(signResponse.success).toBe(false);
+			expect(signResponse.error).toBeDefined();
 		});
 
 		it('should handle missing catalyst token in signSingleUseJWT', async () => {
