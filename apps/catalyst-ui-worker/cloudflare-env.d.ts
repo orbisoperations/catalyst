@@ -4,7 +4,7 @@
 declare namespace Cloudflare {
     interface Env {
         WORKER_SELF_REFERENCE: Fetcher /* catalyst-ui-worker */;
-        ISSUED_JWT_WORKER: Fetcher /* issued-jwt-registry */;
+        ISSUED_JWT_REGISTRY: Fetcher /* issued-jwt-registry */;
         CATALYST_DATA_CHANNEL_REGISTRAR_API: Fetcher /* data_channel_registrar */;
         AUTHX_TOKEN_API: Fetcher /* authx_token_api */;
         AUTHX_AUTHZED_API: Fetcher /* authx_authzed_api */;
@@ -4107,7 +4107,7 @@ type AIGatewayHeaders = {
     [key: string]: string | number | boolean | object;
 };
 type AIGatewayUniversalRequest = {
-    provider: AIGatewayProviders | string;  
+    provider: AIGatewayProviders | string;
     endpoint: string;
     headers: Partial<AIGatewayHeaders>;
     query: unknown;
@@ -4124,7 +4124,7 @@ declare abstract class AiGateway {
             extraHeaders?: object;
         }
     ): Promise<Response>;
-    getUrl(provider?: AIGatewayProviders | string): Promise<string>;  
+    getUrl(provider?: AIGatewayProviders | string): Promise<string>;
 }
 interface AutoRAGInternalError extends Error {}
 interface AutoRAGNotFoundError extends Error {}

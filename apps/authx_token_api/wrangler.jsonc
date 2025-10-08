@@ -19,6 +19,7 @@
 		{ "binding": "AUTHZED", "service": "authx_authzed_api" },
 		{ "binding": "DATA_CHANNEL_REGISTRAR", "service": "data_channel_registrar" },
 		{ "binding": "USERCACHE", "service": "user-credentials-cache" },
+		{ "binding": "ISSUED_JWT_REGISTRY", "service": "issued-jwt-registry" },
 	],
 
 	// Durable Objects
@@ -42,6 +43,7 @@
 				{ "binding": "AUTHZED", "service": "authx_authzed_api-preview" },
 				{ "binding": "USERCACHE", "service": "user-credentials-cache-preview" },
 				{ "binding": "DATA_CHANNEL_REGISTRAR", "service": "data_channel_registrar-preview" },
+				{ "binding": "ISSUED_JWT_REGISTRY", "service": "issued-jwt-registry-preview" },
 			],
 			"durable_objects": {
 				"bindings": [{ "name": "KEY_PROVIDER", "class_name": "JWTKeyProvider" }],
@@ -52,6 +54,7 @@
 				{ "binding": "AUTHZED", "service": "authx_authzed_api-staging" },
 				{ "binding": "USERCACHE", "service": "user-credentials-cache-staging" },
 				{ "binding": "DATA_CHANNEL_REGISTRAR", "service": "data_channel_registrar-staging" },
+				{ "binding": "ISSUED_JWT_REGISTRY", "service": "issued-jwt-registry-staging" },
 			],
 			"durable_objects": {
 				"bindings": [{ "name": "KEY_PROVIDER", "class_name": "JWTKeyProvider" }],
@@ -72,6 +75,7 @@
 				{ "binding": "AUTHZED", "service": "authx_authzed_api-uxr" },
 				{ "binding": "USERCACHE", "service": "user-credentials-cache-uxr" },
 				{ "binding": "DATA_CHANNEL_REGISTRAR", "service": "data_channel_registrar-uxr" },
+				{ "binding": "ISSUED_JWT_REGISTRY", "service": "issued-jwt-registry-uxr" },
 			],
 			"durable_objects": {
 				"bindings": [{ "name": "KEY_PROVIDER", "class_name": "JWTKeyProvider" }],
@@ -82,6 +86,7 @@
 				{ "binding": "AUTHZED", "service": "authx_authzed_api-production" },
 				{ "binding": "USERCACHE", "service": "user-credentials-cache-production" },
 				{ "binding": "DATA_CHANNEL_REGISTRAR", "service": "data_channel_registrar-production" },
+				{ "binding": "ISSUED_JWT_REGISTRY", "service": "issued-jwt-registry-production" },
 			],
 			"durable_objects": {
 				"bindings": [{ "name": "KEY_PROVIDER", "class_name": "JWTKeyProvider" }],

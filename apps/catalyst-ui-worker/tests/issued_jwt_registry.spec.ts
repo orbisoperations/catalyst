@@ -14,7 +14,7 @@ describe('issued-jwt-registry unit tests', () => {
             organization: 'orbis_operations',
         };
 
-        const savedIJR = await env.ISSUED_JWT_WORKER.create('orbis_operations', newIJR);
+        const savedIJR = await env.ISSUED_JWT_REGISTRY.create('orbis_operations', newIJR);
 
         expect(savedIJR.id).toBeDefined();
         expect(savedIJR.name).toBe('my_first_jwt');
@@ -30,7 +30,7 @@ describe('issued-jwt-registry unit tests', () => {
             organization: 'orbis_operations',
         };
 
-        const savedChangedIJR = await env.ISSUED_JWT_WORKER.update('orbis_operations', changedIJR);
+        const savedChangedIJR = await env.ISSUED_JWT_REGISTRY.update('orbis_operations', changedIJR);
 
         expect(savedChangedIJR.id).toBeDefined();
         expect(savedChangedIJR.name).toBe('my_first_jwt');
@@ -47,8 +47,8 @@ describe('issued-jwt-registry unit tests', () => {
             expiry: new Date(Date.now() + 1000 * 60 * 60 * 92), //days away
             organization: 'orbis_operations',
         };
-        const madeIJR = await env.ISSUED_JWT_WORKER.create('orbis_operations', anotherIJR);
-        const retrievedIJR: IssuedJWTRegistry | undefined = await env.ISSUED_JWT_WORKER.get(
+        const madeIJR = await env.ISSUED_JWT_REGISTRY.create('orbis_operations', anotherIJR);
+        const retrievedIJR: IssuedJWTRegistry | undefined = await env.ISSUED_JWT_REGISTRY.get(
             'orbis_operations',
             madeIJR.id
         );
@@ -60,7 +60,7 @@ describe('issued-jwt-registry unit tests', () => {
             throw new Error('Could not retrieve the issued JWT registry entry');
         }
 
-        const deletedIJR = await env.ISSUED_JWT_WORKER.delete('orbis_operations', retrievedIJR.id);
+        const deletedIJR = await env.ISSUED_JWT_REGISTRY.delete('orbis_operations', retrievedIJR.id);
         expect(deletedIJR).toBe(true);
     });
 
@@ -83,13 +83,13 @@ describe('issued-jwt-registry unit tests', () => {
             organization: 'orbis_operations',
         };
 
-        await env.ISSUED_JWT_WORKER.create('orbis_operations', newIJR1);
-        await env.ISSUED_JWT_WORKER.create('orbis_operations', newIJR2);
-        await env.ISSUED_JWT_WORKER.create('coverent', newIJR2);
-        const org1BasedIJRs = await env.ISSUED_JWT_WORKER.list('orbis_operations');
+        await env.ISSUED_JWT_REGISTRY.create('orbis_operations', newIJR1);
+        await env.ISSUED_JWT_REGISTRY.create('orbis_operations', newIJR2);
+        await env.ISSUED_JWT_REGISTRY.create('coverent', newIJR2);
+        const org1BasedIJRs = await env.ISSUED_JWT_REGISTRY.list('orbis_operations');
 
-        const org2BasedIJRs = await env.ISSUED_JWT_WORKER.list('nc_state');
-        const org3BasedIJRs = await env.ISSUED_JWT_WORKER.list('coverent');
+        const org2BasedIJRs = await env.ISSUED_JWT_REGISTRY.list('nc_state');
+        const org3BasedIJRs = await env.ISSUED_JWT_REGISTRY.list('coverent');
         expect(org1BasedIJRs.length).toBe(2);
         expect(org2BasedIJRs.length).toBe(0);
         expect(org3BasedIJRs.length).toBe(1);
@@ -105,18 +105,18 @@ describe('issued-jwt-registry unit tests', () => {
             organization: 'orbis_operations',
         };
 
-        const madeIJR = await env.ISSUED_JWT_WORKER.create('orbis_operations', newIJR);
+        const madeIJR = await env.ISSUED_JWT_REGISTRY.create('orbis_operations', newIJR);
 
         // Verify it's in the list initially
-        const initialList = await env.ISSUED_JWT_WORKER.list('orbis_operations');
+        const initialList = await env.ISSUED_JWT_REGISTRY.list('orbis_operations');
         const initialCount = initialList.length;
 
         // Delete the item
-        const deletedIJR = await env.ISSUED_JWT_WORKER.delete('orbis_operations', madeIJR.id);
+        const deletedIJR = await env.ISSUED_JWT_REGISTRY.delete('orbis_operations', madeIJR.id);
         expect(deletedIJR).toBe(true);
 
         // Verify it's no longer in the list
-        const finalList = await env.ISSUED_JWT_WORKER.list('orbis_operations');
+        const finalList = await env.ISSUED_JWT_REGISTRY.list('orbis_operations');
         expect(finalList.length).toBe(initialCount - 1);
 
         // Verify the deleted item is not in the final list

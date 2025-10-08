@@ -59,10 +59,10 @@ export function getUserCache(env: CloudflareEnv): WorkerService {
 
 /**
  * Helper to get Issued JWT Registry service
- * Returns the ISSUED_JWT_WORKER service binding
+ * Returns the ISSUED_JWT_REGISTRY service binding
  */
 export function getJWTRegistry(env: CloudflareEnv): WorkerService {
-    return getService(env, 'ISSUED_JWT_WORKER');
+    return getService(env, 'ISSUED_JWT_REGISTRY');
 }
 
 /**

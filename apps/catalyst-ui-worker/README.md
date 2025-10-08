@@ -17,7 +17,7 @@ This application is built with:
 
 The UI Worker integrates with multiple Catalyst services:
 
-- **ISSUED_JWT_WORKER** - JWT token management
+- **ISSUED_JWT_REGISTRY** - JWT token management
 - **CATALYST_DATA_CHANNEL_REGISTRAR_API** - Data channel discovery and registration
 - **AUTHX_TOKEN_API** - Authentication token services
 - **AUTHX_AUTHZED_API** - Authorization and permissions
