@@ -106,6 +106,13 @@ export default defineWorkersConfig({
               durableObjects: {
                 KEY_PROVIDER: 'JWTKeyProvider',
               },
+              serviceBindings: {
+                ISSUED_JWT_REGISTRY: 'issued-jwt-registry',
+                AUTHZED: 'authx_authzed_api',
+                USERCACHE: 'user-credentials-cache',
+                // Note: DATA_CHANNEL_REGISTRAR is not included here to avoid circular dependency
+                // since data_channel_registrar is the main worker being tested
+              },
             },
             {
               name: 'user-credentials-cache',
@@ -120,6 +127,21 @@ export default defineWorkersConfig({
                 CACHE: 'UserCredsCache',
               },
               outboundService: handleCloudflareAccessAuthServiceOutbound,
+            },
+            {
+              name: 'issued-jwt-registry',
+              modules: true,
+              modulesRoot: path.resolve('../issued-jwt-registry'),
+              scriptPath: path.resolve('../issued-jwt-registry/dist/index.js'),
+              compatibilityDate: '2025-04-01',
+              compatibilityFlags: ['nodejs_compat'],
+              entrypoint: 'IssuedJWTRegistryWorker',
+              durableObjects: {
+                ISSUED_JWT_REGISTRY_DO: 'I_JWT_Registry_DO',
+              },
+              serviceBindings: {
+                USERCACHE: 'user-credentials-cache',
+              },
             },
           ],
         },

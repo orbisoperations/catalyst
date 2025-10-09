@@ -55,9 +55,12 @@ export async function custodianCreatesDataChannel(dataChannel: DataChannel) {
   const addDataChannelToOrg = await env.AUTHZED.addDataChannelToOrg(TEST_ORG_ID, dataChannel.id);
   // add the org to the data channel
   const addOrgToDataChannel = await env.AUTHZED.addOrgToDataChannel(dataChannel.id, TEST_ORG_ID);
+  // also add user to the org (in case they weren't already)
+  const addUserToOrg = await env.AUTHZED.addUserToOrg(TEST_ORG_ID, user.email);
 
   expect(addDataChannelToOrg).toBeDefined();
   expect(addOrgToDataChannel).toBeDefined();
+  expect(addUserToOrg).toBeDefined();
 
   expect(createResponse.success).toBe(true);
 
@@ -81,18 +84,27 @@ export function getOrgId(cfToken: string) {
 
 export async function getCatalystToken(cfToken: string, claims: string[]) {
   const user = validUsers[cfToken];
-  // always use the default as DO Namespace
-  const id = env.KEY_PROVIDER.idFromName('default');
-  const stub = env.KEY_PROVIDER.get(id);
-  const token = stub.signJWT(
+
+  // Use the authx_token_api service to sign JWTs
+  // This ensures tokens are properly registered
+  const response = await env.AUTHX_TOKEN_API.signJWT(
     {
-      entity: `${getOrgId(cfToken)}/${user.email}`,
+      entity: user.email,
       claims,
-      expiresIn: 3600,
     },
-    3600,
+    3600 * 1000, // 1 hour in milliseconds
+    { cfToken },
+    'default',
   );
-  return token;
+
+  if (!response.success) {
+    throw new Error(`Failed to create catalyst token: ${response.error}`);
+  }
+
+  return {
+    token: response.token,
+    expiration: response.expiration,
+  };
 }
 
 export async function clearAllAuthzedRoles() {

@@ -249,6 +249,9 @@ importers:
       '@catalyst/schema_zod':
         specifier: workspace:*
         version: link:../../packages/schema_zod
+      '@catalyst/schemas':
+        specifier: workspace:*
+        version: link:../../packages/schemas
     devDependencies:
       '@cloudflare/vitest-pool-workers':
         specifier: ^0.9.9

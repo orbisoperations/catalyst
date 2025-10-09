@@ -56,9 +56,13 @@ export class JWTKeyProvider extends DurableObject {
 		return true;
 	}
 
-	async signJWT(req: JWTSigningRequest, expiresIn: number) {
+	async signJWT(req: JWTSigningRequest & { jti?: string }, expiresIn: number) {
 		await this.key();
+		// Create JWT with provided jti if available, otherwise generate new one
 		const jwt = new JWT(req.entity, req.claims, 'catalyst:system:jwt:latest');
+		if (req.jti) {
+			jwt.jti = req.jti; // Use the provided jti
+		}
 		const newToken = await this.currentKey!.sign(jwt, expiresIn);
 		const payload = decodeJwt(newToken);
 		const expiration = (payload.exp as number) * DEFAULT_STANDARD_DURATIONS.S;

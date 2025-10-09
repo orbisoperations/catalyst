@@ -42,7 +42,7 @@ export default class IssuedJWTRegistryWorker extends WorkerEntrypoint<Env> {
 	 */
 	async createSystem(issuedJWTRegistry: IssuedJWTRegistry, callingService: string, doNamespace: string = 'default') {
 		// Validate calling service against allowlist
-		const ALLOWED_SERVICES = ['authx_token_api', 'data_channel_certifier'];
+		const ALLOWED_SERVICES = ['authx_token_api', 'data_channel_certifier', 'data_channel_registrar'];
 		if (!ALLOWED_SERVICES.includes(callingService)) {
 			// Audit log unauthorized attempt
 			console.error('Unauthorized service attempted to create system token', {
@@ -89,6 +89,15 @@ export default class IssuedJWTRegistryWorker extends WorkerEntrypoint<Env> {
 		const stub = this.env.ISSUED_JWT_REGISTRY_DO.get(doId);
 
 		const resp = await stub.get(issuedJWTRegId);
+
+		// Handle case where entry doesn't exist
+		if (!resp) {
+			return {
+				success: false,
+				error: `Registry entry not found for ID: ${issuedJWTRegId}`,
+			};
+		}
+
 		return zIssuedJWTRegistry.safeParse(resp);
 	}
 

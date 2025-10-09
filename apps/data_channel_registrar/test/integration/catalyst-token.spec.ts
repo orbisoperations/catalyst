@@ -37,6 +37,9 @@ describe('Testing the catalyst token access controls to data channels', () => {
       const result = await SELF.read('default', channelsToCreate.id, {
         catalystToken: token.token,
       });
+      if (!result.success) {
+        console.error('Read failed with error:', result.error);
+      }
       expect(result.success).toBe(true);
       if (result.success) {
         const dataChannel = Array.isArray(result.data) ? result.data[0] : result.data;
@@ -79,6 +82,9 @@ describe('Testing the catalyst token access controls to data channels', () => {
         catalystToken: token.token,
       });
 
+      if (!result.success) {
+        console.error('Read failed with error:', result.error);
+      }
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.data).toBeDefined();
