@@ -28,7 +28,7 @@ export default defineConfig({
 			defineWorkersProject({
 				test: {
 					name: 'unit',
-					include: ['tests/unit/**/*.test.ts'],
+					include: ['test/unit/**/*.test.ts'],
 					poolOptions: {
 						workers: {
 							main: 'src/index.ts',
@@ -48,7 +48,7 @@ export default defineConfig({
 									{
 										name: 'mock-usercache',
 										modules: true,
-										scriptPath: path.resolve('./tests/unit/__mocks__/usercache.js'),
+										scriptPath: path.resolve('./test/unit/__mocks__/usercache.js'),
 										compatibilityDate: '2025-04-01',
 										compatibilityFlags: ['nodejs_compat'],
 									},
@@ -63,7 +63,7 @@ export default defineConfig({
 			defineWorkersProject({
 				test: {
 					name: 'integration',
-					include: ['tests/integration/**/*.spec.ts'],
+					include: ['test/integration/**/*.spec.ts'],
 					globalSetup: './global-setup.ts',
 					poolOptions: {
 						workers: {

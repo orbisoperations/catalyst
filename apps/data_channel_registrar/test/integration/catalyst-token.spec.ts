@@ -31,6 +31,11 @@ describe('Testing the catalyst token access controls to data channels', () => {
       const channelsToCreate = await custodianCreatesDataChannel(dataChannel);
       expect(channelsToCreate).toBeDefined();
 
+      // Ensure custodian user has read permission (should already be set by custodianCreatesDataChannel)
+      // but let's be explicit
+      const user = validUsers['cf-custodian-token'];
+      await env.AUTHZED.addUserToOrg(TEST_ORG_ID, user.email);
+
       // create token with data channel id in claims
       const token = await getCatalystToken('cf-custodian-token', [channelsToCreate.id]);
 
@@ -64,6 +69,9 @@ describe('Testing the catalyst token access controls to data channels', () => {
       const addOrgAdminToOrg = await env.AUTHZED.addAdminToOrg(TEST_ORG_ID, user.email);
       expect(addOrgAdminToOrg).toBeDefined();
 
+      // Explicitly add admin user to org
+      await env.AUTHZED.addUserToOrg(TEST_ORG_ID, user.email);
+
       // assert 1 data channel in the DO
       const listDataChannels = await SELF.list('default', {
         cfToken: 'cf-org-admin-token',
@@ -96,12 +104,13 @@ describe('Testing the catalyst token access controls to data channels', () => {
       const channelsToCreate = await custodianCreatesDataChannel(dataChannel);
       expect(channelsToCreate).toBeDefined();
 
-      // create token with data channel id in claims
-      const token = await getCatalystToken('cf-org-admin-token', [channelsToCreate.id]);
-      // add org admin role to org
+      // add org admin role to org FIRST (before creating token)
       const user = validUsers['cf-org-admin-token'];
       const addOrgAdminToOrg = await env.AUTHZED.addAdminToOrg(TEST_ORG_ID, user.email);
       expect(addOrgAdminToOrg).toBeDefined();
+
+      // create token with data channel id in claims
+      const token = await getCatalystToken('cf-org-admin-token', [channelsToCreate.id]);
 
       const result = await SELF.create('default', dataChannel, {
         catalystToken: token.token,
@@ -132,6 +141,13 @@ describe('Testing the catalyst token access controls to data channels', () => {
   describe("entity doesn't have any roles", () => {
     it('cannot READ a data channel', async () => {
       await clearAllAuthzedRoles();
+
+      // Grant AuthZed permissions for the channel so token creation succeeds
+      // (but user won't have actual read access since we cleared all roles)
+      await env.AUTHZED.addDataChannelToOrg(TEST_ORG_ID, 'dummy-data-channel-id');
+      await env.AUTHZED.addOrgToDataChannel('dummy-data-channel-id', TEST_ORG_ID);
+      await env.AUTHZED.addAdminToOrg(TEST_ORG_ID, validUsers['cf-org-admin-token'].email);
+
       // create token with data channel id in claims
       const token = await getCatalystToken('cf-org-admin-token', ['dummy-data-channel-id']);
 

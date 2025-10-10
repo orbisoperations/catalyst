@@ -33,24 +33,21 @@ describe('Integration: Catalyst Token Splitting Workflows', () => {
 			const createdChannels = await Promise.all(channels.map((ch) => custodianCreatesDataChannel(ch)));
 			const channelIds = createdChannels.map((ch) => ch.id);
 
-			// STEP 2: Create catalyst token with all 3 claims
-			const catalystToken = await (async () => {
-				const id = env.KEY_PROVIDER.idFromName('default');
-				const stub = env.KEY_PROVIDER.get(id);
-				return stub.signJWT(
-					{
-						entity: `${TEST_ORG_ID}/${CUSTODIAN_USER.email}`,
-						claims: channelIds,
-					},
-					3600 * 1000, // 1 hour
-				);
-			})();
+			// STEP 2: Create catalyst token with all 3 claims (properly registered)
+			const catalystTokenResponse = await SELF.signJWT(
+				{
+					entity: `${TEST_ORG_ID}/${CUSTODIAN_USER.email}`,
+					claims: channelIds,
+				},
+				3600 * 1000, // 1 hour
+				{ cfToken: CUSTODIAN_CF_TOKEN },
+			);
 
-			expect(catalystToken.token).toBeDefined();
-			expect(catalystToken.expiration).toBeDefined();
+			expect(catalystTokenResponse.success).toBe(true);
+			const catalystToken = catalystTokenResponse.token!;
 
 			// STEP 3: Split catalyst token into single-use tokens
-			const splitResponse = await SELF.splitTokenIntoSingleUseTokens(catalystToken.token);
+			const splitResponse = await SELF.splitTokenIntoSingleUseTokens(catalystToken);
 
 			// Verify split succeeded
 			expect(splitResponse.success).toBe(true);
@@ -193,20 +190,24 @@ describe('Integration: Catalyst Token Splitting Workflows', () => {
 			// Create catalyst token with 2 real channels + 1 fake channel
 			const allClaims = [...realChannelIds, 'fake-channel-id'];
 
-			const catalystToken = await (async () => {
-				const id = env.KEY_PROVIDER.idFromName('default');
-				const stub = env.KEY_PROVIDER.get(id);
-				return stub.signJWT(
-					{
-						entity: `${TEST_ORG_ID}/${CUSTODIAN_USER.email}`,
-						claims: allClaims,
-					},
-					3600 * 1000,
-				);
-			})();
+			// Grant permission for the fake channel too (so token creation succeeds)
+			await env.AUTHZED.addDataChannelToOrg(TEST_ORG_ID, 'fake-channel-id');
+			await env.AUTHZED.addOrgToDataChannel('fake-channel-id', TEST_ORG_ID);
+
+			const catalystTokenResponse = await SELF.signJWT(
+				{
+					entity: `${TEST_ORG_ID}/${CUSTODIAN_USER.email}`,
+					claims: allClaims,
+				},
+				3600 * 1000,
+				{ cfToken: CUSTODIAN_CF_TOKEN },
+			);
+
+			expect(catalystTokenResponse.success).toBe(true);
+			const catalystToken = catalystTokenResponse.token!;
 
 			// Split token
-			const splitResponse = await SELF.splitTokenIntoSingleUseTokens(catalystToken.token);
+			const splitResponse = await SELF.splitTokenIntoSingleUseTokens(catalystToken);
 
 			// Should succeed overall (partial success)
 			expect(splitResponse.success).toBe(true);
@@ -257,21 +258,21 @@ describe('Integration: Catalyst Token Splitting Workflows', () => {
 			const createdChannels = await Promise.all(channels.map((ch) => custodianCreatesDataChannel(ch)));
 			const channelIds = createdChannels.map((ch) => ch.id);
 
-			// Create catalyst token
-			const catalystToken = await (async () => {
-				const id = env.KEY_PROVIDER.idFromName('default');
-				const stub = env.KEY_PROVIDER.get(id);
-				return stub.signJWT(
-					{
-						entity: `${TEST_ORG_ID}/${CUSTODIAN_USER.email}`,
-						claims: channelIds,
-					},
-					3600 * 1000,
-				);
-			})();
+			// Create catalyst token (properly registered)
+			const catalystTokenResponse = await SELF.signJWT(
+				{
+					entity: `${TEST_ORG_ID}/${CUSTODIAN_USER.email}`,
+					claims: channelIds,
+				},
+				3600 * 1000,
+				{ cfToken: CUSTODIAN_CF_TOKEN },
+			);
+
+			expect(catalystTokenResponse.success).toBe(true);
+			const catalystToken = catalystTokenResponse.token!;
 
 			// Split into single-use tokens
-			const splitResponse = await SELF.splitTokenIntoSingleUseTokens(catalystToken.token);
+			const splitResponse = await SELF.splitTokenIntoSingleUseTokens(catalystToken);
 
 			expect(splitResponse.success).toBe(true);
 			expect(splitResponse.channelPermissions).toHaveLength(2);
@@ -307,7 +308,7 @@ describe('Integration: Catalyst Token Splitting Workflows', () => {
 			expect(decoded1.jti).not.toBe(decoded2.jti);
 
 			// SECURITY CHECK 5: Same subject (entity) as catalyst token
-			const catalystDecoded = decodeJwt(catalystToken.token);
+			const catalystDecoded = decodeJwt(catalystToken);
 			expect(decoded1.sub).toBe(catalystDecoded.sub);
 			expect(decoded2.sub).toBe(catalystDecoded.sub);
 

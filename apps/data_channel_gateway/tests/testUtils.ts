@@ -10,22 +10,34 @@ export function isWithinRange(value: number, min: number, max: number) {
 }
 
 export const generateCatalystToken = async (entity: string, claims: string[], ctx?: TestContext, user?: string) => {
-    const jwtDOID = env.JWT_TOKEN_DO.idFromName('default');
-    const jwtStub = env.JWT_TOKEN_DO.get(jwtDOID);
-    const tokenResp = await jwtStub.signJWT(
+    // Set up permissions BEFORE creating the token
+    for (const claim of claims) {
+        await env.AUTHX_AUTHZED_API.addDataChannelToOrg(TEST_ORG, claim);
+        await env.AUTHX_AUTHZED_API.addOrgToDataChannel(claim, TEST_ORG);
+    }
+    await env.AUTHX_AUTHZED_API.addUserToOrg(TEST_ORG, user || TEST_USER);
+
+    // Use AUTHX_TOKEN_API worker to properly register the token
+    const tokenResp = await env.AUTHX_TOKEN_API.signJWT(
         {
             entity: `${entity}/${user || TEST_USER}`,
             claims: claims,
         },
-        10 * 60 * 1000
+        10 * 60 * 1000,
+        { cfToken: 'cf-test-token' }, // Use the mock CF token
+        'default'
     );
+
+    if (!tokenResp.success) {
+        throw new Error(`Failed to create catalyst token: ${tokenResp.error}`);
+    }
 
     console.log({
         test: ctx?.task.name,
         signedTokenForTest: tokenResp.token,
     });
 
-    return tokenResp.token;
+    return tokenResp.token!;
 };
 
 export const registerDataChannel = async (dataChannel: DataChannel) => {
