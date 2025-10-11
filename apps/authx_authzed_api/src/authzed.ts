@@ -126,7 +126,7 @@ export class AuthzedClient {
 		const { data } = await this.utils.fetcher('read', body);
 		return this.utils.parseOrganizationData(data);
 	}
-	async deleteDataChannelInOrganization(orgId: OrgId, dataChannelId: DataChannelId): Promise<Authzed.Relationships.DeletResult> {
+	async deleteDataChannelInOrganization(orgId: OrgId, dataChannelId: DataChannelId): Promise<Authzed.Relationships.DeleteResult> {
 		const body = this.utils.deleteRelationship({
 			relationOwner: {
 				objectType: Catalyst.EntityEnum.enum.organization,
@@ -139,7 +139,7 @@ export class AuthzedClient {
 			},
 		});
 		const { data } = await this.utils.fetcher('delete', body);
-		return Authzed.Relationships.DeletResult.parse(data);
+		return Authzed.Relationships.DeleteResult.parse(data);
 	}
 
 	async addPartnerToOrganization(orgId: OrgId, partnerId: OrgId): Promise<Authzed.Relationships.WriteResult> {
@@ -174,7 +174,7 @@ export class AuthzedClient {
 		const { data } = await this.utils.fetcher('read', body);
 		return this.utils.parseOrganizationData(data);
 	}
-	async deletePartnerInOrganization(orgId: OrgId, partnerId: OrgId): Promise<Authzed.Relationships.DeletResult> {
+	async deletePartnerInOrganization(orgId: OrgId, partnerId: OrgId): Promise<Authzed.Relationships.DeleteResult> {
 		const body = this.utils.deleteRelationship({
 			relationOwner: {
 				objectType: Catalyst.EntityEnum.enum.organization,
@@ -187,7 +187,7 @@ export class AuthzedClient {
 			},
 		});
 		const { data } = await this.utils.fetcher('delete', body);
-		return Authzed.Relationships.DeletResult.parse(data);
+		return Authzed.Relationships.DeleteResult.parse(data);
 	}
 
 	async addUserToOrganization(org: string, user: string): Promise<Authzed.Relationships.WriteResult> {
@@ -207,7 +207,7 @@ export class AuthzedClient {
 		return Authzed.Relationships.WriteResult.parse(data);
 	}
 
-	async removeUserRoleFromOrganization(org: string, user: string, role: Catalyst.RoleEnum): Promise<Authzed.Relationships.DeletResult> {
+	async removeUserRoleFromOrganization(org: string, user: string, role: Catalyst.RoleEnum): Promise<Authzed.Relationships.DeleteResult> {
 		const body = this.utils.deleteRelationship({
 			relationOwner: {
 				objectType: Catalyst.EntityEnum.enum.organization,
@@ -220,7 +220,7 @@ export class AuthzedClient {
 			},
 		});
 		const { data } = await this.utils.fetcher('delete', body);
-		return Authzed.Relationships.DeletResult.parse(data);
+		return Authzed.Relationships.DeleteResult.parse(data);
 	}
 
 	async addDataCustodianToOrganization(org: string, user: string): Promise<Authzed.Relationships.WriteResult> {
@@ -330,7 +330,7 @@ export class AuthzedClient {
 		const { data } = await this.utils.fetcher('read', body);
 		return this.utils.parseOrganizationData(data);
 	}
-	async deleteOrgInDataChannel(dataChannelId: DataChannelId, orgId: OrgId): Promise<Authzed.Relationships.DeletResult> {
+	async deleteOrgInDataChannel(dataChannelId: DataChannelId, orgId: OrgId): Promise<Authzed.Relationships.DeleteResult> {
 		const body = this.utils.deleteRelationship({
 			relationOwner: {
 				objectType: Catalyst.EntityEnum.enum.data_channel,
@@ -343,7 +343,7 @@ export class AuthzedClient {
 			},
 		});
 		const { data } = await this.utils.fetcher('delete', body);
-		return Authzed.Relationships.DeletResult.parse(data);
+		return Authzed.Relationships.DeleteResult.parse(data);
 	}
 
 	async dataChannelPermissionsCheck(dataChannelId: DataChannelId, userId: UserId, permission: Catalyst.DataChannel.PermissionsEnum) {
@@ -357,6 +357,232 @@ export class AuthzedClient {
 		}
 
 		return result.data.permissionship === Authzed.Permissions.PermissionValues.enum.PERMISSIONSHIP_HAS_PERMISSION;
+	}
+
+	// ==================================================================================
+	// Channel Share Methods (Granular Shares)
+	// ==================================================================================
+
+	/**
+	 * Grant permission for a partner organization to access a specific data channel
+	 * Creates a channel_share entity linking the channel to the partner
+	 * @param channelId - The data channel ID to share
+	 * @param partnerOrgId - The partner organization ID to grant access
+	 * @returns WriteResult with the created share ID
+	 */
+	async addChannelShare(channelId: DataChannelId, partnerOrgId: OrgId): Promise<Authzed.Relationships.WriteResult> {
+		// Generate composite ID for the share entity (using | separator as per AuthZed ObjectId regex)
+		const shareId = `${channelId}|${partnerOrgId}`;
+
+		// Create the share entity with bidirectional relationships
+		const channelRelationBody = this.utils.writeRelationship({
+			relationOwner: {
+				objectType: Catalyst.EntityEnum.enum.channel_share,
+				objectId: shareId,
+			},
+			relation: Catalyst.ChannelShare.EntityEnum.enum.channel,
+			relatedItem: {
+				objectType: Catalyst.EntityEnum.enum.data_channel,
+				objectId: channelId,
+			},
+		});
+
+		const partnerRelationBody = this.utils.writeRelationship({
+			relationOwner: {
+				objectType: Catalyst.EntityEnum.enum.channel_share,
+				objectId: shareId,
+			},
+			relation: Catalyst.ChannelShare.EntityEnum.enum.partner,
+			relatedItem: {
+				objectType: Catalyst.EntityEnum.enum.organization,
+				objectId: partnerOrgId,
+			},
+		});
+
+		// Create the reverse relationship: data_channel -> shared_with -> channel_share
+		// This is required for the read_by_share permission to work
+		const sharedWithRelationBody = this.utils.writeRelationship({
+			relationOwner: {
+				objectType: Catalyst.EntityEnum.enum.data_channel,
+				objectId: channelId,
+			},
+			relation: Catalyst.DataChannel.EntityEnum.enum.shared_with,
+			relatedItem: {
+				objectType: Catalyst.EntityEnum.enum.channel_share,
+				objectId: shareId,
+			},
+		});
+
+		// Write all three relationships in sequence
+		// TODO: Consider using batch write API for atomic operation
+		const channelResult = await this.utils.fetcher('write', channelRelationBody);
+		if (!channelResult.success) {
+			throw new Error(`Failed to create channel relationship for share ${shareId}`);
+		}
+
+		const partnerResult = await this.utils.fetcher('write', partnerRelationBody);
+		if (!partnerResult.success) {
+			throw new Error(`Failed to create partner relationship for share ${shareId}`);
+		}
+
+		const sharedWithResult = await this.utils.fetcher('write', sharedWithRelationBody);
+		if (!sharedWithResult.success) {
+			throw new Error(`Failed to create shared_with relationship for share ${shareId}`);
+		}
+
+		return Authzed.Relationships.WriteResult.parse(sharedWithResult.data);
+	}
+
+	/**
+	 * Revoke permission for a partner organization to access a specific data channel
+	 * Deletes the channel_share entity and all its relationships
+	 * @param channelId - The data channel ID
+	 * @param partnerOrgId - The partner organization ID
+	 * @returns DeleteResult indicating success
+	 */
+	async removeChannelShare(channelId: DataChannelId, partnerOrgId: OrgId): Promise<Authzed.Relationships.DeleteResult> {
+		const shareId = `${channelId}|${partnerOrgId}`;
+
+		// Delete all three relationships for this share entity
+		// 1. channel_share -> channel
+		const channelBody = this.utils.deleteRelationship({
+			relationOwner: {
+				objectType: Catalyst.EntityEnum.enum.channel_share,
+				objectId: shareId,
+			},
+			relation: Catalyst.ChannelShare.EntityEnum.enum.channel,
+			relatedItem: {
+				objectType: Catalyst.EntityEnum.enum.data_channel,
+				objectId: channelId,
+			},
+		});
+
+		// 2. channel_share -> partner
+		const partnerBody = this.utils.deleteRelationship({
+			relationOwner: {
+				objectType: Catalyst.EntityEnum.enum.channel_share,
+				objectId: shareId,
+			},
+			relation: Catalyst.ChannelShare.EntityEnum.enum.partner,
+			relatedItem: {
+				objectType: Catalyst.EntityEnum.enum.organization,
+				objectId: partnerOrgId,
+			},
+		});
+
+		// 3. data_channel -> shared_with
+		const sharedWithBody = this.utils.deleteRelationship({
+			relationOwner: {
+				objectType: Catalyst.EntityEnum.enum.data_channel,
+				objectId: channelId,
+			},
+			relation: Catalyst.DataChannel.EntityEnum.enum.shared_with,
+			relatedItem: {
+				objectType: Catalyst.EntityEnum.enum.channel_share,
+				objectId: shareId,
+			},
+		});
+
+		// Execute all deletes (AuthZed deletes are idempotent)
+		await this.utils.fetcher('delete', channelBody);
+		await this.utils.fetcher('delete', partnerBody);
+		const sharedWithResult = await this.utils.fetcher('delete', sharedWithBody);
+
+		// Return the last result (all should have same deletedAt token)
+		return Authzed.Relationships.DeleteResult.parse(sharedWithResult.data);
+	}
+
+	/**
+	 * List all partner organizations that have been granted access to a specific channel
+	 * @param channelId - The data channel ID to query
+	 * @param partnerOrgId - Optional: filter by specific partner org
+	 * @returns Array of partner organization IDs that can access this channel
+	 */
+	async listChannelPartners(channelId: DataChannelId, partnerOrgId?: OrgId): Promise<string[]> {
+		// Query from the data_channel's perspective using the shared_with relation
+		const body = this.utils.readRelationship({
+			resourceType: Catalyst.EntityEnum.enum.data_channel,
+			resourceId: channelId,
+			relation: Catalyst.DataChannel.EntityEnum.enum.shared_with,
+			optionalSubjectFilter: undefined,
+		});
+
+		const { data } = await this.utils.fetcher('read', body);
+
+		if (!data || (typeof data === 'string' && data.trim() === '')) {
+			return [];
+		}
+
+		// Extract share IDs (format: "channelId|partnerOrgId")
+		const shareIds = this.utils.parseSubjectIdsFromResults(data);
+
+		// Extract partner org IDs from the composite keys
+		const partnerOrgIds = shareIds.map((id) => {
+			const parts = id.split('|');
+			return parts[1]; // Return the partnerOrgId portion
+		});
+
+		// Filter by specific partner if requested
+		if (partnerOrgId) {
+			return partnerOrgIds.filter((id) => id === partnerOrgId);
+		}
+
+		return partnerOrgIds;
+	}
+
+	/**
+	 * List all data channels that a partner organization has been granted access to
+	 * @param partnerOrgId - The partner organization ID to query
+	 * @param channelId - Optional: check if partner has access to specific channel
+	 * @returns Array of data channel IDs that the partner can access
+	 */
+	async listPartnerChannels(partnerOrgId: OrgId, channelId?: DataChannelId): Promise<string[]> {
+		const body = this.utils.readRelationship({
+			resourceType: Catalyst.EntityEnum.enum.channel_share,
+			resourceId: undefined, // Query all share entities
+			relation: Catalyst.ChannelShare.EntityEnum.enum.partner,
+			optionalSubjectFilter: {
+				subjectType: Catalyst.EntityEnum.enum.organization,
+				optionalSubjectId: partnerOrgId,
+			},
+		});
+
+		console.log('[listPartnerChannels] Query body:', JSON.stringify(body, null, 2));
+		const { data } = await this.utils.fetcher('read', body);
+		console.log('[listPartnerChannels] Raw data:', typeof data, data);
+
+		if (!data || (typeof data === 'string' && data.trim() === '')) {
+			console.log('[listPartnerChannels] No data returned');
+			return [];
+		}
+
+		// Extract share IDs (format: "channelId|partnerOrgId")
+		const shareIds = this.utils.parseResourceIdsFromResults(data);
+		console.log('[listPartnerChannels] Parsed shareIds:', shareIds);
+
+		// Extract channel IDs from the composite keys
+		const channelIds = shareIds.map((id) => {
+			const parts = id.split('|');
+			return parts[0]; // Return the channelId portion
+		});
+
+		// Filter by specific channel if requested
+		if (channelId) {
+			return channelIds.filter((id) => id === channelId);
+		}
+
+		return channelIds;
+	}
+
+	/**
+	 * Check if a specific channel share exists (helper method)
+	 * @param channelId - The data channel ID
+	 * @param partnerOrgId - The partner organization ID
+	 * @returns Boolean indicating if the share exists
+	 */
+	async channelShareExists(channelId: DataChannelId, partnerOrgId: OrgId): Promise<boolean> {
+		const partners = await this.listChannelPartners(channelId, partnerOrgId);
+		return partners.length > 0;
 	}
 }
 
@@ -428,64 +654,104 @@ export class AuthzedUtils {
 
 	parseResourceIdsFromResults(data: string | unknown): string[] {
 		if (typeof data === 'string') {
-			const objectIds = this.parseNDJONFromAuthzed(data).map((result) => {
-				return Authzed.Relationships.ReadResult.parse(result).result.relationship.resource.objectId;
-			});
+			const parsedResults = this.parseNDJONFromAuthzed(data);
+			const objectIds: string[] = [];
+
+			for (const result of parsedResults) {
+				const parsed = Authzed.Relationships.QueryResponse.safeParse(result);
+				if (parsed.success) {
+					objectIds.push(parsed.data.result.relationship.resource.objectId);
+				}
+			}
+
 			return objectIds;
 		}
 
-		return [Authzed.Relationships.ReadResult.parse(data).result.relationship.resource.objectId];
+		const parsed = Authzed.Relationships.QueryResponse.safeParse(data);
+		if (parsed.success) {
+			return [parsed.data.result.relationship.resource.objectId];
+		}
+		return [];
 	}
 
 	parseOrganizationData(data: string | unknown): Catalyst.Relationship[] {
 		const parsedArray = typeof data === 'string' ? this.parseNDJONFromAuthzed(data) : [data];
-		const resp = parsedArray.map((val) => {
-			return Authzed.Relationships.QueryResponse.parse(val);
-		});
+		const relationships: Catalyst.Relationship[] = [];
 
-		return resp.map((result) => {
-			return {
-				object: result.result.relationship.resource.objectId,
-				relation: result.result.relationship.relation,
-				subject: result.result.relationship.subject.object.objectId,
-			};
-		});
+		for (const val of parsedArray) {
+			const parsed = Authzed.Relationships.QueryResponse.safeParse(val);
+			if (parsed.success) {
+				relationships.push({
+					object: parsed.data.result.relationship.resource.objectId,
+					relation: parsed.data.result.relationship.relation,
+					subject: parsed.data.result.relationship.subject.object.objectId,
+				});
+			}
+		}
+
+		return relationships;
 	}
 	parseObjectandSubjectFromResults(data: string | unknown): { subject: string; resource: string }[] {
 		if (typeof data === 'string') {
-			const objectIds = this.parseNDJONFromAuthzed(data).map((result) => {
-				return {
-					subject: Authzed.Relationships.ReadResult.parse(result).result.relationship.subject.object.objectId,
-					resource: Authzed.Relationships.ReadResult.parse(result).result.relationship.resource.objectId,
-				};
-			});
+			const parsedResults = this.parseNDJONFromAuthzed(data);
+			const objectIds: { subject: string; resource: string }[] = [];
+
+			for (const result of parsedResults) {
+				const parsed = Authzed.Relationships.QueryResponse.safeParse(result);
+				if (parsed.success) {
+					objectIds.push({
+						subject: parsed.data.result.relationship.subject.object.objectId,
+						resource: parsed.data.result.relationship.resource.objectId,
+					});
+				}
+			}
+
 			return objectIds;
 		}
 
-		return [
-			{
-				subject: Authzed.Relationships.ReadResult.parse(data).result.relationship.subject.object.objectId,
-				resource: Authzed.Relationships.ReadResult.parse(data).result.relationship.resource.objectId,
-			},
-		];
+		const parsed = Authzed.Relationships.QueryResponse.safeParse(data);
+		if (parsed.success) {
+			return [
+				{
+					subject: parsed.data.result.relationship.subject.object.objectId,
+					resource: parsed.data.result.relationship.resource.objectId,
+				},
+			];
+		}
+		return [];
 	}
 	parseSubjectIdsFromResults(data: string | unknown): string[] {
 		if (typeof data === 'string') {
-			const objectIds = this.parseNDJONFromAuthzed(data).map((result) => {
-				return Authzed.Relationships.ReadResult.parse(result).result.relationship.subject.object.objectId;
-			});
+			const parsedResults = this.parseNDJONFromAuthzed(data);
+			const objectIds: string[] = [];
+
+			for (const result of parsedResults) {
+				const parsed = Authzed.Relationships.QueryResponse.safeParse(result);
+				if (parsed.success) {
+					objectIds.push(parsed.data.result.relationship.subject.object.objectId);
+				}
+			}
 
 			return objectIds;
 		}
 
-		return [Authzed.Relationships.ReadResult.parse(data).result.relationship.subject.object.objectId];
+		const parsed = Authzed.Relationships.QueryResponse.safeParse(data);
+		if (parsed.success) {
+			return [parsed.data.result.relationship.subject.object.objectId];
+		}
+		return [];
 	}
 
 	parseNDJONFromAuthzed(rawData: string): unknown[] {
 		const parsedData: unknown[] = [];
 		rawData.split('\n').forEach((row) => {
-			if (row.length > 0) {
-				parsedData.push(JSON.parse(row) as Authzed.Relationships.ReadResult);
+			if (row.trim().length > 0) {
+				try {
+					parsedData.push(JSON.parse(row));
+				} catch (e) {
+					console.error('Failed to parse NDJSON row:', row, e);
+					// Skip invalid JSON rows
+				}
 			}
 		});
 

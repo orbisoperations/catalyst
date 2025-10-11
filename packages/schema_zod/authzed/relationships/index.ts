@@ -10,7 +10,12 @@ export * from './response';
 
 export const Relationship = z.object({
     relationOwner: AuthzedObject,
-    relation: z.union([Catalyst.RoleEnum, Catalyst.DataChannel.EntityEnum, Catalyst.Org.EntityEnum]),
+    relation: z.union([
+        Catalyst.RoleEnum,
+        Catalyst.DataChannel.EntityEnum,
+        Catalyst.Org.EntityEnum,
+        Catalyst.ChannelShare.EntityEnum,
+    ]),
     relatedItem: AuthzedObject,
 });
 

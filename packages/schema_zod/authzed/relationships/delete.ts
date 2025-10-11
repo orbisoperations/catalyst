@@ -6,7 +6,12 @@ export const DeleteBody = z.object({
         resourceType: Catalyst.EntityEnum,
         optionalResourceId: z.string().optional(),
         optionalRelation: z
-            .union([Catalyst.DataChannel.EntityEnum, Catalyst.RoleEnum, Catalyst.Org.EntityEnum])
+            .union([
+                Catalyst.DataChannel.EntityEnum,
+                Catalyst.RoleEnum,
+                Catalyst.Org.EntityEnum,
+                Catalyst.ChannelShare.EntityEnum,
+            ])
             .optional(),
         optionalSubjectFilter: z
             .object({
@@ -18,7 +23,7 @@ export const DeleteBody = z.object({
 });
 export type DeleteBody = z.infer<typeof DeleteBody>;
 
-export const DeletResult = z.object({
+export const DeleteResult = z.object({
     deletedAt: z.object({
         token: z.string(),
     }),
@@ -26,4 +31,4 @@ export const DeletResult = z.object({
     message: z.string().optional(),
     deletionProgress: z.string().optional(),
 });
-export type DeletResult = z.infer<typeof DeletResult>;
+export type DeleteResult = z.infer<typeof DeleteResult>;

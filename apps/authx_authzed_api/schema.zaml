@@ -1,24 +1,123 @@
 schema: |-
-    definition orbisops_catalyst_dev/data_channel {
-        relation organization: orbisops_catalyst_dev/organization
-        permission read_by_owning_org = organization->data_channel_read
-        permission read_by_partner_org = organization->data_channel_read_partner
-    }
-
-    definition orbisops_catalyst_dev/organization {
-        relation admin: orbisops_catalyst_dev/user
-        relation data_custodian: orbisops_catalyst_dev/user
-        relation user: orbisops_catalyst_dev/user
-        relation partner_organization: orbisops_catalyst_dev/organization
-        relation data_channel: orbisops_catalyst_dev/data_channel
-        permission member = admin + data_custodian + user
-        permission role_assign = admin
-        permission partner_update = data_custodian + admin
-        permission data_channel_create = data_custodian
-        permission data_channel_update = data_custodian
-        permission data_channel_delete = data_custodian
-        permission data_channel_read = admin + data_custodian + user
-        permission data_channel_read_partner= partner_organization->data_channel_read
-    }
-
+    /**
+     * User Definition
+     * Represents individual users in the system
+     */
     definition orbisops_catalyst_dev/user {}
+
+    /**
+     * Channel Share Definition (Granular Shares)
+     * Represents explicit permission grants for a data channel to a partner organization
+     * Each channel_share links one channel to one partner org with granular control
+     */
+    definition orbisops_catalyst_dev/channel_share {
+        // The data channel being shared
+        relation channel: orbisops_catalyst_dev/data_channel
+
+        // The partner organization receiving access
+        relation partner: orbisops_catalyst_dev/organization
+
+        // Permission: Any member of the partner org can access if share exists
+        permission can_access = partner->member
+    }
+
+    /**
+     * Data Channel Definition
+     * Represents a data channel that can be accessed by users
+     * Supports both legacy blanket partner access and new granular shares
+     */
+    definition orbisops_catalyst_dev/data_channel {
+        // The organization that owns this channel
+        relation organization: orbisops_catalyst_dev/organization
+
+        // Explicit shares granted to partner organizations (NEW - granular shares)
+        relation shared_with: orbisops_catalyst_dev/channel_share
+
+        // --- BACKWARDS COMPATIBLE PERMISSIONS ---
+
+        // Legacy: Owner organization members can read
+        permission read_by_owning_org = organization->data_channel_read
+
+        // Legacy: Partner organization members can read (blanket access)
+        permission read_by_partner_org = organization->data_channel_read_partner
+
+        // NEW: Explicit per-channel shares to partners (granular access)
+        permission read_by_share = shared_with->can_access
+
+        // Unified read permission (combines all access paths)
+        // This allows both legacy and new access models to coexist
+        permission read = read_by_owning_org + read_by_partner_org + read_by_share
+    }
+
+    /**
+     * Organization Definition
+     * Represents an organization with users and data channels
+     */
+    definition orbisops_catalyst_dev/organization {
+        // --- User Roles ---
+
+        // Organization administrators (highest privilege)
+        relation admin: orbisops_catalyst_dev/user
+
+        // Data custodians (manage data channels and partnerships)
+        relation data_custodian: orbisops_catalyst_dev/user
+
+        // Regular organization members
+        relation user: orbisops_catalyst_dev/user
+
+        // --- Organization Relationships ---
+
+        // Partner organizations (legacy blanket access model)
+        relation partner_organization: orbisops_catalyst_dev/organization
+
+        // Data channels owned by this organization
+        relation data_channel: orbisops_catalyst_dev/data_channel
+
+        // --- Permissions ---
+
+        /**
+         * member - Any user with any role in the organization
+         */
+        permission member = admin + data_custodian + user
+
+        /**
+         * role_assign - Can assign roles to users
+         */
+        permission role_assign = admin
+
+        /**
+         * partner_update - Can create/update/delete partnerships
+         */
+        permission partner_update = data_custodian + admin
+
+        /**
+         * data_channel_create - Can create new data channels
+         */
+        permission data_channel_create = data_custodian
+
+        /**
+         * data_channel_update - Can update existing data channels
+         */
+        permission data_channel_update = data_custodian
+
+        /**
+         * data_channel_delete - Can delete data channels
+         */
+        permission data_channel_delete = data_custodian
+
+        /**
+         * data_channel_read - Can read own organization's channels
+         */
+        permission data_channel_read = member
+
+        /**
+         * channel_share_manage - Can create/update/delete channel shares (NEW)
+         */
+        permission channel_share_manage = data_custodian + admin
+
+        /**
+         * data_channel_read_partner - Internal synthetic permission
+         * Allows partner org members to read channels (legacy blanket access)
+         */
+        permission data_channel_read_partner = partner_organization->data_channel_read
+    }
