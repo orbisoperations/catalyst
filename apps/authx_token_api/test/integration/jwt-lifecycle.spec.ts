@@ -22,18 +22,11 @@ describe('Integration: Complete JWT Lifecycle', () => {
 
 	describe('End-to-End JWT Workflows', () => {
 		it('should create, validate, and cryptographically verify JWT end-to-end', async () => {
-			// ═══════════════════════════════════════════════════════════
-			// STEP 1: Setup - Create user permissions in AuthZed
-			// ═══════════════════════════════════════════════════════════
 			await env.AUTHZED.addDataCustodianToOrg(TEST_ORG_ID, CUSTODIAN_USER.email);
 
-			// Create a data channel with proper permissions
 			const dataChannel = generateDataChannels(1)[0];
 			const createdChannel = await custodianCreatesDataChannel(dataChannel);
 
-			// ═══════════════════════════════════════════════════════════
-			// STEP 2: Sign JWT with user token
-			// ═══════════════════════════════════════════════════════════
 			const jwtRequest: JWTSigningRequest = {
 				entity: CUSTODIAN_USER.email,
 				claims: [createdChannel.id],
@@ -43,16 +36,12 @@ describe('Integration: Complete JWT Lifecycle', () => {
 				cfToken: CUSTODIAN_CF_TOKEN,
 			});
 
-			// Verify signing succeeded
 			expect(signResponse.success).toBe(true);
 			expect(signResponse.token).toBeDefined();
 			expect(signResponse.expiration).toBeDefined();
 
 			const token = signResponse.token!;
 
-			// ═══════════════════════════════════════════════════════════
-			// STEP 3: Validate the signed JWT via service
-			// ═══════════════════════════════════════════════════════════
 			const validateResponse = await SELF.validateToken(token);
 
 			expect(validateResponse.valid).toBe(true);
@@ -61,24 +50,16 @@ describe('Integration: Complete JWT Lifecycle', () => {
 			expect(validateResponse.jwtId).toBeDefined();
 			expect(validateResponse.error).toBeUndefined();
 
-			// ═══════════════════════════════════════════════════════════
-			// STEP 4: Cryptographic verification with public key
-			// ═══════════════════════════════════════════════════════════
 			const publicKeyResponse = await SELF.getPublicKeyJWK();
 			expect(publicKeyResponse.keys).toBeDefined();
 			expect(publicKeyResponse.keys.length).toBeGreaterThan(0);
 
-			// Create JWK set for verification
 			const jwks = createLocalJWKSet(publicKeyResponse);
 
-			// Verify signature and extract payload
 			const { payload, protectedHeader } = await jwtVerify(token, jwks, {
 				clockTolerance: '5 minutes',
 			});
 
-			// ═══════════════════════════════════════════════════════════
-			// STEP 5: Verify all JWT claims match expectations
-			// ═══════════════════════════════════════════════════════════
 			expect(protectedHeader.alg).toBe('EdDSA');
 			expect(payload.sub).toBe(CUSTODIAN_USER.email);
 			expect(payload.claims).toEqual([createdChannel.id]);
@@ -86,7 +67,6 @@ describe('Integration: Complete JWT Lifecycle', () => {
 			expect(payload.iss).toBe('catalyst:system:jwt:latest');
 			expect(payload.jti).toBeDefined();
 
-			// Verify expiration timestamps
 			expect(payload.exp).toBeDefined();
 			expect(payload.iat).toBeDefined();
 			expect(payload.nbf).toBeDefined();
@@ -96,16 +76,12 @@ describe('Integration: Complete JWT Lifecycle', () => {
 			expect(payload.exp).toBeGreaterThan(now);
 			expect(payload.nbf).toBeLessThanOrEqual(now);
 
-			// Verify expiration is approximately 1 hour from now (3600 seconds)
 			const expectedExpiry = (payload.exp as number) - (payload.iat as number);
 			expect(expectedExpiry).toBeGreaterThanOrEqual(3590); // Allow 10 second tolerance
 			expect(expectedExpiry).toBeLessThanOrEqual(3610);
 		});
 
 		it('should reject validation of JWT after key rotation', async () => {
-			// ═══════════════════════════════════════════════════════════
-			// STEP 1: Setup permissions and create initial JWT
-			// ═══════════════════════════════════════════════════════════
 			await env.AUTHZED.addDataCustodianToOrg(TEST_ORG_ID, CUSTODIAN_USER.email);
 			const dataChannel = generateDataChannels(1)[0];
 			const createdChannel = await custodianCreatesDataChannel(dataChannel);
@@ -115,7 +91,6 @@ describe('Integration: Complete JWT Lifecycle', () => {
 				claims: [createdChannel.id],
 			};
 
-			// Sign JWT with current key
 			const signResponse = await SELF.signJWT(jwtRequest, 3600 * 1000, {
 				cfToken: CUSTODIAN_CF_TOKEN,
 			});
@@ -123,33 +98,22 @@ describe('Integration: Complete JWT Lifecycle', () => {
 			expect(signResponse.success).toBe(true);
 			const oldToken = signResponse.token!;
 
-			// Verify old token is valid before rotation
 			const validateBefore = await SELF.validateToken(oldToken);
 			expect(validateBefore.valid).toBe(true);
 
-			// ═══════════════════════════════════════════════════════════
-			// STEP 2: Rotate the signing key (platform admin only)
-			// ═══════════════════════════════════════════════════════════
 			const rotateResponse = await SELF.rotateKey({
 				cfToken: PLATFORM_ADMIN_CF_TOKEN,
 			});
 
 			expect(rotateResponse.success).toBe(true);
 
-			// ═══════════════════════════════════════════════════════════
-			// STEP 3: Attempt to validate old JWT with new key
-			// ═══════════════════════════════════════════════════════════
 			const validateAfter = await SELF.validateToken(oldToken);
 
-			// Old token should now fail validation
 			expect(validateAfter.valid).toBe(false);
 			expect(validateAfter.error).toBeDefined();
 			expect(validateAfter.entity).toBeUndefined();
 			expect(validateAfter.claims).toEqual([]);
 
-			// ═══════════════════════════════════════════════════════════
-			// STEP 4: Verify new tokens work with new key
-			// ═══════════════════════════════════════════════════════════
 			const newSignResponse = await SELF.signJWT(jwtRequest, 3600 * 1000, {
 				cfToken: CUSTODIAN_CF_TOKEN,
 			});
@@ -161,9 +125,6 @@ describe('Integration: Complete JWT Lifecycle', () => {
 		});
 
 		it('should create JWT and validate with public key JWK set', async () => {
-			// ═══════════════════════════════════════════════════════════
-			// STEP 1: Setup and sign JWT
-			// ═══════════════════════════════════════════════════════════
 			await env.AUTHZED.addDataCustodianToOrg(TEST_ORG_ID, CUSTODIAN_USER.email);
 			const dataChannel = generateDataChannels(1)[0];
 			const createdChannel = await custodianCreatesDataChannel(dataChannel);
@@ -180,9 +141,6 @@ describe('Integration: Complete JWT Lifecycle', () => {
 			expect(signResponse.success).toBe(true);
 			const token = signResponse.token!;
 
-			// ═══════════════════════════════════════════════════════════
-			// STEP 2: Get public key as JWK set
-			// ═══════════════════════════════════════════════════════════
 			const jwkResponse = await SELF.getPublicKeyJWK();
 
 			expect(jwkResponse).toBeDefined();
@@ -190,30 +148,20 @@ describe('Integration: Complete JWT Lifecycle', () => {
 			expect(Array.isArray(jwkResponse.keys)).toBe(true);
 			expect(jwkResponse.keys.length).toBeGreaterThan(0);
 
-			// Verify JWK structure
 			const publicKey = jwkResponse.keys[0];
 			expect(publicKey.kty).toBe('OKP'); // Octet Key Pair (EdDSA)
 			expect(publicKey.crv).toBe('Ed25519');
 			expect(publicKey.x).toBeDefined();
 
-			// ═══════════════════════════════════════════════════════════
-			// STEP 3: Verify JWT signature using JWK
-			// ═══════════════════════════════════════════════════════════
 			const jwks = createLocalJWKSet(jwkResponse);
 			const { payload, protectedHeader } = await jwtVerify(token, jwks, {
 				clockTolerance: '5 minutes',
 			});
 
-			// ═══════════════════════════════════════════════════════════
-			// STEP 4: Verify payload contents
-			// ═══════════════════════════════════════════════════════════
 			expect(protectedHeader.alg).toBe('EdDSA');
 			expect(payload.sub).toBe(CUSTODIAN_USER.email);
 			expect(payload.claims).toEqual([createdChannel.id]);
 
-			// ═══════════════════════════════════════════════════════════
-			// STEP 5: Verify PEM format also works
-			// ═══════════════════════════════════════════════════════════
 			const pemResponse = await SELF.getPublicKey();
 
 			expect(pemResponse).toBeDefined();
@@ -223,9 +171,6 @@ describe('Integration: Complete JWT Lifecycle', () => {
 		});
 
 		it('should handle JWT expiration correctly in full workflow', async () => {
-			// ═══════════════════════════════════════════════════════════
-			// STEP 1: Setup permissions
-			// ═══════════════════════════════════════════════════════════
 			await env.AUTHZED.addDataCustodianToOrg(TEST_ORG_ID, CUSTODIAN_USER.email);
 			const dataChannel = generateDataChannels(1)[0];
 			const createdChannel = await custodianCreatesDataChannel(dataChannel);
@@ -235,39 +180,25 @@ describe('Integration: Complete JWT Lifecycle', () => {
 				claims: [createdChannel.id],
 			};
 
-			// ═══════════════════════════════════════════════════════════
-			// STEP 2: Create JWT with very short expiry (2 seconds)
-			// ═══════════════════════════════════════════════════════════
 			const signResponse = await SELF.signJWT(jwtRequest, 2000, {
-				// 2 seconds
 				cfToken: CUSTODIAN_CF_TOKEN,
 			});
 
 			expect(signResponse.success).toBe(true);
 			const token = signResponse.token!;
 
-			// ═══════════════════════════════════════════════════════════
-			// STEP 3: Validate immediately (should succeed)
-			// ═══════════════════════════════════════════════════════════
 			const validateImmediately = await SELF.validateToken(token);
 			expect(validateImmediately.valid).toBe(true);
 			expect(validateImmediately.entity).toBe(CUSTODIAN_USER.email);
 
-			// Verify expiration timestamp is in the near future
 			const decoded = decodeJwt(token);
 			const now = Math.floor(Date.now() / 1000);
 			expect(decoded.exp).toBeDefined();
 			expect(decoded.exp).toBeGreaterThan(now);
 			expect(decoded.exp).toBeLessThanOrEqual(now + 3); // Within 3 seconds
 
-			// ═══════════════════════════════════════════════════════════
-			// STEP 4: Wait for token to expire
-			// ═══════════════════════════════════════════════════════════
 			await new Promise((resolve) => setTimeout(resolve, 2500)); // Wait 2.5 seconds
 
-			// ═══════════════════════════════════════════════════════════
-			// STEP 5: Validate after expiration (should fail)
-			// ═══════════════════════════════════════════════════════════
 			// Use strict clock tolerance (0 seconds) to properly test expiration
 			const validateAfterExpiry = await SELF.validateToken(token, 'default', '0 seconds');
 
@@ -277,9 +208,6 @@ describe('Integration: Complete JWT Lifecycle', () => {
 			expect(validateAfterExpiry.entity).toBeUndefined();
 			expect(validateAfterExpiry.claims).toEqual([]);
 
-			// ═══════════════════════════════════════════════════════════
-			// STEP 6: Verify cryptographic validation also fails
-			// ═══════════════════════════════════════════════════════════
 			const publicKeyResponse = await SELF.getPublicKeyJWK();
 			const jwks = createLocalJWKSet(publicKeyResponse);
 

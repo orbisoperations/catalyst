@@ -17,14 +17,6 @@ describe('Integration: System Service JWT Workflows', () => {
 
 	describe('System JWT Creation and Validation', () => {
 		it('should create and validate system JWT end-to-end for data-channel-certifier', async () => {
-			// ═══════════════════════════════════════════════════════════
-			// COMPLETE SYSTEM JWT WORKFLOW:
-			// 1. System service requests JWT (no user token needed)
-			// 2. Service signs JWT with channel claims
-			// 3. Validate JWT
-			// 4. Cryptographically verify JWT
-			// ═══════════════════════════════════════════════════════════
-
 			const systemRequest = {
 				callingService: 'data-channel-certifier',
 				channelId: 'test-channel-123',
@@ -32,7 +24,6 @@ describe('Integration: System Service JWT Workflows', () => {
 				duration: 300, // 5 minutes
 			};
 
-			// STEP 1: Request system JWT
 			const signResponse = await SELF.signSystemJWT(systemRequest, 'default');
 
 			expect(signResponse.success).toBe(true);
@@ -41,7 +32,6 @@ describe('Integration: System Service JWT Workflows', () => {
 
 			const token = signResponse.token!;
 
-			// STEP 2: Validate the system JWT
 			const validateResponse = await SELF.validateToken(token, 'default');
 
 			expect(validateResponse.valid).toBe(true);
@@ -49,7 +39,6 @@ describe('Integration: System Service JWT Workflows', () => {
 			expect(validateResponse.claims).toEqual(['test-channel-123']);
 			expect(validateResponse.jwtId).toBeDefined();
 
-			// STEP 3: Cryptographically verify the JWT
 			const publicKeyResponse = await SELF.getPublicKeyJWK('default');
 			const jwks = createLocalJWKSet(publicKeyResponse);
 
@@ -57,25 +46,19 @@ describe('Integration: System Service JWT Workflows', () => {
 				clockTolerance: '5 minutes',
 			});
 
-			// STEP 4: Verify JWT structure
 			expect(protectedHeader.alg).toBe('EdDSA');
 			expect(payload.sub).toBe('system-data-channel-certifier');
 			expect(payload.claims).toEqual(['test-channel-123']);
 			expect(payload.iss).toBe('catalyst:system:jwt:latest');
 			expect(payload.aud).toBe('catalyst:system:datachannels');
 
-			// STEP 5: Verify expiration is ~5 minutes
 			const expiryDuration = (payload.exp as number) - (payload.iat as number);
-			expect(expiryDuration).toBeGreaterThanOrEqual(295); // Allow 5 second tolerance
+			// Allow 5 second tolerance
+			expect(expiryDuration).toBeGreaterThanOrEqual(295);
 			expect(expiryDuration).toBeLessThanOrEqual(305);
 		});
 
 		it('should create system JWT for multiple channels', async () => {
-			// ═══════════════════════════════════════════════════════════
-			// SCENARIO: System service needs access to multiple channels
-			// for bulk validation operations
-			// ═══════════════════════════════════════════════════════════
-
 			const channelIds = ['channel-1', 'channel-2', 'channel-3', 'channel-4'];
 
 			const systemRequest = {
@@ -85,13 +68,11 @@ describe('Integration: System Service JWT Workflows', () => {
 				duration: 600, // 10 minutes
 			};
 
-			// Create system JWT with multiple channels
 			const signResponse = await SELF.signSystemJWT(systemRequest, 'default');
 
 			expect(signResponse.success).toBe(true);
 			expect(signResponse.token).toBeDefined();
 
-			// Validate the token
 			const validateResponse = await SELF.validateToken(signResponse.token!, 'default');
 
 			expect(validateResponse.valid).toBe(true);
@@ -99,7 +80,7 @@ describe('Integration: System Service JWT Workflows', () => {
 			expect(validateResponse.claims).toHaveLength(4);
 			expect(validateResponse.claims).toEqual(expect.arrayContaining(channelIds));
 
-			// Verify expiration is ~10 minutes
+			// 10 minutes
 			const decoded = decodeJwt(signResponse.token!);
 			const expiryDuration = (decoded.exp as number) - (decoded.iat as number);
 			expect(expiryDuration).toBeGreaterThanOrEqual(595);
@@ -107,16 +88,8 @@ describe('Integration: System Service JWT Workflows', () => {
 		});
 
 		it('should respect system token duration limits and defaults', async () => {
-			// ═══════════════════════════════════════════════════════════
-			// TEST: Verify duration handling for system tokens
-			// - Default duration (5 minutes)
-			// - Custom duration (1 second to 1 hour)
-			// - Max duration enforcement (1 hour)
-			// ═══════════════════════════════════════════════════════════
-
 			const channelId = 'test-channel';
 
-			// Test 1: Default duration (5 minutes)
 			const defaultRequest = {
 				callingService: 'data-channel-certifier',
 				channelId: channelId,
@@ -132,7 +105,6 @@ describe('Integration: System Service JWT Workflows', () => {
 			expect(defaultDuration).toBeGreaterThanOrEqual(295);
 			expect(defaultDuration).toBeLessThanOrEqual(305);
 
-			// Test 2: Minimum duration (1 second)
 			const minRequest = {
 				callingService: 'data-channel-certifier',
 				channelId: channelId,
@@ -147,7 +119,6 @@ describe('Integration: System Service JWT Workflows', () => {
 			const minDuration = (minDecoded.exp as number) - (minDecoded.iat as number);
 			expect(minDuration).toBeLessThanOrEqual(5); // Very short
 
-			// Test 3: Maximum duration (1 hour)
 			const maxRequest = {
 				callingService: 'data-channel-certifier',
 				channelId: channelId,
@@ -163,7 +134,6 @@ describe('Integration: System Service JWT Workflows', () => {
 			expect(maxDuration).toBeGreaterThanOrEqual(3595);
 			expect(maxDuration).toBeLessThanOrEqual(3605);
 
-			// Test 4: Exceeding maximum duration should FAIL
 			const exceedRequest = {
 				callingService: 'data-channel-certifier',
 				channelId: channelId,
@@ -177,11 +147,6 @@ describe('Integration: System Service JWT Workflows', () => {
 		});
 
 		it('should verify system tokens work across namespaces independently', async () => {
-			// ═══════════════════════════════════════════════════════════
-			// NAMESPACE TEST: System tokens should work in their
-			// designated namespace but not cross-namespace
-			// ═══════════════════════════════════════════════════════════
-
 			const channelId = 'test-channel';
 
 			const systemRequest = {
@@ -191,26 +156,20 @@ describe('Integration: System Service JWT Workflows', () => {
 				duration: 300,
 			};
 
-			// Create system JWT in 'default' namespace
 			const defaultResponse = await SELF.signSystemJWT(systemRequest, 'default');
 			expect(defaultResponse.success).toBe(true);
 
-			// Create system JWT in 'tenant-1' namespace
 			const tenant1Response = await SELF.signSystemJWT(systemRequest, 'tenant-1');
 			expect(tenant1Response.success).toBe(true);
 
-			// Tokens should be different
 			expect(defaultResponse.token).not.toBe(tenant1Response.token);
 
-			// Default token validates in default namespace
 			const defaultValidate = await SELF.validateToken(defaultResponse.token!, 'default');
 			expect(defaultValidate.valid).toBe(true);
 
-			// Default token FAILS in tenant-1 namespace
 			const crossValidate = await SELF.validateToken(defaultResponse.token!, 'tenant-1');
 			expect(crossValidate.valid).toBe(false);
 
-			// Tenant-1 token validates in tenant-1 namespace
 			const tenant1Validate = await SELF.validateToken(tenant1Response.token!, 'tenant-1');
 			expect(tenant1Validate.valid).toBe(true);
 		});
@@ -218,10 +177,6 @@ describe('Integration: System Service JWT Workflows', () => {
 
 	describe('System JWT Authorization', () => {
 		it('should allow all services in allowlist', async () => {
-			// ═══════════════════════════════════════════════════════════
-			// VERIFY: All allowed system services can create JWTs
-			// ═══════════════════════════════════════════════════════════
-
 			for (const serviceName of ALLOWED_SERVICES) {
 				const request = {
 					callingService: serviceName,
@@ -235,18 +190,12 @@ describe('Integration: System Service JWT Workflows', () => {
 				expect(response.success).toBe(true);
 				expect(response.token).toBeDefined();
 
-				// Verify subject matches service name
 				const validateResponse = await SELF.validateToken(response.token!, 'default');
 				expect(validateResponse.entity).toBe(`system-${serviceName}`);
 			}
 		});
 
 		it('should reject unauthorized system services', async () => {
-			// ═══════════════════════════════════════════════════════════
-			// SECURITY TEST: Unauthorized services cannot create
-			// system JWTs (no user impersonation)
-			// ═══════════════════════════════════════════════════════════
-
 			const unauthorizedServices = [
 				'malicious-service',
 				'random-service',
@@ -272,11 +221,6 @@ describe('Integration: System Service JWT Workflows', () => {
 		});
 
 		it('should reject system JWT requests with invalid inputs', async () => {
-			// ═══════════════════════════════════════════════════════════
-			// INPUT VALIDATION: Verify error handling for invalid requests
-			// ═══════════════════════════════════════════════════════════
-
-			// Empty service name
 			const emptyServiceResponse = await SELF.signSystemJWT(
 				{
 					callingService: '',
@@ -290,7 +234,6 @@ describe('Integration: System Service JWT Workflows', () => {
 			expect(emptyServiceResponse.success).toBe(false);
 			expect(emptyServiceResponse.error).toContain('callingService is required');
 
-			// Empty channel ID
 			const emptyChannelResponse = await SELF.signSystemJWT(
 				{
 					callingService: 'data-channel-certifier',
@@ -304,7 +247,6 @@ describe('Integration: System Service JWT Workflows', () => {
 			expect(emptyChannelResponse.success).toBe(false);
 			expect(emptyChannelResponse.error).toContain('At least one channelId is required');
 
-			// Empty channelIds array
 			const emptyArrayResponse = await SELF.signSystemJWT(
 				{
 					callingService: 'data-channel-certifier',
@@ -318,7 +260,6 @@ describe('Integration: System Service JWT Workflows', () => {
 			expect(emptyArrayResponse.success).toBe(false);
 			expect(emptyArrayResponse.error).toContain('At least one channelId is required');
 
-			// Negative duration
 			const negativeDurationResponse = await SELF.signSystemJWT(
 				{
 					callingService: 'data-channel-certifier',
@@ -336,11 +277,6 @@ describe('Integration: System Service JWT Workflows', () => {
 
 	describe('System JWT vs User JWT Comparison', () => {
 		it('should verify system JWTs have correct subject format', async () => {
-			// ═══════════════════════════════════════════════════════════
-			// VERIFY: System JWTs have 'system-{service}' subject
-			// while user JWTs have user email as subject
-			// ═══════════════════════════════════════════════════════════
-
 			const systemRequest = {
 				callingService: 'data-channel-certifier',
 				channelId: 'test-channel',
@@ -353,11 +289,9 @@ describe('Integration: System Service JWT Workflows', () => {
 
 			const systemDecoded = decodeJwt(systemResponse.token!);
 
-			// System JWT should have 'system-{service}' subject
 			expect(systemDecoded.sub).toBe('system-data-channel-certifier');
 			expect(systemDecoded.sub).toMatch(/^system-/);
 
-			// Verify issuer and audience are same as user JWTs
 			expect(systemDecoded.iss).toBe('catalyst:system:jwt:latest');
 			expect(systemDecoded.aud).toBe('catalyst:system:datachannels');
 		});
