@@ -9,7 +9,12 @@ export const ReadResult = z.object({
         }),
         relationship: z.object({
             resource: AuthzedObject,
-            relation: z.union([Catalyst.RoleEnum, Catalyst.Org.EntityEnum, Catalyst.DataChannel.EntityEnum]),
+            relation: z.union([
+                Catalyst.RoleEnum,
+                Catalyst.Org.EntityEnum,
+                Catalyst.DataChannel.EntityEnum,
+                Catalyst.ChannelShare.EntityEnum,
+            ]),
             subject: z.object({
                 object: AuthzedObject,
                 optionalRelation: z.string().optional(),

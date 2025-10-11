@@ -165,16 +165,37 @@ export default class AuthzedWorker extends WorkerEntrypoint<Env> {
 
 	async canReadFromDataChannel(dataChannelId: DataChannelId, userId: UserId) {
 		const client = new AuthzedClient(this.env.AUTHZED_ENDPOINT, this.env.AUTHZED_KEY, this.env.AUTHZED_PREFIX);
-		const owningResp = await client.dataChannelPermissionsCheck(
-			dataChannelId,
-			emailTob64(userId),
-			Catalyst.DataChannel.PermissionsEnum.enum.read_by_owning_org,
-		);
-		const partnerResp = await client.dataChannelPermissionsCheck(
-			dataChannelId,
-			emailTob64(userId),
-			Catalyst.DataChannel.PermissionsEnum.enum.read_by_partner_org,
-		);
-		return owningResp || partnerResp;
+		// Check the unified 'read' permission which includes all three paths:
+		// read_by_owning_org + read_by_partner_org + read_by_share
+		return await client.dataChannelPermissionsCheck(dataChannelId, emailTob64(userId), Catalyst.DataChannel.PermissionsEnum.enum.read);
+	}
+
+	// ==================================================================================
+	// Channel Share Methods (Granular Shares)
+	// ==================================================================================
+
+	async addChannelShare(channelId: DataChannelId, partnerOrgId: OrgId) {
+		const client = new AuthzedClient(this.env.AUTHZED_ENDPOINT, this.env.AUTHZED_KEY, this.env.AUTHZED_PREFIX);
+		return await client.addChannelShare(channelId, partnerOrgId);
+	}
+
+	async removeChannelShare(channelId: DataChannelId, partnerOrgId: OrgId) {
+		const client = new AuthzedClient(this.env.AUTHZED_ENDPOINT, this.env.AUTHZED_KEY, this.env.AUTHZED_PREFIX);
+		return await client.removeChannelShare(channelId, partnerOrgId);
+	}
+
+	async listChannelPartners(channelId: DataChannelId, partnerOrgId?: OrgId) {
+		const client = new AuthzedClient(this.env.AUTHZED_ENDPOINT, this.env.AUTHZED_KEY, this.env.AUTHZED_PREFIX);
+		return await client.listChannelPartners(channelId, partnerOrgId);
+	}
+
+	async listPartnerChannels(partnerOrgId: OrgId, channelId?: DataChannelId) {
+		const client = new AuthzedClient(this.env.AUTHZED_ENDPOINT, this.env.AUTHZED_KEY, this.env.AUTHZED_PREFIX);
+		return await client.listPartnerChannels(partnerOrgId, channelId);
+	}
+
+	async channelShareExists(channelId: DataChannelId, partnerOrgId: OrgId) {
+		const client = new AuthzedClient(this.env.AUTHZED_ENDPOINT, this.env.AUTHZED_KEY, this.env.AUTHZED_PREFIX);
+		return await client.channelShareExists(channelId, partnerOrgId);
 	}
 }
