@@ -1,4 +1,4 @@
-import { DataChannel } from '@catalyst/schema_zod';
+import { DataChannel } from '@catalyst/schemas';
 import { env, SELF } from 'cloudflare:test';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 

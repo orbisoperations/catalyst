@@ -5,7 +5,7 @@ import {
   PermissionCheckResponse,
   Token,
   User,
-} from '@catalyst/schema_zod';
+} from '@catalyst/schemas';
 import { DurableObject, WorkerEntrypoint } from 'cloudflare:workers';
 import { Env } from './env';
 
@@ -308,6 +308,303 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
       return DataChannelActionResponse.parse({
         success: false,
         error: 'catalyst deletion process failed',
+      });
+    }
+  }
+
+  // ==================================================================================
+  // Channel Share Management (Granular Permissions)
+  // ==================================================================================
+
+  /**
+   * Share a specific data channel with a partner organization (granular access)
+   * Only data custodians of the owning organization can share channels
+   * @param doNamespace - Durable Object namespace
+   * @param channelId - The data channel ID to share
+   * @param partnerOrgId - The partner organization ID to grant access
+   * @param token - User authentication token (must be data custodian)
+   * @returns DataChannelActionResponse with success status
+   */
+  async shareChannelWithPartner(
+    doNamespace: string,
+    channelId: string,
+    partnerOrgId: string,
+    token: Token,
+  ) {
+    // 1. Verify user is data custodian
+    const permCheck = await this.CUDPerms(token);
+    if (!permCheck.success) {
+      return DataChannelActionResponse.parse({
+        success: false,
+        error: permCheck.error,
+      });
+    }
+
+    // 2. Verify channel exists
+    const doId = this.env.DO.idFromName(doNamespace);
+    const stub = this.env.DO.get(doId);
+    const channel = await stub.get(channelId);
+
+    if (!channel) {
+      return DataChannelActionResponse.parse({
+        success: false,
+        error: 'catalyst unable to find data channel',
+      });
+    }
+
+    // 3. Verify user owns the channel
+    if (!token.cfToken) {
+      return DataChannelActionResponse.parse({
+        success: false,
+        error: 'catalyst requires user token to share channels',
+      });
+    }
+
+    const user: User | undefined = await this.env.USERCACHE.getUser(token.cfToken);
+    const parsedUser = User.safeParse(user);
+    if (!parsedUser.success) {
+      return DataChannelActionResponse.parse({
+        success: false,
+        error: 'catalyst unable to validate user token',
+      });
+    }
+
+    if (channel.creatorOrganization !== parsedUser.data.orgId) {
+      return DataChannelActionResponse.parse({
+        success: false,
+        error: 'catalyst asserts user does not own this data channel',
+      });
+    }
+
+    // 4. Verify partnership exists (optional check - could be removed if we allow shares without partnerships)
+    const partners = await this.env.AUTHZED.listPartnersInOrg(parsedUser.data.orgId);
+    const isPartner = partners.some(p => p.subject === partnerOrgId);
+
+    if (!isPartner) {
+      return DataChannelActionResponse.parse({
+        success: false,
+        error: 'catalyst requires an existing partnership before sharing channels',
+      });
+    }
+
+    // 5. Create channel share in AuthZed
+    try {
+      await this.env.AUTHZED.addChannelShare(channelId, partnerOrgId);
+
+      return {
+        success: true,
+        data: {
+          channelId,
+          partnerOrgId,
+          message: 'Channel shared successfully',
+        },
+      };
+    } catch (error) {
+      console.error('[RegistrarWorker] Failed to share channel', {
+        channelId,
+        partnerOrgId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+
+      return DataChannelActionResponse.parse({
+        success: false,
+        error: 'catalyst failed to create channel share',
+      });
+    }
+  }
+
+  /**
+   * Revoke channel share from a partner organization
+   * Only data custodians of the owning organization can revoke shares
+   * @param doNamespace - Durable Object namespace
+   * @param channelId - The data channel ID
+   * @param partnerOrgId - The partner organization ID
+   * @param token - User authentication token (must be data custodian)
+   * @returns DataChannelActionResponse with success status
+   */
+  async revokeChannelShare(
+    doNamespace: string,
+    channelId: string,
+    partnerOrgId: string,
+    token: Token,
+  ) {
+    // 1. Verify user is data custodian
+    const permCheck = await this.CUDPerms(token);
+    if (!permCheck.success) {
+      return DataChannelActionResponse.parse({
+        success: false,
+        error: permCheck.error,
+      });
+    }
+
+    // 2. Verify channel exists and user owns it
+    const doId = this.env.DO.idFromName(doNamespace);
+    const stub = this.env.DO.get(doId);
+    const channel = await stub.get(channelId);
+
+    if (!channel) {
+      return DataChannelActionResponse.parse({
+        success: false,
+        error: 'catalyst unable to find data channel',
+      });
+    }
+
+    if (!token.cfToken) {
+      return DataChannelActionResponse.parse({
+        success: false,
+        error: 'catalyst requires user token to revoke shares',
+      });
+    }
+
+    const user: User | undefined = await this.env.USERCACHE.getUser(token.cfToken);
+    const parsedUser = User.safeParse(user);
+    if (!parsedUser.success) {
+      return DataChannelActionResponse.parse({
+        success: false,
+        error: 'catalyst unable to validate user token',
+      });
+    }
+
+    if (channel.creatorOrganization !== parsedUser.data.orgId) {
+      return DataChannelActionResponse.parse({
+        success: false,
+        error: 'catalyst asserts user does not own this data channel',
+      });
+    }
+
+    // 3. Remove channel share from AuthZed
+    try {
+      await this.env.AUTHZED.removeChannelShare(channelId, partnerOrgId);
+
+      return {
+        success: true,
+        data: {
+          channelId,
+          partnerOrgId,
+          message: 'Channel share revoked successfully',
+        },
+      };
+    } catch (error) {
+      console.error('[RegistrarWorker] Failed to revoke channel share', {
+        channelId,
+        partnerOrgId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+
+      return DataChannelActionResponse.parse({
+        success: false,
+        error: 'catalyst failed to revoke channel share',
+      });
+    }
+  }
+
+  /**
+   * List all partners with access to a specific channel
+   * Accessible by any user who can read the channel
+   * @param doNamespace - Durable Object namespace
+   * @param channelId - The data channel ID
+   * @param token - User authentication token
+   * @returns DataChannelActionResponse with list of partner organization IDs
+   */
+  async listChannelShares(doNamespace: string, channelId: string, token: Token) {
+    // 1. Verify user can read the channel
+    const permCheck = await this.RPerms(token, channelId);
+    if (!permCheck.success) {
+      return DataChannelActionResponse.parse({
+        success: false,
+        error: permCheck.error,
+      });
+    }
+
+    // 2. Get list of partners with access
+    try {
+      const partners = await this.env.AUTHZED.listChannelPartners(channelId);
+
+      return {
+        success: true,
+        data: {
+          channelId,
+          partners,
+          count: partners.length,
+        },
+      };
+    } catch (error) {
+      console.error('[RegistrarWorker] Failed to list channel shares', {
+        channelId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+
+      return DataChannelActionResponse.parse({
+        success: false,
+        error: 'catalyst failed to list channel shares',
+      });
+    }
+  }
+
+  /**
+   * List all channels shared with a specific partner organization
+   * Accessible by members of the partner organization or the owning org's data custodians
+   * @param doNamespace - Durable Object namespace
+   * @param partnerOrgId - The partner organization ID
+   * @param token - User authentication token
+   * @returns DataChannelActionResponse with list of accessible channels
+   */
+  async listSharedChannels(doNamespace: string, partnerOrgId: string, token: Token) {
+    if (!token.cfToken) {
+      return DataChannelActionResponse.parse({
+        success: false,
+        error: 'catalyst requires user token to list shared channels',
+      });
+    }
+
+    // 1. Verify user authentication
+    const user: User | undefined = await this.env.USERCACHE.getUser(token.cfToken);
+    const parsedUser = User.safeParse(user);
+    if (!parsedUser.success) {
+      return DataChannelActionResponse.parse({
+        success: false,
+        error: 'catalyst unable to validate user token',
+      });
+    }
+
+    // 2. Get list of channels shared with the partner
+    try {
+      const channelIds = await this.env.AUTHZED.listPartnerChannels(partnerOrgId);
+
+      // 3. Fetch full channel details (only those user can read)
+      const doId = this.env.DO.idFromName(doNamespace);
+      const stub = this.env.DO.get(doId);
+
+      const channels = await Promise.all(
+        channelIds.map(async id => {
+          const channel = await stub.get(id);
+          if (!channel) return null;
+
+          // Check if user can read this channel
+          const canRead = await this.RPerms(token, id, channel);
+          return canRead.success ? channel : null;
+        }),
+      );
+
+      const validChannels = channels.filter((c): c is DataChannel => c !== null);
+
+      return {
+        success: true,
+        data: {
+          partnerOrgId,
+          channels: validChannels,
+          count: validChannels.length,
+        },
+      };
+    } catch (error) {
+      console.error('[RegistrarWorker] Failed to list shared channels', {
+        partnerOrgId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+
+      return DataChannelActionResponse.parse({
+        success: false,
+        error: 'catalyst failed to list shared channels',
       });
     }
   }
