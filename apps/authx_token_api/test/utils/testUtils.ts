@@ -94,10 +94,10 @@ export async function getCatalystToken(cfToken: string, claims: string[]) {
 		{
 			entity: `${getOrgId(cfToken)}/${user.email}`,
 			claims,
+			audience: JWTAudience.enum['catalyst:datachannel'],
 			expiresIn: Date.now() + 3600,
 		},
 		Date.now() + 3600,
-		JWTAudience.enum['catalyst:datachannel'],
 	);
 	return token;
 }

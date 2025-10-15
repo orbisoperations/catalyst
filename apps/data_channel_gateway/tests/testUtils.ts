@@ -22,7 +22,9 @@ export const generateCatalystToken = async (entity: string, claims: string[], ct
         {
             entity: `${entity}/${user || TEST_USER}`,
             claims: claims,
+            audience: JWTAudience.enum['catalyst:gateway'],
         },
+<<<<<<< HEAD
         10 * 60 * 1000,
 <<<<<<< HEAD
         { cfToken: 'cf-test-token' }, // Use the mock CF token
@@ -30,6 +32,9 @@ export const generateCatalystToken = async (entity: string, claims: string[], ct
 =======
         JWTAudience.enum['catalyst:gateway']
 >>>>>>> 99bd829 (feat: implement JWT audience differentiation for enhanced security)
+=======
+        10 * 60 * 1000
+>>>>>>> 1bdf3ab (refactor: move JWT audience into JWTSigningRequest object)
     );
 
     if (!tokenResp.success) {

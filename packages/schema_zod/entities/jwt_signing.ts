@@ -1,9 +1,11 @@
 import { z } from 'zod';
 import { defineResult } from '../helpers/result';
+import { JWTAudience } from '../jwt';
 
 export const JWTSigningRequest = z.object({
     entity: z.string(),
     claims: z.array(z.string()),
+    audience: JWTAudience,
     expiresIn: z.number().optional(),
 });
 export type JWTSigningRequest = z.infer<typeof JWTSigningRequest>;
