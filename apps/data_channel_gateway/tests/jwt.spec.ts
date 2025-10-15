@@ -1,4 +1,4 @@
-import { DEFAULT_STANDARD_DURATIONS } from '@catalyst/schema_zod';
+import { DEFAULT_STANDARD_DURATIONS, JWTAudience } from '@catalyst/schema_zod';
 import { env } from 'cloudflare:test';
 import { createLocalJWKSet, jwtVerify } from 'jose';
 import { describe, expect, it } from 'vitest';
@@ -37,7 +37,7 @@ describe('jwt integration tests', () => {
         const jwtToken = await jwtStub.signJWT(
             jwtRequest,
             360 * DEFAULT_STANDARD_DURATIONS.S,
-            'catalyst:system:datachannels'
+            JWTAudience.enum['catalyst:system']
         );
         expect(jwtToken.expiration).toBeCloseTo(Date.now() + 360 * DEFAULT_STANDARD_DURATIONS.S, -4);
 
@@ -64,14 +64,14 @@ describe('jwt integration tests', () => {
         const jwtToken = await jwtStub.signJWT(
             jwtRequest,
             360 * DEFAULT_STANDARD_DURATIONS.S,
-            'catalyst:system:datachannels'
+            JWTAudience.enum['catalyst:system']
         );
 
         const jwkPub = await createLocalJWKSet(jwk);
 
         await jwtVerify(jwtToken.token, jwkPub, {
             issuer: 'catalyst:system:jwt:latest',
-            audience: 'catalyst:system:datachannels',
+            audience: JWTAudience.enum['catalyst:system'],
         });
     });
     it('expired token does not validate', async () => {
@@ -84,7 +84,7 @@ describe('jwt integration tests', () => {
         const jwtToken = await jwtStub.signJWT(
             jwtRequest,
             -6 * DEFAULT_STANDARD_DURATIONS.M,
-            'catalyst:system:datachannels'
+            JWTAudience.enum['catalyst:system']
         );
         // wait for token to expire
 
