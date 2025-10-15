@@ -9,6 +9,7 @@ import {
 	JWTRotateResponse,
 	Token,
 	User,
+	JWTAudience,
 } from '../../../packages/schema_zod';
 import { JWTSigningRequest, JWTSigningResponse, IssuedJWTRegistry, JWTRegisterStatus } from '../../../packages/schemas';
 import { Env } from './env';
@@ -141,6 +142,7 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 				error: 'catalyst is unable to validate user to all claims',
 			});
 		}
+<<<<<<< HEAD
 		console.log(jwtRequest);
 		// Create the JWT object first to get the JTI
 		const jwt = new JWT(jwtRequest.entity, jwtRequest.claims, 'catalyst:system:jwt:latest');
@@ -193,6 +195,17 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 				error: 'Failed to create token: signing or registration failed',
 			});
 		}
+=======
+		const id = this.env.KEY_PROVIDER.idFromName(keyNamespace);
+		const stub = this.env.KEY_PROVIDER.get(id);
+		const jwt = await stub.signJWT(jwtRequest, expiresIn, JWTAudience.enum['catalyst:gateway']);
+		// returns expiration in MS
+		return JWTSigningResponse.parse({
+			success: true,
+			token: jwt.token,
+			expiration: jwt.expiration,
+		});
+>>>>>>> 99bd829 (feat: implement JWT audience differentiation for enhanced security)
 	}
 
 	/**
@@ -237,6 +250,7 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 			});
 		}
 
+<<<<<<< HEAD
 		// Check that the requested claim is in the catalyst token's claims
 		if (!claims.includes(claim)) {
 			return JWTSigningResponse.parse({
@@ -244,6 +258,18 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 				error: 'Requested claim not found in catalyst token',
 			});
 		}
+=======
+		// create a single use JWT for this specific data channel
+		const singleUseJWTs = await stub.signJWT(
+			{
+				entity: decodedToken.payload.sub!,
+				claims: [claim],
+				expiresIn: 5 * DEFAULT_STANDARD_DURATIONS.M,
+			},
+			5 * DEFAULT_STANDARD_DURATIONS.M,
+			JWTAudience.enum['catalyst:datachannel'],
+		);
+>>>>>>> 99bd829 (feat: implement JWT audience differentiation for enhanced security)
 
 		// Create the JWT object first to get the JTI
 		const jwt = new JWT(decodedToken.payload.sub!, [claim], 'catalyst:system:jwt:latest');
@@ -500,8 +526,13 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 		// Calculate expiry in milliseconds
 		const expiresIn = duration * 1000;
 
+<<<<<<< HEAD
 		// Create the JWT object first to get the JTI
 		const jwt = new JWT(`system-${request.callingService}`, claims, 'catalyst:system:jwt:latest');
+=======
+		// Sign the JWT with system-specific parameters
+		const jwt = await stub.signJWT(jwtRequest, expiresIn, JWTAudience.enum['catalyst:system']);
+>>>>>>> 99bd829 (feat: implement JWT audience differentiation for enhanced security)
 
 		try {
 			// Sign the JWT first to get the exact expiry timestamp

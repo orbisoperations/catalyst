@@ -1,6 +1,6 @@
 import { env, SELF } from 'cloudflare:test';
 import { expect } from 'vitest';
-import { DataChannel } from '../../../../packages/schema_zod';
+import { DataChannel, JWTAudience } from '../../../../packages/schema_zod';
 import { TEST_ORG_ID, validUsers } from './authUtils';
 
 export { TEST_ORG_ID, validUsers };
@@ -92,9 +92,14 @@ export async function getCatalystToken(cfToken: string, claims: string[]) {
       entity: user.email,
       claims,
     },
+<<<<<<< HEAD
     3600 * 1000, // 1 hour in milliseconds
     { cfToken },
     'default',
+=======
+    3600,
+    JWTAudience.enum['catalyst:gateway'],
+>>>>>>> 99bd829 (feat: implement JWT audience differentiation for enhanced security)
   );
 
   if (!response.success) {

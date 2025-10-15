@@ -50,7 +50,7 @@ describe('Integration: System Service JWT Workflows', () => {
 			expect(payload.sub).toBe('system-data-channel-certifier');
 			expect(payload.claims).toEqual(['test-channel-123']);
 			expect(payload.iss).toBe('catalyst:system:jwt:latest');
-			expect(payload.aud).toBe('catalyst:system:datachannels');
+			expect(payload.aud).toBe('catalyst:system');
 
 			const expiryDuration = (payload.exp as number) - (payload.iat as number);
 			// Allow 5 second tolerance
@@ -293,7 +293,7 @@ describe('Integration: System Service JWT Workflows', () => {
 			expect(systemDecoded.sub).toMatch(/^system-/);
 
 			expect(systemDecoded.iss).toBe('catalyst:system:jwt:latest');
-			expect(systemDecoded.aud).toBe('catalyst:system:datachannels');
+			expect(systemDecoded.aud).toBe('catalyst:system');
 		});
 	});
 });

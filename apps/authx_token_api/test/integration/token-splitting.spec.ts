@@ -79,7 +79,7 @@ describe('Integration: Catalyst Token Splitting Workflows', () => {
 
 				expect(decoded.sub).toBe(`${TEST_ORG_ID}/${CUSTODIAN_USER.email}`);
 				expect(decoded.iss).toBe('catalyst:system:jwt:latest');
-				expect(decoded.aud).toBe('catalyst:system:datachannels');
+				expect(decoded.aud).toBe('catalyst:datachannel');
 				expect(decoded.claims).toEqual([channelIds[i]]);
 			}
 		});
@@ -241,9 +241,9 @@ describe('Integration: Catalyst Token Splitting Workflows', () => {
 			expect(decoded2.claims).toHaveLength(1);
 
 			expect(decoded1.iss).toBe('catalyst:system:jwt:latest');
-			expect(decoded1.aud).toBe('catalyst:system:datachannels');
+			expect(decoded1.aud).toBe('catalyst:datachannel');
 			expect(decoded2.iss).toBe('catalyst:system:jwt:latest');
-			expect(decoded2.aud).toBe('catalyst:system:datachannels');
+			expect(decoded2.aud).toBe('catalyst:datachannel');
 
 			expect(decoded1.jti).toBeDefined();
 			expect(decoded2.jti).toBeDefined();

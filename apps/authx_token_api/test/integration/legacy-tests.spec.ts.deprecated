@@ -1,4 +1,4 @@
-import { JWTSigningRequest, JWTSigningResponse } from '@catalyst/schema_zod'; // Assuming types are exported
+import { JWTSigningRequest, JWTSigningResponse, JWTAudience } from '@catalyst/schema_zod'; // Assuming types are exported
 import { env, SELF } from 'cloudflare:test';
 import { createLocalJWKSet, jwtVerify, SignJWT } from 'jose';
 
@@ -23,7 +23,7 @@ describe('testing key state class', () => {
 		await key.init();
 		expect(key.publicKey).toBeDefined();
 
-		const jwtReq = new JWT('test', [], 'testissuer');
+		const jwtReq = new JWT('test', [], 'testissuer', JWTAudience.enum['catalyst:datachannel']);
 		const token = await new SignJWT(jwtReq.payloadRaw(1000000)).setProtectedHeader({ alg: KEY_ALG }).sign(key.privateKey);
 		expect(token).toBeDefined();
 

@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import base64url from 'base64url';
 import { JWTPayload } from 'jose';
-import { DEFAULT_STANDARD_DURATIONS } from '@catalyst/schema_zod';
+import { DEFAULT_STANDARD_DURATIONS, JWTAudience } from '@catalyst/schema_zod';
 
 /*
 RFC 7519 (JWT)
@@ -39,11 +39,11 @@ export class JWT implements DSSJWT {
 	iat: number; // issued at
 	claims: string[]; // list of urns
 
-	constructor(entity: string, claims: string[], iss: string) {
+	constructor(entity: string, claims: string[], iss: string, aud: JWTAudience) {
 		this.sub = entity;
 		this.claims = claims;
 		this.iss = iss;
-		this.aud = `catalyst:system:datachannels`;
+		this.aud = aud;
 		this.jti = uuidv4();
 		this.nbf = 0;
 		this.exp = 0;
