@@ -1,6 +1,6 @@
 import { JSONWebKeySet, JWTPayload, createLocalJWKSet, decodeJwt, jwtVerify } from 'jose';
 import { DurableObject } from 'cloudflare:workers';
-import { DEFAULT_STANDARD_DURATIONS, JWTParsingResponse, JWTSigningRequest } from '@catalyst/schema_zod';
+import { DEFAULT_STANDARD_DURATIONS, JWTParsingResponse, JWTSigningRequest, JWTAudience } from '@catalyst/schema_zod';
 import { JWT } from './jwt';
 import { KeyState, KeyStateSerialized } from './keystate';
 
@@ -56,6 +56,7 @@ export class JWTKeyProvider extends DurableObject {
 		return true;
 	}
 
+<<<<<<< HEAD
 	async signJWT(req: JWTSigningRequest & { jti?: string }, expiresIn: number) {
 		await this.key();
 		// Create JWT with provided jti if available, otherwise generate new one
@@ -63,6 +64,11 @@ export class JWTKeyProvider extends DurableObject {
 		if (req.jti) {
 			jwt.jti = req.jti; // Use the provided jti
 		}
+=======
+	async signJWT(req: JWTSigningRequest, expiresIn: number, audience: JWTAudience) {
+		await this.key();
+		const jwt = new JWT(req.entity, req.claims, 'catalyst:system:jwt:latest', audience);
+>>>>>>> 99bd829 (feat: implement JWT audience differentiation for enhanced security)
 		const newToken = await this.currentKey!.sign(jwt, expiresIn);
 		const payload = decodeJwt(newToken);
 		const expiration = (payload.exp as number) * DEFAULT_STANDARD_DURATIONS.S;
@@ -108,6 +114,7 @@ export class JWTKeyProvider extends DurableObject {
 				entity: payload.sub,
 				claims: payload.claims,
 				jwtId: payload.jti,
+				audience: payload.aud,
 			});
 			return resp;
 		} catch (e: unknown) {

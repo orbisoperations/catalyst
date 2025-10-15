@@ -1,11 +1,12 @@
 import { JWTPayload } from 'jose';
 import { describe, expect, it } from 'vitest';
 import { JWT } from '../../src/jwt';
+import { JWTAudience } from '@catalyst/schema_zod';
 
 describe('JWT', () => {
 	describe('constructor', () => {
 		it('should create a valid JWT with basic properties', () => {
-			const jwt = new JWT('test', [], 'testissuer');
+			const jwt = new JWT('test', [], 'testissuer', JWTAudience.enum['catalyst:datachannel']);
 			const payload = jwt.payloadRaw(1000000);
 			expect(payload).toBeDefined();
 			expect(payload.iss).toBe('testissuer');
@@ -16,21 +17,21 @@ describe('JWT', () => {
 
 		it('should create a JWT with claims', () => {
 			const claims = ['claim1', 'claim2'];
-			const jwt = new JWT('test', claims, 'testissuer');
+			const jwt = new JWT('test', claims, 'testissuer', JWTAudience.enum['catalyst:datachannel']);
 			const payload = jwt.payloadRaw(1000000);
 			expect(payload.claims).toEqual(claims);
 		});
 
 		it('should set correct audience', () => {
-			const jwt = new JWT('test', [], 'testissuer');
+			const jwt = new JWT('test', [], 'testissuer', JWTAudience.enum['catalyst:datachannel']);
 			const payload = jwt.payloadRaw(1000000);
-			expect(payload.aud).toBe('catalyst:system:datachannels');
+			expect(payload.aud).toBe(JWTAudience.enum['catalyst:datachannel']);
 		});
 	});
 
 	describe('header', () => {
 		it('should generate correct header with algorithm', () => {
-			const jwt = new JWT('test', [], 'testissuer');
+			const jwt = new JWT('test', [], 'testissuer', JWTAudience.enum['catalyst:datachannel']);
 			const header = jwt.header('RS256');
 			const decoded = JSON.parse(atob(header));
 			expect(decoded).toEqual({
@@ -42,7 +43,7 @@ describe('JWT', () => {
 
 	describe('payload', () => {
 		it('should generate payload with correct timestamps', () => {
-			const jwt = new JWT('test', [], 'testissuer');
+			const jwt = new JWT('test', [], 'testissuer', JWTAudience.enum['catalyst:datachannel']);
 			const expiry = 3600; // 1 hour in seconds
 			const payload = jwt.payloadRaw(expiry);
 
@@ -54,7 +55,7 @@ describe('JWT', () => {
 		});
 
 		it('should generate base64url encoded payload', () => {
-			const jwt = new JWT('test', [], 'testissuer');
+			const jwt = new JWT('test', [], 'testissuer', JWTAudience.enum['catalyst:datachannel']);
 			const encoded = jwt.payload('testkey', 3600);
 			expect(encoded).toMatch(/^[A-Za-z0-9_-]+$/); // base64url pattern
 		});
@@ -66,7 +67,7 @@ describe('JWT', () => {
 				iss: 'testissuer',
 				sub: 'testsubject',
 				claims: ['claim1', 'claim2'],
-				aud: 'catalyst:system:datachannels',
+				aud: JWTAudience.enum['catalyst:datachannel'],
 				jti: 'test-jti',
 				nbf: 1000,
 				iat: 1001,
@@ -89,7 +90,7 @@ describe('JWT', () => {
 				iss: 'testissuer',
 				sub: 'testsubject',
 				claims: [],
-				aud: 'catalyst:system:datachannels',
+				aud: JWTAudience.enum['catalyst:datachannel'],
 				jti: 'test-jti',
 			};
 

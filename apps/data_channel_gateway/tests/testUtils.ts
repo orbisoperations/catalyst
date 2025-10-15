@@ -1,4 +1,4 @@
-import { DataChannel } from '@catalyst/schema_zod';
+import { DataChannel, JWTAudience } from '@catalyst/schema_zod';
 import { env, fetchMock } from 'cloudflare:test';
 import { TestContext } from 'vitest';
 
@@ -24,8 +24,12 @@ export const generateCatalystToken = async (entity: string, claims: string[], ct
             claims: claims,
         },
         10 * 60 * 1000,
+<<<<<<< HEAD
         { cfToken: 'cf-test-token' }, // Use the mock CF token
         'default'
+=======
+        JWTAudience.enum['catalyst:gateway']
+>>>>>>> 99bd829 (feat: implement JWT audience differentiation for enhanced security)
     );
 
     if (!tokenResp.success) {

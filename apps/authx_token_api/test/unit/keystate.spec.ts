@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { JWT } from '../../src/jwt';
 import { KeyState } from '../../src/keystate';
+import { JWTAudience } from '@catalyst/schema_zod';
 
 describe('KeyState', () => {
 	let keyState: KeyState;
@@ -27,7 +28,7 @@ describe('KeyState', () => {
 
 	describe('signing', () => {
 		it('should sign a JWT with valid payload', async () => {
-			const jwt = new JWT('test-subject', ['test-claim'], 'test-issuer');
+			const jwt = new JWT('test-subject', ['test-claim'], 'test-issuer', JWTAudience.enum['catalyst:datachannel']);
 			const expiresIn = 3600; // 1 hour
 			const signedToken = await keyState.sign(jwt, expiresIn);
 
@@ -37,7 +38,7 @@ describe('KeyState', () => {
 		});
 
 		it('should respect maximum expiry time', async () => {
-			const jwt = new JWT('test-subject', ['test-claim'], 'test-issuer');
+			const jwt = new JWT('test-subject', ['test-claim'], 'test-issuer', JWTAudience.enum['catalyst:datachannel']);
 			const longExpiry = keyState.expiry * 2; // Try to set expiry longer than max
 			const signedToken = await keyState.sign(jwt, longExpiry);
 
@@ -81,7 +82,7 @@ describe('KeyState', () => {
 			const serialized = await keyState.serialize();
 			const deserialized = await KeyState.deserialize(serialized);
 
-			const jwt = new JWT('test-subject', ['test-claim'], 'test-issuer');
+			const jwt = new JWT('test-subject', ['test-claim'], 'test-issuer', JWTAudience.enum['catalyst:datachannel']);
 			const signedToken = await deserialized.sign(jwt, 3600);
 			expect(signedToken).toBeDefined();
 			expect(typeof signedToken).toBe('string');

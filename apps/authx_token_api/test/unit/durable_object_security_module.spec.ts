@@ -1,4 +1,4 @@
-import { JWTSigningRequest } from '@catalyst/schema_zod';
+import { JWTSigningRequest, JWTAudience } from '@catalyst/schema_zod';
 import { env } from 'cloudflare:test';
 import { describe, expect, it } from 'vitest';
 import { KeyStateSerialized } from '../../src/keystate';
@@ -46,7 +46,7 @@ describe('JWTKeyProvider', () => {
 		};
 		const expiresIn = 3600; // 1 hour
 
-		const result = await stub.signJWT(req, expiresIn);
+		const result = await stub.signJWT(req, expiresIn, JWTAudience.enum['catalyst:datachannel']);
 		const expectedResult = {
 			token: expect.any(String),
 			expiration: expect.any(Number),

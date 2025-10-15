@@ -250,6 +250,20 @@ const authenticateRequestMiddleware = async (c: Context<{ Bindings: Env; Variabl
         return c.json({ message: 'Token validation failed' }, 403);
     }
 
+    // FUTURE ENHANCEMENT (December 2026): Add audience validation once all tokens without the 'catalyst:gateway' audience have expired.
+    //
+    // Purpose: Prevent single-use tokens (audience: 'catalyst:datachannel') from accessing the gateway
+    //
+    // Security concern: If a gateway token is revoked, any single-use tokens created from it
+    // before revocation would still be valid until they expire (5 minutes). While this is
+    // low-risk (short expiration + token only used between gateway and data channel (data owner)),
+    // it may be best to add the below check once all tokens without the 'catalyst:gateway' audience
+    // have expired/up to 1 year after this change goes in (estimated: December 2026)
+    //
+    // if (audience !== 'catalyst:gateway') {
+    //     return c.json({ message: 'Token audience is not valid for gateway access' }, 403);
+    // }
+
     // Check if the JWT token is invalid (revoked or deleted)
     if (await c.env.ISSUED_JWT_REGISTRY.isInvalid(jwtId)) {
         return c.json({ message: 'Token has been revoked' }, 403);
