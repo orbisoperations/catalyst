@@ -2,6 +2,7 @@ import { env, SELF } from 'cloudflare:test';
 import { createLocalJWKSet, decodeJwt, jwtVerify } from 'jose';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { JWTSigningRequest } from '@catalyst/schema_zod';
+import { JWTAudience } from '@catalyst/schema_zod';
 import { clearAllAuthzedRoles, custodianCreatesDataChannel, generateDataChannels, TEST_ORG_ID, validUsers } from '../utils/testUtils';
 
 /**
@@ -37,6 +38,7 @@ describe('Integration: Complete JWT Lifecycle', () => {
 			const jwtRequest: JWTSigningRequest = {
 				entity: CUSTODIAN_USER.email,
 				claims: [createdChannel.id],
+				audience: JWTAudience.enum['catalyst:gateway'],
 			};
 
 			const signResponse = await SELF.signJWT(jwtRequest, 3600 * 1000, {
@@ -113,6 +115,7 @@ describe('Integration: Complete JWT Lifecycle', () => {
 			const jwtRequest: JWTSigningRequest = {
 				entity: CUSTODIAN_USER.email,
 				claims: [createdChannel.id],
+				audience: JWTAudience.enum['catalyst:gateway'],
 			};
 
 			// Sign JWT with current key
@@ -171,6 +174,7 @@ describe('Integration: Complete JWT Lifecycle', () => {
 			const jwtRequest: JWTSigningRequest = {
 				entity: CUSTODIAN_USER.email,
 				claims: [createdChannel.id],
+				audience: JWTAudience.enum['catalyst:gateway'],
 			};
 
 			const signResponse = await SELF.signJWT(jwtRequest, 3600 * 1000, {
@@ -233,6 +237,7 @@ describe('Integration: Complete JWT Lifecycle', () => {
 			const jwtRequest: JWTSigningRequest = {
 				entity: CUSTODIAN_USER.email,
 				claims: [createdChannel.id],
+				audience: JWTAudience.enum['catalyst:gateway'],
 			};
 
 			// ═══════════════════════════════════════════════════════════

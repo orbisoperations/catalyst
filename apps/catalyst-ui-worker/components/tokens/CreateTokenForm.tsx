@@ -3,7 +3,7 @@ import { JWTRequest } from '@/app/types';
 import { APIKeyText, ErrorCard, OrbisButton, OrbisCard, SelectableTable } from '@/components/elements';
 import { DetailedView } from '@/components/layouts';
 import { navigationItems } from '@/utils/nav.utils';
-import { DataChannel, JWTSigningResponse } from '@catalyst/schema_zod';
+import { DataChannel, IssuedJWTRegistry, JWTSigningResponse, JWTAudience } from '@catalyst/schema_zod';
 import { Box, Flex } from '@chakra-ui/layout';
 import {
     FormControl,
@@ -85,6 +85,7 @@ function buildJWTRequest(
     return {
         claims: channelsResponse.filter((_, i) => selectedChannels.includes(i)).map((channel) => channel.id),
         entity: (user && user.custom.org && `${user.custom.org}/${user.email}`) || 'default',
+        audience: JWTAudience.enum['catalyst:gateway'],
         ...(name && { name }),
         ...(description && { description }),
     };
