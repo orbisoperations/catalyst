@@ -1,6 +1,7 @@
 import { SELF } from 'cloudflare:test';
 import { createLocalJWKSet, decodeJwt, jwtVerify } from 'jose';
 import { describe, expect, it } from 'vitest';
+import { JWTAudience } from '@catalyst/schema_zod';
 
 /**
  * Integration Tests: System Service JWT Workflows
@@ -50,7 +51,7 @@ describe('Integration: System Service JWT Workflows', () => {
 			expect(payload.sub).toBe('system-data-channel-certifier');
 			expect(payload.claims).toEqual(['test-channel-123']);
 			expect(payload.iss).toBe('catalyst:system:jwt:latest');
-			expect(payload.aud).toBe('catalyst:system');
+			expect(payload.aud).toBe(JWTAudience.enum['catalyst:system']);
 
 			const expiryDuration = (payload.exp as number) - (payload.iat as number);
 			// Allow 5 second tolerance
@@ -293,7 +294,7 @@ describe('Integration: System Service JWT Workflows', () => {
 			expect(systemDecoded.sub).toMatch(/^system-/);
 
 			expect(systemDecoded.iss).toBe('catalyst:system:jwt:latest');
-			expect(systemDecoded.aud).toBe('catalyst:system');
+			expect(systemDecoded.aud).toBe(JWTAudience.enum['catalyst:system']);
 		});
 	});
 });

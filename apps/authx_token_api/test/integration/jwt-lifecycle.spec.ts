@@ -65,7 +65,7 @@ describe('Integration: Complete JWT Lifecycle', () => {
 			expect(protectedHeader.alg).toBe('EdDSA');
 			expect(payload.sub).toBe(CUSTODIAN_USER.email);
 			expect(payload.claims).toEqual([createdChannel.id]);
-			expect(payload.aud).toBe('catalyst:gateway');
+			expect(payload.aud).toBe(JWTAudience.enum['catalyst:gateway']);
 			expect(payload.iss).toBe('catalyst:system:jwt:latest');
 			expect(payload.jti).toBeDefined();
 
