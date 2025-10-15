@@ -43,10 +43,11 @@ describe('JWTKeyProvider', () => {
 		const req: JWTSigningRequest = {
 			entity: 'user123',
 			claims: ['channel1', 'channel2'],
+			audience: JWTAudience.enum['catalyst:datachannel'],
 		};
 		const expiresIn = 3600; // 1 hour
 
-		const result = await stub.signJWT(req, expiresIn, JWTAudience.enum['catalyst:datachannel']);
+		const result = await stub.signJWT(req, expiresIn);
 		const expectedResult = {
 			token: expect.any(String),
 			expiration: expect.any(Number),

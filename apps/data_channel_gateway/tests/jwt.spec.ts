@@ -31,14 +31,11 @@ describe('jwt integration tests', () => {
         const jwtRequest = {
             entity: 'testuser',
             claims: ['testclaim'],
+            audience: JWTAudience.enum['catalyst:system'],
         };
         const jwtDoId = env.JWT_TOKEN_DO.idFromName('newtest');
         const jwtStub = env.JWT_TOKEN_DO.get(jwtDoId);
-        const jwtToken = await jwtStub.signJWT(
-            jwtRequest,
-            360 * DEFAULT_STANDARD_DURATIONS.S,
-            JWTAudience.enum['catalyst:system']
-        );
+        const jwtToken = await jwtStub.signJWT(jwtRequest, 360 * DEFAULT_STANDARD_DURATIONS.S);
         expect(jwtToken.expiration).toBeCloseTo(Date.now() + 360 * DEFAULT_STANDARD_DURATIONS.S, -4);
 
         const validateResp = await jwtStub.validateToken(jwtToken.token);
@@ -60,12 +57,9 @@ describe('jwt integration tests', () => {
         const jwtRequest = {
             entity: 'testuser',
             claims: ['testclaim'],
+            audience: JWTAudience.enum['catalyst:system'],
         };
-        const jwtToken = await jwtStub.signJWT(
-            jwtRequest,
-            360 * DEFAULT_STANDARD_DURATIONS.S,
-            JWTAudience.enum['catalyst:system']
-        );
+        const jwtToken = await jwtStub.signJWT(jwtRequest, 360 * DEFAULT_STANDARD_DURATIONS.S);
 
         const jwkPub = await createLocalJWKSet(jwk);
 
@@ -78,14 +72,11 @@ describe('jwt integration tests', () => {
         const jwtRequest = {
             entity: 'testuser',
             claims: ['testclaim'],
+            audience: JWTAudience.enum['catalyst:system'],
         };
         const jwtDoId = env.JWT_TOKEN_DO.idFromName('newtest');
         const jwtStub = env.JWT_TOKEN_DO.get(jwtDoId);
-        const jwtToken = await jwtStub.signJWT(
-            jwtRequest,
-            -6 * DEFAULT_STANDARD_DURATIONS.M,
-            JWTAudience.enum['catalyst:system']
-        );
+        const jwtToken = await jwtStub.signJWT(jwtRequest, -6 * DEFAULT_STANDARD_DURATIONS.M);
         // wait for token to expire
 
         expect(jwtStub.validateToken);

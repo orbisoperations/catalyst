@@ -198,7 +198,7 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 =======
 		const id = this.env.KEY_PROVIDER.idFromName(keyNamespace);
 		const stub = this.env.KEY_PROVIDER.get(id);
-		const jwt = await stub.signJWT(jwtRequest, expiresIn, JWTAudience.enum['catalyst:gateway']);
+		const jwt = await stub.signJWT({ ...jwtRequest, audience: JWTAudience.enum['catalyst:gateway'] }, expiresIn);
 		// returns expiration in MS
 		return JWTSigningResponse.parse({
 			success: true,
@@ -264,10 +264,10 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 			{
 				entity: decodedToken.payload.sub!,
 				claims: [claim],
+				audience: JWTAudience.enum['catalyst:datachannel'],
 				expiresIn: 5 * DEFAULT_STANDARD_DURATIONS.M,
 			},
 			5 * DEFAULT_STANDARD_DURATIONS.M,
-			JWTAudience.enum['catalyst:datachannel'],
 		);
 >>>>>>> 99bd829 (feat: implement JWT audience differentiation for enhanced security)
 
@@ -531,8 +531,12 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 		const jwt = new JWT(`system-${request.callingService}`, claims, 'catalyst:system:jwt:latest');
 =======
 		// Sign the JWT with system-specific parameters
+<<<<<<< HEAD
 		const jwt = await stub.signJWT(jwtRequest, expiresIn, JWTAudience.enum['catalyst:system']);
 >>>>>>> 99bd829 (feat: implement JWT audience differentiation for enhanced security)
+=======
+		const jwt = await stub.signJWT({ ...jwtRequest, audience: JWTAudience.enum['catalyst:system'] }, expiresIn);
+>>>>>>> 1bdf3ab (refactor: move JWT audience into JWTSigningRequest object)
 
 		try {
 			// Sign the JWT first to get the exact expiry timestamp

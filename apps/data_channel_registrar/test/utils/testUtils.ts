@@ -91,6 +91,11 @@ export async function getCatalystToken(cfToken: string, claims: string[]) {
     {
       entity: user.email,
       claims,
+<<<<<<< HEAD
+=======
+      audience: JWTAudience.enum['catalyst:gateway'],
+      expiresIn: 3600,
+>>>>>>> 1bdf3ab (refactor: move JWT audience into JWTSigningRequest object)
     },
 <<<<<<< HEAD
     3600 * 1000, // 1 hour in milliseconds
@@ -98,8 +103,11 @@ export async function getCatalystToken(cfToken: string, claims: string[]) {
     'default',
 =======
     3600,
+<<<<<<< HEAD
     JWTAudience.enum['catalyst:gateway'],
 >>>>>>> 99bd829 (feat: implement JWT audience differentiation for enhanced security)
+=======
+>>>>>>> 1bdf3ab (refactor: move JWT audience into JWTSigningRequest object)
   );
 
   if (!response.success) {
