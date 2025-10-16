@@ -217,103 +217,118 @@ app.post('/validate-tokens', async (ctx) => {
 
 /**
  * Middleware to authenticate requests
- * TODO: separate this into a separate file, with better logic
  *
- * Separating into its own handler fixes a weird case where app.use does a app.all('*', for all routes, and we only need auth for /graphql
- * Use in specific routes that need auth
+ * This middleware extracts and validates tokens but does NOT return error responses.
+ * Instead, it sets empty claims/tokens on validation failure, allowing the gateway
+ * to return an empty schema (best-effort stitching approach).
  *
  * @param c - The context object
  * @param next - The next middleware function
- * @returns A JSON response with an error message if the token is invalid
  */
 const authenticateRequestMiddleware = async (c: Context<{ Bindings: Env; Variables: Variables }>, next: Next) => {
     const [token, error] = grabTokenInHeader(c.req.header('Authorization'));
     if (error) {
-        return c.json(
-            {
-                error: error.msg,
-            },
-            400
-        );
+        console.warn('Token extraction error:', error.msg);
+        c.set('claims', []);
+        c.set('catalyst-token', '');
+        await next();
+        return;
     }
     if (!token) {
-        return c.json(
-            {
-                error: 'JWT Invalid',
-            },
-            403
-        );
+        console.warn('No token provided');
+        c.set('claims', []);
+        c.set('catalyst-token', '');
+        await next();
+        return;
     }
 
     const { valid, claims, jwtId, error: ValidError } = await c.env.AUTHX_TOKEN_API.validateToken(token);
     if (!valid || ValidError || !jwtId) {
-        return c.json({ message: 'Token validation failed' }, 403);
+        console.warn('Token validation failed:', ValidError);
+        c.set('claims', []);
+        c.set('catalyst-token', '');
+        await next();
+        return;
     }
 
     // Check if the JWT token is invalid (revoked or deleted)
     if (await c.env.ISSUED_JWT_REGISTRY.isInvalid(jwtId)) {
-        return c.json({ message: 'Token has been revoked' }, 403);
+        console.warn('Token has been revoked:', jwtId);
+        c.set('claims', []);
+        c.set('catalyst-token', '');
+        await next();
+        return;
     }
 
     c.set('claims', claims);
     c.set('catalyst-token', token);
-    // we good
     await next();
-
-    // we can add claims but do not need to enforce them here
 };
 
 app.use('/graphql', authenticateRequestMiddleware, async (ctx) => {
-    const token = Token.safeParse({
+    const token = TokenSchema.safeParse({
         catalystToken: ctx.get('catalyst-token'),
     });
 
+    let endpoints: { token: string; endpoint: string }[] = [];
+
     if (!token.success) {
-        console.error(token.error);
-        return ctx.json(
-            {
-                error: 'invalid token',
-            },
-            403
-        );
-    }
-    if (!token.data.catalystToken) console.error('catalyst token is undefined when building gateway');
-    const claims = ctx.get('claims');
-    if (!claims) {
-        console.error('no claims found');
-        return ctx.json(
-            {
-                error: 'no claims found',
-            },
-            403
-        );
+        console.warn('Invalid token format, returning empty schema:', token.error);
+    } else if (!token.data.catalystToken) {
+        console.warn('Catalyst token is undefined, returning empty schema');
+    } else {
+        const claims = ctx.get('claims');
+        if (!claims || claims.length === 0) {
+            console.warn('No claims found, returning empty schema');
+        } else {
+            const channelAccessPermissions = await ctx.env.AUTHX_TOKEN_API.splitTokenIntoSingleUseTokens(
+                token.data.catalystToken,
+                'default'
+            );
+
+            if (!channelAccessPermissions.success) {
+                console.warn(
+                    'Failed to split token into single-use tokens, returning empty schema:',
+                    channelAccessPermissions.error
+                );
+            } else {
+                // Filter out failed signed tokens and map to endpoints
+                endpoints = channelAccessPermissions.channelPermissions
+                    .filter((dataChannelPermission) => {
+                        if (!dataChannelPermission.success) {
+                            console.warn('Skipping failed channel permission:', dataChannelPermission.error);
+                            return false;
+                        }
+                        return true;
+                    })
+                    .map(({ dataChannel, singleUseToken }) => ({
+                        token: singleUseToken,
+                        endpoint: dataChannel.endpoint,
+                    }));
+            }
+        }
     }
 
-    const channelAccessPermissions = await ctx.env.AUTHX_TOKEN_API.splitTokenIntoSingleUseTokens(
-        token.data.catalystToken!,
-        'default'
-    );
-
-    if (!channelAccessPermissions.success) {
-        return ctx.json(
-            {
-                error: channelAccessPermissions.error,
-            },
-            403
-        );
+    if (endpoints.length === 0) {
+        console.info('No accessible channels, returning empty schema with health query only');
     }
-
-    // filter out failed signed tokens
-    // map to endpoints
-    const endpoints = channelAccessPermissions.channelPermissions
-        .filter((dataChannelPermission) => dataChannelPermission.success)
-        .map(({ dataChannel, singleUseToken }) => ({
-            token: singleUseToken,
-            endpoint: dataChannel.endpoint,
-        }));
 
     const yoga = createYoga({
         schema: await makeGatewaySchema(endpoints),
+        maskedErrors: {
+            maskError: (error) => {
+                // Suppress "Cannot query field" errors - these happen when users query
+                // fields from channels they don't have access to
+                if (error.message.includes('Cannot query field')) {
+                    // Return the original error unchanged - GraphQL will handle it
+                    return error;
+                }
+                // Log and pass through all errors
+                console.warn('GraphQL error suppressed:', error.message);
+                // Return the original error - GraphQL Yoga handles masking
+                return error;
+            },
+        },
     });
 
     // @ts-expect-error: for some reason TS is not happy with the yoga function receiving the raw request
