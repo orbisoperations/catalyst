@@ -1,6 +1,5 @@
 import { grabTokenInHeader } from '@catalyst/jwt';
-import { Token } from '@catalyst/schemas';
-import { JWTAudience } from '@catalyst/schemas';
+import { Token, TokenSchema, JWTAudience } from '@catalyst/schemas';
 import { decodeJwt } from 'jose';
 import { stitchSchemas } from '@graphql-tools/stitch';
 import { stitchingDirectives } from '@graphql-tools/stitching-directives';
@@ -176,7 +175,7 @@ app.post('/validate-tokens', async (ctx) => {
 
     const results = await Promise.all(
         requests.map(async (request: ValidateTokenRequest): Promise<ValidateTokenResponse> => {
-            const token = Token.safeParse(request);
+            const token = TokenSchema.safeParse(request);
 
             if (!token.success || !token.data.catalystToken) {
                 return {
