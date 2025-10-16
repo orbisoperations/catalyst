@@ -1,5 +1,6 @@
 import { grabTokenInHeader } from '@catalyst/jwt';
 import { Token, JWTAudience } from '@catalyst/schema_zod';
+import { decodeJwt } from 'jose';
 import { stitchSchemas } from '@graphql-tools/stitch';
 import { stitchingDirectives } from '@graphql-tools/stitching-directives';
 import { AsyncExecutor, isAsyncIterable, type Executor } from '@graphql-tools/utils';
@@ -143,6 +144,24 @@ app.get('/.well-known/jwks.json', async (c) => {
     return c.json(jwks, 200);
 });
 
+const validateGatewayAudience = (token: string) => {
+    try {
+        const payload = decodeJwt(token); // No signature validation, just decode
+        const audience = payload.aud;
+
+        // Audience validation - only allow gateway tokens
+        // - Old tokens (no audience): Allow them for backwards compatibility
+        // - New tokens (with audience): Only allow 'catalyst:gateway' audience
+        if (audience && audience !== JWTAudience.enum['catalyst:gateway']) {
+            return { valid: false, error: 'Token audience is not valid for gateway access' };
+        }
+
+        return { valid: true, audience }; // audience is either 'catalyst:gateway' or undefined
+    } catch {
+        return { valid: false, error: 'Invalid token format' };
+    }
+};
+
 // Add bulk validation endpoint
 app.post('/validate-tokens', async (ctx) => {
     const requests = await ctx.req.json();
@@ -166,6 +185,17 @@ app.post('/validate-tokens', async (ctx) => {
                     catalystToken: request.catalystToken,
                     valid: false,
                     error: 'invalid token',
+                };
+            }
+
+            // Check audience only - let registrar handle full JWT validation
+            const audienceValidation = validateGatewayAudience(token.data.catalystToken);
+            if (!audienceValidation.valid) {
+                return {
+                    claimId: request.claimId,
+                    catalystToken: request.catalystToken,
+                    valid: false,
+                    error: audienceValidation.error,
                 };
             }
 
@@ -245,17 +275,16 @@ const authenticateRequestMiddleware = async (c: Context<{ Bindings: Env; Variabl
         );
     }
 
-    const { valid, claims, jwtId, audience, error: ValidError } = await c.env.AUTHX_TOKEN_API.validateToken(token);
-    if (!valid || ValidError || !jwtId) {
-        return c.json({ message: 'Token validation failed' }, 403);
+    // Check audience only - let registrar handle full JWT validation
+    const audienceValidation = validateGatewayAudience(token);
+    if (!audienceValidation.valid) {
+        return c.json({ message: audienceValidation.error }, 403);
     }
 
-    // Audience validation with backwards compatibility
-    // - Old tokens (no audience): Allow them for backwards compatibility
-    // - New tokens (with audience): Only allow 'catalyst:gateway' audience
-    // Purpose: Prevent single-use tokens (audience: 'catalyst:datachannel') from accessing the gateway
-    if (audience && audience !== JWTAudience.enum['catalyst:gateway']) {
-        return c.json({ message: 'Token audience is not valid for gateway access' }, 403);
+    // For middleware, we still need to do full validation to get claims and check revocation
+    const { valid, claims, jwtId, error: ValidError } = await c.env.AUTHX_TOKEN_API.validateToken(token);
+    if (!valid || ValidError || !jwtId) {
+        return c.json({ message: 'Token validation failed' }, 403);
     }
 
     // Check if the JWT token is invalid (revoked or deleted)

@@ -9,6 +9,7 @@ export function isWithinRange(value: number, min: number, max: number) {
     return value >= min && value <= max;
 }
 
+<<<<<<< HEAD
 export const generateCatalystToken = async (entity: string, claims: string[], ctx?: TestContext, user?: string) => {
     // Set up permissions BEFORE creating the token
     for (const claim of claims) {
@@ -19,10 +20,22 @@ export const generateCatalystToken = async (entity: string, claims: string[], ct
 
     // Use AUTHX_TOKEN_API worker to properly register the token
     const tokenResp = await env.AUTHX_TOKEN_API.signJWT(
+=======
+export const generateCatalystToken = async (
+    entity: string,
+    claims: string[],
+    audience: JWTAudience,
+    ctx?: TestContext,
+    user?: string
+) => {
+    const jwtDOID = env.JWT_TOKEN_DO.idFromName('default');
+    const jwtStub = env.JWT_TOKEN_DO.get(jwtDOID);
+    const tokenResp = await jwtStub.signJWT(
+>>>>>>> 259cf3c (fix: add missing audience field to JWTSigningRequest in test files)
         {
             entity: `${entity}/${user || TEST_USER}`,
             claims: claims,
-            audience: JWTAudience.enum['catalyst:gateway'],
+            audience: audience,
         },
 <<<<<<< HEAD
         10 * 60 * 1000,
