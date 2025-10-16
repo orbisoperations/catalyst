@@ -92,9 +92,9 @@ export async function getCatalystToken(cfToken: string, claims: string[]) {
       entity: user.email,
       claims,
       audience: JWTAudience.enum['catalyst:gateway'],
-      expiresIn: 3600,
+      expiresIn: 3600, // Used by JWT.payloadRaw() to set internal expiration
     },
-    3600 * 1000, // 1 hour in milliseconds
+    3600 * 1000, // 1 hour in milliseconds - actual token lifetime for signJWT
     { cfToken },
     'default',
   );
