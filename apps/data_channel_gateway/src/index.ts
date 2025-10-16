@@ -1,5 +1,5 @@
 import { grabTokenInHeader } from '@catalyst/jwt';
-import { Token } from '@catalyst/schema_zod';
+import { TokenSchema } from '@catalyst/schemas';
 import { stitchSchemas } from '@graphql-tools/stitch';
 import { stitchingDirectives } from '@graphql-tools/stitching-directives';
 import { AsyncExecutor, isAsyncIterable, type Executor } from '@graphql-tools/utils';
@@ -158,7 +158,7 @@ app.post('/validate-tokens', async (ctx) => {
 
     const results = await Promise.all(
         requests.map(async (request: ValidateTokenRequest): Promise<ValidateTokenResponse> => {
-            const token = Token.safeParse(request);
+            const token = TokenSchema.safeParse(request);
 
             if (!token.success || !token.data.catalystToken) {
                 return {

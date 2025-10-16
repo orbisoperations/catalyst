@@ -1,4 +1,4 @@
-import { DataChannel } from '@catalyst/schema_zod';
+import { DataChannel } from '@catalyst/schemas';
 import { env, SELF } from 'cloudflare:test';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { TEST_ORG, TEST_USER, generateCatalystToken } from './testUtils';
@@ -163,7 +163,7 @@ describe('validate endpoint tests', () => {
                 claimId: 'airplanes1',
                 catalystToken: invalidToken,
                 valid: false,
-                error: 'no data channels found for token',
+                error: 'invalid token', // Schema validation catches invalid tokens early
             },
         ]);
     });
@@ -240,7 +240,7 @@ describe('validate endpoint tests', () => {
                 claimId: 'airplanes2',
                 catalystToken: invalidToken,
                 valid: false,
-                error: 'no data channels found for token',
+                error: 'invalid token', // Schema validation catches invalid tokens early
             },
         ]);
     });

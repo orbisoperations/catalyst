@@ -399,7 +399,7 @@ importers:
         version: 2.6.2(@emotion/react@11.14.0(@types/react@18.3.21)(react@19.1.0))(@emotion/styled@11.14.0(@emotion/react@11.14.0(@types/react@18.3.21)(react@19.1.0))(@types/react@18.3.21)(react@19.1.0))(react@19.1.0)
       '@chakra-ui/theme-tools':
         specifier: 'catalog:'
-        version: 2.2.6(@chakra-ui/styled-system@2.9.2)(react@19.1.0)
+        version: 2.2.6(@chakra-ui/styled-system@2.12.3(react@19.1.0))(react@19.1.0)
       '@emotion/react':
         specifier: 'catalog:'
         version: 11.14.0(@types/react@18.3.21)(react@19.1.0)
@@ -613,9 +613,9 @@ importers:
       '@catalyst/jwt':
         specifier: workspace:*
         version: link:../../packages/jwt
-      '@catalyst/schema_zod':
+      '@catalyst/schemas':
         specifier: workspace:*
-        version: link:../../packages/schema_zod
+        version: link:../../packages/schemas
       '@graphql-tools/stitch':
         specifier: 'catalog:'
         version: 9.4.23(graphql@16.11.0)
@@ -5050,6 +5050,7 @@ packages:
 
   bun@1.2.13:
     resolution: {integrity: sha512-EhP1MhFbicqtaRSFCbEZdkcFco8Ov47cNJcB9QmKS8U4cojKHfLU+dQR14lCvLYmtBvGgwv/Lp+9SSver2OPzQ==}
+    cpu: [arm64, x64, aarch64]
     os: [darwin, linux, win32]
     hasBin: true
 
@@ -11396,10 +11397,10 @@ snapshots:
       '@chakra-ui/styled-system': 2.9.2
       color2k: 2.0.3
 
-  '@chakra-ui/theme-tools@2.2.6(@chakra-ui/styled-system@2.9.2)(react@19.1.0)':
+  '@chakra-ui/theme-tools@2.2.6(@chakra-ui/styled-system@2.12.3(react@19.1.0))(react@19.1.0)':
     dependencies:
       '@chakra-ui/anatomy': 2.3.4
-      '@chakra-ui/styled-system': 2.9.2
+      '@chakra-ui/styled-system': 2.12.3(react@19.1.0)
       '@chakra-ui/utils': 2.2.2(react@19.1.0)
       color2k: 2.0.3
     transitivePeerDependencies:
