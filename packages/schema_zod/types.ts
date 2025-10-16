@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { JWTAudience } from './jwt';
 
 const BaseError = z.object({
     success: z.literal(false),
@@ -113,30 +112,6 @@ export const zIssuedJWTRegistryActionResponse = z.discriminatedUnion('success', 
 ]);
 
 export type IssuedJWTRegistryActionResponse = z.infer<typeof zIssuedJWTRegistryActionResponse>;
-
-export const JWTSigningRequest = z.object({
-    entity: z.string(),
-    claims: z.string().array(),
-    audience: JWTAudience,
-    expiresIn: z.number().optional(),
-});
-
-export type JWTSigningRequest = z.infer<typeof JWTSigningRequest>;
-
-export const JWTSigningSuccess = z.object({
-    success: z.literal(true),
-    token: z.string(),
-    expiration: z.number(),
-});
-
-export const JWTSigningError = z.object({
-    success: z.literal(false),
-    error: z.string(),
-});
-
-export const JWTSigningResponse = z.discriminatedUnion('success', [JWTSigningSuccess, JWTSigningError]);
-
-export type JWTSigningResponse = z.infer<typeof JWTSigningResponse>;
 
 /**
  *  Single use token related types

@@ -1,6 +1,7 @@
 import { env, SELF } from 'cloudflare:test';
 import { expect } from 'vitest';
-import { DataChannel, JWTAudience } from '../../../../packages/schema_zod';
+import { DataChannel } from '../../../../packages/schema_zod';
+import { JWTAudience } from '../../../../packages/schemas';
 import { TEST_ORG_ID, validUsers } from './authUtils';
 
 export { TEST_ORG_ID, validUsers };

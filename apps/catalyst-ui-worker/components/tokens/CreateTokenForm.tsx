@@ -3,7 +3,8 @@ import { JWTRequest } from '@/app/types';
 import { APIKeyText, ErrorCard, OrbisButton, OrbisCard, SelectableTable } from '@/components/elements';
 import { DetailedView } from '@/components/layouts';
 import { navigationItems } from '@/utils/nav.utils';
-import { DataChannel, IssuedJWTRegistry, JWTSigningResponse, JWTAudience } from '@catalyst/schema_zod';
+import { DataChannel } from '@catalyst/schema_zod';
+import { JWTAudience, JWTSigningResponse } from '../../../../packages/schemas';
 import { Box, Flex } from '@chakra-ui/layout';
 import {
     FormControl,

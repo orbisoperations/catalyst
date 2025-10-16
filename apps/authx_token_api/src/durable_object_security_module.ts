@@ -1,6 +1,7 @@
 import { JSONWebKeySet, JWTPayload, createLocalJWKSet, decodeJwt, jwtVerify } from 'jose';
 import { DurableObject } from 'cloudflare:workers';
-import { DEFAULT_STANDARD_DURATIONS, JWTParsingResponse, JWTSigningRequest } from '@catalyst/schema_zod';
+import { DEFAULT_STANDARD_DURATIONS, JWTParsingResponse } from '@catalyst/schema_zod';
+import { JWTSigningRequest } from '@catalyst/schemas';
 import { JWT } from './jwt';
 import { KeyState, KeyStateSerialized } from './keystate';
 

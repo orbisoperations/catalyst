@@ -2,6 +2,14 @@ import { z } from 'zod/v4';
 import { createResponseSchema } from '../../core/common';
 import { preprocess, preprocessors } from '../../core/performance';
 
+// JWT Audience values for different token types
+export const JWTAudience = z.enum([
+    'catalyst:gateway', // For gateway access tokens (UI -> Gateway)
+    'catalyst:datachannel', // For single-use tokens (Gateway -> Data Channel)
+    'catalyst:system', // For system service tokens (Internal services)
+]);
+export type JWTAudience = z.infer<typeof JWTAudience>;
+
 export const JWTSigningRequest = z.object({
     entity: preprocess(
         preprocessors.trimString,
@@ -14,6 +22,7 @@ export const JWTSigningRequest = z.object({
     claims: z
         .array(preprocess(preprocessors.trimString, z.string().max(255, 'Claim too long')))
         .max(50, 'Maximum 50 claims allowed'),
+    audience: JWTAudience.optional(), // Optional for backwards compatibility
     expiresIn: z
         .number()
         .int('Expiration must be a whole number of seconds')

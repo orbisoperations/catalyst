@@ -1,4 +1,4 @@
-import { JWTSigningRequest, JWTAudience } from '@catalyst/schema_zod';
+import { JWTSigningRequest, JWTAudience } from '../../../../packages/schemas';
 import { env } from 'cloudflare:test';
 import { describe, expect, it } from 'vitest';
 import { KeyStateSerialized } from '../../src/keystate';

@@ -1,5 +1,6 @@
 // test/index.spec.ts
-import { DataChannel, DEFAULT_STANDARD_DURATIONS, JWTAudience } from '@catalyst/schema_zod';
+import { DataChannel, DEFAULT_STANDARD_DURATIONS } from '@catalyst/schema_zod';
+import { JWTAudience } from '../../../packages/schemas';
 import { env, fetchMock, SELF } from 'cloudflare:test';
 import { afterEach, beforeEach, describe, expect, it, TestContext } from 'vitest';
 import {
