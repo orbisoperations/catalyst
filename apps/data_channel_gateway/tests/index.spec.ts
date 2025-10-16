@@ -1,5 +1,5 @@
 // test/index.spec.ts
-import { DataChannel, DEFAULT_STANDARD_DURATIONS } from '@catalyst/schema_zod';
+import { DataChannel, DEFAULT_STANDARD_DURATIONS, JWTAudience } from '@catalyst/schema_zod';
 import { env, fetchMock, SELF } from 'cloudflare:test';
 import { afterEach, beforeEach, describe, expect, it, TestContext } from 'vitest';
 import { isWithinRange, TEST_ORG, TEST_USER, generateCatalystToken, createMockGraphqlEndpoint } from './testUtils';
@@ -73,7 +73,7 @@ describe('gateway integration tests', () => {
             method: 'GET',
             headers,
         });
-        const expected = { message: 'Token validation failed' };
+        const expected = { message: 'Invalid token format' };
         expect(JSON.parse(await response.text())).toStrictEqual(expected);
     });
 
@@ -86,7 +86,12 @@ describe('gateway integration tests', () => {
     });
 
     it('should return health a known good token no claims', async (textCtx) => {
-        const token = await generateCatalystToken('airplanes1', ['airplanes1'], textCtx);
+        const token = await generateCatalystToken(
+            'airplanes1',
+            ['airplanes1'],
+            JWTAudience.enum['catalyst:gateway'],
+            textCtx
+        );
         console.log('token', token);
         const response = await SELF.fetch('http://data-channel-gateway/graphql', {
             method: 'POST',
@@ -135,7 +140,12 @@ describe('gateway integration tests', () => {
         await setup();
 
         // Get a token with the proper claims
-        const token = await generateCatalystToken(TEST_ORG, ['airplanes1'], testContext);
+        const token = await generateCatalystToken(
+            TEST_ORG,
+            ['airplanes1'],
+            JWTAudience.enum['catalyst:gateway'],
+            testContext
+        );
         // add channel to org
         await env.AUTHX_AUTHZED_API.addOrgToDataChannel('airplanes1', TEST_ORG);
         await env.AUTHX_AUTHZED_API.addDataChannelToOrg(TEST_ORG, 'airplanes1');
@@ -187,7 +197,12 @@ describe('gateway integration tests', () => {
             creatorOrganization: TEST_ORG,
         };
 
-        const token = await generateCatalystToken(TEST_ORG, [dataChannel.id], testContext); // token with claims for all data channels
+        const token = await generateCatalystToken(
+            TEST_ORG,
+            [dataChannel.id],
+            JWTAudience.enum['catalyst:gateway'],
+            testContext
+        ); // token with claims for all data channels
 
         // get data channel registry
         const dChannelRegistryId = env.DATA_CHANNEL_REGISTRAR_DO.idFromName('default');
@@ -224,7 +239,7 @@ describe('gateway integration tests', () => {
         // in an array
 
         const ids = DUMMY_DATA_CHANNELS.map((dataChannel) => dataChannel.id);
-        const token = await generateCatalystToken(TEST_ORG, ids, testContext); // token with claims for all data channels
+        const token = await generateCatalystToken(TEST_ORG, ids, JWTAudience.enum['catalyst:gateway'], testContext); // token with claims for all data channels
 
         // get data channel registry
         const dChannelRegistryId = env.DATA_CHANNEL_REGISTRAR_DO.idFromName('default');
@@ -290,7 +305,7 @@ describe('gateway integration tests', () => {
         });
 
         const ids = DUMMY_DATA_CHANNELS.map((dataChannel) => dataChannel.id);
-        const token = await generateCatalystToken(TEST_ORG, ids, testContext); // token with claims for all data channels
+        const token = await generateCatalystToken(TEST_ORG, ids, JWTAudience.enum['catalyst:gateway'], testContext); // token with claims for all data channels
 
         const gatewayResponse = await SELF.fetch('http://dummy-endpoint/graphql', {
             method: 'POST',
@@ -318,5 +333,66 @@ describe('gateway integration tests', () => {
         fetchMock.deactivate();
         fetchMock.assertNoPendingInterceptors();
         fetchMock.enableNetConnect();
+    });
+
+    it('should reject single-use tokens from accessing gateway', async () => {
+        // STEP 1: Create a gateway token (UI → Gateway authentication)
+        // This token has 'catalyst:gateway' audience and proves the user has access to 'airplanes1'
+        const gatewayToken = await generateCatalystToken(
+            TEST_ORG,
+            ['airplanes1'],
+            JWTAudience.enum['catalyst:gateway']
+        );
+
+        // STEP 2: Use gateway token to create single-use token (Gateway → Data Channel)
+        // The API validates the gateway token and creates a NEW token with 'catalyst:datachannel' audience
+        // The gateway token acts as a "permission slip" to prove we can create single-use tokens
+        const singleUseToken = await env.AUTHX_TOKEN_API.signSingleUseJWT(
+            'airplanes1',
+            { catalystToken: gatewayToken }, // This proves we have gateway access
+            'default'
+        );
+
+        expect(singleUseToken.success).toBe(true);
+
+        // STEP 3: Try to misuse single-use token on gateway (should fail)
+        // Single-use tokens are meant for data channels, not gateway access
+        const singleUseHeaders = new Headers();
+        singleUseHeaders.set('Authorization', `Bearer ${singleUseToken.token}`);
+
+        const gatewayResponse = await SELF.fetch('https://data-channel-gateway/graphql', {
+            method: 'GET',
+            headers: singleUseHeaders,
+        });
+
+        // STEP 4: Verify security boundary enforcement
+        // Gateway should reject tokens with 'catalyst:datachannel' audience
+        expect(gatewayResponse.status).toBe(403);
+        const gatewayData = await gatewayResponse.json();
+        expect(gatewayData.message).toBe('Token audience is not valid for gateway access');
+    });
+
+    it('should accept old tokens without audience for backwards compatibility', async () => {
+        // Create a token without audience (simulating old token)
+        const jwtDOID = env.JWT_TOKEN_DO.idFromName('default');
+        const jwtStub = env.JWT_TOKEN_DO.get(jwtDOID);
+        const tokenResp = await jwtStub.signJWT(
+            {
+                entity: `${TEST_ORG}/${TEST_USER}`,
+                claims: ['airplanes1'],
+                // No audience field - simulating old token
+            },
+            10 * 60 * 1000
+        );
+
+        const headers = new Headers();
+        headers.set('Authorization', `Bearer ${tokenResp.token}`);
+
+        const response = await SELF.fetch('https://data-channel-gateway/graphql', {
+            method: 'GET',
+            headers,
+        });
+
+        expect(response.status).toBe(200);
     });
 });

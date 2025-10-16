@@ -1,6 +1,7 @@
 import { env, SELF } from 'cloudflare:test';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { JWTSigningRequest } from '@catalyst/schema_zod';
+import { JWTAudience } from '@catalyst/schema_zod';
 import { clearAllAuthzedRoles, custodianCreatesDataChannel, generateDataChannels, TEST_ORG_ID, validUsers } from '../utils/testUtils';
 
 /**
@@ -50,6 +51,7 @@ describe('Integration: Cross-Service Interactions', () => {
 			const jwtRequest: JWTSigningRequest = {
 				entity: CUSTODIAN_USER.email,
 				claims: [channel1.id, channel2.id],
+				audience: JWTAudience.enum['catalyst:gateway'],
 			};
 
 			const failedResponse = await SELF.signJWT(jwtRequest, 3600 * 1000, {
@@ -95,6 +97,7 @@ describe('Integration: Cross-Service Interactions', () => {
 			const jwtRequest: JWTSigningRequest = {
 				entity: CUSTODIAN_USER.email,
 				claims: createdChannels.map((ch) => ch.id),
+				audience: JWTAudience.enum['catalyst:gateway'],
 			};
 
 			const signResponse = await SELF.signJWT(jwtRequest, 3600 * 1000, {
@@ -193,6 +196,7 @@ describe('Integration: Cross-Service Interactions', () => {
 			const jwtRequest: JWTSigningRequest = {
 				entity: CUSTODIAN_USER.email,
 				claims: [channel1.id, channel2.id, channel3.id],
+				audience: JWTAudience.enum['catalyst:gateway'],
 			};
 
 			const response = await SELF.signJWT(jwtRequest, 3600 * 1000, {
@@ -220,6 +224,7 @@ describe('Integration: Cross-Service Interactions', () => {
 			const jwtRequest: JWTSigningRequest = {
 				entity: CUSTODIAN_USER.email,
 				claims: [createdChannel.id],
+				audience: JWTAudience.enum['catalyst:gateway'],
 			};
 
 			// UserCache will be queried with cfToken to get user data
@@ -258,6 +263,7 @@ describe('Integration: Cross-Service Interactions', () => {
 				const jwtRequest: JWTSigningRequest = {
 					entity: user.email,
 					claims: [createdChannel.id],
+					audience: JWTAudience.enum['catalyst:gateway'],
 				};
 
 				const response = await SELF.signJWT(jwtRequest, 3600 * 1000, {
@@ -281,6 +287,7 @@ describe('Integration: Cross-Service Interactions', () => {
 			const jwtRequest: JWTSigningRequest = {
 				entity: 'non-existent-user',
 				claims: ['some-claim'],
+				audience: JWTAudience.enum['catalyst:gateway'],
 			};
 
 			const response = await SELF.signJWT(jwtRequest, 3600 * 1000, {
@@ -446,6 +453,7 @@ describe('Integration: Cross-Service Interactions', () => {
 			const jwtRequest: JWTSigningRequest = {
 				entity: CUSTODIAN_USER.email,
 				claims: [createdChannel.id],
+				audience: JWTAudience.enum['catalyst:gateway'],
 			};
 
 			const signResponse = await SELF.signJWT(jwtRequest, 3600 * 1000, {
@@ -494,6 +502,7 @@ describe('Integration: Cross-Service Interactions', () => {
 			const jwtRequest: JWTSigningRequest = {
 				entity: CUSTODIAN_USER.email,
 				claims: [channel1.id, channel2.id],
+				audience: JWTAudience.enum['catalyst:gateway'],
 			};
 
 			const response = await SELF.signJWT(jwtRequest, 3600 * 1000, {
@@ -523,6 +532,7 @@ describe('Integration: Cross-Service Interactions', () => {
 			const jwtRequest: JWTSigningRequest = {
 				entity: CUSTODIAN_USER.email,
 				claims: requestedClaims,
+				audience: JWTAudience.enum['catalyst:gateway'],
 			};
 
 			const response = await SELF.signJWT(jwtRequest, 3600 * 1000, {

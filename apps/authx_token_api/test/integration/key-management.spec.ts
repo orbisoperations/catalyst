@@ -2,6 +2,7 @@ import { env, SELF } from 'cloudflare:test';
 import { createLocalJWKSet, jwtVerify } from 'jose';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { JWTSigningRequest } from '@catalyst/schema_zod';
+import { JWTAudience } from '@catalyst/schema_zod';
 import { clearAllAuthzedRoles, custodianCreatesDataChannel, generateDataChannels, TEST_ORG_ID, validUsers } from '../utils/testUtils';
 
 /**
@@ -44,6 +45,7 @@ describe('Integration: Key Management and Namespaces', () => {
 			const jwtRequest: JWTSigningRequest = {
 				entity: CUSTODIAN_USER.email,
 				claims: [createdChannel.id],
+				audience: JWTAudience.enum['catalyst:gateway'],
 			};
 
 			// Get initial public key
@@ -153,6 +155,7 @@ describe('Integration: Key Management and Namespaces', () => {
 			const jwtRequest: JWTSigningRequest = {
 				entity: CUSTODIAN_USER.email,
 				claims: [createdChannel.id],
+				audience: JWTAudience.enum['catalyst:gateway'],
 			};
 
 			const signResponse = await SELF.signJWT(jwtRequest, 3600 * 1000, {
@@ -208,6 +211,7 @@ describe('Integration: Key Management and Namespaces', () => {
 			const jwtRequest: JWTSigningRequest = {
 				entity: CUSTODIAN_USER.email,
 				claims: [createdChannel.id],
+				audience: JWTAudience.enum['catalyst:gateway'],
 			};
 
 			// Sign JWT in 'default' namespace
@@ -277,6 +281,7 @@ describe('Integration: Key Management and Namespaces', () => {
 			const jwtRequest: JWTSigningRequest = {
 				entity: CUSTODIAN_USER.email,
 				claims: [createdChannel.id],
+				audience: JWTAudience.enum['catalyst:gateway'],
 			};
 
 			// Sign JWTs concurrently in different namespaces

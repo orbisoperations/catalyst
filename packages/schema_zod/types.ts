@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { JWTAudience } from './jwt';
 
 const BaseError = z.object({
     success: z.literal(false),
