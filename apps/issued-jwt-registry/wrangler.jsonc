@@ -76,23 +76,6 @@
 				},
 			],
 		},
-		// Demo environment
-		// "demo": {
-		//   "durable_objects": {
-		//     "bindings": [
-		//       {
-		//         "name": "ISSUED_JWT_REGISTRY_DO",
-		//         "class_name": "I_JWT_Registry_DO"
-		//       }
-		//     ]
-		//   },
-		//   "services": [
-		//     {
-		//       "binding": "USERCACHE",
-		//       "service": "user-credentials-cache-demo"
-		//     }
-		//   ]
-		// },
 		// UXR environment
 		"uxr": {
 			"durable_objects": {
