@@ -111,7 +111,16 @@ export const createMockGraphqlEndpoint = (
 
 /**
  * Generates a legacy token without an audience field for backwards compatibility testing.
- * This bypasses the main API to create tokens that truly have no audience field.
+ *
+ * WHY THIS EXISTS:
+ * - Before JWT audience differentiation, tokens were created without an 'aud' claim
+ * - The main API (signJWT) now defaults to 'catalyst:gateway' audience if none provided
+ * - To test true backwards compatibility, we need tokens that genuinely lack an audience field
+ * - This function bypasses the main API and calls the Durable Object directly
+ * - It creates tokens that match the old format (no 'aud' claim) for testing legacy behavior
+ *
+ * This is essential for testing that the gateway correctly accepts old tokens without audience
+ * while rejecting new tokens with wrong audience (e.g., 'catalyst:datachannel' on gateway).
  */
 export const generateLegacyToken = async (entity: string, claims: string[], ctx?: TestContext, user?: string) => {
     // Set up permissions BEFORE creating the token

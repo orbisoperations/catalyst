@@ -144,9 +144,7 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 		}
 		console.log(jwtRequest);
 		// Create the JWT object first to get the JTI
-		// For user-generated tokens, default to gateway audience if not provided
-		const audience = jwtRequest.audience || JWTAudience.enum['catalyst:gateway'];
-		const jwt = new JWT(jwtRequest.entity, jwtRequest.claims, 'catalyst:system:jwt:latest', audience);
+		const jwt = new JWT(jwtRequest.entity, jwtRequest.claims, 'catalyst:system:jwt:latest', jwtRequest.audience);
 
 		try {
 			// Sign the JWT first to get the exact expiry timestamp
@@ -157,7 +155,7 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 				{
 					entity: jwtRequest.entity,
 					claims: jwtRequest.claims,
-					audience: audience,
+					audience: jwtRequest.audience,
 					jti: jwt.jti, // Pass the jti we generated
 				},
 				expiresIn,

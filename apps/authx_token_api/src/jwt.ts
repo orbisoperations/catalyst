@@ -43,7 +43,7 @@ export class JWT implements DSSJWT {
 		this.sub = entity;
 		this.claims = claims;
 		this.iss = iss;
-		// Only set audience if provided (for backwards compatibility)
+		// Only set audience if provided (for backwards compatibility testing)
 		if (aud !== undefined) {
 			this.aud = aud;
 		}
