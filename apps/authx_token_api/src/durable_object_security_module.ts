@@ -56,25 +56,14 @@ export class JWTKeyProvider extends DurableObject {
 		return true;
 	}
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 	async signJWT(req: JWTSigningRequest & { jti?: string }, expiresIn: number) {
 		await this.key();
 		// Create JWT with provided jti if available, otherwise generate new one
-		const jwt = new JWT(req.entity, req.claims, 'catalyst:system:jwt:latest');
+		// For backwards compatibility testing, audience is optional - only set if provided
+		const jwt = new JWT(req.entity, req.claims, 'catalyst:system:jwt:latest', req.audience);
 		if (req.jti) {
 			jwt.jti = req.jti; // Use the provided jti
 		}
-=======
-	async signJWT(req: JWTSigningRequest, expiresIn: number, audience: JWTAudience) {
-		await this.key();
-		const jwt = new JWT(req.entity, req.claims, 'catalyst:system:jwt:latest', audience);
->>>>>>> 99bd829 (feat: implement JWT audience differentiation for enhanced security)
-=======
-	async signJWT(req: JWTSigningRequest, expiresIn: number) {
-		await this.key();
-		const jwt = new JWT(req.entity, req.claims, 'catalyst:system:jwt:latest', req.audience);
->>>>>>> 1bdf3ab (refactor: move JWT audience into JWTSigningRequest object)
 		const newToken = await this.currentKey!.sign(jwt, expiresIn);
 		const payload = decodeJwt(newToken);
 		const expiration = (payload.exp as number) * DEFAULT_STANDARD_DURATIONS.S;

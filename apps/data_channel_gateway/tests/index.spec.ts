@@ -2,7 +2,14 @@
 import { DataChannel, DEFAULT_STANDARD_DURATIONS, JWTAudience } from '@catalyst/schema_zod';
 import { env, fetchMock, SELF } from 'cloudflare:test';
 import { afterEach, beforeEach, describe, expect, it, TestContext } from 'vitest';
-import { isWithinRange, TEST_ORG, TEST_USER, generateCatalystToken, createMockGraphqlEndpoint } from './testUtils';
+import {
+    isWithinRange,
+    TEST_ORG,
+    TEST_USER,
+    generateCatalystToken,
+    generateLegacyToken,
+    createMockGraphqlEndpoint,
+} from './testUtils';
 
 const DUMMY_DATA_CHANNELS: DataChannel[] = [
     {
@@ -373,20 +380,11 @@ describe('gateway integration tests', () => {
     });
 
     it('should accept old tokens without audience for backwards compatibility', async () => {
-        // Create a token without audience (simulating old token)
-        const jwtDOID = env.JWT_TOKEN_DO.idFromName('default');
-        const jwtStub = env.JWT_TOKEN_DO.get(jwtDOID);
-        const tokenResp = await jwtStub.signJWT(
-            {
-                entity: `${TEST_ORG}/${TEST_USER}`,
-                claims: ['airplanes1'],
-                // No audience field - simulating old token
-            },
-            10 * 60 * 1000
-        );
+        // Create a truly legacy token without any audience field
+        const token = await generateLegacyToken(TEST_ORG, ['airplanes1']);
 
         const headers = new Headers();
-        headers.set('Authorization', `Bearer ${tokenResp.token}`);
+        headers.set('Authorization', `Bearer ${token}`);
 
         const response = await SELF.fetch('https://data-channel-gateway/graphql', {
             method: 'GET',

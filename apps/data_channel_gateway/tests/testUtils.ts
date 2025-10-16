@@ -9,8 +9,13 @@ export function isWithinRange(value: number, min: number, max: number) {
     return value >= min && value <= max;
 }
 
-<<<<<<< HEAD
-export const generateCatalystToken = async (entity: string, claims: string[], ctx?: TestContext, user?: string) => {
+export const generateCatalystToken = async (
+    entity: string,
+    claims: string[],
+    audience: JWTAudience,
+    ctx?: TestContext,
+    user?: string
+) => {
     // Set up permissions BEFORE creating the token
     for (const claim of claims) {
         await env.AUTHX_AUTHZED_API.addDataChannelToOrg(TEST_ORG, claim);
@@ -20,34 +25,14 @@ export const generateCatalystToken = async (entity: string, claims: string[], ct
 
     // Use AUTHX_TOKEN_API worker to properly register the token
     const tokenResp = await env.AUTHX_TOKEN_API.signJWT(
-=======
-export const generateCatalystToken = async (
-    entity: string,
-    claims: string[],
-    audience: JWTAudience,
-    ctx?: TestContext,
-    user?: string
-) => {
-    const jwtDOID = env.JWT_TOKEN_DO.idFromName('default');
-    const jwtStub = env.JWT_TOKEN_DO.get(jwtDOID);
-    const tokenResp = await jwtStub.signJWT(
->>>>>>> 259cf3c (fix: add missing audience field to JWTSigningRequest in test files)
         {
             entity: `${entity}/${user || TEST_USER}`,
             claims: claims,
             audience: audience,
         },
-<<<<<<< HEAD
         10 * 60 * 1000,
-<<<<<<< HEAD
         { cfToken: 'cf-test-token' }, // Use the mock CF token
         'default'
-=======
-        JWTAudience.enum['catalyst:gateway']
->>>>>>> 99bd829 (feat: implement JWT audience differentiation for enhanced security)
-=======
-        10 * 60 * 1000
->>>>>>> 1bdf3ab (refactor: move JWT audience into JWTSigningRequest object)
     );
 
     if (!tokenResp.success) {
@@ -122,4 +107,49 @@ export const createMockGraphqlEndpoint = (
             };
         })
         .persist();
+};
+
+/**
+ * Generates a legacy token without an audience field for backwards compatibility testing.
+ * This bypasses the main API to create tokens that truly have no audience field.
+ */
+export const generateLegacyToken = async (entity: string, claims: string[], ctx?: TestContext, user?: string) => {
+    // Set up permissions BEFORE creating the token
+    for (const claim of claims) {
+        await env.AUTHX_AUTHZED_API.addDataChannelToOrg(TEST_ORG, claim);
+        await env.AUTHX_AUTHZED_API.addOrgToDataChannel(claim, TEST_ORG);
+    }
+    await env.AUTHX_AUTHZED_API.addUserToOrg(TEST_ORG, user || TEST_USER);
+
+    // Call Durable Object directly to create token without audience
+    const jwtDOID = env.JWT_TOKEN_DO.idFromName('default');
+    const jwtStub = env.JWT_TOKEN_DO.get(jwtDOID);
+    const tokenResp = await jwtStub.signJWT(
+        {
+            entity: `${entity}/${user || TEST_USER}`,
+            claims: claims,
+            // No audience field - this will create a token without an audience
+        },
+        10 * 60 * 1000
+    );
+
+    // Manually register the token in the JWT registry since we bypassed the main API
+    const { decodeJwt } = await import('jose');
+    const decoded = decodeJwt(tokenResp.token);
+
+    await env.ISSUED_JWT_REGISTRY.createSystem(
+        {
+            id: decoded.jti as string,
+            name: `Legacy token for ${user || TEST_USER}`,
+            description: `Legacy token with ${claims.length} data channel claims (no audience)`,
+            claims: claims,
+            expiry: new Date((decoded.exp as number) * 1000),
+            organization: entity,
+            status: 'active',
+        },
+        'authx_token_api',
+        'default'
+    );
+
+    return tokenResp.token;
 };

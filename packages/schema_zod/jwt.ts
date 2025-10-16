@@ -77,7 +77,7 @@ export type IssuedJWTRegistryActionResponse = z.infer<typeof zIssuedJWTRegistryA
 export const JWTSigningRequest = z.object({
     entity: z.string(),
     claims: z.string().array(),
-    audience: JWTAudience,
+    audience: JWTAudience.optional(), // Optional for backwards compatibility
     expiresIn: z.number().optional(),
 });
 
