@@ -1,5 +1,5 @@
 import { grabTokenInHeader } from '@catalyst/jwt';
-import { Token } from '@catalyst/schema_zod';
+import { Token, JWTAudience } from '@catalyst/schema_zod';
 import { stitchSchemas } from '@graphql-tools/stitch';
 import { stitchingDirectives } from '@graphql-tools/stitching-directives';
 import { AsyncExecutor, isAsyncIterable, type Executor } from '@graphql-tools/utils';
@@ -245,24 +245,18 @@ const authenticateRequestMiddleware = async (c: Context<{ Bindings: Env; Variabl
         );
     }
 
-    const { valid, claims, jwtId, error: ValidError } = await c.env.AUTHX_TOKEN_API.validateToken(token);
+    const { valid, claims, jwtId, audience, error: ValidError } = await c.env.AUTHX_TOKEN_API.validateToken(token);
     if (!valid || ValidError || !jwtId) {
         return c.json({ message: 'Token validation failed' }, 403);
     }
 
-    // FUTURE ENHANCEMENT (December 2026): Add audience validation once all tokens without the 'catalyst:gateway' audience have expired.
-    //
+    // Audience validation with backwards compatibility
+    // - Old tokens (no audience): Allow them for backwards compatibility
+    // - New tokens (with audience): Only allow 'catalyst:gateway' audience
     // Purpose: Prevent single-use tokens (audience: 'catalyst:datachannel') from accessing the gateway
-    //
-    // Security concern: If a gateway token is revoked, any single-use tokens created from it
-    // before revocation would still be valid until they expire (5 minutes). While this is
-    // low-risk (short expiration + token only used between gateway and data channel (data owner)),
-    // it may be best to add the below check once all tokens without the 'catalyst:gateway' audience
-    // have expired/up to 1 year after this change goes in (estimated: December 2026)
-    //
-    // if (audience !== 'catalyst:gateway') {
-    //     return c.json({ message: 'Token audience is not valid for gateway access' }, 403);
-    // }
+    if (audience && audience !== JWTAudience.enum['catalyst:gateway']) {
+        return c.json({ message: 'Token audience is not valid for gateway access' }, 403);
+    }
 
     // Check if the JWT token is invalid (revoked or deleted)
     if (await c.env.ISSUED_JWT_REGISTRY.isInvalid(jwtId)) {
