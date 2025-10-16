@@ -1,4 +1,4 @@
-import { DataChannel } from '@catalyst/schema_zod';
+import { DataChannel } from '@catalyst/schemas';
 import { env, fetchMock } from 'cloudflare:test';
 import { TestContext } from 'vitest';
 
@@ -10,12 +10,11 @@ export function isWithinRange(value: number, min: number, max: number) {
 }
 
 export const generateCatalystToken = async (entity: string, claims: string[], ctx?: TestContext, user?: string) => {
-    // Set up permissions BEFORE creating the token
-    for (const claim of claims) {
-        await env.AUTHX_AUTHZED_API.addDataChannelToOrg(TEST_ORG, claim);
-        await env.AUTHX_AUTHZED_API.addOrgToDataChannel(claim, TEST_ORG);
-    }
-    await env.AUTHX_AUTHZED_API.addUserToOrg(TEST_ORG, user || TEST_USER);
+    // IMPORTANT: Do NOT set up permissions here!
+    // Tests should explicitly set up their own permission structures
+    // to ensure accurate testing of permission revocation scenarios.
+    // Adding permissions here creates unintended ownership relationships
+    // that bypass the partnership mechanism being tested.
 
     // Use AUTHX_TOKEN_API worker to properly register the token
     const tokenResp = await env.AUTHX_TOKEN_API.signJWT(

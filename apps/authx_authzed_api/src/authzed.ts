@@ -356,6 +356,10 @@ export class AuthzedClient {
 			return false;
 		}
 
+		// Debug logging
+		console.log(`AuthZed permission check: channel=${dataChannelId}, user=${userId}, permission=${permission}`);
+		console.log(`AuthZed response: ${JSON.stringify(result.data)}`);
+
 		return result.data.permissionship === Authzed.Permissions.PermissionValues.enum.PERMISSIONSHIP_HAS_PERMISSION;
 	}
 }
