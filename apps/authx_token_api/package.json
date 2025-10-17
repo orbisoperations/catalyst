@@ -21,7 +21,8 @@
 		"postinstall": "pnpm build"
 	},
 	"dependencies": {
-		"@catalyst/schema_zod": "workspace:*"
+		"@catalyst/schema_zod": "workspace:*",
+		"@catalyst/schemas": "workspace:*"
 	},
 	"devDependencies": {
 		"@cloudflare/vitest-pool-workers": "^0.9.9",

@@ -5,12 +5,14 @@ import {
 	DataChannelAccessToken,
 	DataChannelMultiAccessResponse,
 	DEFAULT_STANDARD_DURATIONS,
+	JWTParsingResponse,
 	JWTRotateResponse,
 	Token,
 	User,
 } from '../../../packages/schema_zod';
-import { JWTSigningRequest, JWTSigningResponse } from '../../../packages/schemas';
+import { JWTSigningRequest, JWTSigningResponse, IssuedJWTRegistry, JWTRegisterStatus } from '../../../packages/schemas';
 import { Env } from './env';
+import { JWT } from './jwt';
 export { JWTKeyProvider } from './durable_object_security_module';
 
 interface CatalystJWTPayload extends JWTPayload {
@@ -139,15 +141,54 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 				error: 'catalyst is unable to validate user to all claims',
 			});
 		}
-		const id = this.env.KEY_PROVIDER.idFromName(keyNamespace);
-		const stub = this.env.KEY_PROVIDER.get(id);
-		const jwt = await stub.signJWT(jwtRequest, expiresIn);
-		// returns expiration in MS
-		return JWTSigningResponse.parse({
-			success: true,
-			token: jwt.token,
-			expiration: jwt.expiration,
-		});
+
+		// Create the JWT object first to get the JTI
+		const jwt = new JWT(jwtRequest.entity || userParse.data.email, jwtRequest.claims, 'catalyst:system:jwt:latest');
+
+		try {
+			// Sign the JWT first to get the exact expiry timestamp
+			const id = this.env.KEY_PROVIDER.idFromName(keyNamespace);
+			const stub = this.env.KEY_PROVIDER.get(id);
+			// Pass the jti along with the request data
+			const signedJwt = await stub.signJWT(
+				{
+					entity: jwtRequest.entity || userParse.data.email,
+					claims: jwtRequest.claims,
+					jti: jwt.jti, // Pass the jti we generated
+				},
+				expiresIn,
+			);
+
+			// Register the token AFTER signing with the actual expiry
+			// Use signedJwt.expiration which is the exact timestamp from the JWT
+			// Use user-provided metadata if available (and not empty), otherwise use defaults
+			const registryEntry: IssuedJWTRegistry = {
+				id: jwt.jti, // Critical: Use JWT's jti as the registry ID
+				name: (jwtRequest.name && jwtRequest.name.trim()) || `User token for ${userParse.data.email}`,
+				description:
+					(jwtRequest.description && jwtRequest.description.trim()) || `User token with ${jwtRequest.claims.length} data channel claims`,
+				claims: jwt.claims,
+				expiry: new Date(signedJwt.expiration), // Use actual JWT expiry
+				organization: userParse.data.orgId,
+				status: JWTRegisterStatus.enum.active,
+			};
+
+			// Register after signing (still atomic - if registration fails, we don't return the token)
+			await this.env.ISSUED_JWT_REGISTRY.createSystem(registryEntry, 'authx_token_api', keyNamespace);
+
+			// returns expiration in MS
+			return JWTSigningResponse.parse({
+				success: true,
+				token: signedJwt.token,
+				expiration: signedJwt.expiration,
+			});
+		} catch (error) {
+			console.error('Failed to sign or register JWT:', error);
+			return JWTSigningResponse.parse({
+				success: false,
+				error: 'Failed to create token: signing or registration failed',
+			});
+		}
 	}
 
 	/**
@@ -192,21 +233,61 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 			});
 		}
 
-		// create a single use JWT for this specific data channel
-		const singleUseJWTs = await stub.signJWT(
-			{
-				entity: decodedToken.payload.sub!,
-				claims: [claim],
-				expiresIn: 5 * DEFAULT_STANDARD_DURATIONS.M,
-			},
-			5 * DEFAULT_STANDARD_DURATIONS.M,
-		);
+		// Check that the requested claim is in the catalyst token's claims
+		if (!claims.includes(claim)) {
+			return JWTSigningResponse.parse({
+				success: false,
+				error: 'Requested claim not found in catalyst token',
+			});
+		}
 
-		return JWTSigningResponse.parse({
-			success: true,
-			token: singleUseJWTs.token,
-			expiration: singleUseJWTs.expiration,
-		});
+		// Create the JWT object first to get the JTI
+		const jwt = new JWT(decodedToken.payload.sub!, [claim], 'catalyst:system:jwt:latest');
+
+		// Extract organization from entity (format: "org/email") or use 'default'
+		const entity = decodedToken.payload.sub || '';
+		const organization = entity.includes('/') ? entity.split('/')[0] : 'default';
+
+		const expiresIn = 5 * DEFAULT_STANDARD_DURATIONS.M; // 5 minutes
+
+		try {
+			// Sign the JWT first to get the exact expiry timestamp
+			// Pass the jti along with the request data
+			const signedJwt = await stub.signJWT(
+				{
+					entity: decodedToken.payload.sub!,
+					claims: [claim],
+					jti: jwt.jti, // Pass the jti we generated
+				},
+				expiresIn,
+			);
+
+			// Register the single-use token AFTER signing with the actual expiry
+			const registryEntry: IssuedJWTRegistry = {
+				id: jwt.jti, // Critical: Use JWT's jti as the registry ID
+				name: `Single-use token for ${decodedToken.payload.sub}`,
+				description: `Single-use token for data channel ${claim}`,
+				claims: jwt.claims,
+				expiry: new Date(signedJwt.expiration), // Use actual JWT expiry
+				organization: organization,
+				status: JWTRegisterStatus.enum.active,
+			};
+
+			// Register after signing (still atomic - if registration fails, we don't return the token)
+			await this.env.ISSUED_JWT_REGISTRY.createSystem(registryEntry, 'authx_token_api', keyNamespace);
+
+			return JWTSigningResponse.parse({
+				success: true,
+				token: signedJwt.token,
+				expiration: signedJwt.expiration,
+			});
+		} catch (error) {
+			console.error('Failed to sign or register single-use JWT:', error);
+			return JWTSigningResponse.parse({
+				success: false,
+				error: 'Failed to create single-use token: signing or registration failed',
+			});
+		}
 	}
 
 	/**
@@ -301,6 +382,7 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 
 	/**
 	 * Validates a JWT token using the key provider
+	 * Also checks if the token is registered and not revoked/deleted
 	 * @param token The JWT token string to validate
 	 * @param keyNamespace The namespace for verification keys (defaults to 'default')
 	 * @param clockTolerance Clock tolerance for expiration validation (defaults to '5 minutes')
@@ -309,7 +391,47 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 	async validateToken(token: string, keyNamespace: string = 'default', clockTolerance: string = '5 minutes') {
 		const id = this.env.KEY_PROVIDER.idFromName(keyNamespace);
 		const stub = this.env.KEY_PROVIDER.get(id);
-		return await stub.validateToken(token, clockTolerance);
+
+		// First perform cryptographic validation
+		const validationResult = await stub.validateToken(token, clockTolerance);
+
+		// If cryptographic validation fails, return immediately
+		if (!validationResult.valid) {
+			return validationResult;
+		}
+
+		// If no jti, can't check registry - return validation result as-is
+		if (!validationResult.jwtId) {
+			return validationResult;
+		}
+
+		// Check registry status (FR-006: Deleted tokens MUST fail authentication)
+		try {
+			// Use validateToken method which performs atomic validation
+			const registryValidation = await this.env.ISSUED_JWT_REGISTRY.validateToken(validationResult.jwtId, keyNamespace);
+
+			if (!registryValidation.valid) {
+				// Token is either not found, revoked, deleted, or expired in registry
+				return JWTParsingResponse.parse({
+					valid: false,
+					entity: undefined,
+					claims: [],
+					error: `Token invalid in registry: ${registryValidation.reason || 'unknown'}`,
+				});
+			}
+
+			// Token is valid both cryptographically and in the registry
+			return validationResult;
+		} catch (error) {
+			console.error('Failed to check registry status during token validation:', error);
+			// On registry check failure, fail closed (deny access)
+			return JWTParsingResponse.parse({
+				valid: false,
+				entity: undefined,
+				claims: [],
+				error: 'Failed to verify token registry status',
+			});
+		}
 	}
 
 	/**
@@ -371,30 +493,55 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 			});
 		}
 
-		// Create system JWT request
-		const jwtRequest: JWTSigningRequest = {
-			entity: `system-${request.callingService}`,
-			claims: claims,
-		};
-
-		// Sign the JWT using the durable object
-		const id = this.env.KEY_PROVIDER.idFromName(keyNamespace);
-		const stub = this.env.KEY_PROVIDER.get(id);
-
 		// Calculate expiry in milliseconds
 		const expiresIn = duration * 1000;
 
-		// Sign the JWT with system-specific parameters
-		const jwt = await stub.signJWT(jwtRequest, expiresIn);
+		// Create the JWT object first to get the JTI
+		const jwt = new JWT(`system-${request.callingService}`, claims, 'catalyst:system:jwt:latest');
 
-		// Log system token creation for audit
-		console.log(`System JWT created for service: ${request.callingService}, purpose: ${request.purpose}, claims: ${claims.join(',')}`);
+		try {
+			// Sign the JWT first to get the exact expiry timestamp
+			const id = this.env.KEY_PROVIDER.idFromName(keyNamespace);
+			const stub = this.env.KEY_PROVIDER.get(id);
+			// Pass the jti along with the request data
+			const signedJwt = await stub.signJWT(
+				{
+					entity: `system-${request.callingService}`,
+					claims: claims,
+					jti: jwt.jti, // Pass the jti we generated
+				},
+				expiresIn,
+			);
 
-		// Return properly formatted response matching JWTSigningResponse schema
-		return JWTSigningResponse.parse({
-			success: true,
-			token: jwt.token,
-			expiration: jwt.expiration,
-		});
+			// Register the system token AFTER signing with the actual expiry
+			const registryEntry: IssuedJWTRegistry = {
+				id: jwt.jti, // Critical: Use JWT's jti as the registry ID
+				name: `System token for ${request.callingService}`,
+				description: `System token for ${request.purpose}`,
+				claims: jwt.claims,
+				expiry: new Date(signedJwt.expiration), // Use actual JWT expiry
+				organization: 'system',
+				status: JWTRegisterStatus.enum.active,
+			};
+
+			// Register after signing (still atomic - if registration fails, we don't return the token)
+			await this.env.ISSUED_JWT_REGISTRY.createSystem(registryEntry, 'authx_token_api', keyNamespace);
+
+			// Log system token creation for audit
+			console.log(`System JWT created for service: ${request.callingService}, purpose: ${request.purpose}, claims: ${claims.join(',')}`);
+
+			// Return properly formatted response matching JWTSigningResponse schema
+			return JWTSigningResponse.parse({
+				success: true,
+				token: signedJwt.token,
+				expiration: signedJwt.expiration,
+			});
+		} catch (error) {
+			console.error('Failed to sign or register system JWT:', error);
+			return JWTSigningResponse.parse({
+				success: false,
+				error: 'Failed to create system token: signing or registration failed',
+			});
+		}
 	}
 }

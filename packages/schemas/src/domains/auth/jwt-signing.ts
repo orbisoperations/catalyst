@@ -20,6 +20,15 @@ export const JWTSigningRequest = z.object({
         .min(60, 'Minimum expiration is 60 seconds')
         .max(86400 * 365, 'Maximum expiration is 1 year')
         .optional(),
+    // Optional metadata fields for token registration
+    name: preprocess(
+        preprocessors.trimString,
+        z.string().min(1, 'Name is required if provided').max(255, 'Name too long')
+    ).optional(),
+    description: preprocess(
+        preprocessors.trimString,
+        z.string().min(1, 'Description is required if provided').max(1000, 'Description too long')
+    ).optional(),
 });
 export type JWTSigningRequest = z.infer<typeof JWTSigningRequest>;
 
