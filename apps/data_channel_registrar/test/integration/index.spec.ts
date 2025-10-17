@@ -1,4 +1,4 @@
-import { DataChannel, DataChannelActionResponse } from '@catalyst/schema_zod';
+import { DataChannel, DataChannelActionResponse } from '@catalyst/schemas';
 import { env, fetchMock, SELF } from 'cloudflare:test';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { TEST_ORG_ID, validUsers } from '../utils/authUtils';

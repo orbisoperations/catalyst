@@ -48,11 +48,11 @@
     "wrangler": "catalog:"
   },
   "dependencies": {
-    "@catalyst/schema_zod": "workspace:*",
+    "@catalyst/schemas": "workspace:*",
     "@pothos/core": "catalog:",
     "@trpc/server": "catalog:",
     "graphql-yoga": "^5.3.1",
     "hono": "^4.3.3",
-    "zod": "^3.22.4"
+    "zod": "^4.0.0"
   }
 }

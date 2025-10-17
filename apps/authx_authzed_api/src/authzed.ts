@@ -547,18 +547,14 @@ export class AuthzedClient {
 			},
 		});
 
-		console.log('[listPartnerChannels] Query body:', JSON.stringify(body, null, 2));
 		const { data } = await this.utils.fetcher('read', body);
-		console.log('[listPartnerChannels] Raw data:', typeof data, data);
 
 		if (!data || (typeof data === 'string' && data.trim() === '')) {
-			console.log('[listPartnerChannels] No data returned');
 			return [];
 		}
 
 		// Extract share IDs (format: "channelId|partnerOrgId")
 		const shareIds = this.utils.parseResourceIdsFromResults(data);
-		console.log('[listPartnerChannels] Parsed shareIds:', shareIds);
 
 		// Extract channel IDs from the composite keys
 		const channelIds = shareIds.map((id) => {
