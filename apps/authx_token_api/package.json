@@ -25,17 +25,16 @@
 		"@catalyst/schemas": "workspace:*"
 	},
 	"devDependencies": {
-		"@cloudflare/vitest-pool-workers": "^0.9.9",
-		"@cloudflare/workers-types": "^4.20251001.0",
-		"@eslint/js": "^9.25.1",
+		"@cloudflare/vitest-pool-workers": "catalog:",
+		"@cloudflare/workers-types": "catalog:",
+		"@eslint/js": "catalog:",
 		"@types/uuid": "^9.0.8",
-		"@vitest/coverage-istanbul": "^3.2.4",
+		"@vitest/coverage-istanbul": "catalog:",
 		"base64url": "^3.0.1",
-		"bun": "^1.1.7",
 		"jose": "^5.10.0",
-		"typescript": "^5.8.3",
+		"typescript": "catalog:",
 		"uuid": "^9.0.1",
-		"vitest": "^3.2.4",
-		"wrangler": "^4.19.1"
+		"vitest": "catalog:",
+		"wrangler": "catalog:"
 	}
 }
