@@ -28,12 +28,12 @@
 		"@cloudflare/vitest-pool-workers": "catalog:",
 		"@cloudflare/workers-types": "catalog:",
 		"@eslint/js": "catalog:",
-		"@types/uuid": "^9.0.8",
+		"@types/uuid": "catalog:",
 		"@vitest/coverage-istanbul": "catalog:",
-		"base64url": "^3.0.1",
+		"base64url": "catalog:",
 		"jose": "^5.10.0",
 		"typescript": "catalog:",
-		"uuid": "^9.0.1",
+		"uuid": "catalog:",
 		"vitest": "catalog:",
 		"wrangler": "catalog:"
 	}
