@@ -19,12 +19,12 @@
 		"@catalyst/schema_zod": "workspace:*"
 	},
 	"devDependencies": {
-		"@cloudflare/vitest-pool-workers": "^0.8.23",
-		"@cloudflare/workers-types": "^4.20250525.0",
-		"@eslint/js": "^9.25.1",
-		"@vitest/coverage-istanbul": "^3.1.4",
-		"typescript": "^5.8.3",
-		"vitest": "^3.1.4",
-		"wrangler": "^4.19.1"
+		"@cloudflare/vitest-pool-workers": "catalog:",
+		"@cloudflare/workers-types": "catalog:",
+		"@eslint/js": "catalog:",
+		"@vitest/coverage-istanbul": "catalog:",
+		"typescript": "catalog:",
+		"vitest": "catalog:",
+		"wrangler": "catalog:"
 	}
 }
