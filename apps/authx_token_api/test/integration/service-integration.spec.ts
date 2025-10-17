@@ -309,21 +309,21 @@ describe('Integration: Cross-Service Interactions', () => {
 			// STEP 2: Create catalyst token with all 3 channel claims
 			const channelIds = createdChannels.map((ch) => ch.id);
 
-			// Get catalyst token (helper creates it via KEY_PROVIDER directly)
-			const catalystToken = await (async () => {
-				const id = env.KEY_PROVIDER.idFromName('default');
-				const stub = env.KEY_PROVIDER.get(id);
-				return stub.signJWT(
-					{
-						entity: `${TEST_ORG_ID}/${CUSTODIAN_USER.email}`,
-						claims: channelIds,
-					},
-					3600 * 1000,
-				);
-			})();
+			// Get catalyst token (properly registered via signJWT)
+			const catalystTokenResponse = await SELF.signJWT(
+				{
+					entity: `${TEST_ORG_ID}/${CUSTODIAN_USER.email}`,
+					claims: channelIds,
+				},
+				3600 * 1000,
+				{ cfToken: CUSTODIAN_CF_TOKEN },
+			);
+
+			expect(catalystTokenResponse.success).toBe(true);
+			const catalystToken = catalystTokenResponse.token!;
 
 			// STEP 3: Split catalyst token into single-use tokens
-			const splitResponse = await SELF.splitTokenIntoSingleUseTokens(catalystToken.token);
+			const splitResponse = await SELF.splitTokenIntoSingleUseTokens(catalystToken);
 
 			expect(splitResponse.success).toBe(true);
 			expect(splitResponse.channelPermissions).toBeDefined();
@@ -362,20 +362,20 @@ describe('Integration: Cross-Service Interactions', () => {
 			// Create catalyst token with only 2 channel claims
 			const selectedChannels = [createdChannels[0].id, createdChannels[2].id];
 
-			const catalystToken = await (async () => {
-				const id = env.KEY_PROVIDER.idFromName('default');
-				const stub = env.KEY_PROVIDER.get(id);
-				return stub.signJWT(
-					{
-						entity: `${TEST_ORG_ID}/${CUSTODIAN_USER.email}`,
-						claims: selectedChannels,
-					},
-					3600 * 1000,
-				);
-			})();
+			const catalystTokenResponse = await SELF.signJWT(
+				{
+					entity: `${TEST_ORG_ID}/${CUSTODIAN_USER.email}`,
+					claims: selectedChannels,
+				},
+				3600 * 1000,
+				{ cfToken: CUSTODIAN_CF_TOKEN },
+			);
+
+			expect(catalystTokenResponse.success).toBe(true);
+			const catalystToken = catalystTokenResponse.token!;
 
 			// Split token
-			const splitResponse = await SELF.splitTokenIntoSingleUseTokens(catalystToken.token);
+			const splitResponse = await SELF.splitTokenIntoSingleUseTokens(catalystToken);
 
 			expect(splitResponse.success).toBe(true);
 			expect(splitResponse.channelPermissions).toHaveLength(2);
@@ -387,25 +387,37 @@ describe('Integration: Cross-Service Interactions', () => {
 
 		it('should return error when registrar returns no channels', async () => {
 			// ═══════════════════════════════════════════════════════════
-			// SCENARIO: Catalyst token has claims, but channels
-			// don't exist in registrar. Should return error.
+			// SCENARIO: Catalyst token has claims for channels that
+			// user has permission to, but channels aren't registered in
+			// the registrar. Should return error.
 			// ═══════════════════════════════════════════════════════════
 
-			// Create catalyst token with non-existent channel claims
-			const catalystToken = await (async () => {
-				const id = env.KEY_PROVIDER.idFromName('default');
-				const stub = env.KEY_PROVIDER.get(id);
-				return stub.signJWT(
-					{
-						entity: `${TEST_ORG_ID}/${CUSTODIAN_USER.email}`,
-						claims: ['non-existent-channel-1', 'non-existent-channel-2'],
-					},
-					3600 * 1000,
-				);
-			})();
+			await env.AUTHZED.addDataCustodianToOrg(TEST_ORG_ID, CUSTODIAN_USER.email);
 
-			// Attempt to split
-			const splitResponse = await SELF.splitTokenIntoSingleUseTokens(catalystToken.token);
+			// Create 2 phantom channel IDs (with permissions but not in registrar)
+			const phantomChannelIds = ['phantom-channel-1', 'phantom-channel-2'];
+
+			// Grant permissions for these channels
+			for (const channelId of phantomChannelIds) {
+				await env.AUTHZED.addDataChannelToOrg(TEST_ORG_ID, channelId);
+				await env.AUTHZED.addOrgToDataChannel(channelId, TEST_ORG_ID);
+			}
+
+			// Create catalyst token with phantom channel claims (has permissions but not in registrar)
+			const catalystTokenResponse = await SELF.signJWT(
+				{
+					entity: `${TEST_ORG_ID}/${CUSTODIAN_USER.email}`,
+					claims: phantomChannelIds,
+				},
+				3600 * 1000,
+				{ cfToken: CUSTODIAN_CF_TOKEN },
+			);
+
+			expect(catalystTokenResponse.success).toBe(true);
+			const catalystToken = catalystTokenResponse.token!;
+
+			// Attempt to split - should fail because registrar has no channels matching these claims
+			const splitResponse = await SELF.splitTokenIntoSingleUseTokens(catalystToken);
 
 			expect(splitResponse.success).toBe(false);
 			expect(splitResponse.error).toBe('no resources found');

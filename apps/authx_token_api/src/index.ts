@@ -141,9 +141,9 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 				error: 'catalyst is unable to validate user to all claims',
 			});
 		}
-
+		console.log(jwtRequest);
 		// Create the JWT object first to get the JTI
-		const jwt = new JWT(jwtRequest.entity || userParse.data.email, jwtRequest.claims, 'catalyst:system:jwt:latest');
+		const jwt = new JWT(jwtRequest.entity, jwtRequest.claims, 'catalyst:system:jwt:latest');
 
 		try {
 			// Sign the JWT first to get the exact expiry timestamp
@@ -152,7 +152,7 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 			// Pass the jti along with the request data
 			const signedJwt = await stub.signJWT(
 				{
-					entity: jwtRequest.entity || userParse.data.email,
+					entity: jwtRequest.entity,
 					claims: jwtRequest.claims,
 					jti: jwt.jti, // Pass the jti we generated
 				},
@@ -162,9 +162,13 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 			// Register the token AFTER signing with the actual expiry
 			// Use signedJwt.expiration which is the exact timestamp from the JWT
 			// Use user-provided metadata if available (and not empty), otherwise use defaults
+			// Extract email from entity (format: "org/email" or just "email")
+			const entity = jwtRequest.entity;
+			const emailForDisplay = entity.includes('/') ? entity.split('/')[1] : entity;
+
 			const registryEntry: IssuedJWTRegistry = {
 				id: jwt.jti, // Critical: Use JWT's jti as the registry ID
-				name: (jwtRequest.name && jwtRequest.name.trim()) || `User token for ${userParse.data.email}`,
+				name: (jwtRequest.name && jwtRequest.name.trim()) || `User token for ${emailForDisplay}`,
 				description:
 					(jwtRequest.description && jwtRequest.description.trim()) || `User token with ${jwtRequest.claims.length} data channel claims`,
 				claims: jwt.claims,
@@ -172,7 +176,7 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 				organization: userParse.data.orgId,
 				status: JWTRegisterStatus.enum.active,
 			};
-
+			console.log('RegistryEntry:', registryEntry);
 			// Register after signing (still atomic - if registration fails, we don't return the token)
 			await this.env.ISSUED_JWT_REGISTRY.createSystem(registryEntry, 'authx_token_api', keyNamespace);
 
@@ -405,7 +409,7 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 			return validationResult;
 		}
 
-		// Check registry status (FR-006: Deleted tokens MUST fail authentication)
+		// Check registry status (Deleted tokens MUST fail authentication)
 		try {
 			// Use validateToken method which performs atomic validation
 			const registryValidation = await this.env.ISSUED_JWT_REGISTRY.validateToken(validationResult.jwtId, keyNamespace);

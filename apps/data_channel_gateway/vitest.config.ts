@@ -61,6 +61,9 @@ export default defineWorkersConfig({
                             },
                             serviceBindings: {
                                 DATA_CHANNEL_REGISTRAR: 'data_channel_registrar',
+                                ISSUED_JWT_REGISTRY: 'issued-jwt-registry',
+                                AUTHZED: 'authx_authzed_api',
+                                USERCACHE: 'mock-usercache',
                             },
                         },
                         {
@@ -104,6 +107,13 @@ export default defineWorkersConfig({
                             durableObjects: {
                                 ISSUED_JWT_REGISTRY_DO: 'I_JWT_Registry_DO',
                             },
+                        },
+                        {
+                            name: 'mock-usercache',
+                            modules: true,
+                            scriptPath: path.resolve('./tests/__mocks__/usercache.js'),
+                            compatibilityDate: '2025-04-01',
+                            compatibilityFlags: ['nodejs_compat'],
                         },
                     ],
                 },

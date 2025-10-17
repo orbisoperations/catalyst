@@ -116,7 +116,10 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
           error: parsedJWTEntity.data.error,
         });
       }
-      const userId = parsedJWTEntity.data.entity!.split('/')[1];
+      // Extract userId from entity (format: "org/email" or just "email")
+      const entity = parsedJWTEntity.data.entity!;
+      const userId = entity.includes('/') ? entity.split('/')[1] : entity;
+
       // The user must have read access to the data channel and the token must have the data channel id in the claims
       const canRead =
         parsedJWTEntity.data.claims.includes(dataChannelId) &&
