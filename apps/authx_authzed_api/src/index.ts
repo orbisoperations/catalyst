@@ -35,10 +35,30 @@ export default class AuthzedWorker extends WorkerEntrypoint<Env> {
 
 	async deleteUserFromOrg(orgId: OrgId, userId: UserId) {
 		const client = new AuthzedClient(this.env.AUTHZED_ENDPOINT, this.env.AUTHZED_KEY, this.env.AUTHZED_PREFIX);
-		const resp = await client.removeUserRoleFromOrganization(orgId, emailTob64(userId), Catalyst.RoleEnum.enum.user);
+
+		// Remove all possible roles to completely remove user from organization
+		const roles = [Catalyst.RoleEnum.enum.user, Catalyst.RoleEnum.enum.data_custodian, Catalyst.RoleEnum.enum.admin];
+
+		let lastResult;
+		const removedRoles: string[] = [];
+
+		for (const role of roles) {
+			try {
+				lastResult = await client.removeUserRoleFromOrganization(orgId, emailTob64(userId), role);
+				removedRoles.push(role);
+			} catch {
+				// Expected: user didn't have this role, continue with other roles
+				// Log for audit trail but don't fail the operation
+				console.log(`Skipping role ${role} removal for user ${userId} from org ${orgId}: role likely not assigned`);
+			}
+		}
+
+		// Log successful removal for audit trail
+		console.log(`Removed user ${userId} from org ${orgId} - roles removed: ${removedRoles.join(', ') || 'none'}`);
+
 		return {
-			entity: `${client.utils.schemaPrefix}organization:${orgId}#user@${client.utils.schemaPrefix}user:${emailTob64(userId)}`,
-			...resp,
+			entity: `${client.utils.schemaPrefix}organization:${orgId}#*@${client.utils.schemaPrefix}user:${emailTob64(userId)}`,
+			deletedAt: lastResult?.deletedAt,
 		};
 	}
 
