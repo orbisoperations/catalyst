@@ -1,8 +1,8 @@
-import { fetchMock } from 'cloudflare:test';
+import { env, fetchMock } from 'cloudflare:test';
 import { graphql } from 'graphql';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { makeGatewaySchema } from '../src/index';
-import { createMockGraphqlEndpoint, generateCatalystToken } from './testUtils';
+import { createMockGraphqlEndpoint, generateCatalystToken, TEST_ORG, TEST_USER } from './testUtils';
 
 // Docs for fetchMock and request mocking:
 // https://blog.cloudflare.com/workers-vitest-integration/
@@ -24,8 +24,13 @@ afterEach(() => {
 
 describe('Schema fetching resilience', () => {
     it('should handle partial failures with Promise.allSettled', async (ctx) => {
+        // Set up permissions for test-claim
+        await env.AUTHX_AUTHZED_API.addDataChannelToOrg(TEST_ORG, 'test-claim');
+        await env.AUTHX_AUTHZED_API.addOrgToDataChannel('test-claim', TEST_ORG);
+        await env.AUTHX_AUTHZED_API.addUserToOrg(TEST_ORG, TEST_USER);
+
         // create mock graphql endpoint for working endpoint
-        const token = await generateCatalystToken('test', ['test-claim'], ctx, 'test_user@mail.com');
+        const token = await generateCatalystToken(TEST_ORG, ['test-claim'], ctx, TEST_USER);
         const endpoints = [
             { token, endpoint: 'http://failing-endpoint/graphql' },
             { token, endpoint: 'http://working-endpoint/graphql' },
@@ -60,8 +65,13 @@ describe('Schema fetching resilience', () => {
     });
 
     it('should handle no failures with Promise.allSettled', async (ctx) => {
+        // Set up permissions for test-claim
+        await env.AUTHX_AUTHZED_API.addDataChannelToOrg(TEST_ORG, 'test-claim');
+        await env.AUTHX_AUTHZED_API.addOrgToDataChannel('test-claim', TEST_ORG);
+        await env.AUTHX_AUTHZED_API.addUserToOrg(TEST_ORG, TEST_USER);
+
         // Mock endpoints - one working, one failing
-        const token = await generateCatalystToken('test', ['test-claim'], ctx, 'test_user@mail.com');
+        const token = await generateCatalystToken(TEST_ORG, ['test-claim'], ctx, TEST_USER);
         const endpoints = [
             { token, endpoint: 'http://working-endpoint-1/graphql' },
             { token, endpoint: 'http://working-endpoint-2/graphql' },
@@ -113,8 +123,13 @@ describe('Schema fetching resilience', () => {
     });
 
     it('should handle all failures with Promise.allSettled', async (ctx) => {
+        // Set up permissions for test-claim
+        await env.AUTHX_AUTHZED_API.addDataChannelToOrg(TEST_ORG, 'test-claim');
+        await env.AUTHX_AUTHZED_API.addOrgToDataChannel('test-claim', TEST_ORG);
+        await env.AUTHX_AUTHZED_API.addUserToOrg(TEST_ORG, TEST_USER);
+
         // Mock endpoints - one working, one failing
-        const token = await generateCatalystToken('test', ['test-claim'], ctx, 'test_user@mail.com');
+        const token = await generateCatalystToken(TEST_ORG, ['test-claim'], ctx, TEST_USER);
         const endpoints = [
             { token, endpoint: 'http://failing-endpoint/graphql' },
             { token, endpoint: 'http://failing-endpoint-2/graphql' },
@@ -144,7 +159,12 @@ describe('Schema fetching resilience', () => {
     });
 
     it('should gracefully handle a 500 server error from a data channel', async (ctx) => {
-        const token = await generateCatalystToken('test', ['test-claim'], ctx, 'test_user@mail.com');
+        // Set up permissions for test-claim
+        await env.AUTHX_AUTHZED_API.addDataChannelToOrg(TEST_ORG, 'test-claim');
+        await env.AUTHX_AUTHZED_API.addOrgToDataChannel('test-claim', TEST_ORG);
+        await env.AUTHX_AUTHZED_API.addUserToOrg(TEST_ORG, TEST_USER);
+
+        const token = await generateCatalystToken(TEST_ORG, ['test-claim'], ctx, TEST_USER);
         const endpoints = [
             { token, endpoint: 'http://failing-endpoint/graphql' },
             { token, endpoint: 'http://my-working-endpoint-1/graphql' },
@@ -199,7 +219,12 @@ describe('Schema fetching resilience', () => {
     });
 
     it('should gracefully handle a non-JSON response from a data channel', async (ctx) => {
-        const token = await generateCatalystToken('test', ['test-claim'], ctx, 'test_user@mail.com');
+        // Set up permissions for test-claim
+        await env.AUTHX_AUTHZED_API.addDataChannelToOrg(TEST_ORG, 'test-claim');
+        await env.AUTHX_AUTHZED_API.addOrgToDataChannel('test-claim', TEST_ORG);
+        await env.AUTHX_AUTHZED_API.addUserToOrg(TEST_ORG, TEST_USER);
+
+        const token = await generateCatalystToken(TEST_ORG, ['test-claim'], ctx, TEST_USER);
         const endpoints = [
             { token, endpoint: 'http://failing-endpoint/graphql' },
             { token, endpoint: 'http://my-working-endpoint-2/graphql' },

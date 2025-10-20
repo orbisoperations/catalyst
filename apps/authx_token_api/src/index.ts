@@ -245,11 +245,26 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 			});
 		}
 
+		// Extract user ID from entity for permission check
+		// Entity format: "org/email" or just "email"
+		const entity = decodedToken.payload.sub || '';
+		const userId = entity.includes('/') ? entity.split('/')[1] : entity;
+
+		// Check current permissions with AuthZed before signing
+		// This ensures permissions are validated at token-splitting time, not just at catalyst token creation
+		const hasPermission = await this.env.AUTHZED.canReadFromDataChannel(claim, userId);
+		if (!hasPermission) {
+			console.warn(`Permission denied for user ${userId} to access channel ${claim}`);
+			return JWTSigningResponse.parse({
+				success: false,
+				error: 'User no longer has permission to access this data channel',
+			});
+		}
+
 		// Create the JWT object first to get the JTI
 		const jwt = new JWT(decodedToken.payload.sub!, [claim], 'catalyst:system:jwt:latest');
 
 		// Extract organization from entity (format: "org/email") or use 'default'
-		const entity = decodedToken.payload.sub || '';
 		const organization = entity.includes('/') ? entity.split('/')[0] : 'default';
 
 		const expiresIn = 5 * DEFAULT_STANDARD_DURATIONS.M; // 5 minutes

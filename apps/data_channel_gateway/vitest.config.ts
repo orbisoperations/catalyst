@@ -107,6 +107,9 @@ export default defineWorkersConfig({
                             durableObjects: {
                                 ISSUED_JWT_REGISTRY_DO: 'I_JWT_Registry_DO',
                             },
+                            serviceBindings: {
+                                USERCACHE: 'mock-usercache',
+                            },
                         },
                         {
                             name: 'mock-usercache',
