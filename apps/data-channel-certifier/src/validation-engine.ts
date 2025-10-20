@@ -19,6 +19,19 @@ interface GraphQLIntrospectionResponse {
 }
 
 /**
+ * GraphQL SDL Response Type (used for federation schema stitching)
+ */
+interface GraphQLSDLResponse {
+  data?: {
+    _sdl?: string;
+  };
+  errors?: Array<{
+    message: string;
+    [key: string]: unknown;
+  }>;
+}
+
+/**
  * Validation Engine for JWT token validation
  * Implements the core validation logic for the MVP
  *
@@ -66,6 +79,22 @@ export class ValidationEngine {
           success: introspectionTest.success,
           duration: `${introspectionTest.duration}ms`,
           hasErrors: !!introspectionTest.errorDetails,
+        }
+      );
+
+      // 3. SDL Federation Test
+      console.log(
+        `[ValidationEngine] Running SDL federation test for channel ${request.channelId}`
+      );
+      const sdlTest = await this.testSDLFederation(request);
+      tests.push(sdlTest);
+
+      console.log(
+        `[ValidationEngine] SDL federation test completed for channel ${request.channelId}`,
+        {
+          success: sdlTest.success,
+          duration: `${sdlTest.duration}ms`,
+          hasErrors: !!sdlTest.errorDetails,
         }
       );
 
@@ -461,6 +490,170 @@ export class ValidationEngine {
         success: false,
         duration: Date.now() - testStart,
         errorDetails: `Introspection test failed: ${errorMsg}`,
+      };
+    }
+  }
+
+  /**
+   * Tests if a channel endpoint returns a valid SDL for schema stitching
+   *
+   * Performs the following checks:
+   * 1. Obtains system JWT token
+   * 2. Sends `{ _sdl }` query to endpoint (used by gateway for schema stitching)
+   * 3. Validates 200 status code
+   * 4. Parses JSON response
+   * 5. Checks for no GraphQL errors
+   * 6. Validates _sdl field exists and is a string
+   * 7. Validates _sdl is non-empty
+   *
+   * @param request - Validation request containing channel details
+   * @returns Test result with success/failure and timing information
+   */
+  private async testSDLFederation(request: ValidationRequest): Promise<TestResult> {
+    const testStart = Date.now();
+
+    console.log(`[ValidationEngine:SDL] Starting SDL federation test`, {
+      channelId: request.channelId,
+      endpoint: request.endpoint,
+    });
+
+    try {
+      // Step 1: Obtain system JWT token
+      const tokenResult = await this.requestValidationToken(request, 'SDL federation test');
+      if (!tokenResult.success || !tokenResult.token) {
+        return {
+          testType: 'sdl_federation',
+          success: false,
+          duration: Date.now() - testStart,
+          errorDetails: tokenResult.error || 'Failed to obtain validation token',
+        };
+      }
+
+      const token = tokenResult.token;
+
+      // Step 2: Send SDL query to the endpoint
+      const sdlQuery = `{ _sdl }`;
+
+      console.log(`[ValidationEngine:SDL] Sending SDL query to endpoint`, {
+        channelId: request.channelId,
+        endpoint: request.endpoint,
+      });
+
+      const response = await fetch(request.endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          query: sdlQuery,
+        }),
+        signal: AbortSignal.timeout(10000), // 10 second timeout
+      });
+
+      // Step 3: Check status code
+      if (response.status !== 200) {
+        const errorMsg = `SDL query returned non-200 status: ${response.status}`;
+        console.error(`[ValidationEngine:SDL] ${errorMsg}`, {
+          channelId: request.channelId,
+          status: response.status,
+        });
+        return {
+          testType: 'sdl_federation',
+          success: false,
+          duration: Date.now() - testStart,
+          errorDetails: errorMsg,
+        };
+      }
+
+      // Step 4: Parse response
+      let jsonResponse: GraphQLSDLResponse;
+
+      try {
+        jsonResponse = (await response.json()) as GraphQLSDLResponse;
+      } catch (parseError) {
+        const errorMsg = `Failed to parse SDL query response as JSON`;
+        console.error(`[ValidationEngine:SDL] ${errorMsg}`, {
+          channelId: request.channelId,
+          parseError: parseError instanceof Error ? parseError.message : 'Unknown',
+        });
+        return {
+          testType: 'sdl_federation',
+          success: false,
+          duration: Date.now() - testStart,
+          errorDetails: errorMsg,
+        };
+      }
+
+      // Step 5: Check for GraphQL errors
+      if (jsonResponse.errors && jsonResponse.errors.length > 0) {
+        const errorMsg = `SDL query returned GraphQL errors: ${jsonResponse.errors.map((e) => e.message).join(', ')}`;
+        console.error(`[ValidationEngine:SDL] ${errorMsg}`, {
+          channelId: request.channelId,
+          errors: jsonResponse.errors,
+        });
+        return {
+          testType: 'sdl_federation',
+          success: false,
+          duration: Date.now() - testStart,
+          errorDetails: errorMsg,
+        };
+      }
+
+      // Step 6: Validate _sdl field exists
+      if (!jsonResponse.data || typeof jsonResponse.data._sdl !== 'string') {
+        const errorMsg = 'Response missing "_sdl" field or it is not a string';
+        console.error(`[ValidationEngine:SDL] ${errorMsg}`, {
+          channelId: request.channelId,
+          hasData: !!jsonResponse.data,
+          sdlType: jsonResponse.data?._sdl ? typeof jsonResponse.data._sdl : 'undefined',
+        });
+        return {
+          testType: 'sdl_federation',
+          success: false,
+          duration: Date.now() - testStart,
+          errorDetails: errorMsg,
+        };
+      }
+
+      // Step 7: Validate _sdl is non-empty
+      if (jsonResponse.data._sdl.trim().length === 0) {
+        const errorMsg = 'SDL string is empty';
+        console.error(`[ValidationEngine:SDL] ${errorMsg}`, {
+          channelId: request.channelId,
+        });
+        return {
+          testType: 'sdl_federation',
+          success: false,
+          duration: Date.now() - testStart,
+          errorDetails: errorMsg,
+        };
+      }
+
+      // Success!
+      console.log(`[ValidationEngine:SDL] SDL federation test PASSED`, {
+        channelId: request.channelId,
+        sdlLength: jsonResponse.data._sdl.length,
+        duration: `${Date.now() - testStart}ms`,
+      });
+
+      return {
+        testType: 'sdl_federation',
+        success: true,
+        duration: Date.now() - testStart,
+      };
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      console.error(`[ValidationEngine:SDL] Test failed with error`, {
+        channelId: request.channelId,
+        error: errorMsg,
+      });
+      return {
+        testType: 'sdl_federation',
+        success: false,
+        duration: Date.now() - testStart,
+        errorDetails: `SDL federation test failed: ${errorMsg}`,
       };
     }
   }
