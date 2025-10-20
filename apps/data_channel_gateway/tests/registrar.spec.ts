@@ -56,10 +56,14 @@ const teardown = async (env: ProvidedEnv) => {
 };
 
 describe('registrar integration tests', async () => {
-    const id = env.DATA_CHANNEL_REGISTRAR_DO.idFromName('default');
-    const stub = env.DATA_CHANNEL_REGISTRAR_DO.get(id);
+    const getStub = () => {
+        const id = env.DATA_CHANNEL_REGISTRAR_DO.idFromName('default');
+        return env.DATA_CHANNEL_REGISTRAR_DO.get(id);
+    };
 
     it('create data channel', async () => {
+        const stub = getStub();
+
         const newDC = {
             name: 'testsvc',
             endpoint: 'https://example.com/graphql',
@@ -75,6 +79,8 @@ describe('registrar integration tests', async () => {
     });
 
     it('create/get/delete data channel', async () => {
+        const stub = getStub();
+
         const emptyDC = await stub.get('nextval');
         expect(emptyDC).toBeUndefined();
         await stub.update({
@@ -93,6 +99,8 @@ describe('registrar integration tests', async () => {
     });
 
     it('list data channels', async () => {
+        const stub = getStub();
+
         await teardown(env);
 
         const newDC = {

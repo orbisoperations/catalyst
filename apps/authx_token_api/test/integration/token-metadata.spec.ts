@@ -37,7 +37,9 @@ describe('Integration: Token Metadata Preservation', () => {
 			}
 
 			// Extract jti from the token to check registry
-			const decodedToken = await env.KEY_PROVIDER.get(env.KEY_PROVIDER.idFromName('default')).decodeToken(signResult.token);
+			const keyProviderId = env.KEY_PROVIDER.idFromName('default');
+			const keyProviderStub = env.KEY_PROVIDER.get(keyProviderId);
+			const decodedToken = await keyProviderStub.decodeToken(signResult.token);
 			expect(decodedToken.success).toBe(true);
 			expect(decodedToken.payload?.jti).toBeDefined();
 
@@ -110,7 +112,9 @@ describe('Integration: Token Metadata Preservation', () => {
 			}
 
 			// Extract jti from the token to check registry
-			const decodedToken = await env.KEY_PROVIDER.get(env.KEY_PROVIDER.idFromName('default')).decodeToken(signResult.token);
+			const keyProviderId = env.KEY_PROVIDER.idFromName('default');
+			const keyProviderStub = env.KEY_PROVIDER.get(keyProviderId);
+			const decodedToken = await keyProviderStub.decodeToken(signResult.token);
 			expect(decodedToken.success).toBe(true);
 			expect(decodedToken.payload?.jti).toBeDefined();
 
@@ -148,7 +152,9 @@ describe('Integration: Token Metadata Preservation', () => {
 			}
 
 			// Extract jti from the token to check registry
-			const decodedToken = await env.KEY_PROVIDER.get(env.KEY_PROVIDER.idFromName('default')).decodeToken(signResult.token);
+			const keyProviderId = env.KEY_PROVIDER.idFromName('default');
+			const keyProviderStub = env.KEY_PROVIDER.get(keyProviderId);
+			const decodedToken = await keyProviderStub.decodeToken(signResult.token);
 			expect(decodedToken.success).toBe(true);
 			expect(decodedToken.payload?.jti).toBeDefined();
 

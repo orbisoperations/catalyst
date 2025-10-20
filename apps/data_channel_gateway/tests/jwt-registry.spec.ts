@@ -7,7 +7,7 @@ describe('jwt registry integration tests', () => {
         const jwtDoID = env.JWT_REGISTRY_DO.idFromName('default');
         const jwtRegistryStub = env.JWT_REGISTRY_DO.get(jwtDoID);
 
-        await jwtRegistryStub.create({
+        const result = await jwtRegistryStub.create({
             name: 'testJWT',
             description: 'test jwt',
             status: 'active',
@@ -15,5 +15,8 @@ describe('jwt registry integration tests', () => {
             claims: ['testClaim'],
             organization: 'testorg',
         });
+
+        // Capture return value to properly dispose RPC result
+        console.log('Created JWT registry entry:', result.id);
     });
 });
