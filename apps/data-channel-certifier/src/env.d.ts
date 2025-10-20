@@ -1,33 +1,8 @@
-interface Env {
-  // Service bindings
-  AUTHX_TOKEN_API: {
-    signSystemJWT(params: {
-      callingService: string;
-      channelId?: string;
-      channelIds?: string[];
-      purpose: string;
-      duration?: number;
-    }): Promise<{ success: boolean; token?: string; expiration?: number; error?: string }>;
-  };
-
-  DATA_CHANNEL_REGISTRAR: {
-    listAll(
-      doNamespace?: string,
-      filterByAccessSwitch?: boolean
-    ): Promise<Array<{
-      id: string;
-      name: string;
-      endpoint: string;
-      creatorOrganization: string;
-      accessSwitch: boolean;
-      description: string;
-    }> | null>;
-
-    updateAccessSwitch(
-      channelId: string,
-      enabled: boolean
-    ): Promise<{ success: boolean; error?: string }>;
-  };
+export interface Env {
+  // Service bindings - using Service<T> pattern for compile-time type safety
+  AUTHX_TOKEN_API: Service<import('../../authx_token_api/src').default>;
+  DATA_CHANNEL_REGISTRAR: Service<import('../../data_channel_registrar/src/worker').default>;
+  ISSUED_JWT_REGISTRY: Service<import('../../issued-jwt-registry/src').default>;
 
   // Environment variables
   ENVIRONMENT?: string;

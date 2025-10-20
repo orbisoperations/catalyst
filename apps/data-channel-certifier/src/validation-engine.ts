@@ -1,25 +1,14 @@
 import type { ValidationResult, TestResult, ValidationRequest } from '@catalyst/schemas';
-
-/**
- * Environment bindings for the validation engine
- */
-export interface ValidationEnv {
-  AUTHX_TOKEN_API: {
-    signSystemJWT(params: {
-      callingService: string;
-      channelId: string;
-      purpose: string;
-      duration?: number;
-    }): Promise<{ success: boolean; token?: string; expiration?: number; error?: string }>;
-  };
-}
+import type { Env } from './env';
 
 /**
  * Validation Engine for JWT token validation
  * Implements the core validation logic for the MVP
+ *
+ * Uses a subset of Env bindings (AUTHX_TOKEN_API) for signing validation tokens
  */
 export class ValidationEngine {
-  constructor(private env: ValidationEnv) {}
+  constructor(private env: Pick<Env, 'AUTHX_TOKEN_API'>) {}
 
   /**
    * Validates a data channel endpoint with all configured tests

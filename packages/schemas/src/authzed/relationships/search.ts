@@ -1,14 +1,16 @@
 import { z } from 'zod/v4';
+import { Catalyst } from '../..';
 
 export const SearchInfo = z.object({
-    resourceType: z.string(),
-    resourceId: z.string(),
-    relation: z.string(),
+    resourceType: Catalyst.EntityEnum,
+    resourceId: z.string().optional(),
+    relation: z.union([Catalyst.DataChannel.EntityEnum, Catalyst.RoleEnum, Catalyst.Org.EntityEnum]).optional(),
     optionalSubjectFilter: z
         .object({
-            subjectType: z.string(),
-            optionalSubjectId: z.string().optional(),
+            subjectType: Catalyst.EntityEnum,
+            optionalSubjectId: z.string(),
         })
         .optional(),
 });
+
 export type SearchInfo = z.infer<typeof SearchInfo>;

@@ -26,7 +26,7 @@ export class CatalystError extends Error {
                 Error as {
                     captureStackTrace: (target: object, constructor: new (...args: unknown[]) => unknown) => void;
                 }
-            ).captureStackTrace(this, this.constructor);
+            ).captureStackTrace(this, this.constructor as new (...args: unknown[]) => unknown);
         }
     }
 
