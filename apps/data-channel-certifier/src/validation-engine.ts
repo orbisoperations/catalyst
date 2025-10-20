@@ -2,6 +2,23 @@ import type { ValidationResult, TestResult, ValidationRequest } from '@catalyst/
 import type { Env } from './env';
 
 /**
+ * GraphQL Introspection Response Type
+ */
+interface GraphQLIntrospectionResponse {
+  data?: {
+    __schema?: {
+      queryType?: {
+        name?: string;
+      };
+    };
+  };
+  errors?: Array<{
+    message: string;
+    [key: string]: unknown;
+  }>;
+}
+
+/**
  * Validation Engine for JWT token validation
  * Implements the core validation logic for the MVP
  *
@@ -25,7 +42,7 @@ export class ValidationEngine {
     });
 
     try {
-      // 1. JWT Validation Test (MVP - Implemented)
+      // 1. JWT Validation Test
       console.log(
         `[ValidationEngine] Running JWT validation test for channel ${request.channelId}`
       );
@@ -38,9 +55,24 @@ export class ValidationEngine {
         hasErrors: !!jwtTest.errorDetails,
       });
 
+      // 2. GraphQL Introspection Test
+      console.log(`[ValidationEngine] Running introspection test for channel ${request.channelId}`);
+      const introspectionTest = await this.testIntrospection(request);
+      tests.push(introspectionTest);
+
+      console.log(
+        `[ValidationEngine] Introspection test completed for channel ${request.channelId}`,
+        {
+          success: introspectionTest.success,
+          duration: `${introspectionTest.duration}ms`,
+          hasErrors: !!introspectionTest.errorDetails,
+        }
+      );
+
       // Future tests will be added here as needed
 
       // Determine overall status based on test results
+      // ALL tests must pass for channel to be valid
       const allPassed = tests.every((test) => test.success);
       const status = allPassed ? 'valid' : 'invalid';
 
@@ -91,6 +123,49 @@ export class ValidationEngine {
   }
 
   /**
+   * Requests a system JWT token for validation purposes
+   * Shared helper for JWT validation and introspection tests
+   */
+  private async requestValidationToken(
+    request: ValidationRequest,
+    purpose: string
+  ): Promise<{ success: boolean; token?: string; error?: string }> {
+    console.log(`[ValidationEngine] Requesting system JWT from AUTHX_TOKEN_API`, {
+      channelId: request.channelId,
+      callingService: 'data-channel-certifier',
+      purpose,
+    });
+
+    const tokenResponse = await this.env.AUTHX_TOKEN_API.signSystemJWT({
+      callingService: 'data-channel-certifier',
+      channelId: request.channelId,
+      purpose,
+      duration: 300, // 5 minutes
+    });
+
+    if (!tokenResponse.success || !tokenResponse.token) {
+      console.error(`[ValidationEngine] Failed to obtain system JWT`, {
+        channelId: request.channelId,
+        error: tokenResponse.error,
+      });
+      return {
+        success: false,
+        error: tokenResponse.error || 'Failed to obtain validation token',
+      };
+    }
+
+    console.log(`[ValidationEngine] System JWT obtained successfully`, {
+      channelId: request.channelId,
+      tokenExpiration: tokenResponse.expiration,
+    });
+
+    return {
+      success: true,
+      token: tokenResponse.token,
+    };
+  }
+
+  /**
    * Tests JWT token validation for a data channel
    * Validates that the channel accepts valid tokens and rejects invalid ones
    */
@@ -101,25 +176,9 @@ export class ValidationEngine {
 
     try {
       // Step 1: Request a system JWT token for this channel
-      console.log(`[ValidationEngine:JWT] Requesting system JWT from AUTHX_TOKEN_API`, {
-        channelId: request.channelId,
-        callingService: 'data-channel-certifier',
-        purpose: 'channel-validation',
-      });
-
-      const tokenResponse = await this.env.AUTHX_TOKEN_API.signSystemJWT({
-        callingService: 'data-channel-certifier',
-        channelId: request.channelId,
-        purpose: 'channel-validation',
-        duration: 300, // 5 minutes
-      });
+      const tokenResponse = await this.requestValidationToken(request, 'channel-validation');
 
       if (!tokenResponse.success || !tokenResponse.token) {
-        console.error(`[ValidationEngine:JWT] Failed to obtain system JWT`, {
-          channelId: request.channelId,
-          error: tokenResponse.error,
-          success: tokenResponse.success,
-        });
         return {
           testType: 'jwt_validation',
           success: false,
@@ -127,11 +186,6 @@ export class ValidationEngine {
           errorDetails: tokenResponse.error || 'Failed to obtain validation token',
         };
       }
-
-      console.log(`[ValidationEngine:JWT] System JWT obtained successfully`, {
-        channelId: request.channelId,
-        tokenExpiration: tokenResponse.expiration,
-      });
 
       // Step 2: Test the channel endpoint with the valid token
       console.log(`[ValidationEngine:JWT] Testing endpoint with VALID token`, {
@@ -235,6 +289,178 @@ export class ValidationEngine {
         success: false,
         duration: Date.now() - testStart,
         errorDetails: `JWT validation test failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      };
+    }
+  }
+
+  /**
+   * Tests GraphQL introspection capability
+   * Validates that the channel returns a proper GraphQL schema via introspection query
+   */
+  private async testIntrospection(request: ValidationRequest): Promise<TestResult> {
+    const testStart = Date.now();
+
+    console.log(
+      `[ValidationEngine:Introspection] Starting introspection test for channel ${request.channelId}`
+    );
+
+    try {
+      // Step 1: Request a system JWT token for authenticated introspection
+      const tokenResponse = await this.requestValidationToken(request, 'channel-introspection');
+
+      if (!tokenResponse.success || !tokenResponse.token) {
+        return {
+          testType: 'introspection',
+          success: false,
+          duration: Date.now() - testStart,
+          errorDetails: tokenResponse.error || 'Failed to obtain introspection token',
+        };
+      }
+
+      // Step 2: Send introspection query
+      const introspectionQuery = {
+        query: `{
+          __schema {
+            queryType {
+              name
+            }
+          }
+        }`,
+      };
+
+      console.log(`[ValidationEngine:Introspection] Sending introspection query`, {
+        channelId: request.channelId,
+        endpoint: request.endpoint,
+      });
+
+      const response = await fetch(request.endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${tokenResponse.token}`,
+        },
+        body: JSON.stringify(introspectionQuery),
+        signal: AbortSignal.timeout(10000), // 10 second timeout
+      });
+
+      console.log(`[ValidationEngine:Introspection] Received response`, {
+        channelId: request.channelId,
+        status: response.status,
+      });
+
+      // Step 3: Validate response
+      if (response.status !== 200) {
+        const errorMsg = `Introspection returned non-200 status: ${response.status}`;
+        console.error(`[ValidationEngine:Introspection] ${errorMsg}`, {
+          channelId: request.channelId,
+        });
+        return {
+          testType: 'introspection',
+          success: false,
+          duration: Date.now() - testStart,
+          errorDetails: errorMsg,
+        };
+      }
+
+      // Step 4: Parse and validate GraphQL response structure
+      let jsonResponse: GraphQLIntrospectionResponse;
+      try {
+        jsonResponse = (await response.json()) as GraphQLIntrospectionResponse;
+      } catch (parseError) {
+        const errorMsg = 'Failed to parse JSON response';
+        console.error(`[ValidationEngine:Introspection] ${errorMsg}`, {
+          channelId: request.channelId,
+          error: parseError instanceof Error ? parseError.message : 'Unknown',
+        });
+        return {
+          testType: 'introspection',
+          success: false,
+          duration: Date.now() - testStart,
+          errorDetails: errorMsg,
+        };
+      }
+
+      // Check for GraphQL errors field
+      if (jsonResponse.errors) {
+        const errorMsg = `GraphQL returned errors: ${JSON.stringify(jsonResponse.errors)}`;
+        console.error(`[ValidationEngine:Introspection] ${errorMsg}`, {
+          channelId: request.channelId,
+        });
+        return {
+          testType: 'introspection',
+          success: false,
+          duration: Date.now() - testStart,
+          errorDetails: errorMsg,
+        };
+      }
+
+      // Check for data field
+      if (!jsonResponse.data) {
+        const errorMsg = 'Response missing "data" field - not a valid GraphQL response';
+        console.error(`[ValidationEngine:Introspection] ${errorMsg}`, {
+          channelId: request.channelId,
+          response: jsonResponse,
+        });
+        return {
+          testType: 'introspection',
+          success: false,
+          duration: Date.now() - testStart,
+          errorDetails: errorMsg,
+        };
+      }
+
+      // Check for __schema field
+      if (!jsonResponse.data.__schema) {
+        const errorMsg =
+          'Response missing "__schema" field - introspection not supported or disabled';
+        console.error(`[ValidationEngine:Introspection] ${errorMsg}`, {
+          channelId: request.channelId,
+        });
+        return {
+          testType: 'introspection',
+          success: false,
+          duration: Date.now() - testStart,
+          errorDetails: errorMsg,
+        };
+      }
+
+      // Check for queryType.name
+      if (!jsonResponse.data.__schema.queryType?.name) {
+        const errorMsg = 'Response missing "__schema.queryType.name" - invalid schema structure';
+        console.error(`[ValidationEngine:Introspection] ${errorMsg}`, {
+          channelId: request.channelId,
+        });
+        return {
+          testType: 'introspection',
+          success: false,
+          duration: Date.now() - testStart,
+          errorDetails: errorMsg,
+        };
+      }
+
+      // Success!
+      console.log(`[ValidationEngine:Introspection] Introspection test PASSED`, {
+        channelId: request.channelId,
+        queryTypeName: jsonResponse.data.__schema.queryType.name,
+        duration: `${Date.now() - testStart}ms`,
+      });
+
+      return {
+        testType: 'introspection',
+        success: true,
+        duration: Date.now() - testStart,
+      };
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      console.error(`[ValidationEngine:Introspection] Test failed with error`, {
+        channelId: request.channelId,
+        error: errorMsg,
+      });
+      return {
+        testType: 'introspection',
+        success: false,
+        duration: Date.now() - testStart,
+        errorDetails: `Introspection test failed: ${errorMsg}`,
       };
     }
   }
