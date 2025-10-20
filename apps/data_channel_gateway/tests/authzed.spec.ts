@@ -137,21 +137,73 @@ describe.sequential('authzed integration tests', () => {
             await env.AUTHX_AUTHZED_API.addDataCustodianToOrg(org, 'DataCustodian');
             expect(await env.AUTHX_AUTHZED_API.listUsersInOrg(org)).toHaveLength(3);
 
+            // Verify deleteUserFromOrg returns correct entity format
             const deleteUser = await env.AUTHX_AUTHZED_API.deleteUserFromOrg(org, 'User');
             expect(deleteUser).toBeTruthy();
+            expect(deleteUser.entity).toBe(
+                'orbisops_catalyst_dev/organization:Org9#user@orbisops_catalyst_dev/user:VXNlcg=='
+            );
+            expect(deleteUser.deletedAt).toBeDefined();
 
             const listUserDelete = await env.AUTHX_AUTHZED_API.listUsersInOrg(org);
             console.log(listUserDelete);
             expect(listUserDelete).toHaveLength(2);
             expect(listUserDelete).not.toContain({ object: org, relation: 'user', subject: 'User' });
 
-            await env.AUTHX_AUTHZED_API.deleteDataCustodianFromOrg(org, 'DataCustodian');
+            // Verify deleteDataCustodianFromOrg returns correct entity format
+            const deleteDataCustodian = await env.AUTHX_AUTHZED_API.deleteDataCustodianFromOrg(org, 'DataCustodian');
+            expect(deleteDataCustodian).toBeTruthy();
+            expect(deleteDataCustodian.entity).toBe(
+                'orbisops_catalyst_dev/organization:Org9#data_custodian@orbisops_catalyst_dev/user:RGF0YUN1c3RvZGlhbg=='
+            );
+            expect(deleteDataCustodian.deletedAt).toBeDefined();
+
             console.log(await env.AUTHX_AUTHZED_API.listUsersInOrg(org));
             expect(await env.AUTHX_AUTHZED_API.listUsersInOrg(org)).toHaveLength(1);
 
-            await env.AUTHX_AUTHZED_API.deleteAdminFromOrg(org, 'Admin');
+            // Verify deleteAdminFromOrg returns correct entity format
+            const deleteAdmin = await env.AUTHX_AUTHZED_API.deleteAdminFromOrg(org, 'Admin');
+            expect(deleteAdmin).toBeTruthy();
+            expect(deleteAdmin.entity).toBe(
+                'orbisops_catalyst_dev/organization:Org9#admin@orbisops_catalyst_dev/user:QWRtaW4='
+            );
+            expect(deleteAdmin.deletedAt).toBeDefined();
+
             console.log(await env.AUTHX_AUTHZED_API.listUsersInOrg(org));
             expect(await env.AUTHX_AUTHZED_API.listUsersInOrg(org)).toHaveLength(0);
+        });
+        it.sequential('verify deleteUserFromOrg only removes user role, not other roles', async () => {
+            const org = 'Org10';
+            const userId = 'MultiRoleUser';
+
+            // Add user with multiple roles
+            await env.AUTHX_AUTHZED_API.addUserToOrg(org, userId);
+            await env.AUTHX_AUTHZED_API.addDataCustodianToOrg(org, userId);
+            await env.AUTHX_AUTHZED_API.addAdminToOrg(org, userId);
+
+            // Verify user has all 3 roles
+            const rolesBefore = await env.AUTHX_AUTHZED_API.listUsersInOrg(org, userId);
+            expect(rolesBefore).toHaveLength(3);
+            expect(rolesBefore).toContainEqual({ object: org, relation: 'user', subject: userId });
+            expect(rolesBefore).toContainEqual({ object: org, relation: 'data_custodian', subject: userId });
+            expect(rolesBefore).toContainEqual({ object: org, relation: 'admin', subject: userId });
+
+            // Delete only the "user" role
+            const deleteResult = await env.AUTHX_AUTHZED_API.deleteUserFromOrg(org, userId);
+            expect(deleteResult.entity).toBe(
+                `orbisops_catalyst_dev/organization:${org}#user@orbisops_catalyst_dev/user:TXVsdGlSb2xlVXNlcg==`
+            );
+
+            // Verify only "user" role was removed, other roles remain
+            const rolesAfter = await env.AUTHX_AUTHZED_API.listUsersInOrg(org, userId);
+            expect(rolesAfter).toHaveLength(2);
+            expect(rolesAfter).not.toContainEqual({ object: org, relation: 'user', subject: userId });
+            expect(rolesAfter).toContainEqual({ object: org, relation: 'data_custodian', subject: userId });
+            expect(rolesAfter).toContainEqual({ object: org, relation: 'admin', subject: userId });
+
+            // Clean up remaining roles
+            await env.AUTHX_AUTHZED_API.deleteDataCustodianFromOrg(org, userId);
+            await env.AUTHX_AUTHZED_API.deleteAdminFromOrg(org, userId);
         });
         it.sequential('add, list, and delete data channels', async () => {
             // Clean up any existing data channels first
