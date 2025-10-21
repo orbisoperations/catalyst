@@ -10,7 +10,7 @@ import {
 	Token,
 	User,
 } from '../../../packages/schema_zod';
-import { JWTSigningRequest, JWTSigningResponse, IssuedJWTRegistry, JWTRegisterStatus, JWTAudience } from '../../../packages/schemas';
+import { JWTSigningRequest, JWTSigningResponse, IssuedJWTRegistry, JWTRegisterStatus, JWTAudience } from '@catalyst/schemas';
 import { Env } from './env';
 import { JWT } from './jwt';
 export { JWTKeyProvider } from './durable_object_security_module';

@@ -1,7 +1,7 @@
 import { JWTPayload } from 'jose';
 import { describe, expect, it } from 'vitest';
 import { JWT } from '../../src/jwt';
-import { JWTAudience } from '../../../../packages/schemas';
+import { JWTAudience } from '@catalyst/schemas';
 
 describe('JWT', () => {
 	describe('constructor', () => {

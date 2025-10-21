@@ -1,7 +1,7 @@
 import { SELF } from 'cloudflare:test';
 import { createLocalJWKSet, decodeJwt, jwtVerify } from 'jose';
 import { describe, expect, it } from 'vitest';
-import { JWTAudience } from '../../../../packages/schemas';
+import { JWTAudience } from '@catalyst/schemas';
 
 /**
  * Integration Tests: System Service JWT Workflows

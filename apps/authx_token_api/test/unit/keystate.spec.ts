@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { JWT } from '../../src/jwt';
 import { KeyState } from '../../src/keystate';
-import { JWTAudience } from '../../../../packages/schemas';
+import { JWTAudience } from '@catalyst/schemas';
 
 describe('KeyState', () => {
 	let keyState: KeyState;

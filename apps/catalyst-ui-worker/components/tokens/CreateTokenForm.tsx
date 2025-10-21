@@ -4,7 +4,7 @@ import { APIKeyText, ErrorCard, OrbisButton, OrbisCard, SelectableTable } from '
 import { DetailedView } from '@/components/layouts';
 import { navigationItems } from '@/utils/nav.utils';
 import { DataChannel } from '@catalyst/schema_zod';
-import { JWTAudience, JWTSigningResponse } from '../../../../packages/schemas';
+import { JWTAudience, JWTSigningResponse } from '@catalyst/schemas';
 import { Box, Flex } from '@chakra-ui/layout';
 import {
     FormControl,

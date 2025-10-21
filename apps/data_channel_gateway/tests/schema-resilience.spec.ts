@@ -3,7 +3,7 @@ import { graphql } from 'graphql';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { makeGatewaySchema } from '../src/index';
 import { createMockGraphqlEndpoint, generateCatalystToken } from './testUtils';
-import { JWTAudience } from '../../../packages/schemas';
+import { JWTAudience } from '@catalyst/schemas';
 
 // Docs for fetchMock and request mocking:
 // https://blog.cloudflare.com/workers-vitest-integration/

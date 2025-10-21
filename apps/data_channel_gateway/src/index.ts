@@ -1,6 +1,6 @@
 import { grabTokenInHeader } from '@catalyst/jwt';
 import { Token } from '@catalyst/schema_zod';
-import { JWTAudience } from '../../../packages/schemas';
+import { JWTAudience } from '@catalyst/schemas';
 import { decodeJwt } from 'jose';
 import { stitchSchemas } from '@graphql-tools/stitch';
 import { stitchingDirectives } from '@graphql-tools/stitching-directives';

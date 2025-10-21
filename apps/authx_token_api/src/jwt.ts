@@ -2,7 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import base64url from 'base64url';
 import { JWTPayload } from 'jose';
 import { DEFAULT_STANDARD_DURATIONS } from '@catalyst/schema_zod';
-import { JWTAudience } from '../../../packages/schemas';
+import { JWTAudience } from '@catalyst/schemas';
 
 /*
 RFC 7519 (JWT)

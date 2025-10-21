@@ -1,4 +1,4 @@
-import { JWTSigningRequest, JWTSigningResponse, JWTAudience } from '../../../../packages/schemas'; // Assuming types are exported
+import { JWTSigningRequest, JWTSigningResponse, JWTAudience } from '@catalyst/schema_zod'; // Assuming types are exported
 import { env, SELF } from 'cloudflare:test';
 import { createLocalJWKSet, jwtVerify, SignJWT } from 'jose';
 
