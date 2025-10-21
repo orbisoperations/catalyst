@@ -1,4 +1,4 @@
-import { DataChannel } from '@catalyst/schema_zod';
+import { DataChannel } from '@catalyst/schemas';
 import { JWTAudience } from '@catalyst/schemas';
 import { env, SELF } from 'cloudflare:test';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -174,7 +174,7 @@ describe('validate endpoint tests', () => {
                 claimId: 'airplanes1',
                 catalystToken: invalidToken,
                 valid: false,
-                error: 'Invalid token format',
+                error: 'invalid token',
             },
         ]);
     });
@@ -261,7 +261,7 @@ describe('validate endpoint tests', () => {
                 claimId: 'airplanes2',
                 catalystToken: invalidToken,
                 valid: false,
-                error: 'Invalid token format',
+                error: 'invalid token',
             },
         ]);
     });

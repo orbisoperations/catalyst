@@ -5,8 +5,7 @@ import { preprocess, preprocessors } from '../../core/performance';
 // JWT Audience values for different token types
 export const JWTAudience = z.enum([
     'catalyst:gateway', // For gateway access tokens (UI -> Gateway)
-    'catalyst:datachannel', // For single-use tokens (Gateway -> Data Channel)
-    'catalyst:system', // For system service tokens (Internal services)
+    'catalyst:datachannel', // For single-use tokens and system tokens (Gateway -> Data Channel)
 ]);
 export type JWTAudience = z.infer<typeof JWTAudience>;
 
@@ -64,3 +63,15 @@ const JWTSigningResult = z.object({
 
 export const JWTSigningStandardResponse = createResponseSchema(JWTSigningResult);
 export type JWTSigningStandardResponse = z.infer<typeof JWTSigningStandardResponse>;
+
+// JWT Rotation Response
+export const JWTRotateResponse = z.discriminatedUnion('success', [
+    z.object({
+        success: z.literal(true),
+    }),
+    z.object({
+        success: z.literal(false),
+        error: z.string(),
+    }),
+]);
+export type JWTRotateResponse = z.infer<typeof JWTRotateResponse>;

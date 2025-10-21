@@ -1,4 +1,4 @@
-import { DataChannel } from '@catalyst/schema_zod';
+import { DataChannel } from '@catalyst/schemas';
 import { JWTAudience } from '@catalyst/schemas';
 import { env, fetchMock } from 'cloudflare:test';
 import { TestContext } from 'vitest';
@@ -108,58 +108,4 @@ export const createMockGraphqlEndpoint = (
             };
         })
         .persist();
-};
-
-/**
- * Generates a legacy token without an audience field for backwards compatibility testing.
- *
- * WHY THIS EXISTS:
- * - Before JWT audience differentiation, tokens were created without an 'aud' claim
- * - The main API (signJWT) now defaults to 'catalyst:gateway' audience if none provided
- * - To test true backwards compatibility, we need tokens that genuinely lack an audience field
- * - This function bypasses the main API and calls the Durable Object directly
- * - It creates tokens that match the old format (no 'aud' claim) for testing legacy behavior
- *
- * This is essential for testing that the gateway correctly accepts old tokens without audience
- * while rejecting new tokens with wrong audience (e.g., 'catalyst:datachannel' on gateway).
- */
-export const generateLegacyToken = async (entity: string, claims: string[], ctx?: TestContext, user?: string) => {
-    // Set up permissions BEFORE creating the token
-    for (const claim of claims) {
-        await env.AUTHX_AUTHZED_API.addDataChannelToOrg(TEST_ORG, claim);
-        await env.AUTHX_AUTHZED_API.addOrgToDataChannel(claim, TEST_ORG);
-    }
-    await env.AUTHX_AUTHZED_API.addUserToOrg(TEST_ORG, user || TEST_USER);
-
-    // Call Durable Object directly to create token without audience
-    const jwtDOID = env.JWT_TOKEN_DO.idFromName('default');
-    const jwtStub = env.JWT_TOKEN_DO.get(jwtDOID);
-    const tokenResp = await jwtStub.signJWT(
-        {
-            entity: `${entity}/${user || TEST_USER}`,
-            claims: claims,
-            // No audience field - this will create a token without an audience
-        },
-        10 * 60 * 1000
-    );
-
-    // Manually register the token in the JWT registry since we bypassed the main API
-    const { decodeJwt } = await import('jose');
-    const decoded = decodeJwt(tokenResp.token);
-
-    await env.ISSUED_JWT_REGISTRY.createSystem(
-        {
-            id: decoded.jti as string,
-            name: `Legacy token for ${user || TEST_USER}`,
-            description: `Legacy token with ${claims.length} data channel claims (no audience)`,
-            claims: claims,
-            expiry: new Date((decoded.exp as number) * 1000),
-            organization: entity,
-            status: 'active',
-        },
-        'authx_token_api',
-        'default'
-    );
-
-    return tokenResp.token;
 };

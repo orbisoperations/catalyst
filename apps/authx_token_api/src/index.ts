@@ -9,7 +9,7 @@ import {
 	JWTRotateResponse,
 	Token,
 	User,
-} from '../../../packages/schema_zod';
+} from '@catalyst/schemas';
 import { JWTSigningRequest, JWTSigningResponse, IssuedJWTRegistry, JWTRegisterStatus, JWTAudience } from '@catalyst/schemas';
 import { Env } from './env';
 import { JWT } from './jwt';
@@ -503,7 +503,7 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 		const expiresIn = duration * 1000;
 
 		// Create the JWT object first to get the JTI
-		const jwt = new JWT(`system-${request.callingService}`, claims, 'catalyst:system:jwt:latest', JWTAudience.enum['catalyst:system']);
+		const jwt = new JWT(`system-${request.callingService}`, claims, 'catalyst:system:jwt:latest', JWTAudience.enum['catalyst:datachannel']);
 
 		try {
 			// Sign the JWT first to get the exact expiry timestamp
@@ -514,7 +514,7 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 				{
 					entity: `system-${request.callingService}`,
 					claims: claims,
-					audience: JWTAudience.enum['catalyst:system'],
+					audience: JWTAudience.enum['catalyst:datachannel'],
 					jti: jwt.jti, // Pass the jti we generated
 				},
 				expiresIn,

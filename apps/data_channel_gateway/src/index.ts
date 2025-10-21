@@ -1,5 +1,5 @@
 import { grabTokenInHeader } from '@catalyst/jwt';
-import { Token } from '@catalyst/schema_zod';
+import { Token } from '@catalyst/schemas';
 import { JWTAudience } from '@catalyst/schemas';
 import { decodeJwt } from 'jose';
 import { stitchSchemas } from '@graphql-tools/stitch';
@@ -151,13 +151,11 @@ const validateGatewayAudience = (token: string) => {
         const audience = payload.aud;
 
         // Audience validation - only allow gateway tokens
-        // - Old tokens (no audience): Allow them for backwards compatibility
-        // - New tokens (with audience): Only allow 'catalyst:gateway' audience
-        if (audience && audience !== JWTAudience.enum['catalyst:gateway']) {
+        if (audience !== JWTAudience.enum['catalyst:gateway']) {
             return { valid: false, error: 'Token audience is not valid for gateway access' };
         }
 
-        return { valid: true, audience }; // audience is either 'catalyst:gateway' or undefined
+        return { valid: true, audience };
     } catch {
         return { valid: false, error: 'Invalid token format' };
     }
