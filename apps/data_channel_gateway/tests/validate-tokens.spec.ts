@@ -1,5 +1,4 @@
-import { DataChannel } from '@catalyst/schemas';
-import { JWTAudience } from '@catalyst/schemas';
+import { DataChannel, JWTAudience } from '@catalyst/schemas';
 import { env, SELF } from 'cloudflare:test';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { TEST_ORG, TEST_USER, generateCatalystToken } from './testUtils';
