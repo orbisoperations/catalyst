@@ -1,6 +1,5 @@
 // test/index.spec.ts
-import { DataChannel, DEFAULT_STANDARD_DURATIONS } from '@catalyst/schemas';
-import { JWTAudience } from '@catalyst/schemas';
+import { DataChannel, DEFAULT_STANDARD_DURATIONS, JWTAudience } from '@catalyst/schemas';
 import { env, fetchMock, SELF } from 'cloudflare:test';
 import { afterEach, beforeEach, describe, expect, it, TestContext } from 'vitest';
 import { isWithinRange, TEST_ORG, TEST_USER, generateCatalystToken, createMockGraphqlEndpoint } from './testUtils';
