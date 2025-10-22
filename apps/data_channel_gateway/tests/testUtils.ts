@@ -1,5 +1,4 @@
-import { DataChannel } from '@catalyst/schemas';
-import { JWTAudience } from '@catalyst/schemas';
+import { DataChannel, JWTAudience } from '@catalyst/schemas';
 import { env, fetchMock } from 'cloudflare:test';
 import { TestContext } from 'vitest';
 
