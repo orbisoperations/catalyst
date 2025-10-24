@@ -13,3 +13,4 @@ export const TokenSchema = z
 export type Token = z.infer<typeof TokenSchema>;
 // Export schema for backward compatibility
 export const TokenConst = TokenSchema;
+export const Token = TokenSchema;

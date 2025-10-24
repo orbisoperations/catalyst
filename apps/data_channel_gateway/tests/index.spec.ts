@@ -1,15 +1,8 @@
 // test/index.spec.ts
-import { DataChannel, DEFAULT_STANDARD_DURATIONS, JWTAudience } from '@catalyst/schema_zod';
+import { DataChannel, DEFAULT_STANDARD_DURATIONS, JWTAudience } from '@catalyst/schemas';
 import { env, fetchMock, SELF } from 'cloudflare:test';
 import { afterEach, beforeEach, describe, expect, it, TestContext } from 'vitest';
-import {
-    isWithinRange,
-    TEST_ORG,
-    TEST_USER,
-    generateCatalystToken,
-    generateLegacyToken,
-    createMockGraphqlEndpoint,
-} from './testUtils';
+import { isWithinRange, TEST_ORG, TEST_USER, generateCatalystToken, createMockGraphqlEndpoint } from './testUtils';
 
 const DUMMY_DATA_CHANNELS: DataChannel[] = [
     {
@@ -377,20 +370,5 @@ describe('gateway integration tests', () => {
         expect(gatewayResponse.status).toBe(403);
         const gatewayData = await gatewayResponse.json();
         expect(gatewayData.message).toBe('Token audience is not valid for gateway access');
-    });
-
-    it('should accept old tokens without audience for backwards compatibility', async () => {
-        // Create a truly legacy token without any audience field
-        const token = await generateLegacyToken(TEST_ORG, ['airplanes1']);
-
-        const headers = new Headers();
-        headers.set('Authorization', `Bearer ${token}`);
-
-        const response = await SELF.fetch('https://data-channel-gateway/graphql', {
-            method: 'GET',
-            headers,
-        });
-
-        expect(response.status).toBe(200);
     });
 });

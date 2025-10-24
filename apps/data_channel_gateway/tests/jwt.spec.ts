@@ -1,4 +1,4 @@
-import { DEFAULT_STANDARD_DURATIONS, JWTAudience } from '@catalyst/schema_zod';
+import { DEFAULT_STANDARD_DURATIONS, JWTAudience } from '@catalyst/schemas';
 import { env } from 'cloudflare:test';
 import { createLocalJWKSet, jwtVerify } from 'jose';
 import { describe, expect, it } from 'vitest';

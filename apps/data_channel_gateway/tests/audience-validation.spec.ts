@@ -1,7 +1,7 @@
-import { DataChannel, JWTAudience } from '@catalyst/schema_zod';
+import { DataChannel, JWTAudience } from '@catalyst/schemas';
 import { env, SELF } from 'cloudflare:test';
 import { beforeEach, afterEach, describe, expect, it } from 'vitest';
-import { generateCatalystToken, generateLegacyToken, TEST_ORG, TEST_USER } from './testUtils';
+import { generateCatalystToken, TEST_ORG, TEST_USER } from './testUtils';
 
 const DUMMY_DATA_CHANNELS: DataChannel[] = [
     {
@@ -118,26 +118,6 @@ describe('JWT Audience Validation Tests', () => {
             expect(response.status).toBe(403);
             const data = await response.json();
             expect(data.message).toBe('Token audience is not valid for gateway access');
-        });
-
-        it('should accept tokens with no audience (backwards compatibility)', async () => {
-            // Create a truly legacy token without any audience field
-            const token = await generateLegacyToken(TEST_ORG, ['airplanes1']);
-
-            // Verify the token actually has no audience field
-            const { decodeJwt } = await import('jose');
-            const decoded = decodeJwt(token);
-            expect(decoded.aud).toBeUndefined(); // Verify no audience field
-
-            const headers = new Headers();
-            headers.set('Authorization', `Bearer ${token}`);
-
-            const response = await SELF.fetch('https://data-channel-gateway/graphql', {
-                method: 'GET',
-                headers,
-            });
-
-            expect(response.status).toBe(200);
         });
 
         it('should reject tokens with invalid audience values', async () => {

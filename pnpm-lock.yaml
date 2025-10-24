@@ -616,6 +616,9 @@ importers:
       '@catalyst/schema_zod':
         specifier: workspace:*
         version: link:../../packages/schema_zod
+      '@catalyst/schemas':
+        specifier: workspace:*
+        version: link:../../packages/schemas
       '@graphql-tools/stitch':
         specifier: 'catalog:'
         version: 9.4.23(graphql@16.11.0)
@@ -683,6 +686,9 @@ importers:
       '@catalyst/schema_zod':
         specifier: workspace:*
         version: link:../../packages/schema_zod
+      '@catalyst/schemas':
+        specifier: workspace:*
+        version: link:../../packages/schemas
       '@pothos/core':
         specifier: 'catalog:'
         version: 3.41.2(graphql@16.11.0)

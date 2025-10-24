@@ -1,7 +1,8 @@
 import { env, SELF } from 'cloudflare:test';
 import { decodeJwt } from 'jose';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { DEFAULT_STANDARD_DURATIONS, JWTAudience } from '@catalyst/schema_zod';
+import { DEFAULT_STANDARD_DURATIONS } from '@catalyst/schemas';
+import { JWTAudience } from '@catalyst/schemas';
 import { clearAllAuthzedRoles, custodianCreatesDataChannel, generateDataChannels, TEST_ORG_ID, validUsers } from '../utils/testUtils';
 
 /**

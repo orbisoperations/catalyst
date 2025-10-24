@@ -53,3 +53,6 @@ export const DataChannelMultiAccessResponseSchema = z.discriminatedUnion('succes
 ]);
 
 export type DataChannelMultiAccessResponse = z.infer<typeof DataChannelMultiAccessResponseSchema>;
+
+// Export schema with expected name for compatibility
+export const DataChannelMultiAccessResponse = DataChannelMultiAccessResponseSchema;

@@ -1,7 +1,7 @@
 import { env, SELF } from 'cloudflare:test';
 import { decodeJwt } from 'jose';
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { JWTSigningRequest } from '@catalyst/schema_zod';
+import type { JWTSigningRequest } from '@catalyst/schemas';
 import { JWTRegisterStatus } from '@catalyst/schemas';
 import { clearAllAuthzedRoles, custodianCreatesDataChannel, generateDataChannels, TEST_ORG_ID, validUsers } from '../utils/testUtils';
 
