@@ -1,6 +1,6 @@
 import { env } from 'cloudflare:test';
 import { expect } from 'vitest';
-import { DataChannel } from '@catalyst/schema_zod';
+import { DataChannel, JWTAudience } from '@catalyst/schema_zod';
 import { TEST_ORG_ID, validUsers } from './authUtils';
 
 export { TEST_ORG_ID, validUsers };
@@ -94,6 +94,7 @@ export async function getCatalystToken(cfToken: string, claims: string[]) {
 		{
 			entity: `${getOrgId(cfToken)}/${user.email}`,
 			claims,
+			audience: JWTAudience.enum['catalyst:datachannel'],
 			expiresIn: Date.now() + 3600,
 		},
 		Date.now() + 3600,

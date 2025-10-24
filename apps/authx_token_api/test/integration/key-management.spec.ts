@@ -2,6 +2,7 @@ import { env, SELF } from 'cloudflare:test';
 import { createLocalJWKSet, jwtVerify } from 'jose';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { JWTSigningRequest } from '@catalyst/schema_zod';
+import { JWTAudience } from '@catalyst/schema_zod';
 import { clearAllAuthzedRoles, custodianCreatesDataChannel, generateDataChannels, TEST_ORG_ID, validUsers } from '../utils/testUtils';
 
 /**
@@ -35,6 +36,7 @@ describe('Integration: Key Management and Namespaces', () => {
 			const jwtRequest: JWTSigningRequest = {
 				entity: CUSTODIAN_USER.email,
 				claims: [createdChannel.id],
+				audience: JWTAudience.enum['catalyst:gateway'],
 			};
 
 			const initialPublicKey = await SELF.getPublicKey();
@@ -123,6 +125,7 @@ describe('Integration: Key Management and Namespaces', () => {
 			const jwtRequest: JWTSigningRequest = {
 				entity: CUSTODIAN_USER.email,
 				claims: [createdChannel.id],
+				audience: JWTAudience.enum['catalyst:gateway'],
 			};
 
 			const signResponse = await SELF.signJWT(jwtRequest, 3600 * 1000, {
@@ -163,6 +166,7 @@ describe('Integration: Key Management and Namespaces', () => {
 			const jwtRequest: JWTSigningRequest = {
 				entity: CUSTODIAN_USER.email,
 				claims: [createdChannel.id],
+				audience: JWTAudience.enum['catalyst:gateway'],
 			};
 
 			const signResponse = await SELF.signJWT(
@@ -214,6 +218,7 @@ describe('Integration: Key Management and Namespaces', () => {
 			const jwtRequest: JWTSigningRequest = {
 				entity: CUSTODIAN_USER.email,
 				claims: [createdChannel.id],
+				audience: JWTAudience.enum['catalyst:gateway'],
 			};
 
 			const [defaultResponse, tenant1Response, tenant2Response] = await Promise.all([

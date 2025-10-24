@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import base64url from 'base64url';
 import { JWTPayload } from 'jose';
-import { DEFAULT_STANDARD_DURATIONS } from '@catalyst/schema_zod';
+import { DEFAULT_STANDARD_DURATIONS, JWTAudience } from '@catalyst/schema_zod';
 
 /*
 RFC 7519 (JWT)
@@ -21,7 +21,7 @@ NumericDate
 export interface DSSJWT {
 	iss: string; // issuer
 	sub: string; // subject
-	aud: string; // audience
+	aud?: string; // audience (optional for backwards compatibility)
 	jti: string; // jwt id
 	nbf: number; // not before
 	exp: number; // expiration
@@ -32,18 +32,21 @@ export interface DSSJWT {
 export class JWT implements DSSJWT {
 	iss: string; // issuer
 	sub: string; // subject
-	aud: string; // audience
+	aud?: string; // audience (optional for backwards compatibility)
 	jti: string; // jwt id
 	nbf: number; // not before
 	exp: number; // expiration
 	iat: number; // issued at
 	claims: string[]; // list of urns
 
-	constructor(entity: string, claims: string[], iss: string) {
+	constructor(entity: string, claims: string[], iss: string, aud?: JWTAudience) {
 		this.sub = entity;
 		this.claims = claims;
 		this.iss = iss;
-		this.aud = `catalyst:system:datachannels`;
+		// Only set audience if provided (for backwards compatibility testing)
+		if (aud !== undefined) {
+			this.aud = aud;
+		}
 		this.jti = uuidv4();
 		this.nbf = 0;
 		this.exp = 0;

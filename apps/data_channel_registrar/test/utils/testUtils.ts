@@ -1,6 +1,6 @@
 import { env, SELF } from 'cloudflare:test';
 import { expect } from 'vitest';
-import { DataChannel } from '../../../../packages/schema_zod';
+import { DataChannel, JWTAudience } from '../../../../packages/schema_zod';
 import { TEST_ORG_ID, validUsers } from './authUtils';
 
 export { TEST_ORG_ID, validUsers };
@@ -91,8 +91,10 @@ export async function getCatalystToken(cfToken: string, claims: string[]) {
     {
       entity: user.email,
       claims,
+      audience: JWTAudience.enum['catalyst:gateway'],
+      expiresIn: 3600, // Used by JWT.payloadRaw() to set internal expiration
     },
-    3600 * 1000, // 1 hour in milliseconds
+    3600 * 1000, // 1 hour in milliseconds - actual token lifetime for signJWT
     { cfToken },
     'default',
   );

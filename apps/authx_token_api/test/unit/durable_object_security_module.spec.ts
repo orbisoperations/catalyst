@@ -1,4 +1,4 @@
-import { JWTSigningRequest } from '@catalyst/schema_zod';
+import { JWTSigningRequest, JWTAudience } from '@catalyst/schema_zod';
 import { env } from 'cloudflare:test';
 import { describe, expect, it } from 'vitest';
 import { KeyStateSerialized } from '../../src/keystate';
@@ -43,6 +43,7 @@ describe('JWTKeyProvider', () => {
 		const req: JWTSigningRequest = {
 			entity: 'user123',
 			claims: ['channel1', 'channel2'],
+			audience: JWTAudience.enum['catalyst:datachannel'],
 		};
 		const expiresIn = 3600; // 1 hour
 

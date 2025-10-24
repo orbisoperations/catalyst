@@ -2,6 +2,16 @@ import { z } from 'zod';
 import { BaseError } from './common';
 import { DataChannel } from './core_entities';
 
+/**
+ * JWT Audience values for different token types
+ */
+export const JWTAudience = z.enum([
+    'catalyst:gateway', // For gateway access tokens (UI -> Gateway)
+    'catalyst:datachannel', // For single-use tokens (Gateway -> Data Channel)
+    'catalyst:system', // For system service tokens
+]);
+export type JWTAudience = z.infer<typeof JWTAudience>;
+
 export const Token = z.object({
     cfToken: z.string().optional(),
     catalystToken: z.string().optional(),
@@ -21,6 +31,7 @@ const jwtParseSuccess = z.object({
     entity: z.string(),
     claims: z.string().array(),
     jwtId: z.string().optional(),
+    audience: z.string().optional(),
 });
 
 const jwtParseError = z.object({
@@ -66,6 +77,7 @@ export type IssuedJWTRegistryActionResponse = z.infer<typeof zIssuedJWTRegistryA
 export const JWTSigningRequest = z.object({
     entity: z.string(),
     claims: z.string().array(),
+    audience: JWTAudience.optional(), // Optional for backwards compatibility
     expiresIn: z.number().optional(),
 });
 

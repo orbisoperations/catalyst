@@ -59,7 +59,8 @@ export class JWTKeyProvider extends DurableObject {
 	async signJWT(req: JWTSigningRequest & { jti?: string }, expiresIn: number) {
 		await this.key();
 		// Create JWT with provided jti if available, otherwise generate new one
-		const jwt = new JWT(req.entity, req.claims, 'catalyst:system:jwt:latest');
+		// For backwards compatibility testing, audience is optional - only set if provided
+		const jwt = new JWT(req.entity, req.claims, 'catalyst:system:jwt:latest', req.audience);
 		if (req.jti) {
 			jwt.jti = req.jti; // Use the provided jti
 		}
@@ -108,6 +109,7 @@ export class JWTKeyProvider extends DurableObject {
 				entity: payload.sub,
 				claims: payload.claims,
 				jwtId: payload.jti,
+				audience: payload.aud,
 			});
 			return resp;
 		} catch (e: unknown) {

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { JWTAudience } from './jwt';
 
 const BaseError = z.object({
     success: z.literal(false),
@@ -70,6 +71,7 @@ const jwtParseSuccess = z.object({
     entity: z.string(),
     claims: z.string().array(),
     jwtId: z.string().optional(),
+    audience: z.string().optional(),
 });
 
 const jwtParseError = z.object({
@@ -115,6 +117,7 @@ export type IssuedJWTRegistryActionResponse = z.infer<typeof zIssuedJWTRegistryA
 export const JWTSigningRequest = z.object({
     entity: z.string(),
     claims: z.string().array(),
+    audience: JWTAudience,
     expiresIn: z.number().optional(),
 });
 

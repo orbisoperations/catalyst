@@ -9,6 +9,7 @@ import {
 	JWTRotateResponse,
 	Token,
 	User,
+	JWTAudience,
 } from '../../../packages/schema_zod';
 import { JWTSigningRequest, JWTSigningResponse, IssuedJWTRegistry, JWTRegisterStatus } from '../../../packages/schemas';
 import { Env } from './env';
@@ -143,7 +144,7 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 		}
 		console.log(jwtRequest);
 		// Create the JWT object first to get the JTI
-		const jwt = new JWT(jwtRequest.entity, jwtRequest.claims, 'catalyst:system:jwt:latest');
+		const jwt = new JWT(jwtRequest.entity, jwtRequest.claims, 'catalyst:system:jwt:latest', jwtRequest.audience);
 
 		try {
 			// Sign the JWT first to get the exact expiry timestamp
@@ -154,6 +155,7 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 				{
 					entity: jwtRequest.entity,
 					claims: jwtRequest.claims,
+					audience: jwtRequest.audience,
 					jti: jwt.jti, // Pass the jti we generated
 				},
 				expiresIn,
@@ -246,7 +248,7 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 		}
 
 		// Create the JWT object first to get the JTI
-		const jwt = new JWT(decodedToken.payload.sub!, [claim], 'catalyst:system:jwt:latest');
+		const jwt = new JWT(decodedToken.payload.sub!, [claim], 'catalyst:system:jwt:latest', JWTAudience.enum['catalyst:datachannel']);
 
 		// Extract organization from entity (format: "org/email") or use 'default'
 		const entity = decodedToken.payload.sub || '';
@@ -261,6 +263,7 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 				{
 					entity: decodedToken.payload.sub!,
 					claims: [claim],
+					audience: JWTAudience.enum['catalyst:datachannel'],
 					jti: jwt.jti, // Pass the jti we generated
 				},
 				expiresIn,
@@ -501,7 +504,7 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 		const expiresIn = duration * 1000;
 
 		// Create the JWT object first to get the JTI
-		const jwt = new JWT(`system-${request.callingService}`, claims, 'catalyst:system:jwt:latest');
+		const jwt = new JWT(`system-${request.callingService}`, claims, 'catalyst:system:jwt:latest', JWTAudience.enum['catalyst:system']);
 
 		try {
 			// Sign the JWT first to get the exact expiry timestamp
@@ -512,6 +515,7 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 				{
 					entity: `system-${request.callingService}`,
 					claims: claims,
+					audience: JWTAudience.enum['catalyst:system'],
 					jti: jwt.jti, // Pass the jti we generated
 				},
 				expiresIn,
