@@ -16,6 +16,3 @@ export const DataChannelSchema = z.object({
 // export const DataChannelEnhancedSchema = withAudit(withTimestamps(DataChannelSchema));
 
 export type DataChannel = z.infer<typeof DataChannelSchema>;
-
-// Export schema with the same name for backward compatibility
-export const DataChannel = DataChannelSchema;

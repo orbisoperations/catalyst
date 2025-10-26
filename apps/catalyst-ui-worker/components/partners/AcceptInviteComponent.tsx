@@ -3,7 +3,7 @@
 import { ErrorCard, OrbisButton, OrbisCard } from '@/components/elements';
 import { DetailedView } from '@/components/layouts';
 import { navigationItems } from '@/utils/nav.utils';
-import { OrgInvite } from '@catalyst/schema_zod';
+import { OrgInvite } from '@catalyst/schemas';
 import {
     Flex,
     Modal,

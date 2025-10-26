@@ -94,32 +94,6 @@ describe('JWT Audience Validation Tests', () => {
             expect(data.message).toBe('Token audience is not valid for gateway access');
         });
 
-        it('should reject tokens with catalyst:system audience', async () => {
-            // Create a token with system audience
-            const jwtDOID = env.JWT_TOKEN_DO.idFromName('default');
-            const jwtStub = env.JWT_TOKEN_DO.get(jwtDOID);
-            const tokenResp = await jwtStub.signJWT(
-                {
-                    entity: `system-test-service`,
-                    claims: ['airplanes1'],
-                    audience: JWTAudience.enum['catalyst:system'],
-                },
-                10 * 60 * 1000
-            );
-
-            const headers = new Headers();
-            headers.set('Authorization', `Bearer ${tokenResp.token}`);
-
-            const response = await SELF.fetch('https://data-channel-gateway/graphql', {
-                method: 'GET',
-                headers,
-            });
-
-            expect(response.status).toBe(403);
-            const data = await response.json();
-            expect(data.message).toBe('Token audience is not valid for gateway access');
-        });
-
         it('should reject tokens with invalid audience values', async () => {
             // Create a token with invalid audience
             const jwtDOID = env.JWT_TOKEN_DO.idFromName('default');

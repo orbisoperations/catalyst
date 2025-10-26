@@ -1,4 +1,4 @@
-import { DataChannel } from '@catalyst/schema_zod';
+import { DataChannelSchema } from '@catalyst/schemas';
 import { env, SELF } from 'cloudflare:test';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TEST_ORG_ID, validUsers } from '../utils/authUtils';
@@ -224,7 +224,7 @@ describe('Data Channel Registrar as Durable Object integration tests', () => {
       if (createResponse.success == true) {
         const data = createResponse.data;
         expect(data).toBeDefined();
-        const { data: parsedData } = DataChannel.safeParse(data);
+        const { data: parsedData } = DataChannelSchema.safeParse(data);
         expect(parsedData).toBeDefined();
         expect(parsedData?.id).toBeDefined();
         expect(parsedData?.name).toBe('Data Channel 0');

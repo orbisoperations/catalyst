@@ -1,7 +1,7 @@
 import { env, runInDurableObject } from 'cloudflare:test';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { I_JWT_Registry_DO } from '../../../src/index';
-import type { IssuedJWTRegistry } from '@catalyst/schema_zod';
+import type { IssuedJWTRegistry } from '@catalyst/schemas';
 
 describe('Durable Object: validateToken()', () => {
 	let doId: DurableObjectId;

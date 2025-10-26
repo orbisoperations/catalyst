@@ -22,10 +22,10 @@
 		"cf-typegen": "wrangler types"
 	},
 	"dependencies": {
-		"@catalyst/schema_zod": "workspace:*",
 		"@catalyst/schemas": "workspace:*"
 	},
 	"devDependencies": {
+		"@catalyst/test-utils": "workspace:^",
 		"@cloudflare/vitest-pool-workers": "catalog:",
 		"@cloudflare/workers-types": "catalog:",
 		"@eslint/js": "catalog:",

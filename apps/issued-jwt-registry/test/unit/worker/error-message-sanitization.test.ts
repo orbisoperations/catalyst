@@ -1,24 +1,25 @@
 import { SELF } from 'cloudflare:test';
 import { describe, it, expect } from 'vitest';
-import type { IssuedJWTRegistry, Token } from '@catalyst/schema_zod';
+import type { IssuedJWTRegistry, Token } from '@catalyst/schemas';
 
 describe('Worker: Error Message Sanitization', () => {
 	describe('Permission check failures return generic messages', () => {
 		it('sanitizes errors in create() method', async () => {
-			const invalidToken: Token = {
+			const invalidToken = {
 				cfToken: 'invalid-token-that-will-fail',
-			};
+			} as Token;
 
-			const registryEntry: Omit<IssuedJWTRegistry, 'id'> = {
+			const registryEntry = {
 				name: 'Test Token',
 				description: 'Test',
 				claims: [],
 				expiry: new Date(Date.now() + 1000 * 60 * 60),
 				organization: 'test-org',
 				status: 'active',
-			};
+			} as Omit<IssuedJWTRegistry, 'id'>;
 
 			// Should throw generic error, not internal details
+			// @ts-expect-error - Testing invalid token type causes deep type instantiation
 			await expect(SELF.create(invalidToken, registryEntry)).rejects.toThrow('Authentication failed');
 
 			// Should NOT throw the internal error message

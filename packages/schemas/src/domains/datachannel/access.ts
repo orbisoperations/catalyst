@@ -1,6 +1,6 @@
 import { z } from 'zod/v4';
 import { BaseErrorSchema } from '../../core/common';
-import { DataChannelSchema } from './channels';
+import { DataChannelSchema, DataChannel } from './channels';
 
 // Data Channel Action Response schemas
 const dataChannelActionSuccessSchema = z.object({
@@ -40,7 +40,19 @@ export const DataChannelAccessTokenSchema = z.discriminatedUnion('success', [
     DataChannelAccessTokenSuccessSchema,
 ]);
 
-export type DataChannelAccessToken = z.infer<typeof DataChannelAccessTokenSchema>;
+// Explicit type to avoid deep type instantiation issues
+export type DataChannelAccessToken =
+    | {
+          success: true;
+          claim: string;
+          dataChannel: DataChannel;
+          singleUseToken: string;
+      }
+    | {
+          success: false;
+          claim?: string;
+          error: string;
+      };
 
 // Data Channel Multi Access schemas
 export const DataChannelMultiAccessSuccessSchema = z.object({
@@ -54,6 +66,3 @@ export const DataChannelMultiAccessResponseSchema = z.discriminatedUnion('succes
 ]);
 
 export type DataChannelMultiAccessResponse = z.infer<typeof DataChannelMultiAccessResponseSchema>;
-
-// Export schema with expected name for compatibility
-export const DataChannelMultiAccessResponse = DataChannelMultiAccessResponseSchema;

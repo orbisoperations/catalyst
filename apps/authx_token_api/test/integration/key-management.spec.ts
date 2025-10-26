@@ -1,8 +1,7 @@
 import { env, SELF } from 'cloudflare:test';
 import { createLocalJWKSet, jwtVerify } from 'jose';
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { JWTSigningRequest } from '@catalyst/schemas';
-import { JWTAudience } from '@catalyst/schemas';
+import { type JWTSigningRequest, JWTAudience } from '@catalyst/schemas';
 import { clearAllAuthzedRoles, custodianCreatesDataChannel, generateDataChannels, TEST_ORG_ID, validUsers } from '../utils/testUtils';
 
 /**

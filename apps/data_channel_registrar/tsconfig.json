@@ -1,5 +1,14 @@
 {
   "include": ["./**/*.ts", "./../**/src/*.ts", "./../**/src/**/*.d.ts"],
+  "exclude": [
+    "test/**",
+    "tests/**",
+    "**/*.spec.ts",
+    "**/*.test.ts",
+    "vitest.config.ts",
+    "global-setup.ts",
+    "global-teardown.ts"
+  ],
   "compilerOptions": {
     /* Language and Environment */
     "target": "es2021" /* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */,

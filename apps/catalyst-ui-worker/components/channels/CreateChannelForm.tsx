@@ -3,9 +3,9 @@ import { useUser } from '@/components/contexts/User/UserContext';
 import { ErrorCard, OrbisButton } from '@/components/elements';
 import { DetailedView } from '@/components/layouts';
 import { navigationItems } from '@/utils/nav.utils';
-import { DataChannel } from '@catalyst/schema_zod';
+import { DataChannel } from '@catalyst/schemas';
 import { Flex, Grid } from '@chakra-ui/layout';
-import { Card, CardBody, FormControl, Input, InputGroup, InputLeftAddon } from '@chakra-ui/react';
+import { Card, CardBody, FormControl, Input } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -49,7 +49,6 @@ export default function CreateChannelForm({ createDataChannel }: DataChannelForm
                         <form
                             action={async (fd) => {
                                 fd.set('organization', String(user?.custom.org));
-                                fd.set('name', user?.custom.org + '/' + fd.get('name'));
                                 createDataChannel(fd, token ?? '')
                                     .then((newChannel) => {
                                         router.push('/channels/' + newChannel.id);
@@ -63,23 +62,19 @@ export default function CreateChannelForm({ createDataChannel }: DataChannelForm
                             <Grid gap={5}>
                                 <FormControl display={'grid'} gap={2}>
                                     <label htmlFor="name">Data Channel Name</label>
-                                    <InputGroup>
-                                        <InputLeftAddon>{String(user?.custom.org)}/</InputLeftAddon>
-
-                                        <Input
-                                            rounded="md"
-                                            value={dataChannel.name}
-                                            onChange={(e) => {
-                                                setDataChannel({
-                                                    ...dataChannel,
-                                                    name: e.target.value,
-                                                });
-                                            }}
-                                            name="name"
-                                            required={true}
-                                            placeholder="Data Channel Name"
-                                        />
-                                    </InputGroup>
+                                    <Input
+                                        rounded="md"
+                                        value={dataChannel.name}
+                                        onChange={(e) => {
+                                            setDataChannel({
+                                                ...dataChannel,
+                                                name: e.target.value,
+                                            });
+                                        }}
+                                        name="name"
+                                        required={true}
+                                        placeholder="Data Channel Name"
+                                    />
                                 </FormControl>
                                 <FormControl display={'grid'} gap={2}>
                                     <label htmlFor="description">Description</label>

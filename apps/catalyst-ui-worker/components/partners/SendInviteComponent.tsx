@@ -7,7 +7,7 @@ import { Flex, FormControl, Grid, Input, Text, Textarea } from '@chakra-ui/react
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useUser } from '../contexts/User/UserContext';
-import { OrgInvite } from '@catalyst/schema_zod';
+import { OrgInvite } from '@catalyst/schemas';
 type CreateInviteProps = {
     sendInvite: (receivingOrg: string, token: string, message: string) => Promise<OrgInvite>;
 };

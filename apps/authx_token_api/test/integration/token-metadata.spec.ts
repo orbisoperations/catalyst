@@ -1,7 +1,7 @@
 import { env, SELF } from 'cloudflare:test';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { clearAllAuthzedRoles, custodianCreatesDataChannel, generateDataChannels, TEST_ORG_ID, validUsers } from '../utils/testUtils';
-import { Token } from '../../../../packages/schema_zod';
+import { Token } from '@catalyst/schemas';
 
 describe('Integration: Token Metadata Preservation', () => {
 	beforeEach(async () => {

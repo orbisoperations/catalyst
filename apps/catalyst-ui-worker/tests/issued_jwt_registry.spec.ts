@@ -1,7 +1,7 @@
 // import "../../issued-jwt-registry/src/index"
 import { describe, it, expect } from 'vitest';
 import { env } from 'cloudflare:test';
-import { IssuedJWTRegistry } from '@catalyst/schema_zod';
+import { IssuedJWTRegistry } from '@catalyst/schemas';
 
 describe('issued-jwt-registry unit tests', () => {
     it('create issued-jwt-registry entry', async () => {
@@ -120,7 +120,7 @@ describe('issued-jwt-registry unit tests', () => {
         expect(finalList.length).toBe(initialCount - 1);
 
         // Verify the deleted item is not in the final list
-        const deletedItemInList = finalList.find((item) => item.id === madeIJR.id);
+        const deletedItemInList = finalList.find((item: IssuedJWTRegistry) => item.id === madeIJR.id);
         expect(deletedItemInList).toBeUndefined();
     });
 });

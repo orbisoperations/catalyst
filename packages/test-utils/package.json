@@ -1,0 +1,21 @@
+{
+    "name": "@catalyst/test-utils",
+    "version": "0.0.1",
+    "type": "module",
+    "exports": {
+        ".": {
+            "types": "./src/index.ts",
+            "default": "./src/index.ts"
+        },
+        "./spicedb": {
+            "types": "./src/spicedb-health.ts",
+            "default": "./src/spicedb-health.ts"
+        }
+    },
+    "scripts": {
+        "build": "echo 'No build needed for test utilities'"
+    },
+    "devDependencies": {
+        "typescript": "catalog:"
+    }
+}

@@ -3,7 +3,7 @@ import { rotateJWTKeyMaterial } from '@/app/actions/tokens';
 import { CreateButton, ErrorCard, OpenButton, OrbisButton, OrbisCard, OrbisTable } from '@/components/elements';
 import { ListView } from '@/components/layouts';
 import { navigationItems } from '@/utils/nav.utils';
-import { IssuedJWTRegistry } from '@catalyst/schema_zod';
+import { IssuedJWTRegistry } from '@catalyst/schemas';
 import { Box, Flex } from '@chakra-ui/layout';
 import {
     Card,

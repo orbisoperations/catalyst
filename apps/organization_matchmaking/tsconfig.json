@@ -1,5 +1,6 @@
 {
 	"include": ["./**/*.ts", "../**/env.d.ts"],
+	"exclude": ["test/**", "tests/**", "**/*.spec.ts", "**/*.test.ts", "vitest.config.ts", "global-setup.ts", "global-teardown.ts"],
 	"compilerOptions": {
 		/* Visit https://aka.ms/tsconfig.json to read more about this file */
 

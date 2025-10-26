@@ -1,4 +1,4 @@
-import { Authzed, Catalyst, DataChannelId, OrgId, UserId } from '@catalyst/schema_zod';
+import { Authzed, Catalyst, DataChannelId, OrgId, UserId } from '@catalyst/schemas';
 
 export type SearchInfoBody = {
 	consistency?: {
@@ -126,7 +126,7 @@ export class AuthzedClient {
 		const { data } = await this.utils.fetcher('read', body);
 		return this.utils.parseOrganizationData(data);
 	}
-	async deleteDataChannelInOrganization(orgId: OrgId, dataChannelId: DataChannelId): Promise<Authzed.Relationships.DeletResult> {
+	async deleteDataChannelInOrganization(orgId: OrgId, dataChannelId: DataChannelId): Promise<Authzed.Relationships.DeleteResult> {
 		const body = this.utils.deleteRelationship({
 			relationOwner: {
 				objectType: Catalyst.EntityEnum.enum.organization,
@@ -139,7 +139,7 @@ export class AuthzedClient {
 			},
 		});
 		const { data } = await this.utils.fetcher('delete', body);
-		return Authzed.Relationships.DeletResult.parse(data);
+		return Authzed.Relationships.DeleteResult.parse(data);
 	}
 
 	async addPartnerToOrganization(orgId: OrgId, partnerId: OrgId): Promise<Authzed.Relationships.WriteResult> {
@@ -174,7 +174,7 @@ export class AuthzedClient {
 		const { data } = await this.utils.fetcher('read', body);
 		return this.utils.parseOrganizationData(data);
 	}
-	async deletePartnerInOrganization(orgId: OrgId, partnerId: OrgId): Promise<Authzed.Relationships.DeletResult> {
+	async deletePartnerInOrganization(orgId: OrgId, partnerId: OrgId): Promise<Authzed.Relationships.DeleteResult> {
 		const body = this.utils.deleteRelationship({
 			relationOwner: {
 				objectType: Catalyst.EntityEnum.enum.organization,
@@ -187,7 +187,7 @@ export class AuthzedClient {
 			},
 		});
 		const { data } = await this.utils.fetcher('delete', body);
-		return Authzed.Relationships.DeletResult.parse(data);
+		return Authzed.Relationships.DeleteResult.parse(data);
 	}
 
 	async addUserToOrganization(org: string, user: string): Promise<Authzed.Relationships.WriteResult> {
@@ -207,7 +207,11 @@ export class AuthzedClient {
 		return Authzed.Relationships.WriteResult.parse(data);
 	}
 
-	async removeUserRoleFromOrganization(org: string, user: string, role: Catalyst.RoleEnum): Promise<Authzed.Relationships.DeletResult> {
+	async removeUserRoleFromOrganization(
+		org: string,
+		user: string,
+		role: Catalyst.RoleEnumType,
+	): Promise<Authzed.Relationships.DeleteResult> {
 		const body = this.utils.deleteRelationship({
 			relationOwner: {
 				objectType: Catalyst.EntityEnum.enum.organization,
@@ -220,7 +224,7 @@ export class AuthzedClient {
 			},
 		});
 		const { data } = await this.utils.fetcher('delete', body);
-		return Authzed.Relationships.DeletResult.parse(data);
+		return Authzed.Relationships.DeleteResult.parse(data);
 	}
 
 	async addDataCustodianToOrganization(org: string, user: string): Promise<Authzed.Relationships.WriteResult> {
@@ -261,7 +265,7 @@ export class AuthzedClient {
 		orgId: OrgId,
 		args: {
 			userId?: UserId;
-			roles?: Catalyst.RoleEnum[];
+			roles?: Catalyst.RoleEnumType[];
 		},
 	) {
 		const searchRoles = args.roles ?? [Catalyst.RoleEnum.enum.user, Catalyst.RoleEnum.enum.data_custodian, Catalyst.RoleEnum.enum.admin];
@@ -330,7 +334,7 @@ export class AuthzedClient {
 		const { data } = await this.utils.fetcher('read', body);
 		return this.utils.parseOrganizationData(data);
 	}
-	async deleteOrgInDataChannel(dataChannelId: DataChannelId, orgId: OrgId): Promise<Authzed.Relationships.DeletResult> {
+	async deleteOrgInDataChannel(dataChannelId: DataChannelId, orgId: OrgId): Promise<Authzed.Relationships.DeleteResult> {
 		const body = this.utils.deleteRelationship({
 			relationOwner: {
 				objectType: Catalyst.EntityEnum.enum.data_channel,
@@ -343,7 +347,7 @@ export class AuthzedClient {
 			},
 		});
 		const { data } = await this.utils.fetcher('delete', body);
-		return Authzed.Relationships.DeletResult.parse(data);
+		return Authzed.Relationships.DeleteResult.parse(data);
 	}
 
 	async dataChannelPermissionsCheck(dataChannelId: DataChannelId, userId: UserId, permission: Catalyst.DataChannel.PermissionsEnum) {
@@ -446,7 +450,7 @@ export class AuthzedUtils {
 		return resp.map((result) => {
 			return {
 				object: result.result.relationship.resource.objectId,
-				relation: result.result.relationship.relation,
+				relation: result.result.relationship.relation as Catalyst.Relationship['relation'],
 				subject: result.result.relationship.subject.object.objectId,
 			};
 		});
@@ -494,11 +498,11 @@ export class AuthzedUtils {
 	deleteRelationship(relationshipInfo: Authzed.Relationships.Relationship): Authzed.Relationships.DeleteBody {
 		return {
 			relationshipFilter: {
-				resourceType: (this.schemaPrefix + relationshipInfo.relationOwner.objectType) as unknown as Catalyst.EntityEnum,
+				resourceType: (this.schemaPrefix + relationshipInfo.relationOwner.objectType) as unknown as Catalyst.EntityEnumType,
 				optionalResourceId: relationshipInfo.relationOwner.objectId,
 				optionalRelation: relationshipInfo.relation,
 				optionalSubjectFilter: {
-					subjectType: (this.schemaPrefix + relationshipInfo.relatedItem.objectType) as unknown as Catalyst.EntityEnum,
+					subjectType: (this.schemaPrefix + relationshipInfo.relatedItem.objectType) as unknown as Catalyst.EntityEnumType,
 					optionalSubjectId: relationshipInfo.relatedItem.objectId,
 				},
 			},
@@ -511,13 +515,13 @@ export class AuthzedUtils {
 					operation: 'OPERATION_TOUCH',
 					relationship: {
 						resource: {
-							objectType: (this.schemaPrefix + relationshipInfo.relationOwner.objectType) as unknown as Catalyst.EntityEnum,
+							objectType: (this.schemaPrefix + relationshipInfo.relationOwner.objectType) as unknown as Catalyst.EntityEnumType,
 							objectId: relationshipInfo.relationOwner.objectId,
 						},
 						relation: relationshipInfo.relation,
 						subject: {
 							object: {
-								objectType: (this.schemaPrefix + relationshipInfo.relatedItem.objectType) as unknown as Catalyst.EntityEnum,
+								objectType: (this.schemaPrefix + relationshipInfo.relatedItem.objectType) as unknown as Catalyst.EntityEnumType,
 								objectId: relationshipInfo.relatedItem.objectId,
 							},
 						},
@@ -529,18 +533,23 @@ export class AuthzedUtils {
 
 	readRelationship(searchInfo: Authzed.Relationships.SearchInfo): SearchInfoBody {
 		const { resourceType, resourceId, relation, optionalSubjectFilter } = searchInfo;
-		const filter = optionalSubjectFilter
+		const filter:
+			| {
+					subjectType: string;
+					optionalSubjectId: string;
+			  }
+			| undefined = optionalSubjectFilter
 			? {
-					subjectType: (this.schemaPrefix + optionalSubjectFilter.subjectType) as unknown as Catalyst.EntityEnum,
+					subjectType: (this.schemaPrefix + optionalSubjectFilter.subjectType) as unknown as string,
 					optionalSubjectId: optionalSubjectFilter.optionalSubjectId,
 				}
-			: optionalSubjectFilter;
+			: undefined;
 		return {
 			consistency: {
 				fullyConsistent: true,
 			},
 			relationshipFilter: {
-				resourceType: (this.schemaPrefix + resourceType) as unknown as Catalyst.EntityEnum,
+				resourceType: (this.schemaPrefix + resourceType) as unknown as Catalyst.EntityEnumType,
 				optionalResourceId: resourceId,
 				optionalRelation: relation,
 				optionalSubjectFilter: filter,
@@ -554,13 +563,13 @@ export class AuthzedUtils {
 				fullyConsistent: true,
 			},
 			resource: {
-				objectType: (this.schemaPrefix + Catalyst.EntityEnum.enum.organization) as unknown as Catalyst.EntityEnum,
+				objectType: (this.schemaPrefix + Catalyst.EntityEnum.enum.organization) as unknown as Catalyst.EntityEnumType,
 				objectId: orgId,
 			},
 			permission: permission,
 			subject: {
 				object: {
-					objectType: (this.schemaPrefix + Catalyst.EntityEnum.enum.user) as unknown as Catalyst.EntityEnum,
+					objectType: (this.schemaPrefix + Catalyst.EntityEnum.enum.user) as unknown as Catalyst.EntityEnumType,
 					objectId: userId,
 				},
 			},
@@ -577,13 +586,13 @@ export class AuthzedUtils {
 				fullyConsistent: true,
 			},
 			resource: {
-				objectType: (this.schemaPrefix + Catalyst.EntityEnum.enum.data_channel) as unknown as Catalyst.EntityEnum,
+				objectType: (this.schemaPrefix + Catalyst.EntityEnum.enum.data_channel) as unknown as Catalyst.EntityEnumType,
 				objectId: dataChannelId,
 			},
 			permission: permission,
 			subject: {
 				object: {
-					objectType: (this.schemaPrefix + Catalyst.EntityEnum.enum.user) as unknown as Catalyst.EntityEnum,
+					objectType: (this.schemaPrefix + Catalyst.EntityEnum.enum.user) as unknown as Catalyst.EntityEnumType,
 					objectId: userId,
 				},
 			},

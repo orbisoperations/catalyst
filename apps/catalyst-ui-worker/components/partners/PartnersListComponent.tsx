@@ -25,7 +25,7 @@ import {
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useUser } from '../contexts/User/UserContext';
-import { OrgInvite } from '@catalyst/schema_zod';
+import { OrgInvite } from '@catalyst/schemas';
 type PartnersListComponentProps = {
     listInvites: (token: string) => Promise<OrgInvite[]>;
     declineInvite: (inviteId: string, token: string) => Promise<OrgInvite>;

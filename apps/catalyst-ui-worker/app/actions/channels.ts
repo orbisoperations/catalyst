@@ -1,7 +1,6 @@
 'use server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
-import { DataChannel } from '@catalyst/schema_zod';
-import { CloudflareEnv, getRegistrar } from '@catalyst/schemas';
+import { CloudflareEnv, getRegistrar, DataChannelSchema, DataChannel } from '@catalyst/schemas';
 
 function getEnv(): CloudflareEnv {
     return getCloudflareContext().env as CloudflareEnv;
@@ -22,11 +21,17 @@ export async function createDataChannel(formData: FormData, token: string) {
         accessSwitch: true,
     };
 
-    const parsed = DataChannel.omit({ id: true }).safeParse(data);
+    const parsed = DataChannelSchema.omit({ id: true }).safeParse(data);
 
     if (!parsed.success) {
-        console.error(parsed.error);
-        throw new Error('Invalid data channel');
+        console.error('Validation failed for data:', data);
+        console.error('Full error object:', JSON.stringify(parsed.error, null, 2));
+
+        const fieldErrors =
+            parsed.error.errors?.map((err) => `${err.path.join('.')}: ${err.message}`).join(', ') ||
+            'Unknown validation error';
+        console.error('Validation errors:', fieldErrors);
+        throw new Error(`Invalid data channel - ${fieldErrors}`);
     }
     const newChannel = await api.create('default', parsed.data, tokenObject);
     if (!newChannel.success) {
@@ -85,10 +90,16 @@ export async function updateChannel(formData: FormData, token: string) {
         id: formData.get('id') as string,
     };
 
-    const parsed = DataChannel.safeParse(dataChannel);
+    const parsed = DataChannelSchema.safeParse(dataChannel);
     if (!parsed.success) {
-        console.error(parsed.error);
-        throw new Error('Invalid data channel');
+        console.error('Validation failed for data:', dataChannel);
+        console.error('Full error object:', JSON.stringify(parsed.error, null, 2));
+
+        const fieldErrors =
+            parsed.error.errors?.map((err) => `${err.path.join('.')}: ${err.message}`).join(', ') ||
+            'Unknown validation error';
+        console.error('Validation errors:', fieldErrors);
+        throw new Error(`Invalid data channel - ${fieldErrors}`);
     }
     const updateOperation = await api.update('default', parsed.data, tokenObject);
     if (!updateOperation.success) {

@@ -1,7 +1,6 @@
 import { JSONWebKeySet, JWTPayload, createLocalJWKSet, decodeJwt, jwtVerify } from 'jose';
 import { DurableObject } from 'cloudflare:workers';
-import { DEFAULT_STANDARD_DURATIONS, JWTParsingResponse } from '@catalyst/schema_zod';
-import { JWTSigningRequest } from '@catalyst/schemas';
+import { DEFAULT_STANDARD_DURATIONS, JWTParsingResponse, JWTParsingResponseSchema, JWTSigningRequest } from '@catalyst/schemas';
 import { JWT } from './jwt';
 import { KeyState, KeyStateSerialized } from './keystate';
 
@@ -60,8 +59,9 @@ export class JWTKeyProvider extends DurableObject {
 	async signJWT(req: JWTSigningRequest & { jti?: string }, expiresIn: number) {
 		await this.key();
 		// Create JWT with provided jti if available, otherwise generate new one
-		// For backwards compatibility testing, audience is optional - only set if provided
-		const jwt = new JWT(req.entity, req.claims, 'catalyst:system:jwt:latest', req.audience);
+		// Use provided audience or default to 'catalyst:gateway' for consistency
+		const audience = req.audience || ('catalyst:gateway' as const);
+		const jwt = new JWT(req.entity, req.claims, 'catalyst:system:jwt:latest', audience);
 		if (req.jti) {
 			jwt.jti = req.jti; // Use the provided jti
 		}
@@ -93,7 +93,7 @@ export class JWTKeyProvider extends DurableObject {
 		try {
 			const pub = this.currentSerializedKey?.public;
 			if (!pub) {
-				const resp = JWTParsingResponse.parse({
+				const resp = JWTParsingResponseSchema.parse({
 					valid: false,
 					entity: undefined,
 					claims: [],
@@ -105,7 +105,7 @@ export class JWTKeyProvider extends DurableObject {
 			const jwkPub = createLocalJWKSet(await this.getJWKS());
 
 			const { payload } = await jwtVerify(token, jwkPub, { clockTolerance });
-			const resp = JWTParsingResponse.parse({
+			const resp = JWTParsingResponseSchema.parse({
 				valid: true,
 				entity: payload.sub,
 				claims: payload.claims,
@@ -115,7 +115,7 @@ export class JWTKeyProvider extends DurableObject {
 			return resp;
 		} catch (e: unknown) {
 			console.error('error validating token', e);
-			return JWTParsingResponse.parse({
+			return JWTParsingResponseSchema.parse({
 				valid: false,
 				entity: undefined,
 				claims: [],

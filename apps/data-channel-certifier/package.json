@@ -6,7 +6,7 @@
   "main": "src/worker.ts",
   "type": "module",
   "scripts": {
-    "dev": "wrangler dev",
+    "dev": "wrangler dev --port 4008 --inspector-port 6008",
     "build": "wrangler build",
     "deploy": "wrangler deploy",
     "deploy:preview": "wrangler deploy --env preview",

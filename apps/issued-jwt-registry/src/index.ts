@@ -1,12 +1,21 @@
 /// <reference types="./env" />
-import { IssuedJWTRegistry, JWTRegisterStatus, Token, User, UserCheckActionResponse, zIssuedJWTRegistry } from '@catalyst/schema_zod';
+import {
+	IssuedJWTRegistry,
+	IssuedJWTRegistrySchema,
+	CreateIssuedJWTRegistrySchema,
+	JWTRegisterStatus,
+	Token,
+	User,
+	UserSchema,
+	UserCheckActionResponse,
+} from '@catalyst/schemas';
 import { DurableObject, WorkerEntrypoint } from 'cloudflare:workers';
 
 export default class IssuedJWTRegistryWorker extends WorkerEntrypoint<Env> {
 	async RPerms(token: Token) {
 		if (token.cfToken) {
-			const user: User | undefined = await this.env.USERCACHE.getUser(token.cfToken);
-			const parsedUser = User.safeParse(user);
+			const user = (await this.env.USERCACHE.getUser(token.cfToken)) as User | undefined;
+			const parsedUser = UserSchema.safeParse(user);
 
 			if (parsedUser.success) {
 				return UserCheckActionResponse.parse({
@@ -21,16 +30,29 @@ export default class IssuedJWTRegistryWorker extends WorkerEntrypoint<Env> {
 		});
 	}
 
-	async create(token: Token, issuedJWTRegistry: Omit<IssuedJWTRegistry, 'id'>, doNamespace: string = 'default') {
+	async create(token: Token, issuedJWTRegistry: IssuedJWTRegistry, doNamespace: string = 'default') {
 		const permCheck = await this.RPerms(token);
 		if (!permCheck.success) {
 			console.error('Permission check failed in create', { error: permCheck.error });
 			throw new Error('Authentication failed');
 		}
+
+		// Validate input requires future expiry and includes ID (jti)
+		const validation = CreateIssuedJWTRegistrySchema.extend({
+			id: IssuedJWTRegistrySchema.shape.id,
+		}).safeParse(issuedJWTRegistry);
+		if (!validation.success) {
+			console.error('Invalid registry entry in create', {
+				errors: validation.error.issues,
+				timestamp: new Date().toISOString(),
+			});
+			throw new Error('Invalid registry entry');
+		}
+
 		const doId = this.env.ISSUED_JWT_REGISTRY_DO.idFromName(doNamespace);
 		const stub = this.env.ISSUED_JWT_REGISTRY_DO.get(doId);
-		const resp = await stub.create(issuedJWTRegistry);
-		return zIssuedJWTRegistry.safeParse(resp);
+		const resp = await stub.createWithId(validation.data);
+		return IssuedJWTRegistrySchema.safeParse(resp);
 	}
 
 	/**
@@ -53,8 +75,10 @@ export default class IssuedJWTRegistryWorker extends WorkerEntrypoint<Env> {
 			throw new Error('Unauthorized service');
 		}
 
-		// Validate input using Zod schema
-		const validation = zIssuedJWTRegistry.safeParse(issuedJWTRegistry);
+		// Validate input using Zod schema - requires future expiry and includes ID
+		const validation = CreateIssuedJWTRegistrySchema.extend({
+			id: IssuedJWTRegistrySchema.shape.id,
+		}).safeParse(issuedJWTRegistry);
 		if (!validation.success) {
 			console.error('Invalid registry entry in createSystem', {
 				service: callingService,
@@ -98,7 +122,7 @@ export default class IssuedJWTRegistryWorker extends WorkerEntrypoint<Env> {
 			};
 		}
 
-		return zIssuedJWTRegistry.safeParse(resp);
+		return IssuedJWTRegistrySchema.safeParse(resp);
 	}
 
 	async list(token: Token, doNamespace: string = 'default') {
@@ -110,7 +134,7 @@ export default class IssuedJWTRegistryWorker extends WorkerEntrypoint<Env> {
 		const doId = this.env.ISSUED_JWT_REGISTRY_DO.idFromName(doNamespace);
 		const stub = this.env.ISSUED_JWT_REGISTRY_DO.get(doId);
 		const list = await stub.list(permCheck.data.orgId);
-		return zIssuedJWTRegistry.array().safeParse(list);
+		return IssuedJWTRegistrySchema.array().safeParse(list);
 	}
 
 	async update(token: Token, issuedJWTRegistry: IssuedJWTRegistry, doNamespace: string = 'default') {
@@ -122,7 +146,7 @@ export default class IssuedJWTRegistryWorker extends WorkerEntrypoint<Env> {
 		const doId = this.env.ISSUED_JWT_REGISTRY_DO.idFromName(doNamespace);
 		const stub = this.env.ISSUED_JWT_REGISTRY_DO.get(doId);
 		const resp = await stub.changeStatus(issuedJWTRegistry.id, issuedJWTRegistry.status);
-		return zIssuedJWTRegistry.safeParse(resp);
+		return IssuedJWTRegistrySchema.safeParse(resp);
 	}
 
 	async delete(token: Token, issuedJWTRegId: string, doNamespace: string = 'default') {
@@ -209,8 +233,10 @@ export class I_JWT_Registry_DO extends DurableObject {
 	 * @param issuedJWTRegistry - Complete registry entry including the ID
 	 */
 	async createWithId(issuedJWTRegistry: IssuedJWTRegistry) {
-		// Validate input using Zod schema
-		const validation = zIssuedJWTRegistry.safeParse(issuedJWTRegistry);
+		// Validate input using Zod schema - requires future expiry
+		const validation = CreateIssuedJWTRegistrySchema.extend({
+			id: IssuedJWTRegistrySchema.shape.id,
+		}).safeParse(issuedJWTRegistry);
 		if (!validation.success) {
 			console.error('Invalid registry entry in createWithId', {
 				errors: validation.error.issues.map((issue) => ({

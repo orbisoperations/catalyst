@@ -18,8 +18,15 @@ export class CatalystError extends Error {
         this.name = 'CatalystError';
 
         // Maintains proper stack trace for where our error was thrown (only available on V8)
-        if (Error.captureStackTrace) {
-            Error.captureStackTrace(this, this.constructor);
+        if (
+            'captureStackTrace' in Error &&
+            typeof (Error as { captureStackTrace?: unknown }).captureStackTrace === 'function'
+        ) {
+            (
+                Error as {
+                    captureStackTrace: (target: object, constructor: new (...args: unknown[]) => unknown) => void;
+                }
+            ).captureStackTrace(this, this.constructor);
         }
     }
 

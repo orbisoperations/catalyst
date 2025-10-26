@@ -1,4 +1,4 @@
-import { DataChannel } from '@catalyst/schema_zod';
+import { DataChannel } from '@catalyst/schemas';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import RegistrarWorker from '../../src/worker';
 

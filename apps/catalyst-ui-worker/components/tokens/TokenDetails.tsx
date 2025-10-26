@@ -12,7 +12,7 @@ import {
 } from '@/components/elements';
 import { DetailedView } from '@/components/layouts';
 import { navigationItems } from '@/utils/nav.utils';
-import { DataChannel, IssuedJWTRegistry } from '@catalyst/schema_zod';
+import { DataChannel, IssuedJWTRegistry } from '@catalyst/schemas';
 import { Box, Flex } from '@chakra-ui/layout';
 import { Card, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Text, useDisclosure } from '@chakra-ui/react';
 import { useParams, useRouter } from 'next/navigation';
