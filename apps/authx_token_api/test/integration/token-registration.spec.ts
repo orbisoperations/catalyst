@@ -1,8 +1,7 @@
 import { env, SELF } from 'cloudflare:test';
 import { decodeJwt } from 'jose';
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { JWTSigningRequest } from '@catalyst/schemas';
-import { JWTRegisterStatus } from '@catalyst/schemas';
+import { JWTSigningRequest, JWTAudience, JWTRegisterStatus } from '@catalyst/schemas';
 import { clearAllAuthzedRoles, custodianCreatesDataChannel, generateDataChannels, TEST_ORG_ID, validUsers } from '../utils/testUtils';
 
 /**
@@ -35,6 +34,7 @@ describe('Integration: Token Registration', () => {
 			const jwtRequest: JWTSigningRequest = {
 				entity: CUSTODIAN_USER.email,
 				claims: [createdChannel.id],
+				audience: JWTAudience.enum['catalyst:gateway'],
 			};
 
 			const signResponse = await SELF.signJWT(jwtRequest, 3600 * 1000, {
@@ -85,6 +85,7 @@ describe('Integration: Token Registration', () => {
 			const jwtRequest: JWTSigningRequest = {
 				entity: CUSTODIAN_USER.email,
 				claims: [createdChannel.id],
+				audience: JWTAudience.enum['catalyst:gateway'],
 			};
 
 			const signResponse = await SELF.signJWT(jwtRequest, 3600 * 1000, {
@@ -113,6 +114,7 @@ describe('Integration: Token Registration', () => {
 			const jwtRequest: JWTSigningRequest = {
 				entity: CUSTODIAN_USER.email,
 				claims: channelIds,
+				audience: JWTAudience.enum['catalyst:gateway'],
 			};
 
 			const signResponse = await SELF.signJWT(jwtRequest, 3600 * 1000, {
@@ -254,6 +256,7 @@ describe('Integration: Token Registration', () => {
 					{
 						entity: `${TEST_ORG_ID}/${CUSTODIAN_USER.email}`,
 						claims: [createdChannel.id],
+						audience: JWTAudience.enum['catalyst:gateway'],
 					},
 					3600 * 1000, // 1 hour
 				);
@@ -316,6 +319,7 @@ describe('Integration: Token Registration', () => {
 					{
 						entity: `${TEST_ORG_ID}/${CUSTODIAN_USER.email}`,
 						claims: [createdChannel.id],
+						audience: JWTAudience.enum['catalyst:gateway'],
 					},
 					3600 * 1000,
 				);
@@ -364,6 +368,7 @@ describe('Integration: Token Registration', () => {
 					{
 						entity: `${TEST_ORG_ID}/${CUSTODIAN_USER.email}`,
 						claims: channelIds,
+						audience: JWTAudience.enum['catalyst:gateway'],
 					},
 					3600 * 1000,
 				);
@@ -407,6 +412,7 @@ describe('Integration: Token Registration', () => {
 			const jwtRequest: JWTSigningRequest = {
 				entity: CUSTODIAN_USER.email,
 				claims: [createdChannel.id],
+				audience: JWTAudience.enum['catalyst:gateway'],
 			};
 
 			const signResponse = await SELF.signJWT(jwtRequest, 3600 * 1000, {

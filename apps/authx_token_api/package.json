@@ -18,7 +18,8 @@
 		"test:workspace": "vitest run --silent",
 		"lint": "eslint . --ext .ts",
 		"build": "wrangler build",
-		"postinstall": "pnpm build"
+		"postinstall": "pnpm build",
+		"cf-typegen": "wrangler types"
 	},
 	"dependencies": {
 		"@catalyst/schema_zod": "workspace:*",

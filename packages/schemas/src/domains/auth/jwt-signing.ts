@@ -21,7 +21,7 @@ export const JWTSigningRequest = z.object({
     claims: z
         .array(preprocess(preprocessors.trimString, z.string().max(255, 'Claim too long')))
         .max(50, 'Maximum 50 claims allowed'),
-    audience: JWTAudience.optional(), // Optional for backwards compatibility
+    audience: JWTAudience,
     expiresIn: z
         .number()
         .int('Expiration must be a whole number of seconds')

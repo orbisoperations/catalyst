@@ -103,6 +103,26 @@ export async function getCatalystToken(cfToken: string, claims: string[]) {
 	return token;
 }
 
+/**
+ * Type guard to assert and narrow success responses
+ * Use this after expect(response.success).toBe(true) to help TypeScript narrow the type
+ */
+export function assertSuccess<T extends { success: boolean }>(response: T): asserts response is Extract<T, { success: true }> {
+	if (!response.success) {
+		throw new Error('Expected success response');
+	}
+}
+
+/**
+ * Type guard to assert and narrow valid responses
+ * Use this after expect(response.valid).toBe(true) to help TypeScript narrow the type
+ */
+export function assertValid<T extends { valid: boolean }>(response: T): asserts response is Extract<T, { valid: true }> {
+	if (!response.valid) {
+		throw new Error('Expected valid response');
+	}
+}
+
 export async function clearAllAuthzedRoles() {
 	for (const cfToken in validUsers) {
 		const user = validUsers[cfToken];
