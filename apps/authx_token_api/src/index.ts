@@ -368,6 +368,7 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 			if (!singleUseToken.success) {
 				singleUseTokens.push({
 					success: false,
+					claim: claim,
 					error: singleUseToken.error,
 				});
 			} else {

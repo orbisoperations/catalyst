@@ -129,6 +129,7 @@ describe('Integration: Cross-Service Interactions', () => {
 			const custodianRequest: JWTSigningRequest = {
 				entity: CUSTODIAN_USER.email,
 				claims: [custodianChannel.id],
+				audience: JWTAudience.enum['catalyst:gateway'],
 			};
 
 			const custodianResponse = await SELF.signJWT(custodianRequest, 3600 * 1000, {
@@ -143,6 +144,7 @@ describe('Integration: Cross-Service Interactions', () => {
 			const adminRequest: JWTSigningRequest = {
 				entity: ORG_ADMIN_USER.email,
 				claims: [custodianChannel.id],
+				audience: JWTAudience.enum['catalyst:gateway'],
 			};
 
 			const adminResponse = await SELF.signJWT(adminRequest, 3600 * 1000, {
@@ -157,6 +159,7 @@ describe('Integration: Cross-Service Interactions', () => {
 			const userRequest: JWTSigningRequest = {
 				entity: ORG_USER.email,
 				claims: [custodianChannel.id],
+				audience: JWTAudience.enum['catalyst:gateway'],
 			};
 
 			const userResponse = await SELF.signJWT(userRequest, 3600 * 1000, {

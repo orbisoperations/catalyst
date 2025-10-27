@@ -31,6 +31,7 @@ export const DataChannelAccessTokenSuccessSchema = z.object({
 
 export const DataChannelAccessTokenErrorSchema = z.object({
     success: z.literal(false),
+    claim: z.string().optional(), // Optional to support errors without associated claims
     error: z.string(),
 });
 
