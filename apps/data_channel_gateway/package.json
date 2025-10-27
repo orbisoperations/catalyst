@@ -18,7 +18,6 @@
         "@catalyst/data_channel_registrar": "workspace:*",
         "@catalyst/issued-jwt-registry": "workspace:*",
         "@catalyst/jwt": "workspace:*",
-        "@catalyst/schema_zod": "workspace:*",
         "@catalyst/schemas": "workspace:*",
         "@graphql-tools/stitch": "catalog:",
         "@graphql-tools/stitching-directives": "^3.0.2",

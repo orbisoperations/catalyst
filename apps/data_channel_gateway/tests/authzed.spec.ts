@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { env, ProvidedEnv } from 'cloudflare:test';
 
-import { Catalyst } from '@catalyst/schema_zod';
+import { Catalyst } from '@catalyst/schemas';
 
 describe.sequential('authzed integration tests', () => {
     it.sequential('get schema', async () => {
