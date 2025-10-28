@@ -3,7 +3,7 @@
 import { APIKeyText, ErrorCard, OpenButton, OrbisCard, OrbisTable } from '@/components/elements';
 import { DetailedView } from '@/components/layouts';
 import { navigationItems } from '@/utils/nav.utils';
-import { DataChannel } from '@catalyst/schema_zod';
+import { DataChannel } from '@catalyst/schemas';
 import { Flex } from '@chakra-ui/layout';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';

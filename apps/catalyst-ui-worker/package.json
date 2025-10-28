@@ -20,7 +20,6 @@
         "@apollo/client": "^3.10.1",
         "@catalyst/issued-jwt-registry": "workspace:*",
         "@catalyst/schemas": "workspace:*",
-        "@catalyst/schema_zod": "workspace:*",
         "@catalyst/authx_authzed_api": "workspace:*",
         "@catalyst/data_channel_registrar": "workspace:*",
         "@catalyst/organization-matchmaking": "workspace:*",

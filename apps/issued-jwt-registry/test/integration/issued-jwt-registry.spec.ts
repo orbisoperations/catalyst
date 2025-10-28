@@ -1,4 +1,3 @@
-// @ts-expect-error: Some environments require this import for type checking
 import { env } from 'cloudflare:test';
 import { describe, it, expect } from 'vitest';
 

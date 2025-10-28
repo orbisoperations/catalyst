@@ -1,5 +1,5 @@
 import { DurableObject, WorkerEntrypoint } from 'cloudflare:workers';
-import { User } from '@catalyst/schema_zod';
+import { User, UserSchema } from '@catalyst/schemas';
 import { Env } from './env';
 
 /**
@@ -92,7 +92,7 @@ export class UserCredsCache extends DurableObject<Env> {
 					zitadelRoles: roles,
 				};
 
-				const parseUser = User.safeParse(objectToParse);
+				const parseUser = UserSchema.safeParse(objectToParse);
 				if (!parseUser.success) {
 					return undefined;
 				}

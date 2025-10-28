@@ -546,7 +546,7 @@ describe('signSystemJWT - System Service JWT Signing', () => {
 
 		it('should handle very long channelId', async () => {
 			// Arrange
-			const longChannelId = 'a'.repeat(1000);
+			const longChannelId = 'a'.repeat(255); // Max allowed per schema (255 chars)
 			const request = {
 				callingService: SYSTEM_SERVICE_NAME,
 				channelId: longChannelId,
@@ -563,7 +563,7 @@ describe('signSystemJWT - System Service JWT Signing', () => {
 
 		it('should handle many channelIds', async () => {
 			// Arrange
-			const manyChannelIds = Array.from({ length: 100 }, (_, i) => `channel-${i}`);
+			const manyChannelIds = Array.from({ length: 50 }, (_, i) => `channel-${i}`); // Max allowed per schema (50 claims)
 			const request = {
 				callingService: SYSTEM_SERVICE_NAME,
 				channelIds: manyChannelIds,

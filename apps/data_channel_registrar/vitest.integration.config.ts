@@ -40,7 +40,7 @@ const handleCloudflareAccessAuthServiceOutbound = async (req: Request) => {
 export default defineWorkersConfig({
   resolve: {
     alias: {
-      '@catalyst/schema_zod': path.resolve(__dirname, '../../packages/schema_zod'),
+      '@catalyst/schemas': path.resolve(__dirname, '../../packages/schemas'),
     },
   },
   optimizeDeps: {

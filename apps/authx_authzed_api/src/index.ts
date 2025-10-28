@@ -1,4 +1,4 @@
-import { Catalyst, DataChannelId, OrgId, UserId } from '@catalyst/schema_zod';
+import { Catalyst, DataChannelId, OrgId, UserId } from '@catalyst/schemas';
 import { WorkerEntrypoint } from 'cloudflare:workers';
 import { AuthzedClient } from './authzed';
 
@@ -78,7 +78,7 @@ export default class AuthzedWorker extends WorkerEntrypoint<Env> {
 		};
 	}
 
-	async listUsersInOrg(orgId: OrgId, userId?: UserId, roles?: Catalyst.RoleEnum[]) {
+	async listUsersInOrg(orgId: OrgId, userId?: UserId, roles?: Catalyst.RoleEnumType[]) {
 		const client = new AuthzedClient(this.env.AUTHZED_ENDPOINT, this.env.AUTHZED_KEY, this.env.AUTHZED_PREFIX);
 		const resp = await client.listUsersInOrganization(orgId, {
 			userId: userId ? emailTob64(userId) : undefined,

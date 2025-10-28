@@ -96,6 +96,7 @@ export default defineConfig({
 					name: 'integration',
 					include: ['test/integration/**/*.spec.ts'],
 					globalSetup: './global-setup.ts',
+					globalTeardown: './global-teardown.ts',
 					poolOptions: {
 						workers: {
 							wrangler: { configPath: './wrangler.jsonc' },

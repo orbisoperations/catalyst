@@ -1,6 +1,6 @@
 import { SELF } from 'cloudflare:test';
 import { describe, it, expect } from 'vitest';
-import type { IssuedJWTRegistry } from '@catalyst/schema_zod';
+import type { IssuedJWTRegistry } from '@catalyst/schemas';
 
 describe('Worker: Service Authentication in createSystem()', () => {
 	describe('Authorized service access', () => {
@@ -110,7 +110,9 @@ describe('Worker: Service Authentication in createSystem()', () => {
 			};
 
 			// Should reject due to schema validation
-			await expect(SELF.createSystem(invalidToken as IssuedJWTRegistry, 'authx_token_api')).rejects.toThrow('Invalid registry entry');
+			await expect(SELF.createSystem(invalidToken as unknown as IssuedJWTRegistry, 'authx_token_api')).rejects.toThrow(
+				'Invalid registry entry',
+			);
 		});
 
 		it('rejects tokens with invalid status values', async () => {
@@ -125,7 +127,9 @@ describe('Worker: Service Authentication in createSystem()', () => {
 			};
 
 			// Should reject due to invalid enum value
-			await expect(SELF.createSystem(invalidToken as IssuedJWTRegistry, 'authx_token_api')).rejects.toThrow('Invalid registry entry');
+			await expect(SELF.createSystem(invalidToken as unknown as IssuedJWTRegistry, 'authx_token_api')).rejects.toThrow(
+				'Invalid registry entry',
+			);
 		});
 
 		it('rejects tokens with invalid expiry dates', async () => {
@@ -140,7 +144,9 @@ describe('Worker: Service Authentication in createSystem()', () => {
 			};
 
 			// Should reject due to invalid date type
-			await expect(SELF.createSystem(invalidToken as IssuedJWTRegistry, 'authx_token_api')).rejects.toThrow('Invalid registry entry');
+			await expect(SELF.createSystem(invalidToken as unknown as IssuedJWTRegistry, 'authx_token_api')).rejects.toThrow(
+				'Invalid registry entry',
+			);
 		});
 	});
 
@@ -152,7 +158,9 @@ describe('Worker: Service Authentication in createSystem()', () => {
 			};
 
 			// Worker-level validation should catch this first
-			await expect(SELF.createSystem(invalidToken as IssuedJWTRegistry, 'authx_token_api')).rejects.toThrow('Invalid registry entry');
+			await expect(SELF.createSystem(invalidToken as unknown as IssuedJWTRegistry, 'authx_token_api')).rejects.toThrow(
+				'Invalid registry entry',
+			);
 
 			// Durable Object should never receive this invalid data
 		});

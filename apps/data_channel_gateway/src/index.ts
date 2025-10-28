@@ -1,5 +1,5 @@
 import { grabTokenInHeader } from '@catalyst/jwt';
-import { Token, TokenSchema, JWTAudience } from '@catalyst/schemas';
+import { TokenSchema, JWTAudience } from '@catalyst/schemas';
 import { decodeJwt } from 'jose';
 import { stitchSchemas } from '@graphql-tools/stitch';
 import { stitchingDirectives } from '@graphql-tools/stitching-directives';
@@ -193,7 +193,7 @@ app.post('/validate-tokens', async (ctx) => {
                     claimId: request.claimId,
                     catalystToken: request.catalystToken,
                     valid: false,
-                    error: audienceValidation.error,
+                    error: audienceValidation.error || 'invalid audience',
                 };
             }
 
@@ -280,10 +280,11 @@ const authenticateRequestMiddleware = async (c: Context<{ Bindings: Env; Variabl
     }
 
     // For middleware, we still need to do full validation to get claims and check revocation
-    const { valid, claims, jwtId, error: ValidError } = await c.env.AUTHX_TOKEN_API.validateToken(token);
-    if (!valid || ValidError || !jwtId) {
+    const validationResult = await c.env.AUTHX_TOKEN_API.validateToken(token);
+    if (!validationResult.valid) {
         return c.json({ message: 'Token validation failed' }, 403);
     }
+    const { claims, jwtId } = validationResult;
 
     // Check if the JWT token is invalid (revoked or deleted)
     if (await c.env.ISSUED_JWT_REGISTRY.isInvalid(jwtId)) {
@@ -299,7 +300,7 @@ const authenticateRequestMiddleware = async (c: Context<{ Bindings: Env; Variabl
 };
 
 app.use('/graphql', authenticateRequestMiddleware, async (ctx) => {
-    const token = Token.safeParse({
+    const token = TokenSchema.safeParse({
         catalystToken: ctx.get('catalyst-token'),
     });
 

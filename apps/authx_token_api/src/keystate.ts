@@ -1,6 +1,6 @@
 import { generateKeyPair, KeyLike, exportSPKI, SignJWT, exportJWK, importJWK, JWK } from 'jose';
 import { JWT } from './jwt';
-import { DEFAULT_STANDARD_DURATIONS } from '@catalyst/schema_zod';
+import { DEFAULT_STANDARD_DURATIONS } from '@catalyst/schemas';
 
 export const KEY_ALG = 'EdDSA';
 

@@ -173,7 +173,7 @@ describe('validate endpoint tests', () => {
                 claimId: 'airplanes1',
                 catalystToken: invalidToken,
                 valid: false,
-                error: 'invalid token', // Schema validation catches invalid tokens early
+                error: 'Invalid token format',
             },
         ]);
     });
@@ -260,7 +260,7 @@ describe('validate endpoint tests', () => {
                 claimId: 'airplanes2',
                 catalystToken: invalidToken,
                 valid: false,
-                error: 'invalid token', // Schema validation catches invalid tokens early
+                error: 'Invalid token format',
             },
         ]);
     });

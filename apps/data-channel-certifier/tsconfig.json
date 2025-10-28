@@ -11,7 +11,7 @@
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
     "noEmit": true,
-    "types": ["node"]
+    "types": ["node", "@cloudflare/vitest-pool-workers"]
   },
   "include": ["src/**/*", "cloudflare-env.d.ts", "test/**/*", "global-setup.ts", "vitest.config.ts"]
 }

@@ -2,10 +2,12 @@ import {
   DataChannel,
   DataChannelActionResponse,
   JWTParsingResponse,
+  JWTParsingResponseSchema,
   PermissionCheckResponse,
   Token,
   User,
-} from '@catalyst/schema_zod';
+  UserSchema,
+} from '@catalyst/schemas';
 import { DurableObject, WorkerEntrypoint } from 'cloudflare:workers';
 import { Env } from './env';
 
@@ -30,7 +32,7 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
 
     // NEED TO MOCK THIS
     const user: User | undefined = await this.env.USERCACHE.getUser(token.cfToken);
-    const parsedUser = User.safeParse(user);
+    const parsedUser = UserSchema.safeParse(user);
     if (!parsedUser.success) {
       return PermissionCheckResponse.parse({
         success: false,
@@ -58,7 +60,7 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
   async RPerms(token: Token, dataChannelId: string, channel?: DataChannel) {
     if (token.cfToken) {
       const user: User | undefined = await this.env.USERCACHE.getUser(token.cfToken);
-      const parsedUser = User.safeParse(user);
+      const parsedUser = UserSchema.safeParse(user);
       if (!parsedUser.success) {
         return PermissionCheckResponse.parse({
           success: false,
@@ -102,7 +104,7 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
       const jwtEntity: JWTParsingResponse = await this.env.AUTHX_TOKEN_API.validateToken(
         token.catalystToken,
       );
-      const parsedJWTEntity = JWTParsingResponse.safeParse(jwtEntity);
+      const parsedJWTEntity = JWTParsingResponseSchema.safeParse(jwtEntity);
       if (!parsedJWTEntity.success) {
         return PermissionCheckResponse.parse({
           success: false,

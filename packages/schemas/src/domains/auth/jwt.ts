@@ -1,10 +1,14 @@
 import { z } from 'zod/v4';
 
+// JWT Audience values - matches jwt-signing.ts
+const JWTAudience = z.enum(['catalyst:gateway', 'catalyst:datachannel']);
+
 const jwtParseSuccess = z.object({
     valid: z.literal(true),
     entity: z.string(),
     claims: z.string().array(),
-    jwtId: z.string().optional(),
+    jwtId: z.string(),
+    audience: JWTAudience,
 });
 
 const jwtParseError = z.object({
@@ -14,5 +18,5 @@ const jwtParseError = z.object({
     error: z.string(),
 });
 
-export const JWTParsingResponse = z.discriminatedUnion('valid', [jwtParseError, jwtParseSuccess]);
-export type JWTParsingResponse = z.infer<typeof JWTParsingResponse>;
+export const JWTParsingResponseSchema = z.discriminatedUnion('valid', [jwtParseError, jwtParseSuccess]);
+export type JWTParsingResponse = z.infer<typeof JWTParsingResponseSchema>;

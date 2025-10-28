@@ -1,7 +1,6 @@
 'use server';
-import { OrgInvite } from '@catalyst/schema_zod';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
-import { CloudflareEnv, getMatchmaking, OrgInviteSchema } from '@catalyst/schemas';
+import { CloudflareEnv, getMatchmaking, OrgInvite, OrgInviteSchema } from '@catalyst/schemas';
 
 function getEnv(): CloudflareEnv {
     return getCloudflareContext().env as CloudflareEnv;

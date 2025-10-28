@@ -1,16 +1,22 @@
 import { WorkerEntrypoint } from 'cloudflare:workers';
 import { JWTPayload } from 'jose';
 import {
-	DataChannel,
 	DataChannelAccessToken,
 	DataChannelMultiAccessResponse,
+	DataChannelMultiAccessResponseSchema,
+	DataChannelSchema,
 	DEFAULT_STANDARD_DURATIONS,
-	JWTParsingResponse,
-	JWTRotateResponse,
+	JWTParsingResponseSchema,
+	JWTRotateResponseSchema,
 	Token,
-	User,
+	UserSchema,
+	JWTSigningRequest,
+	JWTSigningResponse,
+	JWTSigningResponseSchema,
+	IssuedJWTRegistry,
+	JWTRegisterStatus,
+	JWTAudience,
 } from '@catalyst/schemas';
-import { JWTSigningRequest, JWTSigningResponse, IssuedJWTRegistry, JWTRegisterStatus, JWTAudience } from '@catalyst/schemas';
 import { Env } from './env';
 import { JWT } from './jwt';
 export { JWTKeyProvider } from './durable_object_security_module';
@@ -51,29 +57,29 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 	 */
 	async rotateKey(token: Token, keyNamespace: string = 'default') {
 		if (!token.cfToken) {
-			return JWTRotateResponse.parse({
+			return JWTRotateResponseSchema.parse({
 				success: false,
 				error: 'catalyst did not receive a user credential',
 			});
 		}
 		const userResp = await this.env.USERCACHE.getUser(token.cfToken);
 		if (!userResp) {
-			return JWTRotateResponse.parse({
+			return JWTRotateResponseSchema.parse({
 				success: false,
 				error: 'catalyst did not find a user for the given credential',
 			});
 		}
-		const userParse = User.safeParse(userResp);
+		const userParse = UserSchema.safeParse(userResp);
 		if (!userParse.success) {
 			console.error(userParse.error);
-			return JWTRotateResponse.parse({
+			return JWTRotateResponseSchema.parse({
 				success: false,
 				error: 'catalyst was not able to access user for the given credential',
 			});
 		}
 		// add authzed here when available
 		if (!userParse.data.zitadelRoles.includes('platform-admin')) {
-			return JWTRotateResponse.parse({
+			return JWTRotateResponseSchema.parse({
 				success: false,
 				error: 'catalyst asserts user does not have access jwt admin functions',
 			});
@@ -84,9 +90,9 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 		const success = await stub.rotateKey();
 
 		if (success) {
-			return JWTRotateResponse.parse({ success: success });
+			return JWTRotateResponseSchema.parse({ success: success });
 		} else {
-			return JWTRotateResponse.parse({ success: success, error: 'catalyst experienced and error rotating the key' });
+			return JWTRotateResponseSchema.parse({ success: success, error: 'catalyst experienced and error rotating the key' });
 		}
 	}
 
@@ -102,22 +108,22 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 	async signJWT(jwtRequest: JWTSigningRequest, expiresIn: number, token: Token, keyNamespace: string = 'default') {
 		if (!token.cfToken) {
 			console.error('need a cf token to sign a JWT');
-			return JWTSigningResponse.parse({
+			return JWTSigningResponseSchema.parse({
 				success: false,
 				error: 'catalyst did not recieve a user-based token',
 			});
 		}
 
-		const userParse = User.safeParse(await this.env.USERCACHE.getUser(token.cfToken));
+		const userParse = UserSchema.safeParse(await this.env.USERCACHE.getUser(token.cfToken));
 		if (!userParse.success) {
-			return JWTSigningResponse.parse({
+			return JWTSigningResponseSchema.parse({
 				success: false,
 				error: 'catalyst is unable to verify user',
 			});
 		}
 
 		if (jwtRequest.claims.length === 0) {
-			return JWTSigningResponse.parse({
+			return JWTSigningResponseSchema.parse({
 				success: false,
 				error: 'invalid claimes error: JWT creating request must contain at least one claim',
 			});
@@ -136,14 +142,16 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 		});
 		if (failedClaimsChecks.length > 0) {
 			console.error('user is not authorized for all claims');
-			return JWTSigningResponse.parse({
+			return JWTSigningResponseSchema.parse({
 				success: false,
 				error: 'catalyst is unable to validate user to all claims',
 			});
 		}
 		console.log(jwtRequest);
 		// Create the JWT object first to get the JTI
-		const jwt = new JWT(jwtRequest.entity, jwtRequest.claims, 'catalyst:system:jwt:latest', jwtRequest.audience);
+		// Use provided audience or default to 'catalyst:gateway' for user-signed JWTs
+		const audience = jwtRequest.audience || JWTAudience.enum['catalyst:gateway'];
+		const jwt = new JWT(jwtRequest.entity, jwtRequest.claims, 'catalyst:system:jwt:latest', audience);
 
 		try {
 			// Sign the JWT first to get the exact expiry timestamp
@@ -154,7 +162,7 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 				{
 					entity: jwtRequest.entity,
 					claims: jwtRequest.claims,
-					audience: jwtRequest.audience,
+					audience: audience, // Use the resolved audience
 					jti: jwt.jti, // Pass the jti we generated
 				},
 				expiresIn,
@@ -182,14 +190,14 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 			await this.env.ISSUED_JWT_REGISTRY.createSystem(registryEntry, 'authx_token_api', keyNamespace);
 
 			// returns expiration in MS
-			return JWTSigningResponse.parse({
+			return JWTSigningResponseSchema.parse({
 				success: true,
 				token: signedJwt.token,
 				expiration: signedJwt.expiration,
 			});
 		} catch (error) {
 			console.error('Failed to sign or register JWT:', error);
-			return JWTSigningResponse.parse({
+			return JWTSigningResponseSchema.parse({
 				success: false,
 				error: 'Failed to create token: signing or registration failed',
 			});
@@ -212,7 +220,7 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 	async signSingleUseJWT(claim: string, token: Token, keyNamespace: string = 'default'): Promise<JWTSigningResponse> {
 		if (!token.catalystToken) {
 			console.error('error signing single use JWT: did not recieve a catalyst token');
-			return JWTSigningResponse.parse({
+			return JWTSigningResponseSchema.parse({
 				success: false,
 				error: 'catalyst did not recieve a catalyst token',
 			});
@@ -223,7 +231,7 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 		// decode the CT token
 		const decodedToken: { success: boolean; payload: CatalystJWTPayload } = await stub.decodeToken(token.catalystToken);
 		if (!decodedToken?.payload || !decodedToken.payload.claims) {
-			return JWTSigningResponse.parse({
+			return JWTSigningResponseSchema.parse({
 				success: false,
 				error: 'error decoding catalyst token',
 			});
@@ -232,7 +240,7 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 		// filter out any empty claims
 		const claims: string[] = decodedToken.payload.claims?.filter((claim) => claim) ?? [];
 		if (claims.length === 0) {
-			return JWTSigningResponse.parse({
+			return JWTSigningResponseSchema.parse({
 				success: false,
 				error: 'invalid claims error: JWT creating request must contain at least one claim',
 			});
@@ -240,7 +248,7 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 
 		// Check that the requested claim is in the catalyst token's claims
 		if (!claims.includes(claim)) {
-			return JWTSigningResponse.parse({
+			return JWTSigningResponseSchema.parse({
 				success: false,
 				error: 'Requested claim not found in catalyst token',
 			});
@@ -282,14 +290,14 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 			// Register after signing (still atomic - if registration fails, we don't return the token)
 			await this.env.ISSUED_JWT_REGISTRY.createSystem(registryEntry, 'authx_token_api', keyNamespace);
 
-			return JWTSigningResponse.parse({
+			return JWTSigningResponseSchema.parse({
 				success: true,
 				token: signedJwt.token,
 				expiration: signedJwt.expiration,
 			});
 		} catch (error) {
 			console.error('Failed to sign or register single-use JWT:', error);
-			return JWTSigningResponse.parse({
+			return JWTSigningResponseSchema.parse({
 				success: false,
 				error: 'Failed to create single-use token: signing or registration failed',
 			});
@@ -329,10 +337,10 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 		}
 
 		// Validate the channels array
-		const result = DataChannel.array().safeParse(allChannels);
+		const result = DataChannelSchema.array().safeParse(allChannels);
 		if (!result.success) {
 			console.error('Failed to parse array of data channels:', result.error.format());
-			return DataChannelMultiAccessResponse.parse({ success: false, error: 'internal error processing channel information' });
+			return DataChannelMultiAccessResponseSchema.parse({ success: false, error: 'internal error processing channel information' });
 		}
 
 		// NOTE: claims are channel.id
@@ -341,7 +349,7 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 		const dataChannels = result.data.filter((dataChannel) => claims.includes(dataChannel.id));
 		if (dataChannels.length === 0) {
 			// no resources found
-			return DataChannelMultiAccessResponse.parse({
+			return DataChannelMultiAccessResponseSchema.parse({
 				success: false,
 				error: 'no resources found',
 			});
@@ -419,7 +427,7 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 
 			if (!registryValidation.valid) {
 				// Token is either not found, revoked, deleted, or expired in registry
-				return JWTParsingResponse.parse({
+				return JWTParsingResponseSchema.parse({
 					valid: false,
 					entity: undefined,
 					claims: [],
@@ -432,7 +440,7 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 		} catch (error) {
 			console.error('Failed to check registry status during token validation:', error);
 			// On registry check failure, fail closed (deny access)
-			return JWTParsingResponse.parse({
+			return JWTParsingResponseSchema.parse({
 				valid: false,
 				entity: undefined,
 				claims: [],
@@ -463,14 +471,14 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 		const ALLOWED_SYSTEM_SERVICES = ['data-channel-certifier', 'scheduled-validator'];
 
 		if (!request.callingService || request.callingService.trim() === '') {
-			return JWTSigningResponse.parse({
+			return JWTSigningResponseSchema.parse({
 				success: false,
 				error: 'callingService is required for system JWT signing',
 			});
 		}
 
 		if (!ALLOWED_SYSTEM_SERVICES.includes(request.callingService)) {
-			return JWTSigningResponse.parse({
+			return JWTSigningResponseSchema.parse({
 				success: false,
 				error: `Service '${request.callingService}' is not authorized for system JWT signing`,
 			});
@@ -485,7 +493,7 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 		}
 
 		if (claims.length === 0) {
-			return JWTSigningResponse.parse({
+			return JWTSigningResponseSchema.parse({
 				success: false,
 				error: 'At least one channelId is required for system JWT signing',
 			});
@@ -494,7 +502,7 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 		// Validate duration (max 1 hour for system tokens)
 		const duration = request.duration !== undefined ? request.duration : 300; // Default 5 minutes
 		if (duration <= 0 || duration > 3600) {
-			return JWTSigningResponse.parse({
+			return JWTSigningResponseSchema.parse({
 				success: false,
 				error: 'System JWT duration exceeds maximum allowed (3600 seconds)',
 			});
@@ -539,14 +547,14 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 			console.log(`System JWT created for service: ${request.callingService}, purpose: ${request.purpose}, claims: ${claims.join(',')}`);
 
 			// Return properly formatted response matching JWTSigningResponse schema
-			return JWTSigningResponse.parse({
+			return JWTSigningResponseSchema.parse({
 				success: true,
 				token: signedJwt.token,
 				expiration: signedJwt.expiration,
 			});
 		} catch (error) {
 			console.error('Failed to sign or register system JWT:', error);
-			return JWTSigningResponse.parse({
+			return JWTSigningResponseSchema.parse({
 				success: false,
 				error: 'Failed to create system token: signing or registration failed',
 			});

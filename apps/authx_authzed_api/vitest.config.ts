@@ -4,6 +4,7 @@ export default defineWorkersConfig({
 	logLevel: 'info',
 	test: {
 		globalSetup: './global-setup.ts',
+		globalTeardown: './global-teardown.ts',
 		poolOptions: {
 			workers: {
 				wrangler: {

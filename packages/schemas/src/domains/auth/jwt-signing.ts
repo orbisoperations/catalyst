@@ -3,9 +3,14 @@ import { createResponseSchema } from '../../core/common';
 import { preprocess, preprocessors } from '../../core/performance';
 
 // JWT Audience values for different token types
+// The audience field determines where a token can be used:
+// - 'catalyst:gateway': Only accepted by the gateway for UI/client access
+// - 'catalyst:datachannel': For direct data channel access (single-use and system tokens)
+// This separation ensures system tokens cannot access the gateway, and gateway tokens
+// cannot directly access data channels, providing proper access control boundaries
 export const JWTAudience = z.enum([
     'catalyst:gateway', // For gateway access tokens (UI -> Gateway)
-    'catalyst:datachannel', // For single-use tokens and system tokens (Gateway -> Data Channel)
+    'catalyst:datachannel', // For single-use tokens and system tokens (Gateway -> Data Channel or System -> Data Channel)
 ]);
 export type JWTAudience = z.infer<typeof JWTAudience>;
 
@@ -52,8 +57,8 @@ export const JWTSigningError = z.object({
     error: z.string().min(1, 'Error message is required'),
 });
 
-export const JWTSigningResponse = z.discriminatedUnion('success', [JWTSigningSuccess, JWTSigningError]);
-export type JWTSigningResponse = z.infer<typeof JWTSigningResponse>;
+export const JWTSigningResponseSchema = z.discriminatedUnion('success', [JWTSigningSuccess, JWTSigningError]);
+export type JWTSigningResponse = z.infer<typeof JWTSigningResponseSchema>;
 
 // Alternative standardized response schema for new code
 const JWTSigningResult = z.object({
@@ -65,7 +70,7 @@ export const JWTSigningStandardResponse = createResponseSchema(JWTSigningResult)
 export type JWTSigningStandardResponse = z.infer<typeof JWTSigningStandardResponse>;
 
 // JWT Rotation Response
-export const JWTRotateResponse = z.discriminatedUnion('success', [
+export const JWTRotateResponseSchema = z.discriminatedUnion('success', [
     z.object({
         success: z.literal(true),
     }),
@@ -74,4 +79,4 @@ export const JWTRotateResponse = z.discriminatedUnion('success', [
         error: z.string(),
     }),
 ]);
-export type JWTRotateResponse = z.infer<typeof JWTRotateResponse>;
+export type JWTRotateResponse = z.infer<typeof JWTRotateResponseSchema>;

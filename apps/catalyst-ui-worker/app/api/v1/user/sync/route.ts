@@ -1,8 +1,7 @@
-import type { User } from '@catalyst/schema_zod/entities/user';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { NextRequest } from 'next/server';
 export const dynamic = 'force-dynamic'; // defaults to auto
-import { CloudflareEnv, getUserCache, getAuthzed } from '@catalyst/schemas';
+import { type User, CloudflareEnv, getUserCache, getAuthzed } from '@catalyst/schemas';
 
 function getEnv(): CloudflareEnv {
     return getCloudflareContext().env as CloudflareEnv;

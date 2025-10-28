@@ -1,7 +1,6 @@
 'use server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
-import { IssuedJWTRegistry } from '@catalyst/schema_zod';
-import { CloudflareEnv, getJWTRegistry } from '@catalyst/schemas';
+import { CloudflareEnv, getJWTRegistry, IssuedJWTRegistry } from '@catalyst/schemas';
 
 function getEnv(): CloudflareEnv {
     return getCloudflareContext().env as CloudflareEnv;
@@ -12,7 +11,8 @@ export async function listIJWTRegistry(token: string) {
     const registry = getJWTRegistry(env);
     const resp = await registry.list({ cfToken: token });
     if (!resp.success) {
-        throw new Error('list ijwt registry failed');
+        console.error('list ijwt registry failed:', resp.error);
+        throw new Error(`list ijwt registry failed: ${JSON.stringify(resp.error)}`);
     }
     return resp.data;
 }
@@ -22,17 +22,19 @@ export async function getIJWTRegistry(token: string, id: string) {
     const registry = getJWTRegistry(env);
     const getResult = await registry.get({ cfToken: token }, id);
     if (!getResult.success) {
-        throw new Error('get ijwt registry failed');
+        console.error('get ijwt registry failed:', getResult.error);
+        throw new Error(`get ijwt registry failed: ${JSON.stringify(getResult.error)}`);
     }
     return getResult.data;
 }
 
-export async function createIJWTRegistry(token: string, data: Omit<IssuedJWTRegistry, 'id'>) {
+export async function createIJWTRegistry(token: string, data: IssuedJWTRegistry) {
     const env = getEnv();
     const registry = getJWTRegistry(env);
     const resp = await registry.create({ cfToken: token }, data);
     if (!resp.success) {
-        throw new Error('create ijwt registry failed');
+        console.error('create ijwt registry failed:', resp.error);
+        throw new Error(`create ijwt registry failed: ${JSON.stringify(resp.error)}`);
     }
     return resp.data;
 }
@@ -42,7 +44,8 @@ export async function updateIJWTRegistry(token: string, data: IssuedJWTRegistry)
     const registry = getJWTRegistry(env);
     const resp = await registry.update({ cfToken: token }, data);
     if (!resp.success) {
-        throw new Error('update ijwt registry failed');
+        console.error('update ijwt registry failed:', resp.error);
+        throw new Error(`update ijwt registry failed: ${JSON.stringify(resp.error)}`);
     }
     return resp.data;
 }

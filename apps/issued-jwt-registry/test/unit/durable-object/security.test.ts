@@ -1,7 +1,7 @@
 import { env, runInDurableObject } from 'cloudflare:test';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { I_JWT_Registry_DO } from '../../../src/index';
-import type { IssuedJWTRegistry } from '@catalyst/schema_zod';
+import type { IssuedJWTRegistry } from '@catalyst/schemas';
 
 describe('Durable Object: Security Tests', () => {
 	let doId: DurableObjectId;
@@ -252,7 +252,7 @@ describe('Durable Object: Security Tests', () => {
 					// Missing: description, claims, expiry, organization, status
 				};
 
-				await expect(instance.createWithId(invalidToken as IssuedJWTRegistry)).rejects.toThrow('Invalid registry entry format');
+				await expect(instance.createWithId(invalidToken as unknown as IssuedJWTRegistry)).rejects.toThrow('Invalid registry entry format');
 			});
 		});
 
@@ -270,7 +270,7 @@ describe('Durable Object: Security Tests', () => {
 					status: 'invalid-status-value' as const, // Invalid enum value
 				};
 
-				await expect(instance.createWithId(invalidToken as IssuedJWTRegistry)).rejects.toThrow('Invalid registry entry format');
+				await expect(instance.createWithId(invalidToken as unknown as IssuedJWTRegistry)).rejects.toThrow('Invalid registry entry format');
 			});
 		});
 
@@ -288,7 +288,7 @@ describe('Durable Object: Security Tests', () => {
 					status: 'active' as const,
 				};
 
-				await expect(instance.createWithId(invalidToken as IssuedJWTRegistry)).rejects.toThrow('Invalid registry entry format');
+				await expect(instance.createWithId(invalidToken as unknown as IssuedJWTRegistry)).rejects.toThrow('Invalid registry entry format');
 			});
 		});
 
@@ -306,7 +306,7 @@ describe('Durable Object: Security Tests', () => {
 					status: 'active' as const,
 				};
 
-				await expect(instance.createWithId(invalidToken as IssuedJWTRegistry)).rejects.toThrow('Invalid registry entry format');
+				await expect(instance.createWithId(invalidToken as unknown as IssuedJWTRegistry)).rejects.toThrow('Invalid registry entry format');
 			});
 		});
 	});

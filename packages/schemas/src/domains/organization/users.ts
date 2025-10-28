@@ -3,19 +3,21 @@ import { z } from 'zod/v4';
 export const UserRole = z.enum(['platform-admin', 'org-admin', 'org-user', 'data-custodian']);
 export type UserRole = z.infer<typeof UserRole>;
 
-export const User = z.object({
+// Uses string array for flexibility with external Zitadel data
+// Zitadel may return role strings that don't strictly match our UserRole enum
+export const UserSchema = z.object({
     userId: z.string(),
     orgId: z.string(),
-    zitadelRoles: UserRole.array(),
+    zitadelRoles: z.string().array(),
 });
-export const UserSchema = User;
 
+// Type inferred from schema for consistency
 export type User = z.infer<typeof UserSchema>;
 
 // User action response schemas
 const userCheckActionSuccess = z.object({
     success: z.literal(true),
-    data: User,
+    data: UserSchema,
 });
 
 const userCheckActionError = z.object({
