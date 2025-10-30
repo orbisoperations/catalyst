@@ -2,7 +2,14 @@ import { env, SELF } from 'cloudflare:test';
 import { createLocalJWKSet, decodeJwt, jwtVerify } from 'jose';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { type JWTSigningRequest, JWTAudience } from '@catalyst/schemas';
-import { clearAllAuthzedRoles, custodianCreatesDataChannel, generateDataChannels, TEST_ORG_ID, validUsers } from '../utils/testUtils';
+import {
+	clearAllAuthzedRoles,
+	cleanupDataChannels,
+	custodianCreatesDataChannel,
+	generateDataChannels,
+	TEST_ORG_ID,
+	validUsers,
+} from '../utils/testUtils';
 
 /**
  * Integration Tests: Complete JWT Lifecycle
@@ -18,13 +25,14 @@ describe('Integration: Complete JWT Lifecycle', () => {
 
 	beforeEach(async () => {
 		await clearAllAuthzedRoles();
+		await cleanupDataChannels();
 	});
 
 	describe('End-to-End JWT Workflows', () => {
 		it('should create, validate, and cryptographically verify JWT end-to-end', async () => {
 			await env.AUTHZED.addDataCustodianToOrg(TEST_ORG_ID, CUSTODIAN_USER.email);
 
-			const dataChannel = generateDataChannels(1)[0];
+			const dataChannel = generateDataChannels(10)[0]; // Use index 0 from larger set
 			const createdChannel = await custodianCreatesDataChannel(dataChannel);
 
 			const jwtRequest: JWTSigningRequest = {
@@ -84,7 +92,7 @@ describe('Integration: Complete JWT Lifecycle', () => {
 
 		it('should reject validation of JWT after key rotation', async () => {
 			await env.AUTHZED.addDataCustodianToOrg(TEST_ORG_ID, CUSTODIAN_USER.email);
-			const dataChannel = generateDataChannels(1)[0];
+			const dataChannel = generateDataChannels(10)[1]; // Use index 1
 			const createdChannel = await custodianCreatesDataChannel(dataChannel);
 
 			const jwtRequest: JWTSigningRequest = {
@@ -128,7 +136,7 @@ describe('Integration: Complete JWT Lifecycle', () => {
 
 		it('should create JWT and validate with public key JWK set', async () => {
 			await env.AUTHZED.addDataCustodianToOrg(TEST_ORG_ID, CUSTODIAN_USER.email);
-			const dataChannel = generateDataChannels(1)[0];
+			const dataChannel = generateDataChannels(10)[2]; // Use index 2
 			const createdChannel = await custodianCreatesDataChannel(dataChannel);
 
 			const jwtRequest: JWTSigningRequest = {
@@ -175,7 +183,7 @@ describe('Integration: Complete JWT Lifecycle', () => {
 
 		it('should handle JWT expiration correctly in full workflow', async () => {
 			await env.AUTHZED.addDataCustodianToOrg(TEST_ORG_ID, CUSTODIAN_USER.email);
-			const dataChannel = generateDataChannels(1)[0];
+			const dataChannel = generateDataChannels(10)[3]; // Use index 3
 			const createdChannel = await custodianCreatesDataChannel(dataChannel);
 
 			const jwtRequest: JWTSigningRequest = {

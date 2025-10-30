@@ -51,10 +51,20 @@ export async function custodianCreatesDataChannel(dataChannel: DataChannel) {
   expect(createResponse).toBeDefined();
   expect(createResponse.success).toBe(true);
 
-  // add the data channel to the org
-  const addDataChannelToOrg = await env.AUTHZED.addDataChannelToOrg(TEST_ORG_ID, dataChannel.id);
+  if (!createResponse.success) {
+    throw new Error(`Failed to create data channel: ${createResponse.error}`);
+  }
+
+  // Get the created channel's ID (not the input channel's dummy ID)
+  const createdChannel = Array.isArray(createResponse.data)
+    ? createResponse.data[0]
+    : createResponse.data;
+  const createdChannelId = createdChannel.id;
+
+  // add the data channel to the org using the actual created channel ID
+  const addDataChannelToOrg = await env.AUTHZED.addDataChannelToOrg(TEST_ORG_ID, createdChannelId);
   // add the org to the data channel
-  const addOrgToDataChannel = await env.AUTHZED.addOrgToDataChannel(dataChannel.id, TEST_ORG_ID);
+  const addOrgToDataChannel = await env.AUTHZED.addOrgToDataChannel(createdChannelId, TEST_ORG_ID);
   // also add user to the org (in case they weren't already)
   const addUserToOrg = await env.AUTHZED.addUserToOrg(TEST_ORG_ID, user.email);
 
@@ -62,13 +72,7 @@ export async function custodianCreatesDataChannel(dataChannel: DataChannel) {
   expect(addOrgToDataChannel).toBeDefined();
   expect(addUserToOrg).toBeDefined();
 
-  expect(createResponse.success).toBe(true);
-
-  if (!createResponse.success) {
-    throw new Error('Failed to create data channel');
-  }
-
-  return Array.isArray(createResponse.data) ? createResponse.data[0] : createResponse.data;
+  return createdChannel;
 }
 
 export function getOrgId(cfToken: string) {

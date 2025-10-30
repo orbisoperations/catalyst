@@ -42,25 +42,25 @@ describe('Data Channel Registrar as Durable Object integration tests', () => {
     });
 
     afterEach(async () => {
-      // assert no data channels are in the DO
+      // Clean up any existing channels after each test to avoid name conflicts
       const listDataChannels = await SELF.list('default', {
         cfToken: orgAdminToken,
       });
-      expect(listDataChannels).toBeDefined();
-      expect(listDataChannels.success).toBe(true);
-      if (listDataChannels.success) {
-        const arr = Array.isArray(listDataChannels.data)
+      if (listDataChannels.success && listDataChannels.data) {
+        const channels = Array.isArray(listDataChannels.data)
           ? listDataChannels.data
           : [listDataChannels.data];
-        expect(arr.length).toBe(0);
+        for (const channel of channels) {
+          await SELF.remove('default', channel.id, { cfToken: 'cf-custodian-token' });
+        }
       }
     });
 
     it('can list data channels', async () => {
-      // 1. setup step 1: create a data channel
-      const dataChannel = generateDataChannels()[0];
-      await custodianCreatesDataChannel(dataChannel); // only custodian can create a data channel
-      await custodianCreatesDataChannel(dataChannel); // only custodian can create a data channel
+      // 1. setup step 1: create two distinct data channels with different names
+      const channelsToCreate = generateDataChannels(2);
+      await custodianCreatesDataChannel(channelsToCreate[0]); // Create "Data Channel 0"
+      await custodianCreatesDataChannel(channelsToCreate[1]); // Create "Data Channel 1"
 
       const listDataChannels = await SELF.list('default', {
         cfToken: orgAdminToken,
@@ -200,19 +200,19 @@ describe('Data Channel Registrar as Durable Object integration tests', () => {
       );
     });
     /**
-     * Assert that there are no data channels before the tests
+     * Clean up any existing channels before each test to avoid name conflicts
      */
     beforeEach(async () => {
       const listDataChannels = await SELF.list('default', {
         cfToken: 'cf-custodian-token',
       });
-      expect(listDataChannels).toBeDefined();
-      expect(listDataChannels.success).toBe(true);
-      if (listDataChannels.success) {
-        const arr = Array.isArray(listDataChannels.data)
+      if (listDataChannels.success && listDataChannels.data) {
+        const channels = Array.isArray(listDataChannels.data)
           ? listDataChannels.data
           : [listDataChannels.data];
-        expect(arr.length).toBe(0);
+        for (const channel of channels) {
+          await SELF.remove('default', channel.id, { cfToken: 'cf-custodian-token' });
+        }
       }
     });
     it('can CREATE a Data Channel', async () => {
@@ -358,18 +358,18 @@ describe('Data Channel Registrar as Durable Object integration tests', () => {
       expect(removeUserFromOrg).toBeDefined();
     });
 
-    // assert that there exists no data channels before the tests
+    // Clean up any existing channels before each test to avoid name conflicts
     beforeEach(async () => {
       const listDataChannels = await SELF.list('default', {
         cfToken: 'cf-custodian-token',
       });
-      expect(listDataChannels).toBeDefined();
-      expect(listDataChannels.success).toBe(true);
-      if (listDataChannels.success) {
-        const arr = Array.isArray(listDataChannels.data)
+      if (listDataChannels.success && listDataChannels.data) {
+        const channels = Array.isArray(listDataChannels.data)
           ? listDataChannels.data
           : [listDataChannels.data];
-        expect(arr.length).toBe(0);
+        for (const channel of channels) {
+          await SELF.remove('default', channel.id, { cfToken: 'cf-custodian-token' });
+        }
       }
     });
 
@@ -387,7 +387,8 @@ describe('Data Channel Registrar as Durable Object integration tests', () => {
       }
     });
     it('can LIST data channels', async () => {
-      const dataChannelToCreate = generateDataChannels(5);
+      // Use unique channel indices (10-14) to avoid conflicts with other tests
+      const dataChannelToCreate = generateDataChannels(15).slice(10, 15); // Channels 10-14
       for (const channel of dataChannelToCreate) {
         const createdDataChannel = await custodianCreatesDataChannel(channel);
         expect(createdDataChannel).toBeDefined();
@@ -417,7 +418,8 @@ describe('Data Channel Registrar as Durable Object integration tests', () => {
       }
     });
     it('can READ a data channel', async () => {
-      const dataChannelToCreate = generateDataChannels()[0];
+      // Use a unique channel index to avoid conflicts
+      const dataChannelToCreate = generateDataChannels(25)[20]; // Channel 20
       const createdDataChannel = await custodianCreatesDataChannel(dataChannelToCreate);
       expect(createdDataChannel).toBeDefined();
       expect(createdDataChannel?.id).toBeDefined();
@@ -503,23 +505,24 @@ describe('Data Channel Registrar as Durable Object integration tests', () => {
      */
     const platformAdminToken = 'cf-platform-admin-token';
 
-    // assert that there exists no data channels before the tests
+    // Clean up any existing channels before each test to avoid name conflicts
     beforeEach(async () => {
       const listDataChannels = await SELF.list('default', {
         cfToken: 'cf-custodian-token',
       });
-      expect(listDataChannels).toBeDefined();
-      expect(listDataChannels.success).toBe(true);
-      if (listDataChannels.success) {
-        const arr = Array.isArray(listDataChannels.data)
+      if (listDataChannels.success && listDataChannels.data) {
+        const channels = Array.isArray(listDataChannels.data)
           ? listDataChannels.data
           : [listDataChannels.data];
-        expect(arr.length).toBe(0);
+        for (const channel of channels) {
+          await SELF.remove('default', channel.id, { cfToken: 'cf-custodian-token' });
+        }
       }
     });
 
     it('cannot LIST data channels', async () => {
-      const dataChannelToCreate = generateDataChannels(5);
+      // Generate channels starting from index 10 to avoid conflicts with other tests
+      const dataChannelToCreate = generateDataChannels(15).slice(10, 15); // Channels 10-14
       for (const channel of dataChannelToCreate) {
         const createdDataChannel = await custodianCreatesDataChannel(channel);
         expect(createdDataChannel).toBeDefined();
@@ -562,7 +565,8 @@ describe('Data Channel Registrar as Durable Object integration tests', () => {
       }
     });
     it('cannot DELETE a data channel', async () => {
-      const dataChannelToCreate = generateDataChannels()[0];
+      // Use a unique channel index to avoid conflicts
+      const dataChannelToCreate = generateDataChannels(20)[16]; // Channel 16
       const createdDataChannel = await custodianCreatesDataChannel(dataChannelToCreate);
       expect(createdDataChannel).toBeDefined();
       expect(createdDataChannel?.id).toBeDefined();

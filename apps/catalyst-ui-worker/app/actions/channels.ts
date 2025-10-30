@@ -27,18 +27,32 @@ export async function createDataChannel(formData: FormData, token: string) {
         console.error('Validation failed for data:', data);
         console.error('Full error object:', JSON.stringify(parsed.error, null, 2));
 
+        // Extract name field errors specifically for display
+        const nameErrors = parsed.error.issues
+            .filter((issue) => issue.path.includes('name'))
+            .map((issue) => issue.message);
+
+        // If there are name-specific errors, return validation error result
+        if (nameErrors.length > 0) {
+            return { success: false, error: nameErrors[0], isValidationError: true };
+        }
+
+        // For other validation errors, format them and return as validation error
         const fieldErrors =
-            parsed.error.errors?.map((err) => `${err.path.join('.')}: ${err.message}`).join(', ') ||
+            parsed.error.issues?.map((err) => `${err.path.join('.')}: ${err.message}`).join(', ') ||
             'Unknown validation error';
         console.error('Validation errors:', fieldErrors);
-        throw new Error(`Invalid data channel - ${fieldErrors}`);
+        return { success: false, error: `Invalid data channel - ${fieldErrors}`, isValidationError: true };
     }
     const newChannel = await api.create('default', parsed.data, tokenObject);
     if (!newChannel.success) {
         console.error(newChannel.error);
-        throw new Error('Failed to create data channel');
+        const errorMessage = newChannel.error || 'Failed to create data channel';
+        // Duplicate name errors are client errors (400), return as validation error
+        const isValidationError = errorMessage.includes('already exists in your organization');
+        return { success: false, error: errorMessage, isValidationError };
     }
-    return newChannel.data as DataChannel;
+    return { success: true, data: newChannel.data as DataChannel };
 }
 
 export async function listChannels(token: string) {
@@ -95,17 +109,47 @@ export async function updateChannel(formData: FormData, token: string) {
         console.error('Validation failed for data:', dataChannel);
         console.error('Full error object:', JSON.stringify(parsed.error, null, 2));
 
+        // Extract name field errors specifically for display
+        const nameErrors = parsed.error.issues
+            .filter((issue) => issue.path.includes('name'))
+            .map((issue) => issue.message);
+
+        // If there are name-specific errors, return validation error result
+        if (nameErrors.length > 0) {
+            return { success: false, error: nameErrors[0], isValidationError: true };
+        }
+
+        // For other validation errors, format them and return as validation error
         const fieldErrors =
-            parsed.error.errors?.map((err) => `${err.path.join('.')}: ${err.message}`).join(', ') ||
+            parsed.error.issues?.map((err) => `${err.path.join('.')}: ${err.message}`).join(', ') ||
             'Unknown validation error';
         console.error('Validation errors:', fieldErrors);
-        throw new Error(`Invalid data channel - ${fieldErrors}`);
+        return { success: false, error: `Invalid data channel - ${fieldErrors}`, isValidationError: true };
     }
     const updateOperation = await api.update('default', parsed.data, tokenObject);
     if (!updateOperation.success) {
-        throw new Error('Failed to update data channel');
+        const errorMessage = updateOperation.error || 'Failed to update data channel';
+        // Duplicate name errors are client errors (400), return as validation error
+        const isValidationError = errorMessage.includes('already exists in your organization');
+        return { success: false, error: errorMessage, isValidationError };
     }
-    return updateOperation.data as DataChannel;
+    return { success: true, data: updateOperation.data as DataChannel };
+}
+
+export async function checkChannelNameAvailability(
+    name: string,
+    organization: string,
+    token: string,
+    excludeChannelId?: string
+) {
+    const env = getEnv();
+    const api = getRegistrar(env);
+    const tokenObject = {
+        cfToken: token,
+    };
+
+    const response = await api.checkNameAvailability('default', name, organization, tokenObject, excludeChannelId);
+    return response;
 }
 
 export async function handleSwitch(channelId: string, accessSwitch: boolean, token: string) {
