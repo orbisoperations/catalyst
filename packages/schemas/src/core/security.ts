@@ -6,7 +6,7 @@ import { z } from 'zod/v4';
 
 // Common patterns for security validation
 const HTML_PATTERN = /<[^>]*>/g;
-const SCRIPT_PATTERN = /<script[^>]*>.*?<\/script[^>]*>/gi;
+const SCRIPT_PATTERN = /<script[^>]*>.*?<\/script[^>]*>/gis;
 // Match whole SQL keywords only (avoid matching substrings like "Updated")
 const SQL_INJECTION_PATTERN = /\b(union|select|insert|update|delete|drop|create|alter|exec(?:ute)?)\b/i;
 
