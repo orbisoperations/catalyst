@@ -46,7 +46,7 @@ describe('Data Channel Name Validation Unit Tests', () => {
           !/^\s+$/.test(name) &&
           /^[a-zA-Z0-9\s_-]+$/.test(name) &&
           !/<[^>]*>/.test(name) &&
-          !/<script[^>]*>.*?<\/script\s*>/gi.test(name) &&
+          !/<script\b[^>]*>[\s\S]*?<\/script[^>]*>/gi.test(name) &&
           !/\b(union|select|insert|update|delete|drop|create|alter|exec(?:ute)?)\b/i.test(name);
 
         expect(isValid).toBe(true);
@@ -59,7 +59,7 @@ describe('Data Channel Name Validation Unit Tests', () => {
           !/^\s+$/.test(name) &&
           /^[a-zA-Z0-9\s_-]+$/.test(name) &&
           !/<[^>]*>/.test(name) &&
-          !/<script[^>]*>.*?<\/script\s*>/gi.test(name) &&
+          !/<script\b[^>]*>[\s\S]*?<\/script[^>]*>/gi.test(name) &&
           !/\b(union|select|insert|update|delete|drop|create|alter|exec(?:ute)?)\b/i.test(name);
 
         expect(isValid).toBe(false);
