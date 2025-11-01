@@ -27,32 +27,44 @@ export async function createDataChannel(formData: FormData, token: string) {
         console.error('Validation failed for data:', data);
         console.error('Full error object:', JSON.stringify(parsed.error, null, 2));
 
-        // Extract name field errors specifically for display
+        // Use Zod's error formatting to extract name field errors specifically
         const nameErrors = parsed.error.issues
             .filter((issue) => issue.path.includes('name'))
             .map((issue) => issue.message);
 
         // If there are name-specific errors, return validation error result
         if (nameErrors.length > 0) {
-            return { success: false, error: nameErrors[0], isValidationError: true };
+            return {
+                success: false as const,
+                error: nameErrors[0],
+            };
         }
 
-        // For other validation errors, format them and return as validation error
+        // Format other validation errors using Zod's issue structure
         const fieldErrors =
             parsed.error.issues?.map((err) => `${err.path.join('.')}: ${err.message}`).join(', ') ||
             'Unknown validation error';
         console.error('Validation errors:', fieldErrors);
-        return { success: false, error: `Invalid data channel - ${fieldErrors}`, isValidationError: true };
+        return {
+            success: false as const,
+            error: `Invalid data channel - ${fieldErrors}`,
+        };
     }
     const newChannel = await api.create('default', parsed.data, tokenObject);
     if (!newChannel.success) {
         console.error(newChannel.error);
-        const errorMessage = newChannel.error || 'Failed to create data channel';
-        // Duplicate name errors are client errors (400), return as validation error
-        const isValidationError = errorMessage.includes('already exists in your organization');
-        return { success: false, error: errorMessage, isValidationError };
+        // Ensure we return a plain object (not Zod-parsed)
+        return {
+            success: false as const,
+            error: newChannel.error || 'Failed to create data channel',
+        };
     }
-    return { success: true, data: newChannel.data as DataChannel };
+    // Ensure single DataChannel (not array) for create response
+    const channel = Array.isArray(newChannel.data) ? newChannel.data[0] : newChannel.data;
+    return {
+        success: true as const,
+        data: channel as DataChannel,
+    };
 }
 
 export async function listChannels(token: string) {
@@ -109,31 +121,43 @@ export async function updateChannel(formData: FormData, token: string) {
         console.error('Validation failed for data:', dataChannel);
         console.error('Full error object:', JSON.stringify(parsed.error, null, 2));
 
-        // Extract name field errors specifically for display
+        // Use Zod's error formatting to extract name field errors specifically
         const nameErrors = parsed.error.issues
             .filter((issue) => issue.path.includes('name'))
             .map((issue) => issue.message);
 
         // If there are name-specific errors, return validation error result
         if (nameErrors.length > 0) {
-            return { success: false, error: nameErrors[0], isValidationError: true };
+            return {
+                success: false as const,
+                error: nameErrors[0],
+            };
         }
 
-        // For other validation errors, format them and return as validation error
+        // Format other validation errors using Zod's issue structure
         const fieldErrors =
             parsed.error.issues?.map((err) => `${err.path.join('.')}: ${err.message}`).join(', ') ||
             'Unknown validation error';
         console.error('Validation errors:', fieldErrors);
-        return { success: false, error: `Invalid data channel - ${fieldErrors}`, isValidationError: true };
+        return {
+            success: false as const,
+            error: `Invalid data channel - ${fieldErrors}`,
+        };
     }
     const updateOperation = await api.update('default', parsed.data, tokenObject);
     if (!updateOperation.success) {
-        const errorMessage = updateOperation.error || 'Failed to update data channel';
-        // Duplicate name errors are client errors (400), return as validation error
-        const isValidationError = errorMessage.includes('already exists in your organization');
-        return { success: false, error: errorMessage, isValidationError };
+        // Ensure we return a plain object (not Zod-parsed)
+        return {
+            success: false as const,
+            error: updateOperation.error || 'Failed to update data channel',
+        };
     }
-    return { success: true, data: updateOperation.data as DataChannel };
+    // Ensure single DataChannel (not array) for update response
+    const channel = Array.isArray(updateOperation.data) ? updateOperation.data[0] : updateOperation.data;
+    return {
+        success: true as const,
+        data: channel as DataChannel,
+    };
 }
 
 export async function checkChannelNameAvailability(

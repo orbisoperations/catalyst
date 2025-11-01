@@ -3,16 +3,14 @@ import { useUser } from '@/components/contexts/User/UserContext';
 import { ErrorCard, OrbisButton } from '@/components/elements';
 import { DetailedView } from '@/components/layouts';
 import { navigationItems } from '@/utils/nav.utils';
-import { DataChannel } from '@catalyst/schemas';
+import { DataChannel, DataChannelActionResponse } from '@catalyst/schemas';
 import { Flex, Grid } from '@chakra-ui/layout';
 import { Card, CardBody, FormControl, Input, FormErrorMessage, FormLabel } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-type ActionResult<T> = { success: true; data: T } | { success: false; error: string; isValidationError?: boolean };
-
 type DataChannelFormProps = {
-    createDataChannel: (fd: FormData, token: string) => Promise<ActionResult<DataChannel>>;
+    createDataChannel: (fd: FormData, token: string) => Promise<DataChannelActionResponse>;
 };
 
 export default function CreateChannelForm({ createDataChannel }: DataChannelFormProps) {
@@ -61,10 +59,16 @@ export default function CreateChannelForm({ createDataChannel }: DataChannelForm
                                 createDataChannel(fd, token ?? '')
                                     .then((result) => {
                                         if (result.success) {
-                                            router.push('/channels/' + result.data.id);
+                                            // Handle array response - get first channel if array, otherwise use directly
+                                            const channel = Array.isArray(result.data) ? result.data[0] : result.data;
+                                            router.push('/channels/' + channel.id);
                                         } else {
-                                            // Handle validation or client errors
-                                            if (result.isValidationError) {
+                                            // Determine if it's a validation error from error message patterns
+                                            const isValidationError =
+                                                result.error.includes('already exists in your organization') ||
+                                                result.error.includes('Invalid data channel') ||
+                                                result.error.includes('Channel name');
+                                            if (isValidationError) {
                                                 setNameError(result.error);
                                             } else {
                                                 setHasError(true);

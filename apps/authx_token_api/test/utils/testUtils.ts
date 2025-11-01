@@ -149,10 +149,11 @@ export async function cleanupDataChannels() {
 	});
 	if (listResponse.success && listResponse.data) {
 		const channels = Array.isArray(listResponse.data) ? listResponse.data : [listResponse.data];
-		for (const channel of channels) {
-			await env.DATA_CHANNEL_REGISTRAR.remove('default', channel.id, {
+		const removals = channels.map((channel: DataChannel) =>
+			env.DATA_CHANNEL_REGISTRAR.remove('default', channel.id, {
 				cfToken: 'cf-custodian-token',
-			});
-		}
+			}),
+		);
+		await Promise.allSettled(removals);
 	}
 }

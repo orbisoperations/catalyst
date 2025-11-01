@@ -23,14 +23,12 @@ import {
 } from '@chakra-ui/react';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { DataChannel } from '@catalyst/schemas';
+import { DataChannel, DataChannelActionResponse } from '@catalyst/schemas';
 import { useUser } from '../contexts/User/UserContext';
-
-type ActionResult<T> = { success: true; data: T } | { success: false; error: string; isValidationError?: boolean };
 
 type DataChannelDetailsProps = {
     channelDetails: (id: string, token: string) => Promise<DataChannel>;
-    updateChannel: (data: FormData, token: string) => Promise<ActionResult<DataChannel>>;
+    updateChannel: (data: FormData, token: string) => Promise<DataChannelActionResponse>;
     deleteChannel: (id: string, token: string) => Promise<DataChannel>;
     handleSwitch: (channelId: string, accessSwitch: boolean, token: string) => Promise<DataChannel>;
 };
@@ -193,8 +191,14 @@ export default function DataChannelDetailsComponent({
                                                         if (result.success) {
                                                             fetchChannelDetails();
                                                         } else {
-                                                            // Handle validation or client errors
-                                                            if (result.isValidationError) {
+                                                            // Determine if it's a validation error from error message patterns
+                                                            const isValidationError =
+                                                                result.error.includes(
+                                                                    'already exists in your organization'
+                                                                ) ||
+                                                                result.error.includes('Invalid data channel') ||
+                                                                result.error.includes('Channel name');
+                                                            if (isValidationError) {
                                                                 setNameError(result.error);
                                                             } else {
                                                                 editDisclosure.onClose();
