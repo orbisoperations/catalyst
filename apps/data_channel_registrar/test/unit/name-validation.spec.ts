@@ -77,6 +77,11 @@ describe('Data Channel Name Validation Unit Tests', () => {
       ) => {
         const normalizedName = channelName.toLowerCase().trim();
 
+        // Reject invalid inputs (empty or whitespace-only) to align with safeName() validation
+        if (normalizedName.length === 0) {
+          return false; // Invalid input
+        }
+
         for (const channel of existingChannels) {
           // Skip the channel being updated
           if (excludeChannelId && channel.id === excludeChannelId) {
@@ -123,6 +128,11 @@ describe('Data Channel Name Validation Unit Tests', () => {
       ) => {
         const normalizedName = channelName.toLowerCase().trim();
 
+        // Reject invalid inputs (empty or whitespace-only) to align with safeName() validation
+        if (normalizedName.length === 0) {
+          return false; // Invalid input
+        }
+
         for (const channel of existingChannels) {
           if (excludeChannelId && channel.id === excludeChannelId) {
             continue;
@@ -131,17 +141,19 @@ describe('Data Channel Name Validation Unit Tests', () => {
           if (channel.creatorOrganization === organizationId) {
             const normalizedChannelName = channel.name.toLowerCase().trim();
             if (normalizedChannelName === normalizedName) {
-              return false;
+              return false; // Name is not unique
             }
           }
         }
 
-        return true;
+        return true; // Name is unique
       };
 
       // Edge cases
-      expect(checkUniqueness('', 'test-org')).toBe(true); // Empty string
-      expect(checkUniqueness('   ', 'test-org')).toBe(true); // Only whitespace
+      // Note: Empty string and whitespace-only strings are invalid per safeName() validation
+      // These would be rejected before reaching the uniqueness check in practice
+      expect(checkUniqueness('', 'test-org')).toBe(false); // Empty string - invalid input
+      expect(checkUniqueness('   ', 'test-org')).toBe(false); // Only whitespace - invalid input
       expect(checkUniqueness('Edge Case', 'test-org')).toBe(false); // Exact match
       expect(checkUniqueness('edge case', 'test-org')).toBe(false); // Case insensitive
       expect(checkUniqueness('  Edge Case  ', 'test-org')).toBe(false); // Whitespace
