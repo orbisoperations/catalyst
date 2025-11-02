@@ -6,6 +6,8 @@ import { Card, CardBody, CardHeader } from '@chakra-ui/card';
 import { Box, Flex, Grid, Heading, Stack, StackDivider, Text } from '@chakra-ui/layout';
 import {
     FormControl,
+    FormErrorMessage,
+    FormLabel,
     Input,
     InputGroup,
     InputLeftAddon,
@@ -21,12 +23,12 @@ import {
 } from '@chakra-ui/react';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { DataChannel } from '@catalyst/schemas';
+import { DataChannel, DataChannelActionResponse } from '@catalyst/schemas';
 import { useUser } from '../contexts/User/UserContext';
 
 type DataChannelDetailsProps = {
     channelDetails: (id: string, token: string) => Promise<DataChannel>;
-    updateChannel: (data: FormData, token: string) => Promise<DataChannel>;
+    updateChannel: (data: FormData, token: string) => Promise<DataChannelActionResponse>;
     deleteChannel: (id: string, token: string) => Promise<DataChannel>;
     handleSwitch: (channelId: string, accessSwitch: boolean, token: string) => Promise<DataChannel>;
 };
@@ -47,6 +49,11 @@ export default function DataChannelDetailsComponent({
     const [hasError, setHasError] = useState<boolean>(false);
     const [editChannel, setEditChannel] = useState<DataChannel>();
     const [errorMessage, setErrorMessage] = useState<string>('');
+
+    // Validation state for edit form
+    const [nameError, setNameError] = useState<string>('');
+    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
     function fetchChannelDetails() {
         setHasError(false);
         if (id && typeof id === 'string' && token)
@@ -171,30 +178,55 @@ export default function DataChannelDetailsComponent({
                                     <form
                                         onSubmit={(e) => {
                                             e.preventDefault();
+                                            setIsSubmitting(true);
+                                            setNameError(''); // Clear previous errors
                                             const formData = new FormData(e.currentTarget);
                                             if (editChannel && token) {
                                                 formData.append('id', editChannel.id);
                                                 formData.append('organization', String(user?.custom.org));
-                                                formData.set(
-                                                    'name',
-
-                                                    user?.custom.org + '/' + formData.get('name')
-                                                );
+                                                // Send only the channel name without organization prefix
+                                                // The name is already extracted from the input field (without org prefix)
                                                 updateChannel(formData, token)
-                                                    .then(fetchChannelDetails)
-                                                    .catch(() => {
+                                                    .then((result) => {
+                                                        if (result.success) {
+                                                            fetchChannelDetails();
+                                                        } else {
+                                                            // Determine if it's a validation error from error message patterns
+                                                            const isValidationError =
+                                                                result.error.includes(
+                                                                    'already exists in your organization'
+                                                                ) ||
+                                                                result.error.includes('Invalid data channel') ||
+                                                                result.error.includes('Channel name');
+                                                            if (isValidationError) {
+                                                                setNameError(result.error);
+                                                            } else {
+                                                                editDisclosure.onClose();
+                                                                setHasError(true);
+                                                                setErrorMessage(
+                                                                    'An error occurred while updating the channel. Please try again later.'
+                                                                );
+                                                            }
+                                                        }
+                                                    })
+                                                    .catch((e) => {
+                                                        // Only catch unexpected errors (should not happen with result pattern)
+                                                        console.error('Unexpected error:', e);
                                                         editDisclosure.onClose();
                                                         setHasError(true);
                                                         setErrorMessage(
                                                             'An error occurred while updating the channel. Please try again later.'
                                                         );
+                                                    })
+                                                    .finally(() => {
+                                                        setIsSubmitting(false);
                                                     });
                                             }
                                         }}
                                     >
                                         <Grid gap={5}>
-                                            <FormControl display={'grid'} gap={2}>
-                                                <label htmlFor="name">Data Channel Name</label>
+                                            <FormControl display={'grid'} gap={2} isInvalid={!!nameError}>
+                                                <FormLabel htmlFor="name">Data Channel Name</FormLabel>
                                                 <InputGroup>
                                                     <InputLeftAddon>{`${user?.custom.org ?? ''}/`}</InputLeftAddon>
                                                     <Input
@@ -211,8 +243,11 @@ export default function DataChannelDetailsComponent({
                                                             }
                                                         }}
                                                         placeholder="Data Channel Name"
+                                                        maxLength={64}
+                                                        isDisabled={isSubmitting}
                                                     />
                                                 </InputGroup>
+                                                {nameError && <FormErrorMessage>{nameError}</FormErrorMessage>}
                                             </FormControl>
                                             <FormControl display={'grid'} gap={2}>
                                                 <label htmlFor="description">Description</label>
@@ -266,10 +301,17 @@ export default function DataChannelDetailsComponent({
                                                         editDisclosure.onClose();
                                                         setEditChannel(channel);
                                                     }}
+                                                    isDisabled={isSubmitting}
                                                 >
                                                     Cancel
                                                 </OrbisButton>
-                                                <OrbisButton type="submit">Save</OrbisButton>
+                                                <OrbisButton
+                                                    type="submit"
+                                                    isLoading={isSubmitting}
+                                                    loadingText="Saving..."
+                                                >
+                                                    Save
+                                                </OrbisButton>
                                             </Flex>
                                         </Grid>
                                     </form>

@@ -32,10 +32,17 @@ export const safeMessage = () => sanitizedString(1, 1000);
  * Safe name string for display names
  */
 export const safeName = () =>
-    sanitizedString(1, 100).regex(
-        /^[a-zA-Z0-9\s_-]+$/,
-        'Name can only contain letters, numbers, spaces, underscores, and hyphens'
-    );
+    z
+        .string()
+        .min(1, 'Channel name is required')
+        .max(64, 'Channel name must be 64 characters or less')
+        .trim()
+        .refine((val) => val.length > 0, 'A channel name is required')
+        .refine((val) => !/^\s+$/.test(val), 'Channel name cannot be only whitespace')
+        .refine((val) => !HTML_PATTERN.test(val), 'Channel name cannot contain HTML tags')
+        .refine((val) => !SCRIPT_PATTERN.test(val), 'Channel name cannot contain script tags')
+        .refine((val) => !SQL_INJECTION_PATTERN.test(val), 'Channel name contains potentially dangerous SQL keywords')
+        .regex(/^[a-zA-Z0-9\s_-]+$/, 'Only letters, numbers, and standard symbols are allowed');
 
 /**
  * Safe description string for longer text content

@@ -27,18 +27,44 @@ export async function createDataChannel(formData: FormData, token: string) {
         console.error('Validation failed for data:', data);
         console.error('Full error object:', JSON.stringify(parsed.error, null, 2));
 
+        // Use Zod's error formatting to extract name field errors specifically
+        const nameErrors = parsed.error.issues
+            .filter((issue) => issue.path.includes('name'))
+            .map((issue) => issue.message);
+
+        // If there are name-specific errors, return validation error result
+        if (nameErrors.length > 0) {
+            return {
+                success: false as const,
+                error: nameErrors[0],
+            };
+        }
+
+        // Format other validation errors using Zod's issue structure
         const fieldErrors =
-            parsed.error.errors?.map((err) => `${err.path.join('.')}: ${err.message}`).join(', ') ||
+            parsed.error.issues?.map((err) => `${err.path.join('.')}: ${err.message}`).join(', ') ||
             'Unknown validation error';
         console.error('Validation errors:', fieldErrors);
-        throw new Error(`Invalid data channel - ${fieldErrors}`);
+        return {
+            success: false as const,
+            error: `Invalid data channel - ${fieldErrors}`,
+        };
     }
     const newChannel = await api.create('default', parsed.data, tokenObject);
     if (!newChannel.success) {
         console.error(newChannel.error);
-        throw new Error('Failed to create data channel');
+        // Ensure we return a plain object (not Zod-parsed)
+        return {
+            success: false as const,
+            error: newChannel.error || 'Failed to create data channel',
+        };
     }
-    return newChannel.data as DataChannel;
+    // Ensure single DataChannel (not array) for create response
+    const channel = Array.isArray(newChannel.data) ? newChannel.data[0] : newChannel.data;
+    return {
+        success: true as const,
+        data: channel as DataChannel,
+    };
 }
 
 export async function listChannels(token: string) {
@@ -95,17 +121,59 @@ export async function updateChannel(formData: FormData, token: string) {
         console.error('Validation failed for data:', dataChannel);
         console.error('Full error object:', JSON.stringify(parsed.error, null, 2));
 
+        // Use Zod's error formatting to extract name field errors specifically
+        const nameErrors = parsed.error.issues
+            .filter((issue) => issue.path.includes('name'))
+            .map((issue) => issue.message);
+
+        // If there are name-specific errors, return validation error result
+        if (nameErrors.length > 0) {
+            return {
+                success: false as const,
+                error: nameErrors[0],
+            };
+        }
+
+        // Format other validation errors using Zod's issue structure
         const fieldErrors =
-            parsed.error.errors?.map((err) => `${err.path.join('.')}: ${err.message}`).join(', ') ||
+            parsed.error.issues?.map((err) => `${err.path.join('.')}: ${err.message}`).join(', ') ||
             'Unknown validation error';
         console.error('Validation errors:', fieldErrors);
-        throw new Error(`Invalid data channel - ${fieldErrors}`);
+        return {
+            success: false as const,
+            error: `Invalid data channel - ${fieldErrors}`,
+        };
     }
     const updateOperation = await api.update('default', parsed.data, tokenObject);
     if (!updateOperation.success) {
-        throw new Error('Failed to update data channel');
+        // Ensure we return a plain object (not Zod-parsed)
+        return {
+            success: false as const,
+            error: updateOperation.error || 'Failed to update data channel',
+        };
     }
-    return updateOperation.data as DataChannel;
+    // Ensure single DataChannel (not array) for update response
+    const channel = Array.isArray(updateOperation.data) ? updateOperation.data[0] : updateOperation.data;
+    return {
+        success: true as const,
+        data: channel as DataChannel,
+    };
+}
+
+export async function checkChannelNameAvailability(
+    name: string,
+    organization: string,
+    token: string,
+    excludeChannelId?: string
+) {
+    const env = getEnv();
+    const api = getRegistrar(env);
+    const tokenObject = {
+        cfToken: token,
+    };
+
+    const response = await api.checkNameAvailability('default', name, organization, tokenObject, excludeChannelId);
+    return response;
 }
 
 export async function handleSwitch(channelId: string, accessSwitch: boolean, token: string) {

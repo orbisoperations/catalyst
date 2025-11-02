@@ -51,21 +51,23 @@ export async function custodianCreatesDataChannel(dataChannel: DataChannel) {
 	expect(createResponse).toBeDefined();
 	expect(createResponse.success).toBe(true);
 
-	// add the data channel to the org
-	const addDataChannelToOrg = await env.AUTHZED.addDataChannelToOrg(TEST_ORG_ID, dataChannel.id);
+	if (!createResponse.success) {
+		throw new Error(`Failed to create data channel: ${createResponse.error}`);
+	}
+
+	// Get the created channel's ID (not the input channel's dummy ID)
+	const createdChannel = Array.isArray(createResponse.data) ? createResponse.data[0] : createResponse.data;
+	const createdChannelId = createdChannel.id;
+
+	// add the data channel to the org using the actual created channel ID
+	const addDataChannelToOrg = await env.AUTHZED.addDataChannelToOrg(TEST_ORG_ID, createdChannelId);
 	// add the org to the data channel
-	const addOrgToDataChannel = await env.AUTHZED.addOrgToDataChannel(dataChannel.id, TEST_ORG_ID);
+	const addOrgToDataChannel = await env.AUTHZED.addOrgToDataChannel(createdChannelId, TEST_ORG_ID);
 
 	expect(addDataChannelToOrg).toBeDefined();
 	expect(addOrgToDataChannel).toBeDefined();
 
-	expect(createResponse.success).toBe(true);
-
-	if (!createResponse.success) {
-		throw new Error('Failed to create data channel');
-	}
-
-	return Array.isArray(createResponse.data) ? createResponse.data[0] : createResponse.data;
+	return createdChannel;
 }
 
 /**
@@ -135,5 +137,23 @@ export async function clearAllAuthzedRoles() {
 		expect(addDataChannelToOrg).toBeDefined();
 		const addOrgToDataChannel = await env.AUTHZED.deleteUserFromOrg(TEST_ORG_ID, userId);
 		expect(addOrgToDataChannel).toBeDefined();
+	}
+}
+
+/**
+ * Clean up any existing data channels to avoid name conflicts in tests
+ */
+export async function cleanupDataChannels() {
+	const listResponse = await env.DATA_CHANNEL_REGISTRAR.list('default', {
+		cfToken: 'cf-custodian-token',
+	});
+	if (listResponse.success && listResponse.data) {
+		const channels = Array.isArray(listResponse.data) ? listResponse.data : [listResponse.data];
+		const removals = channels.map((channel: DataChannel) =>
+			env.DATA_CHANNEL_REGISTRAR.remove('default', channel.id, {
+				cfToken: 'cf-custodian-token',
+			}),
+		);
+		await Promise.allSettled(removals);
 	}
 }

@@ -10,6 +10,21 @@ import {
 import { env, SELF } from 'cloudflare:test';
 
 describe('Testing the catalyst token access controls to data channels', () => {
+  beforeEach(async () => {
+    // Clean up any existing channels before each test to avoid name conflicts
+    const listDataChannels = await SELF.list('default', {
+      cfToken: 'cf-custodian-token',
+    });
+    if (listDataChannels.success && listDataChannels.data) {
+      const channels = Array.isArray(listDataChannels.data)
+        ? listDataChannels.data
+        : [listDataChannels.data];
+      for (const channel of channels) {
+        await SELF.remove('default', channel.id, { cfToken: 'cf-custodian-token' });
+      }
+    }
+  });
+
   it('must fail if no token is provided', async () => {
     const readResult = await SELF.read('default', 'dummy-data-channel-id', {});
     expect(readResult.success).toBe(false);
@@ -57,6 +72,18 @@ describe('Testing the catalyst token access controls to data channels', () => {
   describe('entity in catalyst token is org admin', () => {
     beforeEach(async () => {
       await clearAllAuthzedRoles();
+      // Also clean up channels to avoid name conflicts
+      const listDataChannels = await SELF.list('default', {
+        cfToken: 'cf-custodian-token',
+      });
+      if (listDataChannels.success && listDataChannels.data) {
+        const channels = Array.isArray(listDataChannels.data)
+          ? listDataChannels.data
+          : [listDataChannels.data];
+        for (const channel of channels) {
+          await SELF.remove('default', channel.id, { cfToken: 'cf-custodian-token' });
+        }
+      }
     });
 
     it('can READ a data channel', async () => {

@@ -3,14 +3,14 @@ import { useUser } from '@/components/contexts/User/UserContext';
 import { ErrorCard, OrbisButton } from '@/components/elements';
 import { DetailedView } from '@/components/layouts';
 import { navigationItems } from '@/utils/nav.utils';
-import { DataChannel } from '@catalyst/schemas';
+import { DataChannel, DataChannelActionResponse } from '@catalyst/schemas';
 import { Flex, Grid } from '@chakra-ui/layout';
-import { Card, CardBody, FormControl, Input } from '@chakra-ui/react';
+import { Card, CardBody, FormControl, Input, FormErrorMessage, FormLabel } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 type DataChannelFormProps = {
-    createDataChannel: (fd: FormData, token: string) => Promise<DataChannel>;
+    createDataChannel: (fd: FormData, token: string) => Promise<DataChannelActionResponse>;
 };
 
 export default function CreateChannelForm({ createDataChannel }: DataChannelFormProps) {
@@ -24,6 +24,11 @@ export default function CreateChannelForm({ createDataChannel }: DataChannelForm
         creatorOrganization: String(user?.custom.org),
         accessSwitch: true,
     });
+
+    // Validation state - only set on API error
+    const [nameError, setNameError] = useState<string>('');
+    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
     return (
         <DetailedView
             actions={<></>}
@@ -48,20 +53,41 @@ export default function CreateChannelForm({ createDataChannel }: DataChannelForm
                     <CardBody>
                         <form
                             action={async (fd) => {
+                                setIsSubmitting(true);
+                                setNameError(''); // Clear previous errors
                                 fd.set('organization', String(user?.custom.org));
                                 createDataChannel(fd, token ?? '')
-                                    .then((newChannel) => {
-                                        router.push('/channels/' + newChannel.id);
+                                    .then((result) => {
+                                        if (result.success) {
+                                            // Handle array response - get first channel if array, otherwise use directly
+                                            const channel = Array.isArray(result.data) ? result.data[0] : result.data;
+                                            router.push('/channels/' + channel.id);
+                                        } else {
+                                            // Determine if it's a validation error from error message patterns
+                                            const isValidationError =
+                                                result.error.includes('already exists in your organization') ||
+                                                result.error.includes('Invalid data channel') ||
+                                                result.error.includes('Channel name');
+                                            if (isValidationError) {
+                                                setNameError(result.error);
+                                            } else {
+                                                setHasError(true);
+                                            }
+                                        }
                                     })
                                     .catch((e) => {
-                                        console.error(e);
+                                        // Only catch unexpected errors (should not happen with result pattern)
+                                        console.error('Unexpected error:', e);
                                         setHasError(true);
+                                    })
+                                    .finally(() => {
+                                        setIsSubmitting(false);
                                     });
                             }}
                         >
                             <Grid gap={5}>
-                                <FormControl display={'grid'} gap={2}>
-                                    <label htmlFor="name">Data Channel Name</label>
+                                <FormControl display={'grid'} gap={2} isInvalid={!!nameError}>
+                                    <FormLabel htmlFor="name">Data Channel Name</FormLabel>
                                     <Input
                                         rounded="md"
                                         value={dataChannel.name}
@@ -74,7 +100,10 @@ export default function CreateChannelForm({ createDataChannel }: DataChannelForm
                                         name="name"
                                         required={true}
                                         placeholder="Data Channel Name"
+                                        maxLength={64}
+                                        isDisabled={isSubmitting}
                                     />
+                                    {nameError && <FormErrorMessage>{nameError}</FormErrorMessage>}
                                 </FormControl>
                                 <FormControl display={'grid'} gap={2}>
                                     <label htmlFor="description">Description</label>
@@ -109,10 +138,12 @@ export default function CreateChannelForm({ createDataChannel }: DataChannelForm
                                     />
                                 </FormControl>
                                 <Flex justifyContent={'space-between'}>
-                                    <OrbisButton colorScheme="gray" onClick={router.back}>
+                                    <OrbisButton colorScheme="gray" onClick={router.back} isDisabled={isSubmitting}>
                                         Cancel
                                     </OrbisButton>
-                                    <OrbisButton type="submit">Create</OrbisButton>
+                                    <OrbisButton type="submit" isLoading={isSubmitting} loadingText="Creating...">
+                                        Create
+                                    </OrbisButton>
                                 </Flex>
                             </Grid>
                         </form>

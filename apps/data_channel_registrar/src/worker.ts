@@ -145,6 +145,48 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
     });
   }
 
+  /**
+   * Check if a channel name is unique within an organization
+   * @param doNamespace - The Durable Object namespace to query
+   * @param channelName - The channel name to check
+   * @param organizationId - The organization ID to check within
+   * @param excludeChannelId - Optional channel ID to exclude from the check (for updates)
+   * @returns PermissionCheckResponse indicating if the name is unique
+   */
+  async checkChannelNameUniqueness(
+    doNamespace: string,
+    channelName: string,
+    organizationId: string,
+    excludeChannelId?: string,
+  ) {
+    try {
+      const doId = this.env.DO.idFromName(doNamespace);
+      const stub = this.env.DO.get(doId);
+      const isUnique = await stub.checkNameUniqueness(
+        channelName,
+        organizationId,
+        excludeChannelId,
+      );
+
+      if (!isUnique) {
+        return PermissionCheckResponse.parse({
+          success: false,
+          error: `${channelName} already exists in your organization`,
+        });
+      }
+
+      return PermissionCheckResponse.parse({
+        success: true,
+      });
+    } catch (error) {
+      console.error('Error checking channel name uniqueness:', error);
+      return PermissionCheckResponse.parse({
+        success: false,
+        error: 'Failed to validate channel name uniqueness',
+      });
+    }
+  }
+
   async create(doNamespace: string, dataChannel: Omit<DataChannel, 'id'>, token: Token) {
     const checkResp = await this.CUDPerms(token);
     if (!checkResp.success) {
@@ -153,6 +195,20 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
         error: checkResp.error,
       });
     }
+
+    // Check for channel name uniqueness within the organization
+    const nameCheck = await this.checkChannelNameUniqueness(
+      doNamespace,
+      dataChannel.name,
+      dataChannel.creatorOrganization,
+    );
+    if (!nameCheck.success) {
+      return DataChannelActionResponse.parse({
+        success: false,
+        error: nameCheck.error,
+      });
+    }
+
     const doId = this.env.DO.idFromName(doNamespace);
     const stub = this.env.DO.get(doId);
     const create = await stub.create(dataChannel);
@@ -173,6 +229,21 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
         error: checkResp.error,
       });
     }
+
+    // Check for channel name uniqueness within the organization (excluding current channel)
+    const nameCheck = await this.checkChannelNameUniqueness(
+      doNamespace,
+      dataChannel.name,
+      dataChannel.creatorOrganization,
+      dataChannel.id,
+    );
+    if (!nameCheck.success) {
+      return DataChannelActionResponse.parse({
+        success: false,
+        error: nameCheck.error,
+      });
+    }
+
     console.log('user can update data channel');
     const doId = this.env.DO.idFromName(doNamespace);
     const stub = this.env.DO.get(doId);
@@ -268,6 +339,49 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
     }
   }
 
+  /**
+   * Check if a channel name is available within an organization
+   * @param doNamespace - The Durable Object namespace to query
+   * @param channelName - The channel name to check
+   * @param organizationId - The organization ID to check within
+   * @param token - User token for authentication
+   * @param excludeChannelId - Optional channel ID to exclude from the check (for updates)
+   * @returns DataChannelActionResponse indicating if the name is available
+   */
+  async checkNameAvailability(
+    doNamespace: string,
+    channelName: string,
+    organizationId: string,
+    token: Token,
+    excludeChannelId?: string,
+  ) {
+    const checkResp = await this.CUDPerms(token);
+    if (!checkResp.success) {
+      return DataChannelActionResponse.parse({
+        success: false,
+        error: checkResp.error,
+      });
+    }
+
+    const nameCheck = await this.checkChannelNameUniqueness(
+      doNamespace,
+      channelName,
+      organizationId,
+      excludeChannelId,
+    );
+    if (!nameCheck.success) {
+      return DataChannelActionResponse.parse({
+        success: false,
+        error: nameCheck.error,
+      });
+    }
+
+    return DataChannelActionResponse.parse({
+      success: true,
+      data: { available: true },
+    });
+  }
+
   async remove(doNamespace: string, dataChannelID: string, token: Token) {
     const checkResp = await this.CUDPerms(token);
     if (!checkResp.success) {
@@ -357,5 +471,38 @@ export class Registrar extends DurableObject {
 
   async delete(id: string) {
     return this.ctx.storage.delete(id);
+  }
+
+  /**
+   * Check if a channel name is unique within an organization
+   * @param channelName - The channel name to check (case-insensitive)
+   * @param organizationId - The organization ID to check within
+   * @param excludeChannelId - Optional channel ID to exclude from the check (for updates)
+   * @returns boolean indicating if the name is unique
+   */
+  async checkNameUniqueness(
+    channelName: string,
+    organizationId: string,
+    excludeChannelId?: string,
+  ): Promise<boolean> {
+    const allChannels = await this.ctx.storage.list<DataChannel>();
+    const normalizedName = channelName.toLowerCase().trim();
+
+    for (const [id, channel] of allChannels.entries()) {
+      // Skip the channel being updated
+      if (excludeChannelId && id === excludeChannelId) {
+        continue;
+      }
+
+      // Check if channel belongs to the same organization
+      if (channel.creatorOrganization === organizationId) {
+        const normalizedChannelName = channel.name.toLowerCase().trim();
+        if (normalizedChannelName === normalizedName) {
+          return false; // Name is not unique
+        }
+      }
+    }
+
+    return true; // Name is unique
   }
 }

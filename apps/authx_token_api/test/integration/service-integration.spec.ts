@@ -1,7 +1,14 @@
 import { env, SELF } from 'cloudflare:test';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { type JWTSigningRequest, JWTAudience } from '@catalyst/schemas';
-import { clearAllAuthzedRoles, custodianCreatesDataChannel, generateDataChannels, TEST_ORG_ID, validUsers } from '../utils/testUtils';
+import {
+	clearAllAuthzedRoles,
+	cleanupDataChannels,
+	custodianCreatesDataChannel,
+	generateDataChannels,
+	TEST_ORG_ID,
+	validUsers,
+} from '../utils/testUtils';
 
 /**
  * Integration Tests: Service Integration
@@ -24,6 +31,7 @@ describe('Integration: Cross-Service Interactions', () => {
 
 	beforeEach(async () => {
 		await clearAllAuthzedRoles();
+		await cleanupDataChannels();
 	});
 
 	describe('AuthZed Permission Integration', () => {
@@ -247,7 +255,10 @@ describe('Integration: Cross-Service Interactions', () => {
 			// SCENARIO: Test that all user types from validUsers work
 			// ═══════════════════════════════════════════════════════════
 
+			// Create the channel once before testing all user types
 			const channel = generateDataChannels(1)[0];
+			await env.AUTHZED.addDataCustodianToOrg(TEST_ORG_ID, CUSTODIAN_USER.email);
+			const createdChannel = await custodianCreatesDataChannel(channel);
 
 			// Test each user type
 			const userTypes = [
@@ -259,8 +270,9 @@ describe('Integration: Cross-Service Interactions', () => {
 			for (const { token, user, addToOrg } of userTypes) {
 				await clearAllAuthzedRoles();
 				await addToOrg(TEST_ORG_ID, user.email);
-
-				const createdChannel = await custodianCreatesDataChannel(channel);
+				// Re-add the channel to org for this user type
+				await env.AUTHZED.addDataChannelToOrg(TEST_ORG_ID, createdChannel.id);
+				await env.AUTHZED.addOrgToDataChannel(createdChannel.id, TEST_ORG_ID);
 
 				const jwtRequest: JWTSigningRequest = {
 					entity: user.email,
