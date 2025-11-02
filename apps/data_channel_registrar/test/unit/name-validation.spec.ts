@@ -1,4 +1,4 @@
-import { DataChannel } from '@catalyst/schemas';
+import { DataChannel, safeName } from '@catalyst/schemas';
 import { describe, expect, it } from 'vitest';
 
 describe('Data Channel Name Validation Unit Tests', () => {
@@ -40,29 +40,13 @@ describe('Data Channel Name Validation Unit Tests', () => {
       ];
 
       validNames.forEach(name => {
-        const isValid =
-          name.length > 0 &&
-          name.length <= 64 &&
-          !/^\s+$/.test(name) &&
-          /^[a-zA-Z0-9\s_-]+$/.test(name) &&
-          !/<[^>]*>/.test(name) &&
-          !/<script\b[^>]*>[\s\S]*?<\/script[^>]*>/gi.test(name) &&
-          !/\b(union|select|insert|update|delete|drop|create|alter|exec(?:ute)?)\b/i.test(name);
-
-        expect(isValid).toBe(true);
+        const result = safeName().safeParse(name);
+        expect(result.success).toBe(true);
       });
 
       invalidNames.forEach(name => {
-        const isValid =
-          name.length > 0 &&
-          name.length <= 64 &&
-          !/^\s+$/.test(name) &&
-          /^[a-zA-Z0-9\s_-]+$/.test(name) &&
-          !/<[^>]*>/.test(name) &&
-          !/<script\b[^>]*>[\s\S]*?<\/script[^>]*>/gi.test(name) &&
-          !/\b(union|select|insert|update|delete|drop|create|alter|exec(?:ute)?)\b/i.test(name);
-
-        expect(isValid).toBe(false);
+        const result = safeName().safeParse(name);
+        expect(result.success).toBe(false);
       });
     });
 
