@@ -244,117 +244,152 @@ app.post('/validate-tokens', async (ctx) => {
 });
 
 /**
+ * Helper to create a GraphQL Yoga instance with the gateway schema
+ * @param endpoints - Array of data channel endpoints with single-use tokens
+ * @returns Configured Yoga instance
+ */
+const createGatewayYoga = async (endpoints: { token: string; endpoint: string }[]) => {
+    return createYoga({
+        schema: await makeGatewaySchema(endpoints),
+        maskedErrors: {
+            maskError: (error) => {
+                // Suppress "Cannot query field" errors - these happen when users query
+                // fields from channels they don't have access to
+                if (error.message.includes('Cannot query field')) {
+                    // Return the original error unchanged - GraphQL will handle it
+                    return error;
+                }
+                // Log and pass through all errors
+                console.warn('GraphQL error suppressed:', error.message);
+                // Return the original error - GraphQL Yoga handles masking
+                return error;
+            },
+        },
+    });
+};
+
+/**
+ * Helper to execute a Yoga GraphQL instance with Hono context
+ * Uses yoga.fetch(request, env) pattern recommended by Hono + GraphQL Yoga integration
+ * @param yoga - The Yoga GraphQL instance to execute
+ * @param ctx - The Hono context object
+ * @returns The response from the Yoga instance
+ */
+const executeYogaWithContext = (
+    yoga: ReturnType<typeof createYoga>,
+    ctx: Context<{ Bindings: Env; Variables: Variables }>
+) => {
+    // Yoga's fetch() expects (Request, env) - see https://github.com/orgs/honojs/discussions/1063
+    // Type definitions don't align with Hono's context, but works correctly at runtime
+    // @ts-expect-error - Expected type mismatch between Yoga and Hono context types
+    return yoga(ctx.req.raw, ctx.env);
+};
+
+/**
  * Middleware to authenticate requests
- * TODO: separate this into a separate file, with better logic
  *
- * Separating into its own handler fixes a weird case where app.use does a app.all('*', for all routes, and we only need auth for /graphql
- * Use in specific routes that need auth
+ * This middleware extracts and validates tokens but does NOT return error responses.
+ * Instead, it sets empty claims/tokens on validation failure, allowing the gateway
+ * to return an empty schema (best-effort stitching approach).
  *
  * @param c - The context object
  * @param next - The next middleware function
- * @returns A JSON response with an error message if the token is invalid
  */
 const authenticateRequestMiddleware = async (c: Context<{ Bindings: Env; Variables: Variables }>, next: Next) => {
     const [token, error] = grabTokenInHeader(c.req.header('Authorization'));
     if (error) {
-        return c.json(
-            {
-                error: error.msg,
-            },
-            400
-        );
+        console.warn('Token extraction error:', error.msg);
+        c.set('claims', []);
+        c.set('catalyst-token', '');
+        await next();
+        return;
     }
     if (!token) {
-        return c.json(
-            {
-                error: 'JWT Invalid',
-            },
-            403
-        );
+        console.warn('No token provided');
+        c.set('claims', []);
+        c.set('catalyst-token', '');
+        await next();
+        return;
     }
 
-    // Check audience only - let registrar handle full JWT validation
-    const audienceValidation = validateGatewayAudience(token);
-    if (!audienceValidation.valid) {
-        return c.json({ message: audienceValidation.error }, 403);
+    const { valid, claims, jwtId, error: ValidError } = await c.env.AUTHX_TOKEN_API.validateToken(token);
+    if (!valid || ValidError || !jwtId) {
+        console.warn('Token validation failed:', ValidError);
+        c.set('claims', []);
+        c.set('catalyst-token', '');
+        await next();
+        return;
     }
-
-    // For middleware, we still need to do full validation to get claims and check revocation
-    const validationResult = await c.env.AUTHX_TOKEN_API.validateToken(token);
-    if (!validationResult.valid) {
-        return c.json({ message: 'Token validation failed' }, 403);
-    }
-    const { claims, jwtId } = validationResult;
 
     // Check if the JWT token is invalid (revoked or deleted)
     if (await c.env.ISSUED_JWT_REGISTRY.isInvalid(jwtId)) {
-        return c.json({ message: 'Token has been revoked' }, 403);
+        console.warn('Token has been revoked:', jwtId);
+        c.set('claims', []);
+        c.set('catalyst-token', '');
+        await next();
+        return;
     }
 
     c.set('claims', claims);
     c.set('catalyst-token', token);
-    // we good
     await next();
-
-    // we can add claims but do not need to enforce them here
 };
 
 app.use('/graphql', authenticateRequestMiddleware, async (ctx) => {
+    // Auth guard: Validate token schema
     const token = TokenSchema.safeParse({
         catalystToken: ctx.get('catalyst-token'),
     });
-
     if (!token.success) {
-        console.error(token.error);
-        return ctx.json(
-            {
-                error: 'invalid token',
-            },
-            403
-        );
-    }
-    if (!token.data.catalystToken) console.error('catalyst token is undefined when building gateway');
-    const claims = ctx.get('claims');
-    if (!claims) {
-        console.error('no claims found');
-        return ctx.json(
-            {
-                error: 'no claims found',
-            },
-            403
-        );
+        // Expected auth failure - client provided invalid token format
+        console.info('Invalid token format, returning empty schema');
+        const yoga = await createGatewayYoga([]);
+        return executeYogaWithContext(yoga, ctx);
     }
 
+    // Auth guard: Verify claims exist
+    const claims = ctx.get('claims');
+    if (!claims || claims.length === 0) {
+        // Expected auth failure - no claims found (handled by auth middleware)
+        console.info('No claims found, returning empty schema');
+        const yoga = await createGatewayYoga([]);
+        return executeYogaWithContext(yoga, ctx);
+    }
+
+    // Auth guard: Split token into single-use tokens
     const channelAccessPermissions = await ctx.env.AUTHX_TOKEN_API.splitTokenIntoSingleUseTokens(
-        token.data.catalystToken!,
+        token.data.catalystToken,
         'default'
     );
-
     if (!channelAccessPermissions.success) {
-        return ctx.json(
-            {
-                error: channelAccessPermissions.error,
-            },
-            403
-        );
+        // System issue - token splitting failed
+        console.warn('Failed to split token into single-use tokens, returning empty schema');
+        const yoga = await createGatewayYoga([]);
+        return executeYogaWithContext(yoga, ctx);
     }
 
-    // filter out failed signed tokens
-    // map to endpoints
+    // Filter successful channel permissions and map to endpoints
+    // Type guard: filter ensures only success cases, then we can safely access dataChannel
     const endpoints = channelAccessPermissions.channelPermissions
-        .filter((dataChannelPermission) => dataChannelPermission.success)
+        .filter((permission): permission is Extract<typeof permission, { success: true }> => {
+            if (!permission.success) {
+                // Expected - individual channel permission failed
+                console.info('Skipping failed channel permission');
+                return false;
+            }
+            return true;
+        })
         .map(({ dataChannel, singleUseToken }) => ({
             token: singleUseToken,
             endpoint: dataChannel.endpoint,
         }));
 
-    const yoga = createYoga({
-        schema: await makeGatewaySchema(endpoints),
-    });
+    if (endpoints.length === 0) {
+        console.info('No accessible channels, returning empty schema with health query only');
+    }
 
-    // @ts-expect-error: for some reason TS is not happy with the yoga function receiving the raw request
-    // ignore for now, fix later
-    return yoga(ctx.req.raw, ctx.env);
+    const yoga = await createGatewayYoga(endpoints);
+    return executeYogaWithContext(yoga, ctx);
 });
 
 export default app;

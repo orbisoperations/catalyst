@@ -69,20 +69,44 @@ describe('gateway integration tests', () => {
         const headers = new Headers();
         headers.set('Authorization', `Bearer ${badToken}`);
 
+        // With best-effort stitching, invalid tokens return an empty schema
+        // Make a GraphQL introspection query to verify only health field exists
         const response = await SELF.fetch('https://data-channel-gateway/graphql', {
-            method: 'GET',
-            headers,
+            method: 'POST',
+            headers: {
+                ...headers,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                query: `{ __type(name: "Query") { fields { name } } }`,
+            }),
         });
-        const expected = { message: 'Invalid token format' };
-        expect(JSON.parse(await response.text())).toStrictEqual(expected);
+
+        expect(response.status).toBe(200);
+        const json = (await response.json()) as { data: { __type: { fields: Array<{ name: string }> } } };
+        // Invalid token should only have access to health query
+        expect(json.data.__type.fields).toHaveLength(1);
+        expect(json.data.__type.fields[0].name).toBe('health');
     });
 
     it("returns GF'd for no auth header", async () => {
+        // With best-effort stitching, missing auth returns an empty schema
+        // Make a GraphQL introspection query to verify only health field exists
         const response = await SELF.fetch('https://data-channel-gateway/graphql', {
-            method: 'GET',
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                query: `{ __type(name: "Query") { fields { name } } }`,
+            }),
         });
 
-        expect(await response.text()).toMatchInlineSnapshot(`"{"error":"No Credenetials Supplied"}"`);
+        expect(response.status).toBe(200);
+        const json = (await response.json()) as { data: { __type: { fields: Array<{ name: string }> } } };
+        // No auth should only have access to health query
+        expect(json.data.__type.fields).toHaveLength(1);
+        expect(json.data.__type.fields[0].name).toBe('health');
     });
 
     it('should return health a known good token no claims', async (textCtx) => {
@@ -366,9 +390,10 @@ describe('gateway integration tests', () => {
         });
 
         // STEP 4: Verify security boundary enforcement
-        // Gateway should reject tokens with 'catalyst:datachannel' audience
-        expect(gatewayResponse.status).toBe(403);
+        // Gateway returns 200 with empty schema to avoid information disclosure
+        expect(gatewayResponse.status).toBe(200);
         const gatewayData = await gatewayResponse.json();
-        expect(gatewayData.message).toBe('Token audience is not valid for gateway access');
+        // Empty schema means no data channels are accessible
+        expect(gatewayData.data ?? {}).toEqual({});
     });
 });
