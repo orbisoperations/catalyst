@@ -54,12 +54,19 @@ Each channel undergoes the following validation tests:
    - **All three tests must pass** for authentication validation
 
 2. **GraphQL Introspection Test**
+
    - Sends authenticated introspection query
    - Validates response structure (200 status, valid GraphQL format)
    - Checks for `__schema` field and `queryType.name`
    - Ensures no GraphQL errors in response
 
-**Both tests must pass** for a channel to be certified as `valid`.
+3. **SDL Federation Test**
+   - Sends authenticated `{ _sdl }` query (used by gateway for schema stitching)
+   - Validates response structure (200 status, valid GraphQL format)
+   - Checks for `_sdl` field containing a non-empty SDL string
+   - Ensures no GraphQL errors in response
+
+**All three tests must pass** for a channel to be certified as `valid`.
 
 ## RPC Surface (MVP)
 
@@ -275,7 +282,7 @@ validateBulkChannels(channels, { concurrencyLimit: 10 });
 Each validation creates:
 
 - 1 system JWT token request
-- 4 fetch requests (3 for JWT tests + 1 for introspection)
+- 5 fetch requests (3 for JWT tests + 1 for introspection + 1 for SDL)
 - Multiple promise objects held in memory until completion
 
 Estimated memory per channel: ~1-2 KB during validation

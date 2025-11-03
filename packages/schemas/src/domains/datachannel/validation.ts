@@ -33,7 +33,7 @@ export type JWTTestDetails = z.infer<typeof JWTTestDetailsSchema>;
  * Test Result - Individual validation test result
  */
 export const TestResultSchema = z.object({
-    testType: z.enum(['jwt_validation', 'introspection', 'schema_compliance']),
+    testType: z.enum(['jwt_validation', 'introspection', 'sdl_federation', 'schema_compliance']),
     success: z.boolean(),
     duration: z.number(),
     errorDetails: z.string().optional(),
