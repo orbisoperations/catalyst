@@ -70,6 +70,11 @@ export default defineWorkersConfig({
         singleWorker: true,
         main: 'src/worker.ts',
         wrangler: { configPath: './wrangler.jsonc' },
+        serviceBindings: {
+          AUTHZED: 'authx_authzed_api',
+          AUTHX_TOKEN_API: 'authx_token_api',
+          USERCACHE: 'user-credentials-cache',
+        },
         miniflare: {
           durableObjects: {
             DO: 'Registrar',
