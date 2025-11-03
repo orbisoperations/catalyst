@@ -430,16 +430,60 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
 }
 
 export class Registrar extends DurableObject {
+  /**
+   * Extracts the name from a channel name that may be in the old format "org/name"
+   * If the name contains a "/" it extracts the part after the slash, otherwise returns as-is
+   * @param name - The channel name that may contain "creatorOrganization/name" format
+   * @returns The extracted name part
+   */
+  private extractNameFromLegacyFormat(name: string): string {
+    if (name.includes('/')) {
+      const parts = name.split('/');
+      return parts[parts.length - 1]; // Get the last part after the slash
+    }
+    return name;
+  }
+
+  /**
+   * Performs lazy migration on a data channel if it has the old name format
+   * Extracts just the name if it's in "creatorOrganization/name" format
+   * @param dc - The data channel to potentially migrate
+   * @returns true if migration was performed, false otherwise
+   */
+  private async migrateLegacyNameFormat(dc: DataChannel): Promise<boolean> {
+    if (dc.name.includes('/')) {
+      const extractedName = this.extractNameFromLegacyFormat(dc.name);
+      dc.name = extractedName;
+      // Persist the migrated channel back to storage
+      await this.ctx.blockConcurrencyWhile(async () => {
+        await this.ctx.storage.put(dc.id, dc);
+      });
+      return true;
+    }
+    return false;
+  }
+
   async list(filterByAccessSwitch: boolean = false): Promise<DataChannel[]> {
     const allChannels = await this.ctx.storage.list<DataChannel>();
+    const channels = Array.from(allChannels.values());
+
+    // Lazy migrate any channels with old name format
+    for (const channel of channels) {
+      await this.migrateLegacyNameFormat(channel);
+    }
+
     // if filterByAccessSwitch is set we passthrough access switch, else return all
-    return Array.from(allChannels.values()).filter(dc =>
-      filterByAccessSwitch ? dc.accessSwitch : true,
-    );
+    return channels.filter(dc => (filterByAccessSwitch ? dc.accessSwitch : true));
   }
 
   async get(id: string, filterByAccessSwitch: boolean = false) {
     const dc = await this.ctx.storage.get<DataChannel>(id);
+
+    // Lazy migrate if needed
+    if (dc) {
+      await this.migrateLegacyNameFormat(dc);
+    }
+
     return !filterByAccessSwitch || dc?.accessSwitch ? dc : undefined;
     //TODO: implement claims
     // const {claims} = await c.req.json<{claims?: string[]}>()
@@ -475,6 +519,7 @@ export class Registrar extends DurableObject {
 
   /**
    * Check if a channel name is unique within an organization
+   * Handles both old format (org/name) and new format (name only) during migration
    * @param channelName - The channel name to check (case-insensitive)
    * @param organizationId - The organization ID to check within
    * @param excludeChannelId - Optional channel ID to exclude from the check (for updates)
@@ -496,7 +541,10 @@ export class Registrar extends DurableObject {
 
       // Check if channel belongs to the same organization
       if (channel.creatorOrganization === organizationId) {
-        const normalizedChannelName = channel.name.toLowerCase().trim();
+        // Extract the actual name, handling both old and new formats
+        const actualChannelName = this.extractNameFromLegacyFormat(channel.name);
+        const normalizedChannelName = actualChannelName.toLowerCase().trim();
+
         if (normalizedChannelName === normalizedName) {
           return false; // Name is not unique
         }
