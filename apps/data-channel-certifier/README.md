@@ -43,24 +43,50 @@ This service implements clean separation of concerns:
 
 ### Validation Steps
 
-1. **Authentication**: Obtains system JWT tokens for validation
-2. **Connectivity**: Tests basic GraphQL endpoint connectivity
-3. **Schema Validation**: Performs GraphQL introspection to validate schema
-4. **Query Testing**: Tests essential queries (like `_sdl` for federation)
-5. **Status Updates**: Reports results back to data channel registrar
+Each channel undergoes the following validation tests:
+
+1. **JWT Authentication Test**
+
+   - Obtains system JWT token from `authx_token_api`
+   - Tests endpoint with valid token (expects 200)
+   - Tests endpoint with invalid token (expects 401/403)
+   - Tests endpoint with no token (expects 401/403)
+   - **All three tests must pass** for authentication validation
+
+2. **GraphQL Introspection Test**
+   - Sends authenticated introspection query
+   - Validates response structure (200 status, valid GraphQL format)
+   - Checks for `__schema` field and `queryType.name`
+   - Ensures no GraphQL errors in response
+
+**Both tests must pass** for a channel to be certified as `valid`.
 
 ## RPC Surface (MVP)
 
 The Worker implements RPC methods via `WorkerEntrypoint`, invoked by callers with a service binding:
 
-- `validateBulkChannels(): Promise<ValidationReport>`
-- `validateChannel(channelId: string): Promise<ValidationResult>`
+- `validateBulkChannels(channels?: Array<...>): Promise<ValidationReport>`
+
+  - Validates multiple channels (all enabled channels if not specified)
+  - Returns summary report with individual results
+  - **Note**: Currently validates all channels concurrently without throttling
+
+- `validateChannel(request: ValidationRequest): Promise<ValidationResult>`
+  - Validates a single channel
+  - Returns detailed validation result
 
 Example call from another Worker with binding `DATA_CHANNEL_CERTIFIER`:
 
 ```ts
+// Validate all enabled channels
 await env.DATA_CHANNEL_CERTIFIER.validateBulkChannels();
-await env.DATA_CHANNEL_CERTIFIER.validateChannel('channel-uuid');
+
+// Validate specific channel
+await env.DATA_CHANNEL_CERTIFIER.validateChannel({
+  channelId: 'channel-uuid',
+  endpoint: 'https://example.com/graphql',
+  organizationId: 'org-uuid',
+});
 ```
 
 ## Validation Status Types
@@ -212,6 +238,117 @@ Key metrics to monitor:
 
 - TBD
 
+## Performance Considerations
+
+### Bulk Validation Concurrency
+
+**Current Behavior**: The `validateBulkChannels()` method validates all channels **concurrently** without throttling.
+
+**Implications**:
+
+- ✅ **Fast**: All validations run in parallel for quick results
+- ⚠️ **Resource Usage**: Memory and network connections scale with channel count
+- ⚠️ **Rate Limiting**: May trigger rate limits with hundreds of channels
+- ⚠️ **CPU/Memory**: Could overwhelm worker resources at scale
+
+**Recommended Limits**:
+
+- **Small deployments** (< 50 channels): Current implementation works well
+- **Medium deployments** (50-200 channels): Monitor resource usage
+- **Large deployments** (> 200 channels): Consider implementing batching
+
+**Future Improvement**: Planned enhancement to add configurable concurrency limits:
+
+```typescript
+// Future API (not yet implemented)
+validateBulkChannels(channels, { concurrencyLimit: 10 });
+```
+
+### Timeouts
+
+- **Network Timeout**: 10 seconds per fetch request (hardcoded)
+- **Validation Timeout**: No overall timeout (controlled by individual fetch timeouts)
+- **Future**: Make timeouts configurable via environment variables
+
+### Memory Usage
+
+Each validation creates:
+
+- 1 system JWT token request
+- 4 fetch requests (3 for JWT tests + 1 for introspection)
+- Multiple promise objects held in memory until completion
+
+Estimated memory per channel: ~1-2 KB during validation
+
+## Monitoring
+
+### Logs
+
+The service provides structured logging at each validation step:
+
+```typescript
+// Log patterns to monitor
+'[ValidationEngine] Starting validation for channel';
+'[ValidationEngine:JWT] JWT test completed';
+'[ValidationEngine:Introspection] Introspection test completed';
+'[DataChannelCertifier] Validation complete';
+```
+
+### Metrics
+
+Key metrics to monitor:
+
+**Performance**:
+
+- `validation_duration_ms`: Time to validate a single channel
+- `bulk_validation_duration_ms`: Time to validate all channels
+- `concurrent_validations`: Number of simultaneous validations
+
+**Success Rates**:
+
+- `channels_valid`: Channels passing all tests
+- `channels_invalid`: Channels failing validation
+- `channels_error`: Channels with validation errors
+
+**Resource Usage**:
+
+- `memory_usage_mb`: Worker memory consumption during bulk validation
+- `cpu_time_ms`: CPU time per validation
+
+**Alerts to Configure**:
+
+- Bulk validation duration > 60 seconds (may indicate concurrency issues)
+- Error rate > 10% (indicates systemic issues)
+- Individual validation timeout rate > 5% (network issues)
+
 ## Troubleshooting
 
-- TBD
+### Common Issues
+
+**Bulk Validation Times Out**
+
+- **Symptom**: Validation runs exceed worker CPU limits
+- **Cause**: Too many concurrent validations
+- **Solution**: Reduce channel count or implement batching
+- **Workaround**: Call `validateChannel()` individually with delays
+
+**High Memory Usage**
+
+- **Symptom**: Worker OOM errors during bulk validation
+- **Cause**: All validation promises held in memory simultaneously
+- **Solution**: Limit number of channels validated per invocation
+- **Metrics**: Monitor `memory_usage_mb` metric
+
+**Validation Timeouts**
+
+- **Symptom**: Channels marked as `error` due to timeout
+- **Cause**: Slow data channel endpoints (> 10s response time)
+- **Solution**: Currently no configuration available (hardcoded 10s timeout)
+- **Future**: Will be configurable via environment variables
+
+**Rate Limiting**
+
+- **Symptom**: Validations fail with rate limit errors
+- **Cause**: Too many concurrent requests to the same endpoint
+- **Solution**: Implement request throttling or increase rate limits
+- **Workaround**: Reduce validation frequency in cron schedule
