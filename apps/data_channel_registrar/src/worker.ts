@@ -463,13 +463,53 @@ export class Registrar extends DurableObject {
     return false;
   }
 
+  /**
+   * Checks if an endpoint URL is missing a protocol
+   * @param endpoint - The endpoint URL to check
+   * @returns true if endpoint needs migration (missing protocol), false otherwise
+   */
+  private needsEndpointMigration(endpoint: string): boolean {
+    // If the endpoint has any protocol (contains ://), don't migrate
+    // This includes http://, https://, ftp://, ws://, wss://, etc.
+    if (endpoint.includes('://')) {
+      return false;
+    }
+    // If the endpoint is protocol-relative (starts with //), don't migrate
+    if (endpoint.startsWith('//')) {
+      return false;
+    }
+    // Otherwise, it needs migration (no protocol at all)
+    return true;
+  }
+
+  /**
+   * Performs lazy migration on a data channel if it has an endpoint without HTTP/HTTPS protocol
+   * Prepends https:// to the endpoint URL
+   * @param dc - The data channel to potentially migrate
+   * @returns true if migration was performed, false otherwise
+   */
+  private async migrateEndpoint(dc: DataChannel): Promise<boolean> {
+    if (this.needsEndpointMigration(dc.endpoint)) {
+      const oldEndpoint = dc.endpoint;
+      dc.endpoint = `https://${dc.endpoint}`;
+      console.log(`Migrated endpoint for channel ${dc.id}: ${oldEndpoint} → ${dc.endpoint}`);
+      // Persist the migrated channel back to storage
+      await this.ctx.blockConcurrencyWhile(async () => {
+        await this.ctx.storage.put(dc.id, dc);
+      });
+      return true;
+    }
+    return false;
+  }
+
   async list(filterByAccessSwitch: boolean = false): Promise<DataChannel[]> {
     const allChannels = await this.ctx.storage.list<DataChannel>();
     const channels = Array.from(allChannels.values());
 
-    // Lazy migrate any channels with old name format
+    // Lazy migrate any channels with old name format or invalid endpoints
     for (const channel of channels) {
       await this.migrateLegacyNameFormat(channel);
+      await this.migrateEndpoint(channel);
     }
 
     // if filterByAccessSwitch is set we passthrough access switch, else return all
@@ -482,6 +522,7 @@ export class Registrar extends DurableObject {
     // Lazy migrate if needed
     if (dc) {
       await this.migrateLegacyNameFormat(dc);
+      await this.migrateEndpoint(dc);
     }
 
     return !filterByAccessSwitch || dc?.accessSwitch ? dc : undefined;

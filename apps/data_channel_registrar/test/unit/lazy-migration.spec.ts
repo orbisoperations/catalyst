@@ -6,6 +6,8 @@ import { Registrar } from '../../src/worker';
 type RegistrarTestHelper = {
   extractNameFromLegacyFormat: (name: string) => string;
   migrateLegacyNameFormat: (dc: DataChannel) => Promise<boolean>;
+  needsEndpointMigration: (endpoint: string) => boolean;
+  migrateEndpoint: (dc: DataChannel) => Promise<boolean>;
 };
 
 /**
@@ -531,6 +533,365 @@ describe('Registrar Lazy Migration - Unit Tests', () => {
 
       // blockConcurrencyWhile should have been called for safe migration
       expect(mockCtx.blockConcurrencyWhile).toHaveBeenCalled();
+    });
+  });
+
+  describe('needsEndpointMigration', () => {
+    it('should return true for endpoints without protocol', () => {
+      const result = (registrar as unknown as RegistrarTestHelper).needsEndpointMigration(
+        'example.com/graphql',
+      );
+      expect(result).toBe(true);
+    });
+
+    it('should return false for endpoints with https:// protocol', () => {
+      const result = (registrar as unknown as RegistrarTestHelper).needsEndpointMigration(
+        'https://example.com/graphql',
+      );
+      expect(result).toBe(false);
+    });
+
+    it('should return false for endpoints with http:// protocol', () => {
+      const result = (registrar as unknown as RegistrarTestHelper).needsEndpointMigration(
+        'http://example.com/graphql',
+      );
+      expect(result).toBe(false);
+    });
+
+    it('should return false for endpoints with ftp:// protocol', () => {
+      const result = (registrar as unknown as RegistrarTestHelper).needsEndpointMigration(
+        'ftp://example.com/graphql',
+      );
+      expect(result).toBe(false);
+    });
+
+    it('should return false for endpoints with ws:// protocol', () => {
+      const result = (registrar as unknown as RegistrarTestHelper).needsEndpointMigration(
+        'ws://example.com/graphql',
+      );
+      expect(result).toBe(false);
+    });
+
+    it('should return false for endpoints with wss:// protocol', () => {
+      const result = (registrar as unknown as RegistrarTestHelper).needsEndpointMigration(
+        'wss://example.com/graphql',
+      );
+      expect(result).toBe(false);
+    });
+
+    it('should return false for protocol-relative URLs (//)', () => {
+      const result = (registrar as unknown as RegistrarTestHelper).needsEndpointMigration(
+        '//example.com/graphql',
+      );
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('migrateEndpoint', () => {
+    it('should migrate endpoint without protocol and persist to storage', async () => {
+      const channelWithoutProtocol: DataChannel = {
+        id: 'channel-1',
+        name: 'my-channel',
+        description: 'Test channel',
+        endpoint: 'example.com/graphql',
+        creatorOrganization: 'acme-corp',
+        accessSwitch: true,
+      };
+
+      const result = await (registrar as unknown as RegistrarTestHelper).migrateEndpoint(
+        channelWithoutProtocol,
+      );
+
+      expect(result).toBe(true);
+      expect(channelWithoutProtocol.endpoint).toBe('https://example.com/graphql');
+      expect((mockCtx.storage.put as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(
+        0,
+      );
+      expect(mockCtx.blockConcurrencyWhile).toHaveBeenCalled();
+    });
+
+    it('should not migrate endpoint that already has https://', async () => {
+      const channelWithHttps: DataChannel = {
+        id: 'channel-2',
+        name: 'my-channel',
+        description: 'Test channel',
+        endpoint: 'https://example.com/graphql',
+        creatorOrganization: 'acme-corp',
+        accessSwitch: true,
+      };
+
+      const initialPutCount = (mockCtx.storage.put as ReturnType<typeof vi.fn>).mock.calls.length;
+      const result = await (registrar as unknown as RegistrarTestHelper).migrateEndpoint(
+        channelWithHttps,
+      );
+
+      expect(result).toBe(false);
+      expect(channelWithHttps.endpoint).toBe('https://example.com/graphql');
+      expect((mockCtx.storage.put as ReturnType<typeof vi.fn>).mock.calls.length).toBe(
+        initialPutCount,
+      );
+    });
+
+    it('should not migrate endpoint that already has http://', async () => {
+      const channelWithHttp: DataChannel = {
+        id: 'channel-3',
+        name: 'my-channel',
+        description: 'Test channel',
+        endpoint: 'http://example.com/graphql',
+        creatorOrganization: 'acme-corp',
+        accessSwitch: true,
+      };
+
+      const initialPutCount = (mockCtx.storage.put as ReturnType<typeof vi.fn>).mock.calls.length;
+      const result = await (registrar as unknown as RegistrarTestHelper).migrateEndpoint(
+        channelWithHttp,
+      );
+
+      expect(result).toBe(false);
+      expect(channelWithHttp.endpoint).toBe('http://example.com/graphql');
+      expect((mockCtx.storage.put as ReturnType<typeof vi.fn>).mock.calls.length).toBe(
+        initialPutCount,
+      );
+    });
+
+    it('should migrate endpoint with path and query parameters', async () => {
+      const channelWithComplexUrl: DataChannel = {
+        id: 'channel-4',
+        name: 'my-channel',
+        description: 'Test channel',
+        endpoint: 'example.com/api/v1/graphql?key=value',
+        creatorOrganization: 'acme-corp',
+        accessSwitch: true,
+      };
+
+      const result = await (registrar as unknown as RegistrarTestHelper).migrateEndpoint(
+        channelWithComplexUrl,
+      );
+
+      expect(result).toBe(true);
+      expect(channelWithComplexUrl.endpoint).toBe('https://example.com/api/v1/graphql?key=value');
+    });
+
+    it('should not migrate endpoint with ftp:// protocol', async () => {
+      const channelWithFtp: DataChannel = {
+        id: 'channel-5',
+        name: 'my-channel',
+        description: 'Test channel',
+        endpoint: 'ftp://example.com/graphql',
+        creatorOrganization: 'acme-corp',
+        accessSwitch: true,
+      };
+
+      const initialPutCount = (mockCtx.storage.put as ReturnType<typeof vi.fn>).mock.calls.length;
+      const result = await (registrar as unknown as RegistrarTestHelper).migrateEndpoint(
+        channelWithFtp,
+      );
+
+      expect(result).toBe(false);
+      expect(channelWithFtp.endpoint).toBe('ftp://example.com/graphql');
+      expect((mockCtx.storage.put as ReturnType<typeof vi.fn>).mock.calls.length).toBe(
+        initialPutCount,
+      );
+    });
+
+    it('should not migrate endpoint with ws:// protocol', async () => {
+      const channelWithWs: DataChannel = {
+        id: 'channel-6',
+        name: 'my-channel',
+        description: 'Test channel',
+        endpoint: 'ws://example.com/graphql',
+        creatorOrganization: 'acme-corp',
+        accessSwitch: true,
+      };
+
+      const initialPutCount = (mockCtx.storage.put as ReturnType<typeof vi.fn>).mock.calls.length;
+      const result = await (registrar as unknown as RegistrarTestHelper).migrateEndpoint(
+        channelWithWs,
+      );
+
+      expect(result).toBe(false);
+      expect(channelWithWs.endpoint).toBe('ws://example.com/graphql');
+      expect((mockCtx.storage.put as ReturnType<typeof vi.fn>).mock.calls.length).toBe(
+        initialPutCount,
+      );
+    });
+
+    it('should not migrate endpoint with wss:// protocol', async () => {
+      const channelWithWss: DataChannel = {
+        id: 'channel-7',
+        name: 'my-channel',
+        description: 'Test channel',
+        endpoint: 'wss://example.com/graphql',
+        creatorOrganization: 'acme-corp',
+        accessSwitch: true,
+      };
+
+      const initialPutCount = (mockCtx.storage.put as ReturnType<typeof vi.fn>).mock.calls.length;
+      const result = await (registrar as unknown as RegistrarTestHelper).migrateEndpoint(
+        channelWithWss,
+      );
+
+      expect(result).toBe(false);
+      expect(channelWithWss.endpoint).toBe('wss://example.com/graphql');
+      expect((mockCtx.storage.put as ReturnType<typeof vi.fn>).mock.calls.length).toBe(
+        initialPutCount,
+      );
+    });
+
+    it('should not migrate protocol-relative URL (//)', async () => {
+      const channelWithProtocolRelative: DataChannel = {
+        id: 'channel-8',
+        name: 'my-channel',
+        description: 'Test channel',
+        endpoint: '//example.com/graphql',
+        creatorOrganization: 'acme-corp',
+        accessSwitch: true,
+      };
+
+      const initialPutCount = (mockCtx.storage.put as ReturnType<typeof vi.fn>).mock.calls.length;
+      const result = await (registrar as unknown as RegistrarTestHelper).migrateEndpoint(
+        channelWithProtocolRelative,
+      );
+
+      expect(result).toBe(false);
+      expect(channelWithProtocolRelative.endpoint).toBe('//example.com/graphql');
+      expect((mockCtx.storage.put as ReturnType<typeof vi.fn>).mock.calls.length).toBe(
+        initialPutCount,
+      );
+    });
+  });
+
+  describe('get method - endpoint migration on single channel', () => {
+    it('should migrate channel endpoint when getting without protocol', async () => {
+      const channelWithoutProtocol: DataChannel = {
+        id: 'channel-1',
+        name: 'my-channel',
+        description: 'Test channel',
+        endpoint: 'example.com/graphql',
+        creatorOrganization: 'acme-corp',
+        accessSwitch: true,
+      };
+
+      mockStorageMap.set('channel-1', channelWithoutProtocol);
+
+      const result = await registrar.get('channel-1');
+
+      expect(result).toBeDefined();
+      expect(result?.endpoint).toBe('https://example.com/graphql');
+      expect(mockCtx.storage.put).toHaveBeenCalledWith(
+        'channel-1',
+        expect.objectContaining({ endpoint: 'https://example.com/graphql' }),
+      );
+    });
+
+    it('should not re-migrate endpoint that is already valid', async () => {
+      const validChannel: DataChannel = {
+        id: 'channel-2',
+        name: 'my-channel',
+        description: 'Test channel',
+        endpoint: 'https://example.com/graphql',
+        creatorOrganization: 'acme-corp',
+        accessSwitch: true,
+      };
+
+      mockStorageMap.set('channel-2', validChannel);
+
+      const result = await registrar.get('channel-2');
+
+      expect(result).toBeDefined();
+      expect(result?.endpoint).toBe('https://example.com/graphql');
+      expect(mockCtx.storage.put).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('list method - endpoint migration on multiple channels', () => {
+    it('should migrate all channels with invalid endpoints', async () => {
+      const channels: DataChannel[] = [
+        {
+          id: 'channel-1',
+          name: 'channel-1',
+          description: 'Test',
+          endpoint: 'example.com/graphql',
+          creatorOrganization: 'acme-corp',
+          accessSwitch: true,
+        },
+        {
+          id: 'channel-2',
+          name: 'channel-2',
+          description: 'Test',
+          endpoint: 'api.example.com/graphql',
+          creatorOrganization: 'beta-org',
+          accessSwitch: true,
+        },
+        {
+          id: 'channel-3',
+          name: 'channel-3',
+          description: 'Test',
+          endpoint: 'https://example.com/graphql',
+          creatorOrganization: 'acme-corp',
+          accessSwitch: true,
+        },
+      ];
+
+      channels.forEach(ch => mockStorageMap.set(ch.id, ch));
+
+      const result = await registrar.list();
+
+      expect(result).toHaveLength(3);
+      expect(result[0].endpoint).toBe('https://example.com/graphql');
+      expect(result[1].endpoint).toBe('https://api.example.com/graphql');
+      expect(result[2].endpoint).toBe('https://example.com/graphql');
+
+      // Should have persisted 2 migrations (1st and 2nd channels)
+      expect(mockCtx.storage.put).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('Endpoint migration consistency', () => {
+    it('should maintain data consistency during endpoint migration', async () => {
+      const originalChannel: DataChannel = {
+        id: 'channel-1',
+        name: 'my-channel',
+        description: 'Original description',
+        endpoint: 'example.com/graphql',
+        creatorOrganization: 'acme-corp',
+        accessSwitch: true,
+      };
+
+      mockStorageMap.set('channel-1', originalChannel);
+
+      // Get should trigger migration
+      const retrieved = await registrar.get('channel-1');
+
+      expect(retrieved).toBeDefined();
+      expect(retrieved?.id).toBe('channel-1');
+      expect(retrieved?.name).toBe('my-channel');
+      expect(retrieved?.description).toBe('Original description');
+      expect(retrieved?.endpoint).toBe('https://example.com/graphql');
+      expect(retrieved?.creatorOrganization).toBe('acme-corp');
+      expect(retrieved?.accessSwitch).toBe(true);
+    });
+
+    it('should migrate both name and endpoint in same operation', async () => {
+      const legacyChannel: DataChannel = {
+        id: 'channel-1',
+        name: 'acme-corp/my-channel',
+        description: 'Test',
+        endpoint: 'example.com/graphql',
+        creatorOrganization: 'acme-corp',
+        accessSwitch: true,
+      };
+
+      mockStorageMap.set('channel-1', legacyChannel);
+
+      const result = await registrar.get('channel-1');
+
+      expect(result).toBeDefined();
+      expect(result?.name).toBe('my-channel');
+      expect(result?.endpoint).toBe('https://example.com/graphql');
+
+      // Should have persisted both migrations
+      expect(mockCtx.storage.put).toHaveBeenCalled();
     });
   });
 });
