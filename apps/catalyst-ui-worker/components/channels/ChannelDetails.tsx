@@ -197,7 +197,20 @@ export default function DataChannelDetailsComponent({
                                                                     'already exists in your organization'
                                                                 ) ||
                                                                 result.error.includes('Invalid data channel') ||
-                                                                result.error.includes('Channel name');
+                                                                result.error.includes('Channel name') ||
+                                                                result.error.includes('cannot be only whitespace') ||
+                                                                result.error.includes(
+                                                                    'Only letters, numbers, and standard symbols'
+                                                                ) ||
+                                                                result.error.includes('cannot contain HTML') ||
+                                                                result.error.includes('cannot contain script') ||
+                                                                result.error.includes(
+                                                                    'contains potentially dangerous'
+                                                                ) ||
+                                                                result.error.includes('is required') ||
+                                                                result.error.includes('must be') ||
+                                                                result.error.includes('characters or less') ||
+                                                                result.error.includes('invalid characters');
                                                             if (isValidationError) {
                                                                 setNameError(result.error);
                                                             } else {
