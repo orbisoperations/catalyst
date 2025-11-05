@@ -8,7 +8,7 @@ import {
     OrbisButton,
     OrbisTable,
 } from '@/components/elements';
-import { ValidationButton } from './ValidationStatus';
+import { ComplianceButton } from './ComplianceStatus';
 import { ListView } from '@/components/layouts';
 import { navigationItems } from '@/utils/nav.utils';
 import { DataChannel } from '@catalyst/schemas';
@@ -36,7 +36,7 @@ import { EllipsisVerticalIcon, TrashIcon } from '@heroicons/react/20/solid';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useUser } from '../contexts/User/UserContext';
-import { canUserValidateChannels } from '@/app/actions/validation';
+import { canUserCheckCompliance } from '@/app/actions/compliance';
 type ListChannelsProps = {
     listChannels: (token: string) => Promise<DataChannel[]>;
     deleteChannel: (channelId: string, token: string) => Promise<DataChannel>;
@@ -50,7 +50,7 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [filterMode, setFilterMode] = useState<'all' | 'subscribed' | 'owned'>('all');
     const [channelToDelete, setChannelToDelete] = useState<string | null>(null);
-    const [canValidate, setCanValidate] = useState<boolean>(false);
+    const [canCheckCompliance, setCanCheckCompliance] = useState<boolean>(false);
     const { isOpen, onOpen, onClose } = useDisclosure();
     const { token, user } = useUser();
     function filterChannels(filterMode: 'all' | 'subscribed' | 'owned' = 'all') {
@@ -107,10 +107,10 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
     }
     useEffect(() => {
         fetchChannels();
-        // Check if user has permission to validate channels
-        canUserValidateChannels()
-            .then(setCanValidate)
-            .catch(() => setCanValidate(false));
+        // Check if user has permission to check channel compliance
+        canUserCheckCompliance()
+            .then(setCanCheckCompliance)
+            .catch(() => setCanCheckCompliance(false));
     }, [token]);
 
     // TODO: Update to use the dynamic organization id
@@ -193,7 +193,7 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
                             ) : channels.length > 0 ? (
                                 <Card>
                                     <OrbisTable
-                                        headers={['Data Channel', 'Description', 'Channel ID', 'Validation', '']}
+                                        headers={['Data Channel', 'Description', 'Channel ID', 'Compliance', '']}
                                         rows={channels.map((channel, index) => {
                                             return [
                                                 <Flex
@@ -220,18 +220,19 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
                                                 <APIKeyText allowCopy showAsClearText key={index + '-channel-id'}>
                                                     {channel.id}
                                                 </APIKeyText>,
-                                                // Only show validation button if:
-                                                // 1. User has data custodian permissions (canValidate)
+                                                // Only show compliance button if:
+                                                // 1. User has data custodian permissions (canCheckCompliance)
                                                 // 2. Channel belongs to user's organization
-                                                canValidate && channel.creatorOrganization === user?.custom.org ? (
-                                                    <ValidationButton
-                                                        key={index + '-validation'}
+                                                canCheckCompliance &&
+                                                channel.creatorOrganization === user?.custom.org ? (
+                                                    <ComplianceButton
+                                                        key={index + '-compliance'}
                                                         channelId={channel.id}
                                                         endpoint={channel.endpoint}
                                                         organizationId={channel.creatorOrganization}
                                                     />
                                                 ) : (
-                                                    <div key={index + '-validation'} />
+                                                    <div key={index + '-compliance'} />
                                                 ),
                                                 <Menu key={index + '-menu'}>
                                                     <MenuButton

@@ -461,7 +461,7 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 			callingService: string;
 			channelId?: string;
 			channelIds?: string[];
-			purpose: string;
+			operation: string;
 			duration?: number; // Duration in seconds
 		},
 		keyNamespace: string = 'default',
@@ -533,7 +533,7 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 			const registryEntry: IssuedJWTRegistry = {
 				id: jwt.jti, // Critical: Use JWT's jti as the registry ID
 				name: `System token for ${request.callingService}`,
-				description: `System token for ${request.purpose}`,
+				description: `System token for ${request.operation}`,
 				claims: jwt.claims,
 				expiry: new Date(signedJwt.expiration), // Use actual JWT expiry
 				organization: 'system',
@@ -544,7 +544,9 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 			await this.env.ISSUED_JWT_REGISTRY.createSystem(registryEntry, 'authx_token_api', keyNamespace);
 
 			// Log system token creation for audit
-			console.log(`System JWT created for service: ${request.callingService}, purpose: ${request.purpose}, claims: ${claims.join(',')}`);
+			console.log(
+				`System JWT created for service: ${request.callingService}, operation: ${request.operation}, claims: ${claims.join(',')}`,
+			);
 
 			// Return properly formatted response matching JWTSigningResponse schema
 			return JWTSigningResponseSchema.parse({

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import DataChannelCertifierWorker from '../../src/worker';
 
-describe('Scheduled Validation', () => {
+describe('Scheduled Compliance', () => {
   let mockEnv: Env;
 
   beforeEach(() => {
@@ -22,7 +22,7 @@ describe('Scheduled Validation', () => {
   });
 
   describe('scheduled()', () => {
-    it('should skip validation when no channels exist', async () => {
+    it('should skip compliance check when no channels exist', async () => {
       mockEnv.DATA_CHANNEL_REGISTRAR.listAll = vi.fn().mockResolvedValue(null);
 
       const consoleSpy = vi.spyOn(console, 'log');
@@ -34,11 +34,11 @@ describe('Scheduled Validation', () => {
 
       expect(mockEnv.DATA_CHANNEL_REGISTRAR.listAll).toHaveBeenCalledWith('default', true);
       expect(consoleSpy).toHaveBeenCalledWith(
-        '[DataChannelCertifier] No enabled channels to validate'
+        '[DataChannelCertifier] No enabled channels to certify'
       );
     });
 
-    it('should skip validation when no enabled channels exist', async () => {
+    it('should skip compliance check when no enabled channels exist', async () => {
       // When asking for only enabled channels, registrar returns empty array
       mockEnv.DATA_CHANNEL_REGISTRAR.listAll = vi.fn().mockResolvedValue([]);
 
@@ -51,11 +51,11 @@ describe('Scheduled Validation', () => {
 
       expect(mockEnv.DATA_CHANNEL_REGISTRAR.listAll).toHaveBeenCalledWith('default', true);
       expect(consoleSpy).toHaveBeenCalledWith(
-        '[DataChannelCertifier] No enabled channels to validate'
+        '[DataChannelCertifier] No enabled channels to certify'
       );
     });
 
-    it('should validate only enabled channels', async () => {
+    it('should certify only enabled channels', async () => {
       // Now the registrar only returns enabled channels when called with true flag
       const enabledChannels = [
         {
@@ -81,12 +81,12 @@ describe('Scheduled Validation', () => {
       const worker = Object.create(DataChannelCertifierWorker.prototype);
       worker.env = mockEnv;
 
-      // Mock validateBulkChannels to track what channels it receives
-      const validateSpy = vi.spyOn(worker, 'validateBulkChannels').mockResolvedValue({
+      // Mock verifyBulkCompliance to track what channels it receives
+      const validateSpy = vi.spyOn(worker, 'verifyBulkCompliance').mockResolvedValue({
         timestamp: Date.now(),
         totalChannels: 2,
-        validChannels: 2,
-        invalidChannels: 0,
+        compliantChannels: 2,
+        nonCompliantChannels: 0,
         errorChannels: 0,
         results: [],
       });
@@ -98,11 +98,11 @@ describe('Scheduled Validation', () => {
       // Should validate the 2 enabled channels returned by registrar
       expect(validateSpy).toHaveBeenCalledWith(enabledChannels);
       expect(consoleSpy).toHaveBeenCalledWith(
-        '[DataChannelCertifier] Validating 2 enabled channels'
+        '[DataChannelCertifier] Certifying 2 enabled channels'
       );
     });
 
-    it('should handle validation errors gracefully', async () => {
+    it('should handle compliance check errors gracefully', async () => {
       const channels = [
         {
           id: 'channel-1',
@@ -119,8 +119,8 @@ describe('Scheduled Validation', () => {
       const worker = Object.create(DataChannelCertifierWorker.prototype);
       worker.env = mockEnv;
 
-      // Mock validateBulkChannels to throw an error
-      vi.spyOn(worker, 'validateBulkChannels').mockRejectedValue(new Error('Validation failed'));
+      // Mock verifyBulkCompliance to throw an error
+      vi.spyOn(worker, 'verifyBulkCompliance').mockRejectedValue(new Error('Validation failed'));
 
       const consoleSpy = vi.spyOn(console, 'error');
 
@@ -128,12 +128,12 @@ describe('Scheduled Validation', () => {
       await worker.scheduled();
 
       expect(consoleSpy).toHaveBeenCalledWith(
-        '[DataChannelCertifier] Scheduled validation failed:',
+        '[DataChannelCertifier] Scheduled compliance check failed:',
         expect.any(Error)
       );
     });
 
-    it('should log validation summary after completion', async () => {
+    it('should log certification summary after completion', async () => {
       const channels = [
         {
           id: 'channel-1',
@@ -158,11 +158,11 @@ describe('Scheduled Validation', () => {
       const worker = Object.create(DataChannelCertifierWorker.prototype);
       worker.env = mockEnv;
 
-      vi.spyOn(worker, 'validateBulkChannels').mockResolvedValue({
+      vi.spyOn(worker, 'verifyBulkCompliance').mockResolvedValue({
         timestamp: Date.now(),
         totalChannels: 2,
-        validChannels: 1,
-        invalidChannels: 1,
+        compliantChannels: 1,
+        nonCompliantChannels: 1,
         errorChannels: 0,
         results: [],
       });
@@ -171,16 +171,16 @@ describe('Scheduled Validation', () => {
 
       await worker.scheduled();
 
-      expect(consoleSpy).toHaveBeenCalledWith('[DataChannelCertifier] Validation complete:', {
+      expect(consoleSpy).toHaveBeenCalledWith('[DataChannelCertifier] Compliance check complete:', {
         total: 2,
-        valid: 1,
-        invalid: 1,
+        compliant: 1,
+        non_compliant: 1,
         errors: 0,
       });
     });
   });
 
-  describe('validateBulkChannels()', () => {
+  describe('verifyBulkCompliance()', () => {
     it('should fetch channels from registrar if none provided', async () => {
       const channels = [
         {
@@ -203,7 +203,7 @@ describe('Scheduled Validation', () => {
       const worker = Object.create(DataChannelCertifierWorker.prototype);
       worker.env = mockEnv;
 
-      const result = await worker.validateBulkChannels();
+      const result = await worker.verifyBulkCompliance();
 
       expect(mockEnv.DATA_CHANNEL_REGISTRAR.listAll).toHaveBeenCalledWith('default', true);
       expect(result.totalChannels).toBe(1);
@@ -232,7 +232,7 @@ describe('Scheduled Validation', () => {
       const worker = Object.create(DataChannelCertifierWorker.prototype);
       worker.env = mockEnv;
 
-      const result = await worker.validateBulkChannels();
+      const result = await worker.verifyBulkCompliance();
 
       // Should validate the enabled channel returned by registrar
       expect(mockEnv.DATA_CHANNEL_REGISTRAR.listAll).toHaveBeenCalledWith('default', true);

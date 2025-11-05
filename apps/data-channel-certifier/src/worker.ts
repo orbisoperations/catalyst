@@ -1,6 +1,6 @@
 import { WorkerEntrypoint } from 'cloudflare:workers';
-import type { ValidationReport, ValidationResult, ValidationRequest } from '@catalyst/schemas';
-import { ValidationEngine } from './validation-engine';
+import type { ComplianceReport, ComplianceResult, ComplianceRequest } from '@catalyst/schemas';
+import { ComplianceEngine } from './compliance-engine';
 
 /**
  * Data Channel Certifier Service
@@ -10,8 +10,8 @@ import { ValidationEngine } from './validation-engine';
  * Updates certification status through data_channel_registrar service.
  *
  * RPC API Surface:
- * - validateBulkChannels(): Validate multiple channels (exposed via RPC)
- * - validateChannel(): Validate a single channel (exposed via RPC)
+ * - verifyBulkCompliance(): Verify compliance for multiple channels (exposed via RPC)
+ * - verifyCompliance(): Verify compliance for a single channel (exposed via RPC)
  * - scheduled(): Cron handler (NOT an RPC method, invoked by Cloudflare scheduler)
  *
  * Note: This worker disables HTTP endpoints and operates solely via RPC and cron triggers.
@@ -30,114 +30,115 @@ export default class DataChannelCertifierWorker extends WorkerEntrypoint<Env> {
   }
 
   /**
-   * Cron trigger handler - runs validation on schedule
+   * Cron trigger handler - runs compliance checks on schedule
    *
    * ⚠️ NOT an RPC method - automatically invoked by Cloudflare's cron scheduler
    * Configured in wrangler.jsonc with 15-minute intervals (every 15 minutes)
    *
-   * This method validates all enabled data channels on a 15-minute schedule
-   * and updates their validation status in the registrar.
+   * This method verifies compliance for all enabled data channels on a 15-minute schedule
+   * and updates their certification status in the registrar.
    */
   async scheduled(): Promise<void> {
-    console.log('[DataChannelCertifier] Starting scheduled validation run');
+    console.log('[DataChannelCertifier] Starting scheduled compliance check');
 
     try {
       // Get only enabled data channels from the registrar
       const enabledChannels = await this.env.DATA_CHANNEL_REGISTRAR.listAll('default', true);
 
       if (!enabledChannels || enabledChannels.length === 0) {
-        console.log('[DataChannelCertifier] No enabled channels to validate');
+        console.log('[DataChannelCertifier] No enabled channels to certify');
         return;
       }
 
-      console.log(`[DataChannelCertifier] Validating ${enabledChannels.length} enabled channels`);
+      console.log(`[DataChannelCertifier] Certifying ${enabledChannels.length} enabled channels`);
 
-      // Validate only enabled channels
-      const results = await this.validateBulkChannels(enabledChannels);
+      // Certify only enabled channels
+      const results = await this.verifyBulkCompliance(enabledChannels);
+      console.log(enabledChannels);
 
-      console.log(`[DataChannelCertifier] Validation complete:`, {
+      console.log(`[DataChannelCertifier] Compliance check complete:`, {
         total: results.totalChannels,
-        valid: results.validChannels,
-        invalid: results.invalidChannels,
+        compliant: results.compliantChannels,
+        non_compliant: results.nonCompliantChannels,
         errors: results.errorChannels,
       });
     } catch (error) {
-      console.error('[DataChannelCertifier] Scheduled validation failed:', error);
+      console.error('[DataChannelCertifier] Scheduled compliance check failed:', error);
     }
   }
 
   /**
-   * RPC API: Validate all enabled channels (bulk validation)
+   * RPC API: Verify compliance for all enabled channels (bulk compliance check)
    *
    * Can be called from other workers via service binding:
    * ```typescript
-   * const report = await env.DATA_CHANNEL_CERTIFIER.validateBulkChannels(channels);
+   * const report = await env.DATA_CHANNEL_CERTIFIER.verifyBulkCompliance(channels);
    * ```
    *
-   * @param channels - Optional array of channels to validate. If not provided, fetches all enabled channels from registrar
-   * @returns ValidationReport with summary statistics and individual validation results
+   * @param channels - Optional array of channels to verify. If not provided, fetches all enabled channels from registrar
+   * @returns CertificationReport with summary statistics and individual compliance results
    *
    * @throws {Error} Standard Error types propagate (message + name), but stack traces do not cross RPC boundary
    *
    * Implementation notes:
-   * - Validates channels in parallel with controlled concurrency
+   * - Verifies channels in parallel with controlled concurrency
    * - Uses Promise.allSettled to handle partial failures gracefully
-   * - Returns summary even if individual validations fail
+   * - Returns summary even if individual checks fail
    */
-  async validateBulkChannels(
+  async verifyBulkCompliance(
     channels?: Array<{ id: string; endpoint: string; creatorOrganization: string }>
-  ): Promise<ValidationReport> {
+  ): Promise<ComplianceReport> {
     const startTime = Date.now();
-    const validationEngine = new ValidationEngine(this.env);
-    const results: ValidationResult[] = [];
+    const complianceEngine = new ComplianceEngine(this.env);
+    const results: ComplianceResult[] = [];
 
     try {
       // Resolve channels to a definite array
-      const channelsToValidate =
+      const channelsToCertify =
         channels ?? (await this.env.DATA_CHANNEL_REGISTRAR.listAll('default', true)) ?? [];
 
-      // Validate each channel in parallel with controlled concurrency
-      const validationPromises = channelsToValidate.map(async (channel) => {
-        const request: ValidationRequest = {
+      // Check compliance for each channel in parallel with controlled concurrency
+      const compliancePromises = channelsToCertify.map(async (channel) => {
+        const request: ComplianceRequest = {
           channelId: channel.id,
           endpoint: channel.endpoint,
           organizationId: channel.creatorOrganization,
         };
 
-        return validationEngine.validateChannel(request);
+        return complianceEngine.verifyCompliance(request);
       });
 
       // Use Promise.allSettled to handle partial failures
-      const settledResults = await Promise.allSettled(validationPromises);
+      const settledResults = await Promise.allSettled(compliancePromises);
 
       for (const result of settledResults) {
         if (result.status === 'fulfilled') {
           results.push(result.value);
         } else {
-          console.error('[DataChannelCertifier] Channel validation failed:', result.reason);
+          console.error('[DataChannelCertifier] Channel certification failed:', result.reason);
         }
       }
 
       // Calculate summary statistics
-      const validChannels = results.filter((r) => r.status === 'valid').length;
-      const invalidChannels = results.filter((r) => r.status === 'invalid').length;
+      const compliantChannels = results.filter((r) => r.status === 'compliant').length;
+      const nonCompliantChannels = results.filter((r) => r.status === 'non_compliant').length;
       const errorChannels = results.filter((r) => r.status === 'error').length;
 
       return {
         timestamp: startTime,
-        totalChannels: channelsToValidate.length,
-        validChannels,
-        invalidChannels,
+        totalChannels: channelsToCertify.length,
+        compliantChannels,
+        nonCompliantChannels,
         errorChannels,
         results,
       };
     } catch (error) {
-      console.error('[DataChannelCertifier] Bulk validation error:', error);
+      console.error('[DataChannelCertifier] Bulk compliance check error:', error);
       return {
         timestamp: startTime,
         totalChannels: 0,
-        validChannels: 0,
-        invalidChannels: 0,
+        compliantChannels: 0,
+        nonCompliantChannels: 0,
         errorChannels: 0,
         results: [],
       };
@@ -145,40 +146,40 @@ export default class DataChannelCertifierWorker extends WorkerEntrypoint<Env> {
   }
 
   /**
-   * RPC API: Validate a single channel
+   * RPC API: Verify compliance for a single channel
    *
    * Can be called from other workers via service binding:
    * ```typescript
-   * const result = await env.DATA_CHANNEL_CERTIFIER.validateChannel({
+   * const result = await env.DATA_CHANNEL_CERTIFIER.verifyCompliance({
    *   channelId: 'channel-123',
    *   endpoint: 'https://example.com/graphql',
    *   organizationId: 'org-456'
    * });
    * ```
    *
-   * @param request - Validation request with channel details
-   * @returns ValidationResult indicating valid/invalid/error status
+   * @param request - Certification request with channel details
+   * @returns CertificationResult indicating certified/failed/error status
    *
    * @throws {Error} Standard Error types propagate (message + name), but stack traces do not cross RPC boundary
    *
    * Implementation notes:
-   * - Performs JWT validation tests (valid token, invalid token, no token)
+   * - Performs JWT authentication compliance tests (valid token, invalid token, no token)
    * - Future: Could automatically disable non-compliant channels
    * - Returns structured error details for debugging
    */
-  async validateChannel(request: ValidationRequest): Promise<ValidationResult> {
-    const validationEngine = new ValidationEngine(this.env);
+  async verifyCompliance(request: ComplianceRequest): Promise<ComplianceResult> {
+    const complianceEngine = new ComplianceEngine(this.env);
 
     try {
       // Validate the channel
-      const result = await validationEngine.validateChannel(request);
+      const result = await complianceEngine.verifyCompliance(request);
 
       // Optionally update the channel status in the registrar
       // This could be used to disable non-compliant channels
-      if (result.status === 'invalid' || result.status === 'error') {
+      if (result.status === 'non_compliant' || result.status === 'error') {
         console.warn(
-          `[DataChannelCertifier] Channel ${request.channelId} validation failed:`,
-          result.error || 'Invalid'
+          `[DataChannelCertifier] Channel ${request.channelId} compliance check failed:`,
+          result.error || 'Failed'
         );
         // Future: Could update channel access switch here
         // await this.env.DATA_CHANNEL_REGISTRAR.updateAccessSwitch(request.channelId, false);
@@ -186,7 +187,7 @@ export default class DataChannelCertifierWorker extends WorkerEntrypoint<Env> {
 
       return result;
     } catch (error) {
-      console.error(`[DataChannelCertifier] Error validating channel ${request.channelId}:`, error);
+      console.error(`[DataChannelCertifier] Error certifying channel ${request.channelId}:`, error);
       return {
         channelId: request.channelId,
         status: 'error',

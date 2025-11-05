@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ValidationEngine } from '../../src/validation-engine';
-import type { ValidationRequest } from '@catalyst/schemas';
+import { ComplianceEngine } from '../../src/compliance-engine';
+import type { ComplianceRequest } from '@catalyst/schemas';
 import type { Env } from '../../src/env';
 
-describe('ValidationEngine', () => {
-  let validationEngine: ValidationEngine;
+describe('ComplianceEngine', () => {
+  let complianceEngine: ComplianceEngine;
   let mockEnv: Pick<Env, 'AUTHX_TOKEN_API'>;
 
   beforeEach(() => {
@@ -19,12 +19,12 @@ describe('ValidationEngine', () => {
       },
     };
 
-    validationEngine = new ValidationEngine(mockEnv);
+    complianceEngine = new ComplianceEngine(mockEnv);
   });
 
-  describe('validateChannel', () => {
+  describe('verifyCompliance', () => {
     it('should validate a channel with proper JWT authentication behavior', async () => {
-      const request: ValidationRequest = {
+      const request: ComplianceRequest = {
         channelId: 'test-channel-id',
         endpoint: 'https://example.com/graphql',
         organizationId: 'test-org-id',
@@ -68,26 +68,26 @@ describe('ValidationEngine', () => {
           }),
         } as Response);
 
-      const result = await validationEngine.validateChannel(request);
+      const result = await complianceEngine.verifyCompliance(request);
 
       expect(result).toMatchObject({
         channelId: 'test-channel-id',
-        status: 'valid',
+        status: 'compliant',
         details: expect.objectContaining({
           endpoint: 'https://example.com/graphql',
           organizationId: 'test-org-id',
-          tokenValidation: true,
+          authenticationCompliance: true,
           tests: expect.arrayContaining([
             expect.objectContaining({
-              testType: 'jwt_validation',
+              testType: 'authentication_compliance',
               success: true,
             }),
             expect.objectContaining({
-              testType: 'introspection',
+              testType: 'schema_introspection',
               success: true,
             }),
             expect.objectContaining({
-              testType: 'sdl_federation',
+              testType: 'federation_support',
               success: true,
             }),
           ]),
@@ -102,8 +102,8 @@ describe('ValidationEngine', () => {
       expect(thirdCall[1].headers['Authorization']).toBeUndefined();
     });
 
-    it('should mark channel as invalid when valid token is rejected', async () => {
-      const request: ValidationRequest = {
+    it('should mark channel as failed when valid token is rejected', async () => {
+      const request: ComplianceRequest = {
         channelId: 'test-channel-id',
         endpoint: 'https://example.com/graphql',
         organizationId: 'test-org-id',
@@ -145,20 +145,20 @@ describe('ValidationEngine', () => {
           }),
         } as Response);
 
-      const result = await validationEngine.validateChannel(request);
+      const result = await complianceEngine.verifyCompliance(request);
 
       expect(result).toMatchObject({
         channelId: 'test-channel-id',
-        status: 'invalid',
+        status: 'non_compliant',
         details: expect.objectContaining({
-          tokenValidation: false,
-          tokenValidationError: expect.stringContaining('Valid token rejected'),
+          authenticationCompliance: false,
+          authenticationError: expect.stringContaining('Valid token rejected'),
         }),
       });
     });
 
-    it('should mark channel as invalid when invalid token is accepted', async () => {
-      const request: ValidationRequest = {
+    it('should mark channel as failed when invalid token is accepted', async () => {
+      const request: ComplianceRequest = {
         channelId: 'test-channel-id',
         endpoint: 'https://example.com/graphql',
         organizationId: 'test-org-id',
@@ -200,20 +200,20 @@ describe('ValidationEngine', () => {
           }),
         } as Response);
 
-      const result = await validationEngine.validateChannel(request);
+      const result = await complianceEngine.verifyCompliance(request);
 
       expect(result).toMatchObject({
         channelId: 'test-channel-id',
-        status: 'invalid',
+        status: 'non_compliant',
         details: expect.objectContaining({
-          tokenValidation: false,
-          tokenValidationError: expect.stringContaining('Invalid token accepted'),
+          authenticationCompliance: false,
+          authenticationError: expect.stringContaining('Invalid token accepted'),
         }),
       });
     });
 
-    it('should mark channel as invalid when no token is accepted', async () => {
-      const request: ValidationRequest = {
+    it('should mark channel as failed when no token is accepted', async () => {
+      const request: ComplianceRequest = {
         channelId: 'test-channel-id',
         endpoint: 'https://example.com/graphql',
         organizationId: 'test-org-id',
@@ -255,20 +255,20 @@ describe('ValidationEngine', () => {
           }),
         } as Response);
 
-      const result = await validationEngine.validateChannel(request);
+      const result = await complianceEngine.verifyCompliance(request);
 
       expect(result).toMatchObject({
         channelId: 'test-channel-id',
-        status: 'invalid',
+        status: 'non_compliant',
         details: expect.objectContaining({
-          tokenValidation: false,
-          tokenValidationError: expect.stringContaining('No token test failed'),
+          authenticationCompliance: false,
+          authenticationError: expect.stringContaining('No token test failed'),
         }),
       });
     });
 
     it('should handle network errors gracefully', async () => {
-      const request: ValidationRequest = {
+      const request: ComplianceRequest = {
         channelId: 'test-channel-id',
         endpoint: 'https://example.com/graphql',
         organizationId: 'test-org-id',
@@ -277,20 +277,20 @@ describe('ValidationEngine', () => {
       // Mock fetch to throw network error
       global.fetch = vi.fn().mockRejectedValue(new Error('Network error'));
 
-      const result = await validationEngine.validateChannel(request);
+      const result = await complianceEngine.verifyCompliance(request);
 
       expect(result).toMatchObject({
         channelId: 'test-channel-id',
-        status: 'invalid',
+        status: 'non_compliant',
         details: expect.objectContaining({
-          tokenValidation: false,
-          tokenValidationError: expect.stringContaining('Network error'),
+          authenticationCompliance: false,
+          authenticationError: expect.stringContaining('Network error'),
         }),
       });
     });
 
     it('should handle timeout errors', async () => {
-      const request: ValidationRequest = {
+      const request: ComplianceRequest = {
         channelId: 'test-channel-id',
         endpoint: 'https://example.com/graphql',
         organizationId: 'test-org-id',
@@ -301,20 +301,20 @@ describe('ValidationEngine', () => {
       timeoutError.name = 'AbortError';
       global.fetch = vi.fn().mockRejectedValue(timeoutError);
 
-      const result = await validationEngine.validateChannel(request);
+      const result = await complianceEngine.verifyCompliance(request);
 
       expect(result).toMatchObject({
         channelId: 'test-channel-id',
-        status: 'invalid',
+        status: 'non_compliant',
         details: expect.objectContaining({
-          tokenValidation: false,
-          tokenValidationError: expect.stringContaining('Request timeout'),
+          authenticationCompliance: false,
+          authenticationError: expect.stringContaining('Request timeout'),
         }),
       });
     });
 
     it('should handle token signing failure', async () => {
-      const request: ValidationRequest = {
+      const request: ComplianceRequest = {
         channelId: 'test-channel-id',
         endpoint: 'https://example.com/graphql',
         organizationId: 'test-org-id',
@@ -326,20 +326,20 @@ describe('ValidationEngine', () => {
         error: 'Failed to sign token',
       });
 
-      const result = await validationEngine.validateChannel(request);
+      const result = await complianceEngine.verifyCompliance(request);
 
       expect(result).toMatchObject({
         channelId: 'test-channel-id',
-        status: 'invalid',
+        status: 'non_compliant',
         details: expect.objectContaining({
-          tokenValidation: false,
-          tokenValidationError: expect.stringContaining('Failed to sign token'),
+          authenticationCompliance: false,
+          authenticationError: expect.stringContaining('Failed to sign token'),
         }),
       });
     });
 
     it('should handle both valid and invalid tokens rejected (no proper authentication)', async () => {
-      const request: ValidationRequest = {
+      const request: ComplianceRequest = {
         channelId: 'test-channel-id',
         endpoint: 'https://example.com/graphql',
         organizationId: 'test-org-id',
@@ -369,14 +369,14 @@ describe('ValidationEngine', () => {
           }),
         } as Response);
 
-      const result = await validationEngine.validateChannel(request);
+      const result = await complianceEngine.verifyCompliance(request);
 
       expect(result).toMatchObject({
         channelId: 'test-channel-id',
-        status: 'invalid',
+        status: 'non_compliant',
         details: expect.objectContaining({
-          tokenValidation: false,
-          tokenValidationError: expect.stringContaining('Valid token rejected'),
+          authenticationCompliance: false,
+          authenticationError: expect.stringContaining('Valid token rejected'),
         }),
       });
     });
@@ -384,7 +384,7 @@ describe('ValidationEngine', () => {
 
   describe('GraphQL SDL/Federation Validation', () => {
     it('should validate channel with proper SDL response', async () => {
-      const request: ValidationRequest = {
+      const request: ComplianceRequest = {
         channelId: 'test-channel-id',
         endpoint: 'https://example.com/graphql',
         organizationId: 'test-org-id',
@@ -420,23 +420,23 @@ describe('ValidationEngine', () => {
           }),
         } as Response);
 
-      const result = await validationEngine.validateChannel(request);
+      const result = await complianceEngine.verifyCompliance(request);
 
       expect(result).toMatchObject({
         channelId: 'test-channel-id',
-        status: 'valid',
+        status: 'compliant',
         details: expect.objectContaining({
           tests: expect.arrayContaining([
             expect.objectContaining({
-              testType: 'jwt_validation',
+              testType: 'authentication_compliance',
               success: true,
             }),
             expect.objectContaining({
-              testType: 'introspection',
+              testType: 'schema_introspection',
               success: true,
             }),
             expect.objectContaining({
-              testType: 'sdl_federation',
+              testType: 'federation_support',
               success: true,
             }),
           ]),
@@ -448,7 +448,7 @@ describe('ValidationEngine', () => {
     });
 
     it('should fail validation when _sdl query returns errors', async () => {
-      const request: ValidationRequest = {
+      const request: ComplianceRequest = {
         channelId: 'test-channel-id',
         endpoint: 'https://example.com/graphql',
         organizationId: 'test-org-id',
@@ -483,15 +483,15 @@ describe('ValidationEngine', () => {
           }),
         } as Response);
 
-      const result = await validationEngine.validateChannel(request);
+      const result = await complianceEngine.verifyCompliance(request);
 
       expect(result).toMatchObject({
         channelId: 'test-channel-id',
-        status: 'invalid',
+        status: 'non_compliant',
         details: expect.objectContaining({
           tests: expect.arrayContaining([
             expect.objectContaining({
-              testType: 'sdl_federation',
+              testType: 'federation_support',
               success: false,
               errorDetails: expect.stringContaining('errors'),
             }),
@@ -501,7 +501,7 @@ describe('ValidationEngine', () => {
     });
 
     it('should fail validation when _sdl field is missing', async () => {
-      const request: ValidationRequest = {
+      const request: ComplianceRequest = {
         channelId: 'test-channel-id',
         endpoint: 'https://example.com/graphql',
         organizationId: 'test-org-id',
@@ -532,15 +532,15 @@ describe('ValidationEngine', () => {
           }),
         } as Response);
 
-      const result = await validationEngine.validateChannel(request);
+      const result = await complianceEngine.verifyCompliance(request);
 
       expect(result).toMatchObject({
         channelId: 'test-channel-id',
-        status: 'invalid',
+        status: 'non_compliant',
         details: expect.objectContaining({
           tests: expect.arrayContaining([
             expect.objectContaining({
-              testType: 'sdl_federation',
+              testType: 'federation_support',
               success: false,
               errorDetails: expect.stringContaining('_sdl'),
             }),
@@ -550,7 +550,7 @@ describe('ValidationEngine', () => {
     });
 
     it('should fail validation when _sdl query returns non-200 status', async () => {
-      const request: ValidationRequest = {
+      const request: ComplianceRequest = {
         channelId: 'test-channel-id',
         endpoint: 'https://example.com/graphql',
         organizationId: 'test-org-id',
@@ -579,15 +579,15 @@ describe('ValidationEngine', () => {
           json: async () => ({}),
         } as Response);
 
-      const result = await validationEngine.validateChannel(request);
+      const result = await complianceEngine.verifyCompliance(request);
 
       expect(result).toMatchObject({
         channelId: 'test-channel-id',
-        status: 'invalid',
+        status: 'non_compliant',
         details: expect.objectContaining({
           tests: expect.arrayContaining([
             expect.objectContaining({
-              testType: 'sdl_federation',
+              testType: 'federation_support',
               success: false,
               errorDetails: expect.stringContaining('500'),
             }),
@@ -599,7 +599,7 @@ describe('ValidationEngine', () => {
 
   describe('GraphQL Introspection Validation', () => {
     it('should validate channel with proper introspection response', async () => {
-      const request: ValidationRequest = {
+      const request: ComplianceRequest = {
         channelId: 'test-channel-id',
         endpoint: 'https://example.com/graphql',
         organizationId: 'test-org-id',
@@ -635,23 +635,23 @@ describe('ValidationEngine', () => {
           }),
         } as Response);
 
-      const result = await validationEngine.validateChannel(request);
+      const result = await complianceEngine.verifyCompliance(request);
 
       expect(result).toMatchObject({
         channelId: 'test-channel-id',
-        status: 'valid',
+        status: 'compliant',
         details: expect.objectContaining({
           tests: expect.arrayContaining([
             expect.objectContaining({
-              testType: 'jwt_validation',
+              testType: 'authentication_compliance',
               success: true,
             }),
             expect.objectContaining({
-              testType: 'introspection',
+              testType: 'schema_introspection',
               success: true,
             }),
             expect.objectContaining({
-              testType: 'sdl_federation',
+              testType: 'federation_support',
               success: true,
             }),
           ]),
@@ -663,7 +663,7 @@ describe('ValidationEngine', () => {
     });
 
     it('should fail validation when __schema field is missing', async () => {
-      const request: ValidationRequest = {
+      const request: ComplianceRequest = {
         channelId: 'test-channel-id',
         endpoint: 'https://example.com/graphql',
         organizationId: 'test-org-id',
@@ -683,15 +683,15 @@ describe('ValidationEngine', () => {
           }),
         } as Response);
 
-      const result = await validationEngine.validateChannel(request);
+      const result = await complianceEngine.verifyCompliance(request);
 
       expect(result).toMatchObject({
         channelId: 'test-channel-id',
-        status: 'invalid',
+        status: 'non_compliant',
         details: expect.objectContaining({
           tests: expect.arrayContaining([
             expect.objectContaining({
-              testType: 'introspection',
+              testType: 'schema_introspection',
               success: false,
               errorDetails: expect.stringContaining('__schema'),
             }),
@@ -701,7 +701,7 @@ describe('ValidationEngine', () => {
     });
 
     it('should fail validation for malformed GraphQL response', async () => {
-      const request: ValidationRequest = {
+      const request: ComplianceRequest = {
         channelId: 'test-channel-id',
         endpoint: 'https://example.com/graphql',
         organizationId: 'test-org-id',
@@ -721,15 +721,15 @@ describe('ValidationEngine', () => {
           }),
         } as Response);
 
-      const result = await validationEngine.validateChannel(request);
+      const result = await complianceEngine.verifyCompliance(request);
 
       expect(result).toMatchObject({
         channelId: 'test-channel-id',
-        status: 'invalid',
+        status: 'non_compliant',
         details: expect.objectContaining({
           tests: expect.arrayContaining([
             expect.objectContaining({
-              testType: 'introspection',
+              testType: 'schema_introspection',
               success: false,
               errorDetails: expect.stringContaining('data'),
             }),
@@ -739,7 +739,7 @@ describe('ValidationEngine', () => {
     });
 
     it('should fail validation when GraphQL returns errors field', async () => {
-      const request: ValidationRequest = {
+      const request: ComplianceRequest = {
         channelId: 'test-channel-id',
         endpoint: 'https://example.com/graphql',
         organizationId: 'test-org-id',
@@ -763,15 +763,15 @@ describe('ValidationEngine', () => {
           }),
         } as Response);
 
-      const result = await validationEngine.validateChannel(request);
+      const result = await complianceEngine.verifyCompliance(request);
 
       expect(result).toMatchObject({
         channelId: 'test-channel-id',
-        status: 'invalid',
+        status: 'non_compliant',
         details: expect.objectContaining({
           tests: expect.arrayContaining([
             expect.objectContaining({
-              testType: 'introspection',
+              testType: 'schema_introspection',
               success: false,
               errorDetails: expect.stringContaining('errors'),
             }),
@@ -781,7 +781,7 @@ describe('ValidationEngine', () => {
     });
 
     it('should fail validation when introspection returns non-200 status', async () => {
-      const request: ValidationRequest = {
+      const request: ComplianceRequest = {
         channelId: 'test-channel-id',
         endpoint: 'https://example.com/graphql',
         organizationId: 'test-org-id',
@@ -799,15 +799,15 @@ describe('ValidationEngine', () => {
           json: async () => ({}),
         } as Response);
 
-      const result = await validationEngine.validateChannel(request);
+      const result = await complianceEngine.verifyCompliance(request);
 
       expect(result).toMatchObject({
         channelId: 'test-channel-id',
-        status: 'invalid',
+        status: 'non_compliant',
         details: expect.objectContaining({
           tests: expect.arrayContaining([
             expect.objectContaining({
-              testType: 'introspection',
+              testType: 'schema_introspection',
               success: false,
               errorDetails: expect.stringContaining('500'),
             }),

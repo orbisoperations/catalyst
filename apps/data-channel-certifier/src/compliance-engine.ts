@@ -1,4 +1,4 @@
-import type { ValidationResult, TestResult, ValidationRequest } from '@catalyst/schemas';
+import type { ComplianceResult, TestResult, ComplianceRequest } from '@catalyst/schemas';
 import type { Env } from './env';
 
 /**
@@ -32,49 +32,49 @@ interface GraphQLSDLResponse {
 }
 
 /**
- * Validation Engine for JWT token validation
- * Implements the core validation logic for the MVP
+ * Compliance Engine for data channel compliance verification
+ * Implements the core compliance checking logic for the MVP
  *
- * Uses a subset of Env bindings (AUTHX_TOKEN_API) for signing validation tokens
+ * Uses a subset of Env bindings (AUTHX_TOKEN_API) for signing compliance check tokens
  */
-export class ValidationEngine {
+export class ComplianceEngine {
   constructor(private env: Pick<Env, 'AUTHX_TOKEN_API'>) {}
 
   /**
-   * Validates a data channel endpoint with all configured tests
-   * MVP implementation starts with JWT validation, other tests to be added
+   * Verifies a data channel endpoint compliance with all configured tests
+   * Performs JWT authentication compliance, introspection, and SDL federation tests
    */
-  async validateChannel(request: ValidationRequest): Promise<ValidationResult> {
+  async verifyCompliance(request: ComplianceRequest): Promise<ComplianceResult> {
     const startTime = Date.now();
     const tests: TestResult[] = [];
 
-    console.log(`[ValidationEngine] Starting validation for channel ${request.channelId}`, {
+    console.log(`[ComplianceEngine] Starting compliance check for channel ${request.channelId}`, {
       endpoint: request.endpoint,
       organizationId: request.organizationId,
       timestamp: new Date(startTime).toISOString(),
     });
 
     try {
-      // 1. JWT Validation Test
+      // 1. JWT Compliance Test
       console.log(
-        `[ValidationEngine] Running JWT validation test for channel ${request.channelId}`
+        `[ComplianceEngine] Running JWT compliance test for channel ${request.channelId}`
       );
-      const jwtTest = await this.testJWTValidation(request);
+      const jwtTest = await this.testJWTCompliance(request);
       tests.push(jwtTest);
 
-      console.log(`[ValidationEngine] JWT test completed for channel ${request.channelId}`, {
+      console.log(`[ComplianceEngine] JWT test completed for channel ${request.channelId}`, {
         success: jwtTest.success,
         duration: `${jwtTest.duration}ms`,
         hasErrors: !!jwtTest.errorDetails,
       });
 
       // 2. GraphQL Introspection Test
-      console.log(`[ValidationEngine] Running introspection test for channel ${request.channelId}`);
+      console.log(`[ComplianceEngine] Running introspection test for channel ${request.channelId}`);
       const introspectionTest = await this.testIntrospection(request);
       tests.push(introspectionTest);
 
       console.log(
-        `[ValidationEngine] Introspection test completed for channel ${request.channelId}`,
+        `[ComplianceEngine] Introspection test completed for channel ${request.channelId}`,
         {
           success: introspectionTest.success,
           duration: `${introspectionTest.duration}ms`,
@@ -84,13 +84,13 @@ export class ValidationEngine {
 
       // 3. SDL Federation Test
       console.log(
-        `[ValidationEngine] Running SDL federation test for channel ${request.channelId}`
+        `[ComplianceEngine] Running SDL federation test for channel ${request.channelId}`
       );
       const sdlTest = await this.testSDLFederation(request);
       tests.push(sdlTest);
 
       console.log(
-        `[ValidationEngine] SDL federation test completed for channel ${request.channelId}`,
+        `[ComplianceEngine] SDL federation test completed for channel ${request.channelId}`,
         {
           success: sdlTest.success,
           duration: `${sdlTest.duration}ms`,
@@ -101,17 +101,20 @@ export class ValidationEngine {
       // Future tests will be added here as needed
 
       // Determine overall status based on test results
-      // ALL tests must pass for channel to be valid
+      // ALL tests must pass for channel to be compliant
       const allPassed = tests.every((test) => test.success);
-      const status = allPassed ? 'valid' : 'invalid';
+      const status = allPassed ? 'compliant' : 'non_compliant';
 
       const totalDuration = Date.now() - startTime;
-      console.log(`[ValidationEngine] Validation completed for channel ${request.channelId}`, {
-        status,
-        totalDuration: `${totalDuration}ms`,
-        testsRun: tests.length,
-        testsPassed: tests.filter((t) => t.success).length,
-      });
+      console.log(
+        `[ComplianceEngine] Compliance check completed for channel ${request.channelId}`,
+        {
+          status,
+          totalDuration: `${totalDuration}ms`,
+          testsRun: tests.length,
+          testsPassed: tests.filter((t) => t.success).length,
+        }
+      );
 
       return {
         channelId: request.channelId,
@@ -122,13 +125,13 @@ export class ValidationEngine {
           organizationId: request.organizationId,
           duration: totalDuration,
           tests: tests,
-          tokenValidation: jwtTest.success,
-          tokenValidationError: jwtTest.errorDetails,
+          authenticationCompliance: jwtTest.success,
+          authenticationError: jwtTest.errorDetails,
         },
       };
     } catch (error) {
       const totalDuration = Date.now() - startTime;
-      console.error(`[ValidationEngine] Validation failed for channel ${request.channelId}`, {
+      console.error(`[ComplianceEngine] Compliance check failed for channel ${request.channelId}`, {
         error: error instanceof Error ? error.message : 'Unknown error',
         duration: `${totalDuration}ms`,
         testsCompleted: tests.length,
@@ -152,38 +155,38 @@ export class ValidationEngine {
   }
 
   /**
-   * Requests a system JWT token for validation purposes
-   * Shared helper for JWT validation and introspection tests
+   * Requests a system JWT token for compliance verification purposes
+   * Shared helper for JWT authentication compliance and introspection tests
    */
-  private async requestValidationToken(
-    request: ValidationRequest,
-    purpose: string
+  private async requestComplianceToken(
+    request: CertificationRequest,
+    operation: string
   ): Promise<{ success: boolean; token?: string; error?: string }> {
-    console.log(`[ValidationEngine] Requesting system JWT from AUTHX_TOKEN_API`, {
+    console.log(`[ComplianceEngine] Requesting system JWT from AUTHX_TOKEN_API`, {
       channelId: request.channelId,
       callingService: 'data-channel-certifier',
-      purpose,
+      operation,
     });
 
     const tokenResponse = await this.env.AUTHX_TOKEN_API.signSystemJWT({
       callingService: 'data-channel-certifier',
       channelId: request.channelId,
-      purpose,
+      operation,
       duration: 300, // 5 minutes
     });
 
     if (!tokenResponse.success || !tokenResponse.token) {
-      console.error(`[ValidationEngine] Failed to obtain system JWT`, {
+      console.error(`[ComplianceEngine] Failed to obtain system JWT`, {
         channelId: request.channelId,
         error: tokenResponse.error,
       });
       return {
         success: false,
-        error: tokenResponse.error || 'Failed to obtain validation token',
+        error: tokenResponse.error || 'Failed to obtain compliance token',
       };
     }
 
-    console.log(`[ValidationEngine] System JWT obtained successfully`, {
+    console.log(`[ComplianceEngine] System JWT obtained successfully`, {
       channelId: request.channelId,
       tokenExpiration: tokenResponse.expiration,
     });
@@ -195,29 +198,29 @@ export class ValidationEngine {
   }
 
   /**
-   * Tests JWT token validation for a data channel
+   * Tests JWT authentication compliance for a data channel
    * Validates that the channel accepts valid tokens and rejects invalid ones
    */
-  private async testJWTValidation(request: ValidationRequest): Promise<TestResult> {
+  private async testJWTCompliance(request: CertificationRequest): Promise<TestResult> {
     const testStart = Date.now();
 
-    console.log(`[ValidationEngine:JWT] Starting JWT validation for channel ${request.channelId}`);
+    console.log(`[ComplianceEngine:JWT] Starting JWT compliance for channel ${request.channelId}`);
 
     try {
       // Step 1: Request a system JWT token for this channel
-      const tokenResponse = await this.requestValidationToken(request, 'channel-validation');
+      const tokenResponse = await this.requestComplianceToken(request, 'authentication-compliance');
 
       if (!tokenResponse.success || !tokenResponse.token) {
         return {
-          testType: 'jwt_validation',
+          testType: 'authentication_compliance',
           success: false,
           duration: Date.now() - testStart,
-          errorDetails: tokenResponse.error || 'Failed to obtain validation token',
+          errorDetails: tokenResponse.error || 'Failed to obtain compliance token',
         };
       }
 
       // Step 2: Test the channel endpoint with the valid token
-      console.log(`[ValidationEngine:JWT] Testing endpoint with VALID token`, {
+      console.log(`[ComplianceEngine:JWT] Testing endpoint with VALID token`, {
         channelId: request.channelId,
         endpoint: request.endpoint,
       });
@@ -226,7 +229,7 @@ export class ValidationEngine {
         tokenResponse.token,
         true // expecting success
       );
-      console.log(`[ValidationEngine:JWT] Valid token test result`, {
+      console.log(`[ComplianceEngine:JWT] Valid token test result`, {
         channelId: request.channelId,
         accepted: validTokenTest.accepted,
         statusCode: validTokenTest.statusCode,
@@ -234,7 +237,7 @@ export class ValidationEngine {
       });
 
       // Step 3: Test the channel endpoint with an invalid token
-      console.log(`[ValidationEngine:JWT] Testing endpoint with INVALID token`, {
+      console.log(`[ComplianceEngine:JWT] Testing endpoint with INVALID token`, {
         channelId: request.channelId,
         endpoint: request.endpoint,
       });
@@ -244,7 +247,7 @@ export class ValidationEngine {
         invalidToken,
         false // expecting rejection
       );
-      console.log(`[ValidationEngine:JWT] Invalid token test result`, {
+      console.log(`[ComplianceEngine:JWT] Invalid token test result`, {
         channelId: request.channelId,
         accepted: invalidTokenTest.accepted,
         statusCode: invalidTokenTest.statusCode,
@@ -252,7 +255,7 @@ export class ValidationEngine {
       });
 
       // Step 4: Test the channel endpoint with no token
-      console.log(`[ValidationEngine:JWT] Testing endpoint with NO token`, {
+      console.log(`[ComplianceEngine:JWT] Testing endpoint with NO token`, {
         channelId: request.channelId,
         endpoint: request.endpoint,
       });
@@ -261,14 +264,14 @@ export class ValidationEngine {
         '', // empty token
         false // expecting rejection
       );
-      console.log(`[ValidationEngine:JWT] No token test result`, {
+      console.log(`[ComplianceEngine:JWT] No token test result`, {
         channelId: request.channelId,
         accepted: noTokenTest.accepted,
         statusCode: noTokenTest.statusCode,
         error: noTokenTest.error,
       });
 
-      // All tests must pass for JWT validation to succeed:
+      // All tests must pass for JWT compliance to succeed:
       // - Valid token should be accepted (authenticated)
       // - Invalid token should be rejected (not authenticated)
       // - No token should be rejected (not authenticated)
@@ -279,7 +282,7 @@ export class ValidationEngine {
         ? undefined
         : this.formatJWTTestError(validTokenTest, invalidTokenTest, noTokenTest);
 
-      console.log(`[ValidationEngine:JWT] JWT validation summary`, {
+      console.log(`[ComplianceEngine:JWT] JWT compliance summary`, {
         channelId: request.channelId,
         success,
         validTokenPassed: validTokenTest.accepted,
@@ -289,12 +292,12 @@ export class ValidationEngine {
       });
 
       return {
-        testType: 'jwt_validation',
+        testType: 'authentication_compliance',
         success,
         duration: Date.now() - testStart,
         errorDetails,
         // Include structured test details for UI display
-        jwtTestDetails: {
+        jwtAuthenticationDetails: {
           validToken: {
             accepted: validTokenTest.accepted,
             statusCode: validTokenTest.statusCode,
@@ -314,10 +317,10 @@ export class ValidationEngine {
       };
     } catch (error) {
       return {
-        testType: 'jwt_validation',
+        testType: 'authentication_compliance',
         success: false,
         duration: Date.now() - testStart,
-        errorDetails: `JWT validation test failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        errorDetails: `JWT authentication compliance test failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
       };
     }
   }
@@ -326,20 +329,20 @@ export class ValidationEngine {
    * Tests GraphQL introspection capability
    * Validates that the channel returns a proper GraphQL schema via introspection query
    */
-  private async testIntrospection(request: ValidationRequest): Promise<TestResult> {
+  private async testIntrospection(request: CertificationRequest): Promise<TestResult> {
     const testStart = Date.now();
 
     console.log(
-      `[ValidationEngine:Introspection] Starting introspection test for channel ${request.channelId}`
+      `[ComplianceEngine:Introspection] Starting introspection test for channel ${request.channelId}`
     );
 
     try {
       // Step 1: Request a system JWT token for authenticated introspection
-      const tokenResponse = await this.requestValidationToken(request, 'channel-introspection');
+      const tokenResponse = await this.requestComplianceToken(request, 'introspection-compliance');
 
       if (!tokenResponse.success || !tokenResponse.token) {
         return {
-          testType: 'introspection',
+          testType: 'schema_introspection',
           success: false,
           duration: Date.now() - testStart,
           errorDetails: tokenResponse.error || 'Failed to obtain introspection token',
@@ -357,7 +360,7 @@ export class ValidationEngine {
         }`,
       };
 
-      console.log(`[ValidationEngine:Introspection] Sending introspection query`, {
+      console.log(`[ComplianceEngine:Introspection] Sending introspection query`, {
         channelId: request.channelId,
         endpoint: request.endpoint,
       });
@@ -372,7 +375,7 @@ export class ValidationEngine {
         signal: AbortSignal.timeout(10000), // 10 second timeout
       });
 
-      console.log(`[ValidationEngine:Introspection] Received response`, {
+      console.log(`[ComplianceEngine:Introspection] Received response`, {
         channelId: request.channelId,
         status: response.status,
       });
@@ -380,11 +383,11 @@ export class ValidationEngine {
       // Step 3: Validate response
       if (response.status !== 200) {
         const errorMsg = `Introspection returned non-200 status: ${response.status}`;
-        console.error(`[ValidationEngine:Introspection] ${errorMsg}`, {
+        console.error(`[ComplianceEngine:Introspection] ${errorMsg}`, {
           channelId: request.channelId,
         });
         return {
-          testType: 'introspection',
+          testType: 'schema_introspection',
           success: false,
           duration: Date.now() - testStart,
           errorDetails: errorMsg,
@@ -397,12 +400,12 @@ export class ValidationEngine {
         jsonResponse = (await response.json()) as GraphQLIntrospectionResponse;
       } catch (parseError) {
         const errorMsg = 'Failed to parse JSON response';
-        console.error(`[ValidationEngine:Introspection] ${errorMsg}`, {
+        console.error(`[ComplianceEngine:Introspection] ${errorMsg}`, {
           channelId: request.channelId,
           error: parseError instanceof Error ? parseError.message : 'Unknown',
         });
         return {
-          testType: 'introspection',
+          testType: 'schema_introspection',
           success: false,
           duration: Date.now() - testStart,
           errorDetails: errorMsg,
@@ -412,11 +415,11 @@ export class ValidationEngine {
       // Check for GraphQL errors field
       if (jsonResponse.errors) {
         const errorMsg = `GraphQL returned errors: ${JSON.stringify(jsonResponse.errors)}`;
-        console.error(`[ValidationEngine:Introspection] ${errorMsg}`, {
+        console.error(`[ComplianceEngine:Introspection] ${errorMsg}`, {
           channelId: request.channelId,
         });
         return {
-          testType: 'introspection',
+          testType: 'schema_introspection',
           success: false,
           duration: Date.now() - testStart,
           errorDetails: errorMsg,
@@ -426,12 +429,12 @@ export class ValidationEngine {
       // Check for data field
       if (!jsonResponse.data) {
         const errorMsg = 'Response missing "data" field - not a valid GraphQL response';
-        console.error(`[ValidationEngine:Introspection] ${errorMsg}`, {
+        console.error(`[ComplianceEngine:Introspection] ${errorMsg}`, {
           channelId: request.channelId,
           response: jsonResponse,
         });
         return {
-          testType: 'introspection',
+          testType: 'schema_introspection',
           success: false,
           duration: Date.now() - testStart,
           errorDetails: errorMsg,
@@ -442,11 +445,11 @@ export class ValidationEngine {
       if (!jsonResponse.data.__schema) {
         const errorMsg =
           'Response missing "__schema" field - introspection not supported or disabled';
-        console.error(`[ValidationEngine:Introspection] ${errorMsg}`, {
+        console.error(`[ComplianceEngine:Introspection] ${errorMsg}`, {
           channelId: request.channelId,
         });
         return {
-          testType: 'introspection',
+          testType: 'schema_introspection',
           success: false,
           duration: Date.now() - testStart,
           errorDetails: errorMsg,
@@ -456,11 +459,11 @@ export class ValidationEngine {
       // Check for queryType.name
       if (!jsonResponse.data.__schema.queryType?.name) {
         const errorMsg = 'Response missing "__schema.queryType.name" - invalid schema structure';
-        console.error(`[ValidationEngine:Introspection] ${errorMsg}`, {
+        console.error(`[ComplianceEngine:Introspection] ${errorMsg}`, {
           channelId: request.channelId,
         });
         return {
-          testType: 'introspection',
+          testType: 'schema_introspection',
           success: false,
           duration: Date.now() - testStart,
           errorDetails: errorMsg,
@@ -468,25 +471,25 @@ export class ValidationEngine {
       }
 
       // Success!
-      console.log(`[ValidationEngine:Introspection] Introspection test PASSED`, {
+      console.log(`[ComplianceEngine:Introspection] Introspection test PASSED`, {
         channelId: request.channelId,
         queryTypeName: jsonResponse.data.__schema.queryType.name,
         duration: `${Date.now() - testStart}ms`,
       });
 
       return {
-        testType: 'introspection',
+        testType: 'schema_introspection',
         success: true,
         duration: Date.now() - testStart,
       };
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      console.error(`[ValidationEngine:Introspection] Test failed with error`, {
+      console.error(`[ComplianceEngine:Introspection] Test failed with error`, {
         channelId: request.channelId,
         error: errorMsg,
       });
       return {
-        testType: 'introspection',
+        testType: 'schema_introspection',
         success: false,
         duration: Date.now() - testStart,
         errorDetails: `Introspection test failed: ${errorMsg}`,
@@ -506,26 +509,26 @@ export class ValidationEngine {
    * 6. Validates _sdl field exists and is a string
    * 7. Validates _sdl is non-empty
    *
-   * @param request - Validation request containing channel details
+   * @param request - Certification request containing channel details
    * @returns Test result with success/failure and timing information
    */
-  private async testSDLFederation(request: ValidationRequest): Promise<TestResult> {
+  private async testSDLFederation(request: CertificationRequest): Promise<TestResult> {
     const testStart = Date.now();
 
-    console.log(`[ValidationEngine:SDL] Starting SDL federation test`, {
+    console.log(`[ComplianceEngine:SDL] Starting SDL federation test`, {
       channelId: request.channelId,
       endpoint: request.endpoint,
     });
 
     try {
       // Step 1: Obtain system JWT token
-      const tokenResult = await this.requestValidationToken(request, 'SDL federation test');
+      const tokenResult = await this.requestComplianceToken(request, 'federation-compliance');
       if (!tokenResult.success || !tokenResult.token) {
         return {
-          testType: 'sdl_federation',
+          testType: 'federation_support',
           success: false,
           duration: Date.now() - testStart,
-          errorDetails: tokenResult.error || 'Failed to obtain validation token',
+          errorDetails: tokenResult.error || 'Failed to obtain compliance token',
         };
       }
 
@@ -534,7 +537,7 @@ export class ValidationEngine {
       // Step 2: Send SDL query to the endpoint
       const sdlQuery = `{ _sdl }`;
 
-      console.log(`[ValidationEngine:SDL] Sending SDL query to endpoint`, {
+      console.log(`[ComplianceEngine:SDL] Sending SDL query to endpoint`, {
         channelId: request.channelId,
         endpoint: request.endpoint,
       });
@@ -555,12 +558,12 @@ export class ValidationEngine {
       // Step 3: Check status code
       if (response.status !== 200) {
         const errorMsg = `SDL query returned non-200 status: ${response.status}`;
-        console.error(`[ValidationEngine:SDL] ${errorMsg}`, {
+        console.error(`[ComplianceEngine:SDL] ${errorMsg}`, {
           channelId: request.channelId,
           status: response.status,
         });
         return {
-          testType: 'sdl_federation',
+          testType: 'federation_support',
           success: false,
           duration: Date.now() - testStart,
           errorDetails: errorMsg,
@@ -574,12 +577,12 @@ export class ValidationEngine {
         jsonResponse = (await response.json()) as GraphQLSDLResponse;
       } catch (parseError) {
         const errorMsg = `Failed to parse SDL query response as JSON`;
-        console.error(`[ValidationEngine:SDL] ${errorMsg}`, {
+        console.error(`[ComplianceEngine:SDL] ${errorMsg}`, {
           channelId: request.channelId,
           parseError: parseError instanceof Error ? parseError.message : 'Unknown',
         });
         return {
-          testType: 'sdl_federation',
+          testType: 'federation_support',
           success: false,
           duration: Date.now() - testStart,
           errorDetails: errorMsg,
@@ -589,12 +592,12 @@ export class ValidationEngine {
       // Step 5: Check for GraphQL errors
       if (jsonResponse.errors && jsonResponse.errors.length > 0) {
         const errorMsg = `SDL query returned GraphQL errors: ${jsonResponse.errors.map((e) => e.message).join(', ')}`;
-        console.error(`[ValidationEngine:SDL] ${errorMsg}`, {
+        console.error(`[ComplianceEngine:SDL] ${errorMsg}`, {
           channelId: request.channelId,
           errors: jsonResponse.errors,
         });
         return {
-          testType: 'sdl_federation',
+          testType: 'federation_support',
           success: false,
           duration: Date.now() - testStart,
           errorDetails: errorMsg,
@@ -604,13 +607,13 @@ export class ValidationEngine {
       // Step 6: Validate _sdl field exists
       if (!jsonResponse.data || typeof jsonResponse.data._sdl !== 'string') {
         const errorMsg = 'Response missing "_sdl" field or it is not a string';
-        console.error(`[ValidationEngine:SDL] ${errorMsg}`, {
+        console.error(`[ComplianceEngine:SDL] ${errorMsg}`, {
           channelId: request.channelId,
           hasData: !!jsonResponse.data,
           sdlType: jsonResponse.data?._sdl ? typeof jsonResponse.data._sdl : 'undefined',
         });
         return {
-          testType: 'sdl_federation',
+          testType: 'federation_support',
           success: false,
           duration: Date.now() - testStart,
           errorDetails: errorMsg,
@@ -620,11 +623,11 @@ export class ValidationEngine {
       // Step 7: Validate _sdl is non-empty
       if (jsonResponse.data._sdl.trim().length === 0) {
         const errorMsg = 'SDL string is empty';
-        console.error(`[ValidationEngine:SDL] ${errorMsg}`, {
+        console.error(`[ComplianceEngine:SDL] ${errorMsg}`, {
           channelId: request.channelId,
         });
         return {
-          testType: 'sdl_federation',
+          testType: 'federation_support',
           success: false,
           duration: Date.now() - testStart,
           errorDetails: errorMsg,
@@ -632,25 +635,25 @@ export class ValidationEngine {
       }
 
       // Success!
-      console.log(`[ValidationEngine:SDL] SDL federation test PASSED`, {
+      console.log(`[ComplianceEngine:SDL] SDL federation test PASSED`, {
         channelId: request.channelId,
         sdlLength: jsonResponse.data._sdl.length,
         duration: `${Date.now() - testStart}ms`,
       });
 
       return {
-        testType: 'sdl_federation',
+        testType: 'federation_support',
         success: true,
         duration: Date.now() - testStart,
       };
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      console.error(`[ValidationEngine:SDL] Test failed with error`, {
+      console.error(`[ComplianceEngine:SDL] Test failed with error`, {
         channelId: request.channelId,
         error: errorMsg,
       });
       return {
-        testType: 'sdl_federation',
+        testType: 'federation_support',
         success: false,
         duration: Date.now() - testStart,
         errorDetails: `SDL federation test failed: ${errorMsg}`,
@@ -667,7 +670,7 @@ export class ValidationEngine {
     token: string,
     expectSuccess: boolean
   ): Promise<{ accepted: boolean; statusCode?: number; error?: string }> {
-    const testType = token ? (token === 'invalid.jwt.token' ? 'invalid' : 'valid') : 'none';
+    const jwtTestScenario = token ? (token === 'invalid.jwt.token' ? 'invalid' : 'valid') : 'none';
 
     // Validate endpoint URL format before making request
     try {
@@ -675,7 +678,7 @@ export class ValidationEngine {
 
       // Check for common URL format issues
       if (!url.hostname || (url.hostname.includes('-') && !url.hostname.includes('.'))) {
-        console.error(`[ValidationEngine:Test] Malformed endpoint URL - missing domain`, {
+        console.error(`[ComplianceEngine:Test] Malformed endpoint URL - missing domain`, {
           endpoint,
           hostname: url.hostname,
           suggestion: 'URL appears to be missing a proper domain name (e.g., .com, .org, etc.)',
@@ -686,7 +689,7 @@ export class ValidationEngine {
         };
       }
     } catch (urlError) {
-      console.error(`[ValidationEngine:Test] Invalid endpoint URL format`, {
+      console.error(`[ComplianceEngine:Test] Invalid endpoint URL format`, {
         endpoint,
         error: urlError instanceof Error ? urlError.message : 'Invalid URL',
       });
@@ -695,7 +698,7 @@ export class ValidationEngine {
         error: `Invalid endpoint URL format: ${endpoint}`,
       };
     }
-    console.log(`[ValidationEngine:Test] Starting ${testType} token test`, {
+    console.log(`[ComplianceEngine:Test] Starting ${jwtTestScenario} token test`, {
       endpoint,
       expectSuccess,
       hasToken: !!token,
@@ -721,10 +724,10 @@ export class ValidationEngine {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      console.log(`[ValidationEngine:Test] Sending GraphQL introspection query`, {
+      console.log(`[ComplianceEngine:Test] Sending GraphQL introspection query`, {
         endpoint,
         hasAuthHeader: !!token,
-        testType,
+        jwtTestScenario,
       });
 
       let response: Response;
@@ -736,9 +739,9 @@ export class ValidationEngine {
           signal: AbortSignal.timeout(10000), // 10 second timeout
         });
       } catch (fetchError) {
-        console.error(`[ValidationEngine:Test] Fetch request failed`, {
+        console.error(`[ComplianceEngine:Test] Fetch request failed`, {
           endpoint,
-          testType,
+          jwtTestScenario,
           error: fetchError instanceof Error ? fetchError.message : 'Unknown fetch error',
           errorName: fetchError instanceof Error ? fetchError.name : 'Unknown',
           stack: fetchError instanceof Error ? fetchError.stack : undefined,
@@ -750,19 +753,19 @@ export class ValidationEngine {
         };
       }
 
-      console.log(`[ValidationEngine:Test] Received response`, {
+      console.log(`[ComplianceEngine:Test] Received response`, {
         endpoint,
         status: response.status,
         statusText: response.statusText,
-        testType,
+        jwtTestScenario,
       });
 
-      // For JWT validation, we only care about authentication status
+      // For JWT compliance, we only care about authentication status
       const isAuthenticated = response.status !== 401 && response.status !== 403;
 
-      console.log(`[ValidationEngine:Test] Authentication status evaluated`, {
+      console.log(`[ComplianceEngine:Test] Authentication status evaluated`, {
         endpoint,
-        testType,
+        jwtTestScenario,
         isAuthenticated,
         expectSuccess,
         testPassed: expectSuccess ? isAuthenticated : !isAuthenticated,
@@ -771,7 +774,7 @@ export class ValidationEngine {
       if (expectSuccess) {
         // Valid token should be authenticated (not 401/403)
         const passed = isAuthenticated;
-        console.log(`[ValidationEngine:Test] Valid token test ${passed ? 'PASSED' : 'FAILED'}`, {
+        console.log(`[ComplianceEngine:Test] Valid token test ${passed ? 'PASSED' : 'FAILED'}`, {
           endpoint,
           expected: 'authenticated',
           actual: isAuthenticated ? 'authenticated' : 'rejected',
@@ -786,10 +789,10 @@ export class ValidationEngine {
         // Invalid token should NOT be authenticated (should be 401/403)
         const passed = !isAuthenticated;
         console.log(
-          `[ValidationEngine:Test] Invalid/no token test ${passed ? 'PASSED' : 'FAILED'}`,
+          `[ComplianceEngine:Test] Invalid/no token test ${passed ? 'PASSED' : 'FAILED'}`,
           {
             endpoint,
-            testType,
+            jwtTestScenario,
             expected: 'rejected',
             actual: isAuthenticated ? 'authenticated' : 'rejected',
             statusCode: response.status,
@@ -800,16 +803,16 @@ export class ValidationEngine {
           statusCode: response.status,
           error: passed
             ? undefined
-            : `${testType === 'none' ? 'Missing' : 'Invalid'} token accepted with status ${response.status}`,
+            : `${jwtTestScenario === 'none' ? 'Missing' : 'Invalid'} token accepted with status ${response.status}`,
         };
       }
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
       const isTimeout = error instanceof Error && error.name === 'AbortError';
 
-      console.error(`[ValidationEngine:Test] Test failed with error`, {
+      console.error(`[ComplianceEngine:Test] Test failed with error`, {
         endpoint,
-        testType,
+        jwtTestScenario,
         error: errorMsg,
         isTimeout,
         stack: error instanceof Error ? error.stack : undefined,
@@ -830,7 +833,7 @@ export class ValidationEngine {
   }
 
   /**
-   * Formats error message for JWT validation test failures
+   * Formats error message for JWT compliance test failures
    */
   private formatJWTTestError(
     validTokenTest: { accepted: boolean; error?: string },

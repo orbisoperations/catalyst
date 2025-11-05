@@ -66,43 +66,43 @@ Each channel undergoes the following validation tests:
    - Checks for `_sdl` field containing a non-empty SDL string
    - Ensures no GraphQL errors in response
 
-**All three tests must pass** for a channel to be certified as `valid`.
+**All three tests must pass** for a channel to achieve `compliant` status.
 
 ## RPC Surface (MVP)
 
 The Worker implements RPC methods via `WorkerEntrypoint`, invoked by callers with a service binding:
 
-- `validateBulkChannels(channels?: Array<...>): Promise<ValidationReport>`
+- `verifyBulkCompliance(channels?: Array<...>): Promise<ComplianceReport>`
 
   - Validates multiple channels (all enabled channels if not specified)
   - Returns summary report with individual results
   - **Note**: Currently validates all channels concurrently without throttling
 
-- `validateChannel(request: ValidationRequest): Promise<ValidationResult>`
+- `verifyCompliance(request: ComplianceRequest): Promise<ComplianceResult>`
   - Validates a single channel
-  - Returns detailed validation result
+  - Returns detailed compliance result
 
 Example call from another Worker with binding `DATA_CHANNEL_CERTIFIER`:
 
 ```ts
 // Validate all enabled channels
-await env.DATA_CHANNEL_CERTIFIER.validateBulkChannels();
+await env.DATA_CHANNEL_CERTIFIER.verifyBulkCompliance();
 
 // Validate specific channel
-await env.DATA_CHANNEL_CERTIFIER.validateChannel({
+await env.DATA_CHANNEL_CERTIFIER.verifyCompliance({
   channelId: 'channel-uuid',
   endpoint: 'https://example.com/graphql',
   organizationId: 'org-uuid',
 });
 ```
 
-## Validation Status Types
+## Compliance Status Types
 
-- `valid`: Channel passed all validation checks
-- `invalid`: Channel failed validation but is reachable
-- `error`: Channel validation encountered errors (network, auth, etc.)
-- `pending`: Validation is in progress
-- `unknown`: No validation has been performed yet
+- `compliant`: Channel passed all compliance checks
+- `non_compliant`: Channel failed compliance checks but is reachable
+- `error`: Compliance check encountered errors (network, auth, etc.)
+- `pending`: Compliance check is in progress
+- `not_checked`: No compliance check has been performed yet
 
 ## Development
 
@@ -196,13 +196,13 @@ Invoked by callers via the `DATA_CHANNEL_CERTIFIER` service binding. Methods are
 
 ```ts
 interface DataChannelCertifierRpc {
-  validateBulkChannels(): Promise<ValidationReport>;
-  validateChannel(channelId: string): Promise<ValidationResult>;
+  verifyBulkCompliance(): Promise<ComplianceReport>;
+  verifyCompliance(channelId: string): Promise<ComplianceResult>;
 }
 
 // Example usage from another Worker
-await env.DATA_CHANNEL_CERTIFIER.validateBulkChannels();
-await env.DATA_CHANNEL_CERTIFIER.validateChannel('channel-uuid');
+await env.DATA_CHANNEL_CERTIFIER.verifyBulkCompliance();
+await env.DATA_CHANNEL_CERTIFIER.verifyCompliance('channel-uuid');
 ```
 
 Return types are defined in `src/schemas.ts`.
@@ -217,14 +217,14 @@ interface RegistrarRpc {
   getChannelForValidation(channelId: string): Promise<DataChannel | null>;
   updateValidationStatus(
     channelId: string,
-    validationResult: ValidationResult
+    complianceResult: ComplianceResult
   ): Promise<{ success: boolean }>;
 }
 
 // Example (from Data Channel Certifier)
 const channels = await env.DATA_CHANNEL_REGISTRAR.getEnabledChannels();
 const channel = await env.DATA_CHANNEL_REGISTRAR.getChannelForValidation('channel-uuid');
-await env.DATA_CHANNEL_REGISTRAR.updateValidationStatus('channel-uuid', validationResult);
+await env.DATA_CHANNEL_REGISTRAR.updateValidationStatus('channel-uuid', complianceResult);
 ```
 
 ## Monitoring
@@ -249,7 +249,7 @@ Key metrics to monitor:
 
 ### Bulk Validation Concurrency
 
-**Current Behavior**: The `validateBulkChannels()` method validates all channels **concurrently** without throttling.
+**Current Behavior**: The `verifyBulkCompliance()` method validates all channels **concurrently** without throttling.
 
 **Implications**:
 
@@ -268,7 +268,7 @@ Key metrics to monitor:
 
 ```typescript
 // Future API (not yet implemented)
-validateBulkChannels(channels, { concurrencyLimit: 10 });
+verifyBulkCompliance(channels, { concurrencyLimit: 10 });
 ```
 
 ### Timeouts
@@ -337,7 +337,7 @@ Key metrics to monitor:
 - **Symptom**: Validation runs exceed worker CPU limits
 - **Cause**: Too many concurrent validations
 - **Solution**: Reduce channel count or implement batching
-- **Workaround**: Call `validateChannel()` individually with delays
+- **Workaround**: Call `verifyCompliance()` individually with delays
 
 **High Memory Usage**
 

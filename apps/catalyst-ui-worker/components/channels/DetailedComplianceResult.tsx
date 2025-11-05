@@ -23,12 +23,16 @@ import {
     ClockIcon,
     ExclamationTriangleIcon,
 } from '@heroicons/react/20/solid';
-import type { ValidationResult, TestResult } from '@catalyst/schemas';
+import type { ComplianceResult, TestResult, TestType } from '@catalyst/schemas';
+import { TestTypeSchema } from '@catalyst/schemas';
 
-interface DetailedValidationResultProps {
-    result: ValidationResult;
+interface DetailedComplianceResultProps {
+    result: ComplianceResult;
     isCompact?: boolean;
 }
+
+// Use the enum values from the schema for type-safe comparisons
+const TEST_TYPE = TestTypeSchema.enum;
 
 function TestStatusIcon({ success }: { success: boolean }) {
     return success ? (
@@ -38,19 +42,19 @@ function TestStatusIcon({ success }: { success: boolean }) {
     );
 }
 
-function TestTypeLabel({ testType }: { testType: string }) {
-    const labels: Record<string, string> = {
-        jwt_validation: 'JWT Token Validation',
-        introspection: 'GraphQL Introspection',
-        schema_compliance: 'Schema Compliance',
+function TestTypeLabel({ testType }: { testType: TestType }) {
+    const labels: Record<TestType, string> = {
+        [TEST_TYPE.authentication_compliance]: 'JWT Authentication Compliance',
+        [TEST_TYPE.schema_introspection]: 'GraphQL Schema Introspection',
+        [TEST_TYPE.federation_support]: 'Federation Support (SDL)',
     };
     return <Text fontWeight="medium">{labels[testType] || testType}</Text>;
 }
 
 function JWTValidationDetails({ test }: { test: TestResult }) {
     // Use structured test details if available, otherwise fall back to parsing error string
-    if (test.jwtTestDetails) {
-        const { validToken, invalidToken, noToken } = test.jwtTestDetails;
+    if (test.jwtAuthenticationDetails) {
+        const { validToken, invalidToken, noToken } = test.jwtAuthenticationDetails;
 
         const tests = [
             {
@@ -202,7 +206,7 @@ function TestResultItem({ test, isLast }: { test: TestResult; isLast: boolean })
             {hasDetails && (
                 <Collapse in={isOpen}>
                     <Box pl={7} pb={2}>
-                        {test.testType === 'jwt_validation' ? (
+                        {test.testType === TEST_TYPE.authentication_compliance ? (
                             <JWTValidationDetails test={test} />
                         ) : (
                             <Code fontSize="sm" p={2} borderRadius="md" display="block" whiteSpace="pre-wrap">
@@ -218,8 +222,17 @@ function TestResultItem({ test, isLast }: { test: TestResult; isLast: boolean })
     );
 }
 
-export function DetailedValidationResult({ result, isCompact = false }: DetailedValidationResultProps) {
-    const { isOpen, onToggle } = useDisclosure({ defaultIsOpen: result.status !== 'valid' });
+export function DetailedComplianceResult({ result, isCompact = false }: DetailedComplianceResultProps) {
+    // Guard against undefined result
+    if (!result) {
+        return (
+            <Box p={4}>
+                <Text color="red.500">Error: Compliance result is undefined</Text>
+            </Box>
+        );
+    }
+
+    const { isOpen, onToggle } = useDisclosure({ defaultIsOpen: result.status !== 'compliant' });
     const hasTests = result.details?.tests && result.details.tests.length > 0;
 
     // Calculate summary statistics
@@ -231,7 +244,9 @@ export function DetailedValidationResult({ result, isCompact = false }: Detailed
         // Compact view for list/table display
         return (
             <HStack spacing={2}>
-                <Badge colorScheme={result.status === 'valid' ? 'green' : result.status === 'error' ? 'orange' : 'red'}>
+                <Badge
+                    colorScheme={result.status === 'compliant' ? 'green' : result.status === 'error' ? 'orange' : 'red'}
+                >
                     {result.status}
                 </Badge>
                 {hasTests && (
@@ -249,7 +264,9 @@ export function DetailedValidationResult({ result, isCompact = false }: Detailed
             <Flex align="center" justify="space-between" mb={hasTests ? 3 : 0}>
                 <HStack spacing={3}>
                     <Badge
-                        colorScheme={result.status === 'valid' ? 'green' : result.status === 'error' ? 'orange' : 'red'}
+                        colorScheme={
+                            result.status === 'compliant' ? 'green' : result.status === 'error' ? 'orange' : 'red'
+                        }
                         fontSize="sm"
                         px={2}
                         py={1}
@@ -324,7 +341,7 @@ export function DetailedValidationResult({ result, isCompact = false }: Detailed
                 <HStack spacing={4}>
                     <Text>Channel: {result.channelId.substring(0, 8)}...</Text>
                     {result.details?.endpoint && <Text>Endpoint: {new URL(result.details.endpoint).hostname}</Text>}
-                    {result.timestamp && <Text>Validated: {new Date(result.timestamp).toLocaleString()}</Text>}
+                    {result.timestamp && <Text>Certified: {new Date(result.timestamp).toLocaleString()}</Text>}
                 </HStack>
             </Box>
         </Box>

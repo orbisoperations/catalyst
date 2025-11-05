@@ -1,7 +1,7 @@
 'use server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import {
-    type ValidationResult,
+    type ComplianceResult,
     type User,
     type CloudflareEnv,
     getAuthzed,
@@ -14,7 +14,7 @@ function getEnv(): CloudflareEnv {
     return getCloudflareContext().env as CloudflareEnv;
 }
 
-export async function canUserValidateChannels(): Promise<boolean> {
+export async function canUserCheckCompliance(): Promise<boolean> {
     const env = getEnv();
 
     try {
@@ -43,7 +43,7 @@ export async function canUserValidateChannels(): Promise<boolean> {
     }
 }
 
-export async function validateChannel(channelId: string, endpoint: string, organization: string) {
+export async function checkCompliance(channelId: string, endpoint: string, organization: string) {
     const env = getEnv();
 
     try {
@@ -66,30 +66,41 @@ export async function validateChannel(channelId: string, endpoint: string, organ
         const hasPermission = await authzed.canCreateUpdateDeleteDataChannel(user.orgId, user.userId);
 
         if (!hasPermission) {
-            throw new Error('Unauthorized: You must have data custodian permissions to validate channels');
+            throw new Error('Unauthorized: You must have data custodian permissions to check channel compliance');
         }
 
         // Check if user's organization matches the channel's organization
         if (user.orgId !== organization) {
-            throw new Error('Unauthorized: You can only validate data channels belonging to your organization');
+            throw new Error(
+                'Unauthorized: You can only check compliance for data channels belonging to your organization'
+            );
         }
 
         // Call the RPC method directly via service binding
         const certifier = getCertifier(env);
-        const result = await certifier.validateChannel({
+        const result = await certifier.verifyCompliance({
             channelId,
             endpoint,
             organizationId: organization,
         });
 
+        // Debug logging
+        console.log('[checkCompliance] RPC result:', result);
+        console.log('[checkCompliance] Result type:', typeof result);
+        console.log('[checkCompliance] Result status:', result?.status);
+
         // Ensure it's a plain object by converting to JSON and back
         // This removes any class instances or non-serializable data
-        return JSON.parse(JSON.stringify(result)) as ValidationResult;
+        if (!result) {
+            throw new Error('Compliance check returned undefined result');
+        }
+
+        return JSON.parse(JSON.stringify(result)) as ComplianceResult;
     } catch (error) {
-        console.error('Failed to validate channel:', error);
+        console.error('Failed to check channel compliance:', error);
         if (error instanceof Error && error.message.startsWith('Unauthorized:')) {
             throw error;
         }
-        throw new Error('Failed to validate data channel');
+        throw new Error('Failed to check data channel compliance');
     }
 }

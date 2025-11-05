@@ -17,7 +17,7 @@ describe('signSystemJWT - System Service JWT Signing', () => {
 			const request = {
 				callingService: SYSTEM_SERVICE_NAME,
 				channelId: TEST_CHANNEL_ID,
-				purpose: 'channel-validation',
+				operation: 'authentication-compliance',
 				duration: 300, // 5 minutes in seconds
 			};
 
@@ -45,7 +45,7 @@ describe('signSystemJWT - System Service JWT Signing', () => {
 			const request = {
 				callingService: 'unknown-service',
 				channelId: TEST_CHANNEL_ID,
-				purpose: 'channel-validation',
+				operation: 'authentication-compliance',
 				duration: 300,
 			};
 
@@ -64,7 +64,7 @@ describe('signSystemJWT - System Service JWT Signing', () => {
 			const request = {
 				callingService: '',
 				channelId: TEST_CHANNEL_ID,
-				purpose: 'channel-validation',
+				operation: 'authentication-compliance',
 				duration: 300,
 			};
 
@@ -83,7 +83,7 @@ describe('signSystemJWT - System Service JWT Signing', () => {
 			const request = {
 				callingService: SYSTEM_SERVICE_NAME,
 				channelId: '',
-				purpose: 'channel-validation',
+				operation: 'authentication-compliance',
 				duration: 300,
 			};
 
@@ -102,7 +102,7 @@ describe('signSystemJWT - System Service JWT Signing', () => {
 			const request = {
 				callingService: SYSTEM_SERVICE_NAME,
 				channelId: TEST_CHANNEL_ID,
-				purpose: 'channel-validation',
+				operation: 'authentication-compliance',
 				// duration not specified
 			};
 
@@ -125,7 +125,7 @@ describe('signSystemJWT - System Service JWT Signing', () => {
 			const request = {
 				callingService: SYSTEM_SERVICE_NAME,
 				channelId: TEST_CHANNEL_ID,
-				purpose: 'channel-validation',
+				operation: 'authentication-compliance',
 				duration: customDuration,
 			};
 
@@ -147,7 +147,7 @@ describe('signSystemJWT - System Service JWT Signing', () => {
 			const request = {
 				callingService: SYSTEM_SERVICE_NAME,
 				channelId: TEST_CHANNEL_ID,
-				purpose: 'channel-validation',
+				operation: 'authentication-compliance',
 				duration: 300,
 			};
 
@@ -170,7 +170,7 @@ describe('signSystemJWT - System Service JWT Signing', () => {
 			const request = {
 				callingService: SYSTEM_SERVICE_NAME,
 				channelId: TEST_CHANNEL_ID,
-				purpose: 'channel-validation',
+				operation: 'authentication-compliance',
 				duration: 300,
 			};
 
@@ -193,7 +193,7 @@ describe('signSystemJWT - System Service JWT Signing', () => {
 			const request = {
 				callingService: SYSTEM_SERVICE_NAME,
 				channelIds: ['channel-1', 'channel-2', 'channel-3'],
-				purpose: 'bulk-validation',
+				operation: 'bulk-compliance',
 				duration: 300,
 			};
 
@@ -219,7 +219,7 @@ describe('signSystemJWT - System Service JWT Signing', () => {
 				const request = {
 					callingService: service,
 					channelId: TEST_CHANNEL_ID,
-					purpose: 'validation',
+					operation: 'compliance-check',
 					duration: 300,
 				};
 
@@ -234,7 +234,7 @@ describe('signSystemJWT - System Service JWT Signing', () => {
 			const invalidRequest = {
 				callingService: 'malicious-service',
 				channelId: TEST_CHANNEL_ID,
-				purpose: 'validation',
+				operation: 'compliance-check',
 				duration: 300,
 			};
 
@@ -259,7 +259,7 @@ describe('signSystemJWT - System Service JWT Signing', () => {
 			const request = {
 				callingService: SYSTEM_SERVICE_NAME,
 				channelId: TEST_CHANNEL_ID,
-				purpose: 'channel-validation',
+				operation: 'authentication-compliance',
 				duration: 86400, // 24 hours - too long for system tokens
 			};
 
@@ -278,7 +278,7 @@ describe('signSystemJWT - System Service JWT Signing', () => {
 			const request = {
 				callingService: SYSTEM_SERVICE_NAME,
 				channelId: TEST_CHANNEL_ID,
-				purpose: 'channel-validation',
+				operation: 'authentication-compliance',
 				duration: -100,
 			};
 
@@ -297,7 +297,7 @@ describe('signSystemJWT - System Service JWT Signing', () => {
 			const request = {
 				callingService: SYSTEM_SERVICE_NAME,
 				channelId: TEST_CHANNEL_ID,
-				purpose: 'channel-validation',
+				operation: 'authentication-compliance',
 				duration: 0,
 			};
 
@@ -316,7 +316,7 @@ describe('signSystemJWT - System Service JWT Signing', () => {
 			const request = {
 				callingService: SYSTEM_SERVICE_NAME,
 				channelId: TEST_CHANNEL_ID,
-				purpose: 'channel-validation',
+				operation: 'authentication-compliance',
 				duration: 1,
 			};
 
@@ -334,7 +334,7 @@ describe('signSystemJWT - System Service JWT Signing', () => {
 			const request = {
 				callingService: null as unknown as string,
 				channelId: TEST_CHANNEL_ID,
-				purpose: 'channel-validation',
+				operation: 'authentication-compliance',
 				duration: 300,
 			};
 
@@ -353,7 +353,7 @@ describe('signSystemJWT - System Service JWT Signing', () => {
 			const request = {
 				callingService: undefined as unknown as string,
 				channelId: TEST_CHANNEL_ID,
-				purpose: 'channel-validation',
+				operation: 'authentication-compliance',
 				duration: 300,
 			};
 
@@ -372,7 +372,7 @@ describe('signSystemJWT - System Service JWT Signing', () => {
 			const request = {
 				callingService: '   ',
 				channelId: TEST_CHANNEL_ID,
-				purpose: 'channel-validation',
+				operation: 'authentication-compliance',
 				duration: 300,
 			};
 
@@ -392,7 +392,7 @@ describe('signSystemJWT - System Service JWT Signing', () => {
 			const request = {
 				callingService: longServiceName,
 				channelId: TEST_CHANNEL_ID,
-				purpose: 'channel-validation',
+				operation: 'authentication-compliance',
 				duration: 300,
 			};
 
@@ -411,7 +411,7 @@ describe('signSystemJWT - System Service JWT Signing', () => {
 			const request = {
 				callingService: SYSTEM_SERVICE_NAME,
 				channelId: null as unknown as string,
-				purpose: 'channel-validation',
+				operation: 'authentication-compliance',
 				duration: 300,
 			};
 
@@ -430,7 +430,7 @@ describe('signSystemJWT - System Service JWT Signing', () => {
 			const request = {
 				callingService: SYSTEM_SERVICE_NAME,
 				channelId: undefined as unknown as string,
-				purpose: 'channel-validation',
+				operation: 'authentication-compliance',
 				duration: 300,
 			};
 
@@ -449,7 +449,7 @@ describe('signSystemJWT - System Service JWT Signing', () => {
 			const request = {
 				callingService: SYSTEM_SERVICE_NAME,
 				channelIds: [],
-				purpose: 'channel-validation',
+				operation: 'authentication-compliance',
 				duration: 300,
 			};
 
@@ -469,7 +469,7 @@ describe('signSystemJWT - System Service JWT Signing', () => {
 				callingService: SYSTEM_SERVICE_NAME,
 				channelId: 'single-channel',
 				channelIds: ['multi-channel-1', 'multi-channel-2'],
-				purpose: 'channel-validation',
+				operation: 'authentication-compliance',
 				duration: 300,
 			};
 
@@ -493,7 +493,7 @@ describe('signSystemJWT - System Service JWT Signing', () => {
 			const request = {
 				callingService: SYSTEM_SERVICE_NAME,
 				channelId: TEST_CHANNEL_ID,
-				purpose: 'channel-validation',
+				operation: 'authentication-compliance',
 				duration: 300,
 			};
 
@@ -510,7 +510,7 @@ describe('signSystemJWT - System Service JWT Signing', () => {
 			const request = {
 				callingService: SYSTEM_SERVICE_NAME,
 				channelId: TEST_CHANNEL_ID,
-				purpose: '',
+				operation: '',
 				duration: 300,
 			};
 
@@ -526,7 +526,7 @@ describe('signSystemJWT - System Service JWT Signing', () => {
 			const request = {
 				callingService: SYSTEM_SERVICE_NAME,
 				channelId: 'channel-with-special-chars-!@#$%^&*()',
-				purpose: 'channel-validation',
+				operation: 'authentication-compliance',
 				duration: 300,
 			};
 
@@ -550,7 +550,7 @@ describe('signSystemJWT - System Service JWT Signing', () => {
 			const request = {
 				callingService: SYSTEM_SERVICE_NAME,
 				channelId: longChannelId,
-				purpose: 'channel-validation',
+				operation: 'authentication-compliance',
 				duration: 300,
 			};
 
@@ -567,7 +567,7 @@ describe('signSystemJWT - System Service JWT Signing', () => {
 			const request = {
 				callingService: SYSTEM_SERVICE_NAME,
 				channelIds: manyChannelIds,
-				purpose: 'bulk-validation',
+				operation: 'bulk-compliance',
 				duration: 300,
 			};
 
@@ -592,7 +592,7 @@ describe('signSystemJWT - System Service JWT Signing', () => {
 			const singleRequest = {
 				callingService: SYSTEM_SERVICE_NAME,
 				channelId: TEST_CHANNEL_ID,
-				purpose: 'channel-validation',
+				operation: 'authentication-compliance',
 				duration: 300,
 			};
 
@@ -603,7 +603,7 @@ describe('signSystemJWT - System Service JWT Signing', () => {
 			const multiRequest = {
 				callingService: SYSTEM_SERVICE_NAME,
 				channelIds: [TEST_CHANNEL_ID, 'channel-2'],
-				purpose: 'channel-validation',
+				operation: 'authentication-compliance',
 				duration: 300,
 			};
 

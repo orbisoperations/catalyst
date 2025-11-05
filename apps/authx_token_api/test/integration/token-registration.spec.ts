@@ -140,7 +140,7 @@ describe('Integration: Token Registration', () => {
 			const systemRequest = {
 				callingService: 'data-channel-certifier',
 				channelId: 'test-channel-123',
-				purpose: 'channel-validation',
+				operation: 'authentication-compliance',
 				duration: 300, // 5 minutes
 			};
 
@@ -173,7 +173,7 @@ describe('Integration: Token Registration', () => {
 			expect(registryEntry.name.toLowerCase()).toContain('system');
 
 			expect(registryEntry.description).toBeDefined();
-			expect(registryEntry.description).toContain(systemRequest.purpose);
+			expect(registryEntry.description).toContain(systemRequest.operation);
 
 			expect(registryEntry.claims).toEqual(['test-channel-123']);
 
@@ -192,7 +192,7 @@ describe('Integration: Token Registration', () => {
 			const systemRequest = {
 				callingService: 'scheduled-validator',
 				channelIds: channelIds,
-				purpose: 'bulk-validation',
+				operation: 'bulk-compliance',
 				duration: 600, // 10 minutes
 			};
 
@@ -216,7 +216,7 @@ describe('Integration: Token Registration', () => {
 			const systemRequest = {
 				callingService: 'data-channel-certifier',
 				channelId: 'test-channel',
-				purpose: 'long-running-validation',
+				operation: 'long-running-compliance',
 				duration: 3600, // 1 hour (maximum)
 			};
 
@@ -455,7 +455,7 @@ describe('Integration: Token Registration', () => {
 			const systemRequest = {
 				callingService: 'data-channel-certifier',
 				channelId: 'test-channel-deletion',
-				purpose: 'test-deletion',
+				operation: 'test-deletion',
 				duration: 300,
 			};
 

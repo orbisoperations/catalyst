@@ -21,7 +21,7 @@ describe('Integration: System Service JWT Workflows', () => {
 			const systemRequest = {
 				callingService: 'data-channel-certifier',
 				channelId: 'test-channel-123',
-				purpose: 'channel-validation',
+				operation: 'authentication-compliance',
 				duration: 300, // 5 minutes
 			};
 
@@ -65,7 +65,7 @@ describe('Integration: System Service JWT Workflows', () => {
 			const systemRequest = {
 				callingService: 'scheduled-validator',
 				channelIds: channelIds,
-				purpose: 'bulk-validation',
+				operation: 'bulk-compliance',
 				duration: 600, // 10 minutes
 			};
 
@@ -94,7 +94,7 @@ describe('Integration: System Service JWT Workflows', () => {
 			const defaultRequest = {
 				callingService: 'data-channel-certifier',
 				channelId: channelId,
-				purpose: 'validation',
+				operation: 'compliance-check',
 				// No duration specified
 			};
 
@@ -109,7 +109,7 @@ describe('Integration: System Service JWT Workflows', () => {
 			const minRequest = {
 				callingService: 'data-channel-certifier',
 				channelId: channelId,
-				purpose: 'validation',
+				operation: 'compliance-check',
 				duration: 1,
 			};
 
@@ -123,7 +123,7 @@ describe('Integration: System Service JWT Workflows', () => {
 			const maxRequest = {
 				callingService: 'data-channel-certifier',
 				channelId: channelId,
-				purpose: 'validation',
+				operation: 'compliance-check',
 				duration: 3600, // 1 hour
 			};
 
@@ -138,7 +138,7 @@ describe('Integration: System Service JWT Workflows', () => {
 			const exceedRequest = {
 				callingService: 'data-channel-certifier',
 				channelId: channelId,
-				purpose: 'validation',
+				operation: 'compliance-check',
 				duration: 7200, // 2 hours - exceeds max
 			};
 
@@ -153,7 +153,7 @@ describe('Integration: System Service JWT Workflows', () => {
 			const systemRequest = {
 				callingService: 'data-channel-certifier',
 				channelId: channelId,
-				purpose: 'validation',
+				operation: 'compliance-check',
 				duration: 300,
 			};
 
@@ -182,7 +182,7 @@ describe('Integration: System Service JWT Workflows', () => {
 				const request = {
 					callingService: serviceName,
 					channelId: 'test-channel',
-					purpose: 'validation',
+					operation: 'compliance-check',
 					duration: 300,
 				};
 
@@ -208,7 +208,7 @@ describe('Integration: System Service JWT Workflows', () => {
 				const request = {
 					callingService: serviceName,
 					channelId: 'test-channel',
-					purpose: 'validation',
+					operation: 'compliance-check',
 					duration: 300,
 				};
 
@@ -226,7 +226,7 @@ describe('Integration: System Service JWT Workflows', () => {
 				{
 					callingService: '',
 					channelId: 'test-channel',
-					purpose: 'validation',
+					operation: 'compliance-check',
 					duration: 300,
 				},
 				'default',
@@ -239,7 +239,7 @@ describe('Integration: System Service JWT Workflows', () => {
 				{
 					callingService: 'data-channel-certifier',
 					channelId: '',
-					purpose: 'validation',
+					operation: 'compliance-check',
 					duration: 300,
 				},
 				'default',
@@ -252,7 +252,7 @@ describe('Integration: System Service JWT Workflows', () => {
 				{
 					callingService: 'data-channel-certifier',
 					channelIds: [],
-					purpose: 'validation',
+					operation: 'compliance-check',
 					duration: 300,
 				},
 				'default',
@@ -265,7 +265,7 @@ describe('Integration: System Service JWT Workflows', () => {
 				{
 					callingService: 'data-channel-certifier',
 					channelId: 'test-channel',
-					purpose: 'validation',
+					operation: 'compliance-check',
 					duration: -100,
 				},
 				'default',
@@ -281,7 +281,7 @@ describe('Integration: System Service JWT Workflows', () => {
 			const systemRequest = {
 				callingService: 'data-channel-certifier',
 				channelId: 'test-channel',
-				purpose: 'validation',
+				operation: 'compliance-check',
 				duration: 300,
 			};
 
