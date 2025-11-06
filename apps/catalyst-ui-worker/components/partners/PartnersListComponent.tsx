@@ -61,10 +61,9 @@ export default function PartnersListComponent({
                     setPartners(partners);
                     setInvitations(invitations);
                 })
-                .catch((e) => {
+                .catch(() => {
                     setHasError(true);
                     setErrorMessage('An error occurred while fetching the invites. Please try again later.');
-                    console.error(e);
                 });
         return Promise.resolve();
     }
