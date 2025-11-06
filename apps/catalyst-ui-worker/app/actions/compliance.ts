@@ -95,7 +95,13 @@ export async function checkCompliance(channelId: string, endpoint: string, organ
             throw new Error('Compliance check returned undefined result');
         }
 
-        return JSON.parse(JSON.stringify(result)) as ComplianceResult;
+        const complianceResult = JSON.parse(JSON.stringify(result)) as ComplianceResult;
+
+        // Note: Persistence is now handled by the certifier service
+        // The certifier automatically updates the channel's lastComplianceResult
+        // when verifyCompliance() is called, so no need to duplicate that here
+
+        return complianceResult;
     } catch (error) {
         console.error('Failed to check channel compliance:', error);
         if (error instanceof Error && error.message.startsWith('Unauthorized:')) {

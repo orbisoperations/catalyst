@@ -8,7 +8,10 @@ import {
     OrbisButton,
     OrbisTable,
 } from '@/components/elements';
-import { ComplianceButton } from './ComplianceStatus';
+import { ComplianceStatusBadge } from './ComplianceStatus';
+import { DetailedComplianceResult } from './DetailedComplianceResult';
+import { checkCompliance } from '@/app/actions/compliance';
+import type { ComplianceResult } from '@catalyst/schemas';
 import { ListView } from '@/components/layouts';
 import { navigationItems } from '@/utils/nav.utils';
 import { DataChannel } from '@catalyst/schemas';
@@ -29,6 +32,7 @@ import {
     ModalFooter,
     ModalHeader,
     ModalOverlay,
+    ModalCloseButton,
     Text,
     useDisclosure,
 } from '@chakra-ui/react';
@@ -51,7 +55,14 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
     const [filterMode, setFilterMode] = useState<'all' | 'subscribed' | 'owned'>('all');
     const [channelToDelete, setChannelToDelete] = useState<string | null>(null);
     const [canCheckCompliance, setCanCheckCompliance] = useState<boolean>(false);
+    const [isCheckingCompliance, setIsCheckingCompliance] = useState<string | null>(null);
+    const [selectedComplianceResult, setSelectedComplianceResult] = useState<ComplianceResult | null>(null);
     const { isOpen, onOpen, onClose } = useDisclosure();
+    const {
+        isOpen: isComplianceModalOpen,
+        onOpen: onComplianceModalOpen,
+        onClose: onComplianceModalClose,
+    } = useDisclosure();
     const { token, user } = useUser();
     function filterChannels(filterMode: 'all' | 'subscribed' | 'owned' = 'all') {
         let filteredChannels = allChannels;
@@ -105,6 +116,32 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
                 setHasError(true);
             });
     }
+
+    async function handleRetryCompliance(channel: DataChannel) {
+        setIsCheckingCompliance(channel.id);
+        try {
+            const result = await checkCompliance(channel.id, channel.endpoint, channel.creatorOrganization);
+            // Refresh the channels list to show the updated compliance result
+            fetchChannels();
+
+            // Show the results if not compliant
+            if (result.status !== 'compliant') {
+                setSelectedComplianceResult(result);
+                onComplianceModalOpen();
+            }
+        } catch (error) {
+            console.error('Compliance check error:', error);
+        } finally {
+            setIsCheckingCompliance(null);
+        }
+    }
+
+    function handleViewComplianceResults(channel: DataChannel) {
+        if (channel.lastComplianceResult) {
+            setSelectedComplianceResult(channel.lastComplianceResult);
+            onComplianceModalOpen();
+        }
+    }
     useEffect(() => {
         fetchChannels();
         // Check if user has permission to check channel compliance
@@ -133,6 +170,16 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
                             </OrbisButton>
                         </Flex>
                     </ModalFooter>
+                </ModalContent>
+            </Modal>
+            <Modal isOpen={isComplianceModalOpen} onClose={onComplianceModalClose} size="xl">
+                <ModalOverlay />
+                <ModalContent>
+                    <ModalHeader>Compliance Results</ModalHeader>
+                    <ModalCloseButton />
+                    <ModalBody pb={6}>
+                        {selectedComplianceResult && <DetailedComplianceResult result={selectedComplianceResult} />}
+                    </ModalBody>
                 </ModalContent>
             </Modal>
             <ListView
@@ -220,17 +267,16 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
                                                 <APIKeyText allowCopy showAsClearText key={index + '-channel-id'}>
                                                     {channel.id}
                                                 </APIKeyText>,
-                                                // Only show compliance button if:
+                                                // Only show compliance badge if:
                                                 // 1. User has data custodian permissions (canCheckCompliance)
                                                 // 2. Channel belongs to user's organization
                                                 canCheckCompliance &&
                                                 channel.creatorOrganization === user?.custom.org ? (
-                                                    <ComplianceButton
-                                                        key={index + '-compliance'}
-                                                        channelId={channel.id}
-                                                        endpoint={channel.endpoint}
-                                                        organizationId={channel.creatorOrganization}
-                                                    />
+                                                    <div key={index + '-compliance'}>
+                                                        <ComplianceStatusBadge
+                                                            status={channel.lastComplianceResult?.status}
+                                                        />
+                                                    </div>
                                                 ) : (
                                                     <div key={index + '-compliance'} />
                                                 ),
@@ -243,7 +289,34 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
                                                         aria-label="Channel options"
                                                     />
                                                     <MenuList>
-                                                        {channel.creatorOrganization === user?.custom.org ? (
+                                                        <MenuItem
+                                                            onClick={() => router.push('/channels/' + channel.id)}
+                                                        >
+                                                            View Channel
+                                                        </MenuItem>
+                                                        {canCheckCompliance &&
+                                                            channel.creatorOrganization === user?.custom.org && (
+                                                                <>
+                                                                    <MenuItem
+                                                                        onClick={() => handleRetryCompliance(channel)}
+                                                                        isDisabled={isCheckingCompliance === channel.id}
+                                                                    >
+                                                                        {isCheckingCompliance === channel.id
+                                                                            ? 'Checking...'
+                                                                            : 'Retry Compliance Check'}
+                                                                    </MenuItem>
+                                                                    {channel.lastComplianceResult && (
+                                                                        <MenuItem
+                                                                            onClick={() =>
+                                                                                handleViewComplianceResults(channel)
+                                                                            }
+                                                                        >
+                                                                            View Last Compliance Results
+                                                                        </MenuItem>
+                                                                    )}
+                                                                </>
+                                                            )}
+                                                        {channel.creatorOrganization === user?.custom.org && (
                                                             <MenuItem
                                                                 icon={<TrashIcon width={16} height={16} />}
                                                                 color="red.500"
@@ -251,8 +324,6 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
                                                             >
                                                                 Delete Channel
                                                             </MenuItem>
-                                                        ) : (
-                                                            <MenuItem isDisabled>No actions available</MenuItem>
                                                         )}
                                                     </MenuList>
                                                 </Menu>,

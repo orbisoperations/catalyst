@@ -230,12 +230,47 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
       });
     }
 
+    // Get user to verify ownership
+    const user: User | undefined = await this.env.USERCACHE.getUser(token.cfToken);
+    const parsedUser = UserSchema.safeParse(user);
+    if (!parsedUser.success) {
+      return DataChannelActionResponse.parse({
+        success: false,
+        error: 'catalyst unable to validate user token',
+      });
+    }
+
+    // Verify user owns the existing channel (prevent cross-org updates)
+    const doId = this.env.DO.idFromName(doNamespace);
+    const stub = this.env.DO.get(doId);
+    const existingChannel = await stub.get(dataChannel.id);
+
+    if (!existingChannel) {
+      return DataChannelActionResponse.parse({
+        success: false,
+        error: 'Channel not found',
+      });
+    }
+
+    if (existingChannel.creatorOrganization !== parsedUser.data.orgId) {
+      return DataChannelActionResponse.parse({
+        success: false,
+        error: 'You can only update channels from your own organization',
+      });
+    }
+
+    // Prevent changing the creatorOrganization field
+    const safeDataChannel = {
+      ...dataChannel,
+      creatorOrganization: existingChannel.creatorOrganization,
+    };
+
     // Check for channel name uniqueness within the organization (excluding current channel)
     const nameCheck = await this.checkChannelNameUniqueness(
       doNamespace,
-      dataChannel.name,
-      dataChannel.creatorOrganization,
-      dataChannel.id,
+      safeDataChannel.name,
+      safeDataChannel.creatorOrganization,
+      safeDataChannel.id,
     );
     if (!nameCheck.success) {
       return DataChannelActionResponse.parse({
@@ -245,9 +280,7 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
     }
 
     console.log('user can update data channel');
-    const doId = this.env.DO.idFromName(doNamespace);
-    const stub = this.env.DO.get(doId);
-    const update = await stub.update(dataChannel);
+    const update = await stub.update(safeDataChannel);
     console.log('updated data channel', update);
     return DataChannelActionResponse.parse({
       success: true,
@@ -335,6 +368,51 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
       return allChannels;
     } catch (error) {
       console.error('[RegistrarWorker] Error listing all channels:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Update compliance result for a channel - system-level method
+   * @param doNamespace - The Durable Object namespace to query (defaults to 'default')
+   * @param channelId - The channel ID to update
+   * @param complianceResult - The compliance result to store
+   * @returns Updated DataChannel or null on error
+   * @warning This method bypasses permission checks - only call from trusted system services (data-channel-certifier)
+   */
+  async updateComplianceResult(
+    doNamespace: string = 'default',
+    channelId: string,
+    complianceResult: DataChannel['lastComplianceResult'],
+  ): Promise<DataChannel | null> {
+    try {
+      const { DO } = this.env;
+      const doId = DO.idFromName(doNamespace);
+      const stub: DurableObjectStub<Registrar> = DO.get(doId);
+
+      // Get the current channel
+      const channel = await stub.get(channelId);
+      if (!channel) {
+        console.error(`[RegistrarWorker] Channel ${channelId} not found for compliance update`);
+        return null;
+      }
+
+      // Update only the compliance result field
+      const updatedChannel: DataChannel = {
+        ...channel,
+        lastComplianceResult: complianceResult,
+      };
+
+      // Persist the update
+      await stub.update(updatedChannel);
+      console.log(`[RegistrarWorker] Updated compliance result for channel ${channelId}`);
+
+      return updatedChannel;
+    } catch (error) {
+      console.error(
+        `[RegistrarWorker] Error updating compliance result for channel ${channelId}:`,
+        error,
+      );
       return null;
     }
   }

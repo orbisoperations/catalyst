@@ -119,6 +119,25 @@ export default class DataChannelCertifierWorker extends WorkerEntrypoint<Env> {
         }
       }
 
+      // Persist compliance results to channels
+      const persistencePromises = results.map(async (result) => {
+        try {
+          await this.env.DATA_CHANNEL_REGISTRAR.updateComplianceResult(
+            'default',
+            result.channelId,
+            result
+          );
+        } catch (error) {
+          console.error(
+            `[DataChannelCertifier] Failed to persist compliance result for channel ${result.channelId}:`,
+            error
+          );
+        }
+      });
+
+      // Wait for all persistence operations to complete
+      await Promise.allSettled(persistencePromises);
+
       // Calculate summary statistics
       const compliantChannels = results.filter((r) => r.status === 'compliant').length;
       const nonCompliantChannels = results.filter((r) => r.status === 'non_compliant').length;
@@ -174,8 +193,22 @@ export default class DataChannelCertifierWorker extends WorkerEntrypoint<Env> {
       // Validate the channel
       const result = await complianceEngine.verifyCompliance(request);
 
-      // Optionally update the channel status in the registrar
-      // This could be used to disable non-compliant channels
+      // Persist compliance result to the channel
+      try {
+        await this.env.DATA_CHANNEL_REGISTRAR.updateComplianceResult(
+          'default',
+          request.channelId,
+          result
+        );
+      } catch (persistError) {
+        console.error(
+          `[DataChannelCertifier] Failed to persist compliance result for channel ${request.channelId}:`,
+          persistError
+        );
+        // Don't fail the compliance check if persistence fails
+      }
+
+      // Log warnings for non-compliant channels
       if (result.status === 'non_compliant' || result.status === 'error') {
         console.warn(
           `[DataChannelCertifier] Channel ${request.channelId} compliance check failed:`,

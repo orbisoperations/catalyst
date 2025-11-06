@@ -1,6 +1,7 @@
 import { z } from 'zod/v4';
 import { OrgIdSchema } from '../../core/identifiers';
 import { safeName, safeDescription, safeUrl } from '../../core/security';
+import { ComplianceResultSchema } from './compliance';
 
 // Data Channel schema with proper validation (maintaining backward compatibility)
 export const DataChannelSchema = z.object({
@@ -10,6 +11,7 @@ export const DataChannelSchema = z.object({
     endpoint: safeUrl(),
     description: safeDescription(),
     creatorOrganization: OrgIdSchema,
+    lastComplianceResult: ComplianceResultSchema.optional(),
 });
 
 // Alternative enhanced schema with composition features for new code

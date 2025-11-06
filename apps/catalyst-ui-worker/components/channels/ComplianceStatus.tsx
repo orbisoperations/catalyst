@@ -79,9 +79,12 @@ export function ComplianceButton({
     channelId,
     endpoint,
     organizationId,
-}: Omit<ComplianceStatusProps, 'lastComplianceCheck'>) {
+    initialComplianceResult,
+}: Omit<ComplianceStatusProps, 'lastComplianceCheck'> & {
+    initialComplianceResult?: ComplianceResult | null;
+}) {
     const [isCheckingCompliance, setIsCheckingCompliance] = useState(false);
-    const [complianceResult, setComplianceResult] = useState<ComplianceResult | null>(null);
+    const [complianceResult, setComplianceResult] = useState<ComplianceResult | null>(initialComplianceResult ?? null);
     const { isOpen, onOpen, onClose } = useDisclosure();
 
     const handleCheckCompliance = async () => {
