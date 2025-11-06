@@ -15,7 +15,7 @@ catalog:
   "@cloudflare/vitest-pool-workers": ^0.9.9
   "@vitest/coverage-istanbul": "^3.2.4"
   "@emotion/react": ^11.11.4
-  "@eslint/js": ^9.24.0
+  "@eslint/js": ^9.25.1
   "@flydotio/dockerfile": ^0.5.7
   "@graphql-codegen/cli": ^5.0.2
   "@graphql-codegen/client-preset": ^4.2.5
@@ -53,6 +53,9 @@ catalog:
   gqty: 3.0.0-alpha-7b21563c.0
   graphql: ^16.8.1
   graphql-request: ^6.1.0
+  graphql-yoga: ^5.3.1
+  hono: ^4.3.3
+  jose: ^5.10.0
   kysely: ^0.27.3
   kysely-d1: ^0.3.0
   listhen: ^1.7.2
@@ -72,6 +75,7 @@ catalog:
   unstorage: ^1.10.2
   uuid: ^9.0.1
   vitest: ~3.2.4
-  wrangler: ^4.19.1
+  wrangler: ^4.45.4
   xml-js: ^1.6.11
+  zod: ^4.1.12
   kill-port: ^2.0.1

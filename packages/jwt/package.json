@@ -16,7 +16,7 @@
     "dependencies": {
         "@urql/core": "catalog:",
         "axios": "^1.6.8",
-        "hono": "^4.3.3",
-        "jose": "^5.2.4"
+        "hono": "catalog:",
+        "jose": "catalog:"
     }
 }

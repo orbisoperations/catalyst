@@ -23,7 +23,7 @@
     "@catalyst/schemas": "workspace:*",
     "@catalyst/data_channel_registrar": "workspace:*",
     "@catalyst/authx_token_api": "workspace:*",
-    "zod": "^4.1.11"
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "catalog:",

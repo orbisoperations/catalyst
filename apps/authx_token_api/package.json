@@ -32,7 +32,7 @@
 		"@types/uuid": "catalog:",
 		"@vitest/coverage-istanbul": "catalog:",
 		"base64url": "catalog:",
-		"jose": "^5.10.0",
+		"jose": "catalog:",
 		"typescript": "catalog:",
 		"uuid": "catalog:",
 		"vitest": "catalog:",
