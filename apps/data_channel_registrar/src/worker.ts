@@ -1,6 +1,7 @@
 import {
   DataChannel,
   DataChannelActionResponse,
+  // DataChannelStoredSchema,
   JWTParsingResponse,
   JWTParsingResponseSchema,
   PermissionCheckResponse,
@@ -306,10 +307,14 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
       .map(({ dataChannel }: { dataChannel: DataChannel }) => {
         return dataChannel;
       });
-    return DataChannelActionResponse.parse({
+    return {
       success: true,
       data: listWithPerms,
-    });
+    };
+    // return DataChannelActionResponse.parse({
+    //   success: true,
+    //   data: listWithPerms,
+    // });
   }
 
   /**
@@ -329,6 +334,20 @@ export default class RegistrarWorker extends WorkerEntrypoint<Env> {
       const doId = DO.idFromName(doNamespace);
       const stub: DurableObjectStub<Registrar> = DO.get(doId);
       const allChannels: DataChannel[] = await stub.list(filterByAccessSwitch);
+
+      console.log('[RegistrarWorker.listAll] Retrieved channels from Durable Object:', {
+        doNamespace,
+        filterByAccessSwitch,
+        count: allChannels.length,
+        channels: allChannels.map(ch => ({
+          id: ch.id,
+          name: ch.name,
+          endpoint: ch.endpoint,
+          creatorOrganization: ch.creatorOrganization,
+          accessSwitch: ch.accessSwitch,
+          allKeys: Object.keys(ch),
+        })),
+      });
 
       // Return all channels without permission filtering
       // This method should only be called by trusted system services
@@ -504,16 +523,88 @@ export class Registrar extends DurableObject {
 
   async list(filterByAccessSwitch: boolean = false): Promise<DataChannel[]> {
     const allChannels = await this.ctx.storage.list<DataChannel>();
-    const channels = Array.from(allChannels.values());
+    const rawChannels = Array.from(allChannels.values());
+
+    console.log('[Registrar.list] Retrieved channels from storage:', {
+      count: rawChannels.length,
+    });
+
+    // Validate each channel and filter out invalid ones
+    // const validChannels: DataChannel[] = [];
+    // for (const rawChannel of rawChannels) {
+    //   const result = DataChannelStoredSchema.safeParse(rawChannel);
+    //   if (!result.success) {
+    //     console.error('[Registrar.list] Invalid channel data found:', {
+    //       channelId: rawChannel.id,
+    //       errors: result.error.format(),
+    //       rawData: rawChannel,
+    //     });
+    //     continue; // Skip invalid channels
+    //   }
+    //   validChannels.push(result.data);
+    // }
+
+    // console.log('[Registrar.list] Valid channels after parsing:', {
+    //   total: rawChannels.length,
+    //   valid: validChannels.length,
+    //   invalid: rawChannels.length - validChannels.length,
+    // });
+
+    // Filter out known bad data patterns
+    const cleanChannels = rawChannels.filter(channel => {
+      console.log(channel);
+      // Filter out test/attack data
+      if (channel.creatorOrganization === 'attackresearch') {
+        console.warn('[Registrar.list] Filtering out attackresearch channel:', channel.id);
+        return false;
+      }
+      // Filter out Google test endpoint
+      if (channel.endpoint === 'https://google.com') {
+        console.warn('[Registrar.list] Filtering out google.com endpoint channel:', channel.id);
+        return false;
+      }
+      // Filter out channels with empty string, "undefined" string, or missing creator org
+      if (
+        !channel.creatorOrganization ||
+        channel.creatorOrganization.trim() === '' ||
+        channel.creatorOrganization === 'undefined'
+      ) {
+        console.warn('[Registrar.list] Filtering out channel with invalid creatorOrganization:', {
+          channelId: channel.id,
+          creatorOrganization: channel.creatorOrganization,
+        });
+        return false;
+      }
+      return true;
+    });
+
+    // console.log('[Registrar.list] After filtering bad data patterns:', {
+    //   beforeFilter: validChannels.length,
+    //   afterFilter: cleanChannels.length,
+    //   filtered: validChannels.length - cleanChannels.length,
+    // });
 
     // Lazy migrate any channels with old name format or invalid endpoints
-    for (const channel of channels) {
+    for (const channel of cleanChannels) {
       await this.migrateLegacyNameFormat(channel);
       await this.migrateEndpoint(channel);
     }
 
+    const filtered = cleanChannels.filter(dc => (filterByAccessSwitch ? dc.accessSwitch : true));
+
+    console.log('[Registrar.list] Returning filtered channels:', {
+      count: filtered.length,
+      filtered: filtered.map(ch => ({
+        id: ch.id,
+        name: ch.name,
+        endpoint: ch.endpoint,
+        creatorOrganization: ch.creatorOrganization,
+        accessSwitch: ch.accessSwitch,
+      })),
+    });
+
     // if filterByAccessSwitch is set we passthrough access switch, else return all
-    return channels.filter(dc => (filterByAccessSwitch ? dc.accessSwitch : true));
+    return filtered;
   }
 
   async get(id: string, filterByAccessSwitch: boolean = false) {

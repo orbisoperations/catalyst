@@ -1,11 +1,16 @@
 import { z } from 'zod/v4';
 import { BaseErrorSchema } from '../../core/common';
-import { DataChannelSchema, DataChannel } from './channels';
+import {
+    // DataChannelSchema,
+    DataChannelStoredSchema,
+    DataChannel,
+} from './channels';
 
 // Data Channel Action Response schemas
+// Use StoredSchema to accept data with lenient validation (for reading from storage)
 const dataChannelActionSuccessSchema = z.object({
     success: z.literal(true),
-    data: z.union([DataChannelSchema, DataChannelSchema.array()]),
+    data: z.union([DataChannelStoredSchema, DataChannelStoredSchema.array()]),
 });
 
 const dataChannelActionErrorSchema = z.object({
@@ -22,10 +27,11 @@ export const DataChannelActionResponseSchema = DataChannelActionResponse;
 export type DataChannelActionResponse = z.infer<typeof DataChannelActionResponseSchema>;
 
 // Data Channel Access Token schemas
+// Use StoredSchema to accept channels with lenient validation
 export const DataChannelAccessTokenSuccessSchema = z.object({
     success: z.literal(true),
     claim: z.string(),
-    dataChannel: DataChannelSchema,
+    dataChannel: DataChannelStoredSchema,
     singleUseToken: z.string(),
 });
 

@@ -1,6 +1,7 @@
 import { DurableObject, WorkerEntrypoint } from 'cloudflare:workers';
 import {
 	OrgInviteSchema,
+	OrgInviteStoredResponseSchema,
 	OrgInvite,
 	OrgInviteStatusSchema,
 	OrgInviteStatus,
@@ -205,8 +206,8 @@ export default class OrganizationMatchmakingWorker extends WorkerEntrypoint<Env>
 			const stub = this.env.ORG_MATCHMAKING.get(id);
 			const data = await stub.read(user.orgId, inviteId);
 
-			// Validate response at Worker boundary
-			return OrgInviteResponseSchema.parse({ success: true, data });
+			// Validate response at Worker boundary using stored schema (lenient for old data)
+			return OrgInviteStoredResponseSchema.parse({ success: true, data });
 		} catch (error) {
 			// Validate error response
 			return OrgInviteResponseSchema.parse({
@@ -374,8 +375,8 @@ export default class OrganizationMatchmakingWorker extends WorkerEntrypoint<Env>
 			const stub = this.env.ORG_MATCHMAKING.get(id);
 			const data = await stub.list(user.orgId);
 
-			// Validate response at Worker boundary
-			return OrgInviteResponseSchema.parse({ success: true, data });
+			// Validate response at Worker boundary using stored schema (lenient for old data)
+			return OrgInviteStoredResponseSchema.parse({ success: true, data });
 		} catch (error) {
 			console.error(error);
 			// Validate error response

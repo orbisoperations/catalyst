@@ -2,6 +2,7 @@
 import {
 	IssuedJWTRegistry,
 	IssuedJWTRegistrySchema,
+	IssuedJWTRegistryStoredSchema,
 	CreateIssuedJWTRegistrySchema,
 	JWTRegisterStatus,
 	Token,
@@ -52,7 +53,7 @@ export default class IssuedJWTRegistryWorker extends WorkerEntrypoint<Env> {
 		const doId = this.env.ISSUED_JWT_REGISTRY_DO.idFromName(doNamespace);
 		const stub = this.env.ISSUED_JWT_REGISTRY_DO.get(doId);
 		const resp = await stub.createWithId(validation.data);
-		return IssuedJWTRegistrySchema.safeParse(resp);
+		return IssuedJWTRegistryStoredSchema.safeParse(resp);
 	}
 
 	/**
@@ -122,7 +123,7 @@ export default class IssuedJWTRegistryWorker extends WorkerEntrypoint<Env> {
 			};
 		}
 
-		return IssuedJWTRegistrySchema.safeParse(resp);
+		return IssuedJWTRegistryStoredSchema.safeParse(resp);
 	}
 
 	async list(token: Token, doNamespace: string = 'default') {
@@ -134,7 +135,7 @@ export default class IssuedJWTRegistryWorker extends WorkerEntrypoint<Env> {
 		const doId = this.env.ISSUED_JWT_REGISTRY_DO.idFromName(doNamespace);
 		const stub = this.env.ISSUED_JWT_REGISTRY_DO.get(doId);
 		const list = await stub.list(permCheck.data.orgId);
-		return IssuedJWTRegistrySchema.array().safeParse(list);
+		return IssuedJWTRegistryStoredSchema.array().safeParse(list);
 	}
 
 	async update(token: Token, issuedJWTRegistry: IssuedJWTRegistry, doNamespace: string = 'default') {
@@ -146,7 +147,7 @@ export default class IssuedJWTRegistryWorker extends WorkerEntrypoint<Env> {
 		const doId = this.env.ISSUED_JWT_REGISTRY_DO.idFromName(doNamespace);
 		const stub = this.env.ISSUED_JWT_REGISTRY_DO.get(doId);
 		const resp = await stub.changeStatus(issuedJWTRegistry.id, issuedJWTRegistry.status);
-		return IssuedJWTRegistrySchema.safeParse(resp);
+		return IssuedJWTRegistryStoredSchema.safeParse(resp);
 	}
 
 	async delete(token: Token, issuedJWTRegId: string, doNamespace: string = 'default') {
