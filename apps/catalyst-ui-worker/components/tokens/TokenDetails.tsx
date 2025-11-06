@@ -106,11 +106,7 @@ export default function TokenDetailsComponent({
                                 variant: 'enclosed',
                                 colorScheme: 'blue',
                             }}
-                            tabs={[
-                                'Scopes',
-                                // TODO: Enable Audit Log
-                                //, "Audit Log"
-                            ]}
+                            tabs={['Scopes']}
                             content={[
                                 <Box key={1}>
                                     <OrbisCard header={'Key Scopes'}>
@@ -131,20 +127,6 @@ export default function TokenDetailsComponent({
                                         />
                                     </OrbisCard>
                                 </Box>,
-                                // TODO: Enable Audit Log
-                                // <OrbisCard key={2} paddingSize="none">
-                                //   <OrbisTable
-                                //     tableProps={{ variant: "simple" }}
-                                //     headers={["Action", "Actor", "IP Address", "Event Date"]}
-                                //     rows={[
-                                //       ["Created", "Mario", "127.0.0.1", "2/2/2024"],
-                                //       ["Created", "Mario", "127.0.0.1", "2/2/2024"],
-                                //       ["Created", "Mario", "127.0.0.1", "2/2/2024"],
-                                //       ["Created", "Mario", "127.0.0.1", "2/2/2024"],
-                                //       ["Created", "Mario", "127.0.0.1", "2/2/2024"],
-                                //     ]}
-                                //   ></OrbisTable>
-                                // </OrbisCard>,
                             ]}
                         />
                     </Box>
@@ -163,8 +145,6 @@ export default function TokenDetailsComponent({
                                 colorScheme="red"
                                 onClick={() => {
                                     if (token && iJWTRegistry) {
-                                        console.log('deleting iJWTRegistry');
-                                        console.log(iJWTRegistry, token);
                                         deleteIJWTRegistry(token, iJWTRegistry.id)
                                             .then(async () => {
                                                 onClose();
