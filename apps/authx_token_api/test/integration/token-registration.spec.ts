@@ -135,8 +135,8 @@ describe('Integration: Token Registration', () => {
 		});
 	});
 
-	describe('signSystemJWT() Token Registration', () => {
-		it('should register system token in registry with jwt.jti as ID', async () => {
+	describe('signSystemJWT() - Ephemeral System Tokens (Not Registered)', () => {
+		it('should NOT register data-channel-certifier tokens in registry (ephemeral)', async () => {
 			const systemRequest = {
 				callingService: 'data-channel-certifier',
 				channelId: 'test-channel-123',
@@ -157,36 +157,25 @@ describe('Integration: Token Registration', () => {
 			const jti = decoded.jti as string;
 
 			expect(decoded.sub).toBe('system-data-channel-certifier');
+			expect(decoded.aud).toBe('catalyst:datachannel');
 
 			// Note: We need a CF token to call registry.get(), using custodian token
 			await env.AUTHZED.addDataCustodianToOrg(TEST_ORG_ID, CUSTODIAN_USER.email);
 
 			const registryResponse = await env.ISSUED_JWT_REGISTRY.get({ cfToken: CUSTODIAN_CF_TOKEN }, jti, 'default');
 
-			expect(registryResponse.success).toBe(true);
-			expect(registryResponse.data).toBeDefined();
+			// Verify token is NOT in registry (ephemeral)
+			expect(registryResponse.success).toBe(false);
+			expect(registryResponse.data).toBeUndefined();
 
-			const registryEntry = registryResponse.data!;
-			expect(registryEntry.id).toBe(jti);
-
-			expect(registryEntry.name).toBeDefined();
-			expect(registryEntry.name.toLowerCase()).toContain('system');
-
-			expect(registryEntry.description).toBeDefined();
-			expect(registryEntry.description).toContain(systemRequest.purpose);
-
-			expect(registryEntry.claims).toEqual(['test-channel-123']);
-
-			expect(registryEntry.expiry).toBeInstanceOf(Date);
-			const expectedExpiry = new Date(signResponse.expiration!);
-			expect(registryEntry.expiry.getTime()).toBe(expectedExpiry.getTime());
-
-			expect(registryEntry.organization).toBeDefined();
-
-			expect(registryEntry.status).toBe(JWTRegisterStatus.enum.active);
+			// Verify token can still be validated cryptographically (without registry)
+			const validationResult = await SELF.validateToken(token, 'default');
+			expect(validationResult.valid).toBe(true);
+			expect(validationResult.entity).toBe('system-data-channel-certifier');
+			expect(validationResult.claims).toEqual(['test-channel-123']);
 		});
 
-		it('should register system token with multiple channel IDs', async () => {
+		it('should NOT register scheduled-validator tokens with multiple channel IDs (ephemeral)', async () => {
 			const channelIds = ['channel-1', 'channel-2', 'channel-3', 'channel-4'];
 
 			const systemRequest = {
@@ -202,17 +191,23 @@ describe('Integration: Token Registration', () => {
 
 			const decoded = decodeJwt(token);
 			const jti = decoded.jti as string;
+			expect(decoded.aud).toBe('catalyst:datachannel');
 
 			await env.AUTHZED.addDataCustodianToOrg(TEST_ORG_ID, CUSTODIAN_USER.email);
 
 			const registryResponse = await env.ISSUED_JWT_REGISTRY.get({ cfToken: CUSTODIAN_CF_TOKEN }, jti, 'default');
 
-			expect(registryResponse.success).toBe(true);
-			expect(registryResponse.data!.claims).toEqual(channelIds);
-			expect(registryResponse.data!.claims.length).toBe(4);
+			// Verify token is NOT in registry (ephemeral)
+			expect(registryResponse.success).toBe(false);
+			expect(registryResponse.data).toBeUndefined();
+
+			// Verify token can still be validated cryptographically
+			const validationResult = await SELF.validateToken(token, 'default');
+			expect(validationResult.valid).toBe(true);
+			expect(validationResult.claims).toEqual(channelIds);
 		});
 
-		it('should register system tokens with different durations correctly', async () => {
+		it('should NOT register system tokens with different durations (ephemeral)', async () => {
 			const systemRequest = {
 				callingService: 'data-channel-certifier',
 				channelId: 'test-channel',
@@ -226,6 +221,7 @@ describe('Integration: Token Registration', () => {
 
 			const decoded = decodeJwt(token);
 			const jti = decoded.jti as string;
+			expect(decoded.aud).toBe('catalyst:datachannel');
 
 			const expiryDuration = (decoded.exp as number) - (decoded.iat as number);
 			expect(expiryDuration).toBeGreaterThanOrEqual(3595);
@@ -235,10 +231,18 @@ describe('Integration: Token Registration', () => {
 
 			const registryResponse = await env.ISSUED_JWT_REGISTRY.get({ cfToken: CUSTODIAN_CF_TOKEN }, jti, 'default');
 
-			expect(registryResponse.success).toBe(true);
+			// Verify token is NOT in registry (ephemeral)
+			expect(registryResponse.success).toBe(false);
+			expect(registryResponse.data).toBeUndefined();
 
+			// Verify token still has correct expiry in response
 			const expectedExpiry = new Date(signResponse.expiration!);
-			expect(registryResponse.data!.expiry.getTime()).toBe(expectedExpiry.getTime());
+			const now = Date.now();
+			expect(expectedExpiry.getTime()).toBeGreaterThan(now);
+
+			// Verify token can still be validated
+			const validationResult = await SELF.validateToken(token, 'default');
+			expect(validationResult.valid).toBe(true);
 		});
 	});
 
@@ -445,33 +449,9 @@ describe('Integration: Token Registration', () => {
 			expect(validateAfter.claims).toEqual([]);
 		});
 
-		it('should fail authentication for system token when deleted', async () => {
-			const systemRequest = {
-				callingService: 'data-channel-certifier',
-				channelId: 'test-channel-deletion',
-				purpose: 'test-deletion',
-				duration: 300,
-			};
-
-			const signResponse = await SELF.signSystemJWT(systemRequest, 'default');
-			expect(signResponse.success).toBe(true);
-			const token = signResponse.token!;
-
-			const validateBefore = await SELF.validateToken(token);
-			expect(validateBefore.valid).toBe(true);
-
-			const jti = validateBefore.jwtId!;
-
-			await env.AUTHZED.addDataCustodianToOrg(TEST_ORG_ID, CUSTODIAN_USER.email);
-
-			const deleteResponse = await env.ISSUED_JWT_REGISTRY.delete({ cfToken: CUSTODIAN_CF_TOKEN }, jti, 'default');
-
-			expect(deleteResponse).toBe(true);
-
-			const validateAfter = await SELF.validateToken(token);
-
-			expect(validateAfter.valid).toBe(false);
-			expect(validateAfter.error).toBeDefined();
-		});
+		// Note: System token deletion test removed since both data-channel-certifier
+		// and scheduled-validator tokens are now ephemeral (not stored in registry)
+		// They use catalyst:datachannel audience and skip registry checks entirely
+		// If future system services need revocation, they should not be in ephemeralServices list
 	});
 });

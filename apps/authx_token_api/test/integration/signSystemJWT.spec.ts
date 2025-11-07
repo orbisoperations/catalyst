@@ -1,4 +1,4 @@
-import { SELF } from 'cloudflare:test';
+import { env, SELF } from 'cloudflare:test';
 import { createLocalJWKSet, jwtVerify } from 'jose';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -609,6 +609,82 @@ describe('signSystemJWT - System Service JWT Signing', () => {
 
 			const multiResponse = await SELF.signSystemJWT(multiRequest);
 			expect(multiResponse.success).toBe(true);
+		});
+	});
+
+	describe('Registry Storage - Ephemeral Tokens', () => {
+		it('should NOT register data-channel-certifier tokens in registry (ephemeral)', async () => {
+			// Arrange
+			const request = {
+				callingService: 'data-channel-certifier',
+				channelId: TEST_CHANNEL_ID,
+				purpose: 'channel-validation',
+				duration: 300,
+			};
+
+			// Act - Create the token
+			const response = await SELF.signSystemJWT(request);
+			expect(response.success).toBe(true);
+
+			if (response.success) {
+				// Extract JTI from the token
+				const publicKey = await SELF.getPublicKeyJWK();
+				const jwks = createLocalJWKSet(publicKey);
+				const { payload } = await jwtVerify(response.token, jwks);
+				const jti = payload.jti as string;
+				expect(jti).toBeDefined();
+
+				// Try to retrieve from registry - should NOT be found
+				const registryResponse = await env.ISSUED_JWT_REGISTRY.get({ cfToken: 'cf-platform-admin-token' }, jti, 'default');
+
+				// Verify token is NOT in registry
+				expect(registryResponse.success).toBe(false);
+				expect(registryResponse.data).toBeUndefined();
+
+				// Verify token can still be validated cryptographically (without registry)
+				const validationResult = await SELF.validateToken(response.token, 'default');
+				expect(validationResult.valid).toBe(true);
+				expect(validationResult.entity).toBe('system-data-channel-certifier');
+				expect(validationResult.claims).toEqual([TEST_CHANNEL_ID]);
+				expect(validationResult.audience).toBe('catalyst:datachannel');
+			}
+		});
+
+		it('should NOT register scheduled-validator tokens in registry (also ephemeral)', async () => {
+			// Arrange
+			const request = {
+				callingService: 'scheduled-validator',
+				channelId: TEST_CHANNEL_ID,
+				purpose: 'scheduled-validation',
+				duration: 300,
+			};
+
+			// Act - Create the token
+			const response = await SELF.signSystemJWT(request);
+			expect(response.success).toBe(true);
+
+			if (response.success) {
+				// Extract JTI from the token
+				const publicKey = await SELF.getPublicKeyJWK();
+				const jwks = createLocalJWKSet(publicKey);
+				const { payload } = await jwtVerify(response.token, jwks);
+				const jti = payload.jti as string;
+				expect(jti).toBeDefined();
+
+				// Try to retrieve from registry - should NOT be found
+				const registryResponse = await env.ISSUED_JWT_REGISTRY.get({ cfToken: 'cf-platform-admin-token' }, jti, 'default');
+
+				// Verify token is NOT in registry (scheduled-validator tokens are also ephemeral)
+				expect(registryResponse.success).toBe(false);
+				expect(registryResponse.data).toBeUndefined();
+
+				// Verify token can still be validated cryptographically (without registry)
+				const validationResult = await SELF.validateToken(response.token, 'default');
+				expect(validationResult.valid).toBe(true);
+				expect(validationResult.entity).toBe('system-scheduled-validator');
+				expect(validationResult.claims).toEqual([TEST_CHANNEL_ID]);
+				expect(validationResult.audience).toBe('catalyst:datachannel');
+			}
 		});
 	});
 });

@@ -123,7 +123,11 @@ export default class IssuedJWTRegistryWorker extends WorkerEntrypoint<Env> {
 			};
 		}
 
-		return IssuedJWTRegistryStoredSchema.safeParse(resp);
+		// Wrap the successful response
+		return {
+			success: true,
+			data: resp,
+		};
 	}
 
 	async list(token: Token, doNamespace: string = 'default') {
@@ -132,6 +136,7 @@ export default class IssuedJWTRegistryWorker extends WorkerEntrypoint<Env> {
 			console.error('Permission check failed in list', { error: permCheck.error });
 			throw new Error('Authentication failed');
 		}
+
 		const doId = this.env.ISSUED_JWT_REGISTRY_DO.idFromName(doNamespace);
 		const stub = this.env.ISSUED_JWT_REGISTRY_DO.get(doId);
 		const list = await stub.list(permCheck.data.orgId);
@@ -147,7 +152,7 @@ export default class IssuedJWTRegistryWorker extends WorkerEntrypoint<Env> {
 		const doId = this.env.ISSUED_JWT_REGISTRY_DO.idFromName(doNamespace);
 		const stub = this.env.ISSUED_JWT_REGISTRY_DO.get(doId);
 		const resp = await stub.changeStatus(issuedJWTRegistry.id, issuedJWTRegistry.status);
-		return IssuedJWTRegistryStoredSchema.safeParse(resp);
+		return resp;
 	}
 
 	async delete(token: Token, issuedJWTRegId: string, doNamespace: string = 'default') {
@@ -266,7 +271,22 @@ export class I_JWT_Registry_DO extends DurableObject {
 	}
 
 	async list(orgId: string) {
+		// Fetch all tokens once
 		const allIJR = await this.ctx.storage.list<IssuedJWTRegistry>();
+
+		// Run cleanup using the fetched tokens
+		try {
+			const cleanupResult = await this.cleanupSingleUseTokens(allIJR);
+			console.log('Automatic single-use token cleanup completed', {
+				totalScanned: cleanupResult.totalScanned,
+				tokensDeleted: cleanupResult.tokensDeleted,
+			});
+		} catch (error) {
+			console.error('Error during automatic cleanup', error);
+		}
+
+		// Return the filtered list for the requested organization
+		// Note: Some tokens may have been deleted, so we filter from the original Map
 		return Array.from(allIJR.values()).filter((ijr) => ijr.organization === orgId && ijr.status !== JWTRegisterStatus.enum.deleted);
 	}
 
@@ -345,5 +365,49 @@ export class I_JWT_Registry_DO extends DurableObject {
 		}
 
 		return { valid: true, entry };
+	}
+
+	/**
+	 * Clean up single-use tokens that were mistakenly registered
+	 * Only deletes tokens with description starting with "Single-use token for data channel" or tokens with no claims
+	 * @param allTokens - Map of all tokens from ctx.storage.list
+	 * @param dryRun - Whether to perform a dry run without actual deletion
+	 * @returns Cleanup result with counts and details
+	 */
+	async cleanupSingleUseTokens(allTokens: Map<string, IssuedJWTRegistry>) {
+		const result = {
+			totalScanned: 0,
+			tokensDeleted: 0,
+			errors: [] as string[],
+			deletedTokenIds: [] as string[],
+		};
+
+		for (const [id, token] of allTokens.entries()) {
+			result.totalScanned++;
+
+			const shouldDelete = token.description?.startsWith('Single-use token for data channel') || !token.claims || token.claims.length === 0;
+
+			if (shouldDelete) {
+				try {
+					// Block concurrency while deleting each token
+					await this.ctx.blockConcurrencyWhile(async () => {
+						await this.ctx.storage.delete(id);
+					});
+					result.deletedTokenIds.push(id);
+					result.tokensDeleted++;
+				} catch (error) {
+					const errorMessage = `Failed to delete token ${id}: ${error instanceof Error ? error.message : String(error)}`;
+					console.error(errorMessage);
+					result.errors.push(errorMessage);
+				}
+			}
+		}
+
+		console.log('Single-use token cleanup completed', {
+			totalScanned: result.totalScanned,
+			tokensDeleted: result.tokensDeleted,
+		});
+
+		return result;
 	}
 }

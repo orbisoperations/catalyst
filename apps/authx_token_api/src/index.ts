@@ -1,5 +1,4 @@
 import { WorkerEntrypoint } from 'cloudflare:workers';
-import { JWTPayload } from 'jose';
 import {
 	DataChannelAccessToken,
 	DataChannelMultiAccessResponse,
@@ -16,9 +15,11 @@ import {
 	IssuedJWTRegistry,
 	JWTRegisterStatus,
 	JWTAudience,
+	CatalystSystemService,
 } from '@catalyst/schemas';
 import { Env } from './env';
 import { JWT } from './jwt';
+import { JWTPayload } from 'jose';
 export { JWTKeyProvider } from './durable_object_security_module';
 
 interface CatalystJWTPayload extends JWTPayload {
@@ -318,17 +319,6 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 			return { success: false, error: 'no resources found' };
 		}
 
-		console.log('[splitTokenIntoSingleUseTokens] Retrieved channels from registrar:', {
-			count: allChannels.length,
-			channels: allChannels.map((ch) => ({
-				id: ch.id,
-				name: ch.name,
-				endpoint: ch.endpoint,
-				creatorOrganization: ch.creatorOrganization,
-				accessSwitch: ch.accessSwitch,
-			})),
-		});
-
 		// Validate the channels array using stored schema (lenient for old data)
 		const result = DataChannelStoredSchema.array().safeParse(allChannels);
 		if (!result.success) {
@@ -429,11 +419,11 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 			return validationResult;
 		}
 
-		// Single-use tokens (catalyst:datachannel audience, non-system entity) are ephemeral and not registered
+		// Tokens with catalyst:datachannel audience are ephemeral and not registered
+		// This includes both single-use tokens and data-channel-certifier system tokens
 		// They rely solely on cryptographic validation (signature, expiry, audience)
 		// This prevents storage bloat from short-lived tokens that are created frequently
-		// System tokens also use datachannel audience but ARE registered (entity starts with "system-")
-		if (validationResult.audience === 'catalyst:datachannel' && !validationResult.entity.startsWith('system-')) {
+		if (validationResult.audience === 'catalyst:datachannel') {
 			return validationResult;
 		}
 
@@ -469,13 +459,19 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 	/**
 	 * Signs a JWT for system services
 	 * This method allows authorized system services to obtain JWTs without user tokens
+	 *
+	 * Allowed services defined in ALLOWED_SYSTEM_SERVICES constant
+	 *
+	 * Ephemeral services defined in EPHEMERAL_SERVICES constant. These services are short-lived and not registered in the
+	 * issued-jwt-registry.
+	 *
 	 * @param request System JWT signing request containing service identity and claims
 	 * @param keyNamespace The namespace for signing keys (defaults to 'default')
 	 * @returns Promise containing the signed JWT response
 	 */
 	async signSystemJWT(
 		request: {
-			callingService: string;
+			callingService: CatalystSystemService;
 			channelId?: string;
 			channelIds?: string[];
 			purpose: string;
@@ -485,7 +481,7 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 	): Promise<JWTSigningResponse> {
 		// Validate calling service
 		// TODO: move this to a configurable list
-		const ALLOWED_SYSTEM_SERVICES = ['data-channel-certifier', 'scheduled-validator'];
+		const ALLOWED_SYSTEM_SERVICES: CatalystSystemService[] = ['data-channel-certifier', 'scheduled-validator', 'gateway-single-use-token'];
 
 		if (!request.callingService || request.callingService.trim() === '') {
 			return JWTSigningResponseSchema.parse({
@@ -546,7 +542,24 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 				expiresIn,
 			);
 
-			// Register the system token AFTER signing with the actual expiry
+			// Skip registry storage for validation service tokens (ephemeral, high-frequency)
+			// These tokens are short-lived (5 min) and created frequently for validation purposes
+			// Both data-channel-certifier and scheduled-validator create many tokens per day
+			const EPHEMERAL_SERVICES: CatalystSystemService[] = ['data-channel-certifier', 'scheduled-validator', 'gateway-single-use-token'];
+			if (EPHEMERAL_SERVICES.includes(request.callingService)) {
+				// Log for audit trail without storing in registry
+				console.log(
+					`Ephemeral system JWT created for service: ${request.callingService}, purpose: ${request.purpose}, claims: ${claims.join(',')}`,
+				);
+
+				return JWTSigningResponseSchema.parse({
+					success: true,
+					token: signedJwt.token,
+					expiration: signedJwt.expiration,
+				});
+			}
+
+			// Register other system tokens that may need revocation capability
 			const registryEntry: IssuedJWTRegistry = {
 				id: jwt.jti, // Critical: Use JWT's jti as the registry ID
 				name: `System token for ${request.callingService}`,
@@ -573,7 +586,7 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 			console.error('Failed to sign or register system JWT:', error);
 			return JWTSigningResponseSchema.parse({
 				success: false,
-				error: 'Failed to create system token: signing or registration failed',
+				error: 'Failed to create system token',
 			});
 		}
 	}

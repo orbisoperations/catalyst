@@ -49,14 +49,17 @@ The application is structured around two main components:
 
 - **Create**: Register new JWT tokens with metadata (name, description, claims, organization)
   - **User tokens** (audience: `catalyst:gateway`) - Registered with full metadata
-  - **System tokens** - Registered with full metadata
-  - **Single-use tokens** (audience: `catalyst:datachannel`) - NOT registered (ephemeral)
+  - **System tokens** (non-validation services) - Registered with full metadata
+  - **Ephemeral tokens** (audience: `catalyst:datachannel`) - NOT registered:
+    - Single-use tokens from `signSingleUseJWT()`
+    - System tokens from `data-channel-certifier` service
+    - System tokens from `scheduled-validator` service
 - **Read**: Retrieve JWT registration details
 - **List**: List all JWT registrations for an organization
 - **Update Status**: Change JWT status (e.g., active, revoked)
 - **Delete**: Mark a JWT as deleted
 
-Note: Only gateway and system tokens can be revoked through the registry. Single-use tokens cannot be revoked but have a short 5-minute expiration window that limits their validity window.
+Note: Only gateway tokens and non-validation system tokens can be revoked through the registry. Ephemeral tokens (all datachannel audience) cannot be revoked but have a short 5-minute expiration window that limits their validity window.
 
 ### Revocation System
 
