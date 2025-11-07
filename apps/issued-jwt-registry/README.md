@@ -27,6 +27,9 @@ The Issued JWT Registry serves as a central repository for monitoring and managi
 - Check if a JWT is valid or has been revoked
 - Manage JWT expiration and validity
 
+**Important Note on Token Types:**
+The registry stores **user tokens** (audience: `catalyst:gateway`) and **system tokens**, but does NOT store **single-use tokens** (audience: `catalyst:datachannel`). Single-use tokens are ephemeral with short lifespans (5 minutes) and are validated cryptographically only. This design prevents storage bloat from frequently-created, short-lived tokens used for individual data channel access.
+
 ## Architecture
 
 This service is built using:
@@ -45,10 +48,15 @@ The application is structured around two main components:
 ### JWT Management
 
 - **Create**: Register new JWT tokens with metadata (name, description, claims, organization)
+  - **User tokens** (audience: `catalyst:gateway`) - Registered with full metadata
+  - **System tokens** - Registered with full metadata
+  - **Single-use tokens** (audience: `catalyst:datachannel`) - NOT registered (ephemeral)
 - **Read**: Retrieve JWT registration details
 - **List**: List all JWT registrations for an organization
 - **Update Status**: Change JWT status (e.g., active, revoked)
 - **Delete**: Mark a JWT as deleted
+
+Note: Only gateway and system tokens can be revoked through the registry. Single-use tokens cannot be revoked but have a short 5-minute expiration window that limits their validity window.
 
 ### Revocation System
 

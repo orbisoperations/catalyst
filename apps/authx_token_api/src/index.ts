@@ -257,10 +257,6 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 		// Create the JWT object first to get the JTI
 		const jwt = new JWT(decodedToken.payload.sub!, [claim], 'catalyst:system:jwt:latest', JWTAudience.enum['catalyst:datachannel']);
 
-		// Extract organization from entity (format: "org/email") or use 'default'
-		const entity = decodedToken.payload.sub || '';
-		const organization = entity.includes('/') ? entity.split('/')[0] : 'default';
-
 		const expiresIn = 5 * DEFAULT_STANDARD_DURATIONS.M; // 5 minutes
 
 		try {
@@ -276,30 +272,16 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 				expiresIn,
 			);
 
-			// Register the single-use token AFTER signing with the actual expiry
-			const registryEntry: IssuedJWTRegistry = {
-				id: jwt.jti, // Critical: Use JWT's jti as the registry ID
-				name: `Single-use token for ${decodedToken.payload.sub}`,
-				description: `Single-use token for data channel ${claim}`,
-				claims: jwt.claims,
-				expiry: new Date(signedJwt.expiration), // Use actual JWT expiry
-				organization: organization,
-				status: JWTRegisterStatus.enum.active,
-			};
-
-			// Register after signing (still atomic - if registration fails, we don't return the token)
-			await this.env.ISSUED_JWT_REGISTRY.createSystem(registryEntry, 'authx_token_api', keyNamespace);
-
 			return JWTSigningResponseSchema.parse({
 				success: true,
 				token: signedJwt.token,
 				expiration: signedJwt.expiration,
 			});
 		} catch (error) {
-			console.error('Failed to sign or register single-use JWT:', error);
+			console.error('Failed to sign single-use JWT:', error);
 			return JWTSigningResponseSchema.parse({
 				success: false,
-				error: 'Failed to create single-use token: signing or registration failed',
+				error: 'Failed to create single-use token: signing failed',
 			});
 		}
 	}
@@ -447,7 +429,15 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 			return validationResult;
 		}
 
-		// Check registry status (Deleted tokens MUST fail authentication)
+		// Single-use tokens (catalyst:datachannel audience, non-system entity) are ephemeral and not registered
+		// They rely solely on cryptographic validation (signature, expiry, audience)
+		// This prevents storage bloat from short-lived tokens that are created frequently
+		// System tokens also use datachannel audience but ARE registered (entity starts with "system-")
+		if (validationResult.audience === 'catalyst:datachannel' && !validationResult.entity.startsWith('system-')) {
+			return validationResult;
+		}
+
+		// Check registry status for gateway tokens (Deleted tokens MUST fail authentication)
 		try {
 			// Use validateToken method which performs atomic validation
 			const registryValidation = await this.env.ISSUED_JWT_REGISTRY.validateToken(validationResult.jwtId, keyNamespace);
