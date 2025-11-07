@@ -1,16 +1,11 @@
 'use client';
-import {
-    CreateButton,
-    ErrorCard,
-    OrbisBadge,
-    OrbisButton,
-} from '@/components/elements';
+import { ErrorCard, OrbisButton } from '@/components/elements';
 import { ListView } from '@/components/layouts';
 import { navigationItems } from '@/utils/nav.utils';
 import { DataChannel } from '@catalyst/schemas';
 import { Flex } from '@chakra-ui/layout';
 import {
-    Spinner,
+    // Spinner,
     Modal,
     ModalBody,
     ModalContent,
@@ -25,8 +20,17 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
 import { useUser } from '../contexts/User/UserContext';
 import { canUserCheckCompliance } from '@/app/actions/compliance';
-import { PrimaryButton, Card, TextInputAndButton, TertiaryIconButton, DataTable, Pagination, Badges } from '@orbisoperations/o2-ui';
-import { SearchIcon, PlusIcon, ArrowDownWideNarrowIcon, FunnelIcon, DatabaseIcon } from "lucide-react";
+import {
+    PrimaryButton,
+    Card,
+    TextInputAndButton,
+    TertiaryIconButton,
+    DataTable,
+    Pagination,
+    Badges,
+} from '@orbisoperations/o2-ui';
+import { SearchIcon, PlusIcon, ArrowDownWideNarrowIcon, FunnelIcon } from 'lucide-react';
+
 
 type ListChannelsProps = {
     listChannels: (token: string) => Promise<DataChannel[]>;
@@ -55,32 +59,37 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
     const [sortColumn, setSortColumn] = useState<string | null>(null);
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
-    const filterChannels = useCallback((filterMode: 'all' | 'subscribed' | 'owned' = 'all', searchTerm: string = '') => {
-        let filteredChannels = allChannels;
+    const filterChannels = useCallback(
+        (filterMode: 'all' | 'subscribed' | 'owned' = 'all', searchTerm: string = '') => {
+            let filteredChannels = allChannels;
 
-        // Apply filter mode
-        if (filterMode === 'subscribed') {
-            filteredChannels = filteredChannels.filter((channel) => {
-                return channel.creatorOrganization !== user?.custom.org;
-            });
-        }
-        if (filterMode === 'owned') {
-            filteredChannels = filteredChannels.filter((channel) => {
-                return channel.creatorOrganization === user?.custom.org;
-            });
-        }
+            // Apply filter mode
+            if (filterMode === 'subscribed') {
+                filteredChannels = filteredChannels.filter((channel) => {
+                    return channel.creatorOrganization !== user?.custom.org;
+                });
+            }
+            if (filterMode === 'owned') {
+                filteredChannels = filteredChannels.filter((channel) => {
+                    return channel.creatorOrganization === user?.custom.org;
+                });
+            }
 
-        // Apply search filter
-        if (searchTerm.trim()) {
-            filteredChannels = filteredChannels.filter((channel) => {
-                return channel.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    channel.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    channel.id.toLowerCase().includes(searchTerm.toLowerCase());
-            });
-        }
+            // Apply search filter
+            if (searchTerm.trim()) {
+                filteredChannels = filteredChannels.filter((channel) => {
+                    return (
+                        channel.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        channel.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        channel.id.toLowerCase().includes(searchTerm.toLowerCase())
+                    );
+                });
+            }
 
-        setChannels(filteredChannels);
-    }, [allChannels, user?.custom.org]);
+            setChannels(filteredChannels);
+        },
+        [allChannels, user?.custom.org]
+    );
 
     function handleSort(column: string) {
         if (sortColumn === column) {
@@ -208,41 +217,28 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
     function renderNoData(hasFilter: boolean) {
         return (
             <div className="flex items-center justify-center py-16 min-h-[400px] flex-col gap-6">
-                {
-                    hasFilter ? (
-                        <SearchIcon size={48} />
-                    ) : (
-                        <PlusIcon size={48} />
-                    )
-                }
+                {hasFilter ? <SearchIcon size={48} /> : <PlusIcon size={48} />}
                 <div className="flex flex-col items-center justify-center gap-3">
                     <Text className="text-center text-2xl font-medium">
-                        {hasFilter ? "Data channel not found" : "No data channels"}
+                        {hasFilter ? 'Data channel not found' : 'No data channels'}
                     </Text>
                     <Text className="text-center text-sm">
-                        {
-                            hasFilter ? `Your search for "${search}" did not return any results`
-                                : "Create your first data channel or gain partners to start using Catalyst."
-                        }
+                        {hasFilter
+                            ? `Your search for "${search}" did not return any results`
+                            : 'Create your first data channel or gain partners to start using Catalyst.'}
                     </Text>
                 </div>
-                {
-                    hasFilter ? (
-                        <PrimaryButton
-                            onClick={() => setSearch('')}
-                        >
-                            Clear Search
-                        </PrimaryButton>
-                    ) : (
-                        <PrimaryButton
-                            onClick={() => {
-                                router.push('/channels/create');
-                            }}
-                        >
-                            Create Data Channel
-                        </PrimaryButton>
-                    )
-                }
+                {hasFilter ? (
+                    <PrimaryButton onClick={() => setSearch('')}>Clear Search</PrimaryButton>
+                ) : (
+                    <PrimaryButton
+                        onClick={() => {
+                            router.push('/channels/create');
+                        }}
+                    >
+                        Create Data Channel
+                    </PrimaryButton>
+                )}
             </div>
         );
     }
@@ -265,16 +261,16 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
                         <Flex gap={5} direction={'column'}>
                             <Card className="p-4">
                                 <Flex gap={5} direction={'column'}>
-                                    <Flex className='border-none' justify={'space-between'} align={'center'}>
-                                        <div className='w-[336px]'>
+                                    <Flex className="border-none" justify={'space-between'} align={'center'}>
+                                        <div className="w-[336px]">
                                             <TextInputAndButton
                                                 value={search}
                                                 onChange={setSearch}
-                                                size={"medium"}
-                                                state={"default"}
+                                                size={'medium'}
+                                                state={'default'}
                                             >
                                                 <TextInputAndButton.Container>
-                                                    <TextInputAndButton.Input placeholder={"Search by name"} />
+                                                    <TextInputAndButton.Input placeholder={'Search by name'} />
                                                     <TextInputAndButton.Button
                                                         onClick={() => filterChannels(filterMode, search)}
                                                         aria-label="Search"
@@ -345,43 +341,44 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
                                             </DataTable.Row>
                                         </DataTable.Header>
                                         <DataTable.Body>
-                                            {channels && channels.length > 0 ? (
-                                                getSortedChannels(channels).map((channel) => (
-                                                    <DataTable.Row key={channel.id}>
-                                                        <DataTable.Cell alignment="left" className="min-w-[200px] max-w-[200px]">
-                                                            <div className="truncate" title={channel.name}>
-                                                                {channel.name}
-                                                            </div>
-                                                        </DataTable.Cell>
-                                                        <DataTable.Cell alignment="left" className="min-w-[300px] max-w-[300px]">
-                                                            <div className="truncate" title={channel.description || '-'}>
-                                                                {channel.description || '-'}
-                                                            </div>
-                                                        </DataTable.Cell>
-                                                        <DataTable.Cell alignment="left" className="min-w-[150px]">
-                                                            {channel.creatorOrganization}
-                                                            {channel.creatorOrganization === user?.custom.org && ' (you)'}
-                                                        </DataTable.Cell>
-                                                        <DataTable.Cell alignment="left">
-                                                            {
-                                                                channel.accessSwitch ? (
-                                                                    <Badges style="positive">
-                                                                        Operational
-                                                                    </Badges>
-
-                                                                ) : (
-                                                                    <Badges style="default">
-                                                                        Disabled
-                                                                    </Badges>
-                                                                )
-                                                            }
-                                                        </DataTable.Cell>
-                                                        <DataTable.Cell alignment="center">
-                                                            -
-                                                        </DataTable.Cell>
-                                                    </DataTable.Row>
-                                                ))
-                                            ) : null}
+                                            {channels && channels.length > 0
+                                                ? getSortedChannels(channels).map((channel) => (
+                                                      <DataTable.Row key={channel.id}>
+                                                          <DataTable.Cell
+                                                              alignment="left"
+                                                              className="min-w-[200px] max-w-[200px]"
+                                                          >
+                                                              <div className="truncate" title={channel.name}>
+                                                                  {channel.name}
+                                                              </div>
+                                                          </DataTable.Cell>
+                                                          <DataTable.Cell
+                                                              alignment="left"
+                                                              className="min-w-[300px] max-w-[300px]"
+                                                          >
+                                                              <div
+                                                                  className="truncate"
+                                                                  title={channel.description || '-'}
+                                                              >
+                                                                  {channel.description || '-'}
+                                                              </div>
+                                                          </DataTable.Cell>
+                                                          <DataTable.Cell alignment="left" className="min-w-[150px]">
+                                                              {channel.creatorOrganization}
+                                                              {channel.creatorOrganization === user?.custom.org &&
+                                                                  ' (you)'}
+                                                          </DataTable.Cell>
+                                                          <DataTable.Cell alignment="left">
+                                                              {channel.accessSwitch ? (
+                                                                  <Badges style="positive">Operational</Badges>
+                                                              ) : (
+                                                                  <Badges style="default">Disabled</Badges>
+                                                              )}
+                                                          </DataTable.Cell>
+                                                          <DataTable.Cell alignment="center">-</DataTable.Cell>
+                                                      </DataTable.Row>
+                                                  ))
+                                                : null}
                                         </DataTable.Body>
                                     </DataTable>
                                     {channels && channels.length === 0 && renderNoData(search.trim() !== '')}
@@ -396,8 +393,8 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
                     <div className="p-4 space-y-4">
                         <Pagination
                             itemsPerPage={10}
-                            onItemsPerPageChange={function Xs() { }}
-                            onPageChange={function Xs() { }}
+                            onItemsPerPageChange={function Xs() {}}
+                            onPageChange={function Xs() {}}
                             selected={1}
                             showMoreLeft
                             showMoreRight
