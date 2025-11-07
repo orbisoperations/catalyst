@@ -18,13 +18,13 @@
     },
     "dependencies": {
         "@apollo/client": "^3.10.1",
-        "@catalyst/issued-jwt-registry": "workspace:*",
-        "@catalyst/schemas": "workspace:*",
         "@catalyst/authx_authzed_api": "workspace:*",
-        "@catalyst/data_channel_registrar": "workspace:*",
-        "@catalyst/organization-matchmaking": "workspace:*",
         "@catalyst/authx_token_api": "workspace:*",
         "@catalyst/data_channel_certifier": "workspace:*",
+        "@catalyst/data_channel_registrar": "workspace:*",
+        "@catalyst/issued-jwt-registry": "workspace:*",
+        "@catalyst/organization-matchmaking": "workspace:*",
+        "@catalyst/schemas": "workspace:*",
         "@catalyst/user-credentials-cache": "workspace:*",
         "@chakra-ui/button": "catalog:",
         "@chakra-ui/card": "catalog:",
@@ -36,6 +36,8 @@
         "@emotion/styled": "^11.11.5",
         "@heroicons/react": "catalog:",
         "@opennextjs/cloudflare": "1.0.0-beta.3",
+        "@orbisoperations/o2-ui": "^2.0.0",
+        "lucide-react": "^0.552.0",
         "next": "15.3.3",
         "react": "^19.1.0",
         "react-dom": "^19.1.0",
@@ -43,7 +45,6 @@
     },
     "devDependencies": {
         "@cloudflare/vitest-pool-workers": "catalog:",
-        "wrangler": "catalog:",
         "@eslint/compat": "^1.2.8",
         "@eslint/eslintrc": "^3.0.5",
         "@eslint/js": "catalog:",
@@ -64,6 +65,7 @@
         "tsx": "catalog:",
         "typescript": "catalog:",
         "typescript-eslint": "^8.31.0",
-        "vitest": "catalog:"
+        "vitest": "catalog:",
+        "wrangler": "catalog:"
     }
 }
