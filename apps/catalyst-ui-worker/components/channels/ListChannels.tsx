@@ -1,8 +1,7 @@
 'use client';
-import { ErrorCard, OrbisButton } from '@/components/elements';
 import { ListView } from '@/components/layouts';
 import { navigationItems } from '@/utils/nav.utils';
-import { DataChannel } from '@catalyst/schemas';
+import { ComplianceResult, DataChannel } from '@catalyst/schemas';
 import { Flex } from '@chakra-ui/layout';
 import {
     // Spinner,
@@ -15,11 +14,35 @@ import {
     ModalCloseButton,
     Text,
     useDisclosure,
+    Select,
+    Menu,
+    MenuButton,
+    MenuList,
+    MenuItem,
+    IconButton,
+    Spinner,
+    FormControl,
+    FormLabel,
+    FormErrorMessage,
+    Input,
+    InputGroup,
+    InputLeftAddon,
+    Grid,
 } from '@chakra-ui/react';
+import {
+    APIKeyText,
+    CreateButton,
+    ErrorCard,
+    OpenButton,
+    OrbisBadge,
+    OrbisButton,
+    OrbisTable,
+} from '@/components/elements';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
 import { useUser } from '../contexts/User/UserContext';
-import { canUserCheckCompliance } from '@/app/actions/compliance';
+import { canUserCheckCompliance, checkCompliance } from '@/app/actions/compliance';
+import { createDataChannel } from '@/app/actions/channels';
 import {
     PrimaryButton,
     Card,
@@ -30,14 +53,17 @@ import {
     Badges,
 } from '@orbisoperations/o2-ui';
 import { SearchIcon, PlusIcon, ArrowDownWideNarrowIcon, FunnelIcon } from 'lucide-react';
-
-
+import { DetailedComplianceResult } from './DetailedComplianceResult';
+import { ComplianceStatusBadge } from './ComplianceStatus';
+import { EllipsisVerticalIcon } from '@heroicons/react/24/outline';
+import { TrashIcon } from '@heroicons/react/24/outline';
 type ListChannelsProps = {
     listChannels: (token: string) => Promise<DataChannel[]>;
     deleteChannel: (channelId: string, token: string) => Promise<DataChannel>;
+    createDataChannel: (formData: FormData, token: string) => Promise<{ success: boolean; data?: DataChannel; error?: string }>;
 };
 
-export default function DataChannelListComponents({ listChannels, deleteChannel }: ListChannelsProps) {
+export default function DataChannelListComponents({ listChannels, deleteChannel, createDataChannel }: ListChannelsProps) {
     const router = useRouter();
     const [channels, setChannels] = useState<DataChannel[] | null>(null);
     const [allChannels, setAllChannels] = useState<DataChannel[]>([]);
@@ -54,7 +80,21 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
         onOpen: onComplianceModalOpen,
         onClose: onComplianceModalClose,
     } = useDisclosure();
+    const {
+        isOpen: isCreateModalOpen,
+        onOpen: onCreateModalOpen,
+        onClose: onCreateModalClose,
+    } = useDisclosure();
     const { token, user } = useUser();
+    const [newChannel, setNewChannel] = useState<Omit<DataChannel, 'id'>>({
+        name: '',
+        description: '',
+        endpoint: '',
+        creatorOrganization: String(user?.custom.org || ''),
+        accessSwitch: true,
+    });
+    const [nameError, setNameError] = useState<string>('');
+    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
     const [search, setSearch] = useState<string>('');
     const [sortColumn, setSortColumn] = useState<string | null>(null);
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -214,6 +254,68 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
             .catch(() => setCanCheckCompliance(false));
     }, [token]);
 
+    useEffect(() => {
+        if (user?.custom.org) {
+            setNewChannel((prev) => ({
+                ...prev,
+                creatorOrganization: String(user.custom.org),
+            }));
+        }
+    }, [user?.custom.org]);
+
+    function handleCreateChannel(formData: FormData) {
+        setIsSubmitting(true);
+        setNameError('');
+        formData.set('organization', String(user?.custom.org));
+
+        if (!token) {
+            setNameError('Authentication required');
+            setIsSubmitting(false);
+            return;
+        }
+
+        createDataChannel(formData, token)
+            .then((result) => {
+                if (result.success && result.data) {
+                    onCreateModalClose();
+                    setNewChannel({
+                        name: '',
+                        description: '',
+                        endpoint: '',
+                        creatorOrganization: String(user?.custom.org || ''),
+                        accessSwitch: true,
+                    });
+                    fetchChannels();
+                } else {
+                    const isValidationError =
+                        result.error?.includes('already exists in your organization') ||
+                        result.error?.includes('Invalid data channel') ||
+                        result.error?.includes('Channel name') ||
+                        result.error?.includes('cannot be only whitespace') ||
+                        result.error?.includes('Only letters, numbers, and standard symbols') ||
+                        result.error?.includes('cannot contain HTML') ||
+                        result.error?.includes('cannot contain script') ||
+                        result.error?.includes('contains potentially dangerous') ||
+                        result.error?.includes('is required') ||
+                        result.error?.includes('must be') ||
+                        result.error?.includes('characters or less') ||
+                        result.error?.includes('invalid characters');
+                    if (isValidationError) {
+                        setNameError(result.error || 'Validation error');
+                    } else {
+                        setHasError(true);
+                    }
+                }
+            })
+            .catch((e) => {
+                console.error('Unexpected error:', e);
+                setHasError(true);
+            })
+            .finally(() => {
+                setIsSubmitting(false);
+            });
+    }
+
     function renderNoData(hasFilter: boolean) {
         return (
             <div className="flex items-center justify-center py-16 min-h-[400px] flex-col gap-6">
@@ -260,46 +362,42 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
                     ) : (
                         <Flex gap={5} direction={'column'}>
                             <Card className="p-4">
-                                <Flex gap={5} direction={'column'}>
-                                    <Flex className="border-none" justify={'space-between'} align={'center'}>
-                                        <div className="w-[336px]">
-                                            <TextInputAndButton
-                                                value={search}
-                                                onChange={setSearch}
-                                                size={'medium'}
-                                                state={'default'}
-                                            >
-                                                <TextInputAndButton.Container>
-                                                    <TextInputAndButton.Input placeholder={'Search by name'} />
-                                                    <TextInputAndButton.Button
-                                                        onClick={() => filterChannels(filterMode, search)}
-                                                        aria-label="Search"
-                                                    >
-                                                        <SearchIcon size={16} />
-                                                    </TextInputAndButton.Button>
-                                                </TextInputAndButton.Container>
-                                            </TextInputAndButton>
-                                        </div>
-                                        <Flex gap={3}>
-                                            <TertiaryIconButton>
-                                                <ArrowDownWideNarrowIcon size={16} />
-                                            </TertiaryIconButton>
-                                            <TertiaryIconButton>
-                                                <FunnelIcon size={16} />
-                                            </TertiaryIconButton>
-                                            <PrimaryButton
-                                                showIcon
-                                                icon={<PlusIcon size={16} />}
-                                                onClick={() => router.push('/channels/create')}
-                                            >
-                                                Create
-                                            </PrimaryButton>
-                                        </Flex>
+                                <Flex className="border-none" justify={'space-between'} align={'center'}>
+                                    <div className="w-[336px]">
+                                        <TextInputAndButton
+                                            value={search}
+                                            onChange={setSearch}
+                                            size={'medium'}
+                                            state={'default'}
+                                        >
+                                            <TextInputAndButton.Container>
+                                                <TextInputAndButton.Input placeholder={'Search by name'} />
+                                                <TextInputAndButton.Button
+                                                    onClick={() => filterChannels(filterMode, search)}
+                                                    aria-label="Search"
+                                                >
+                                                    <SearchIcon size={16} />
+                                                </TextInputAndButton.Button>
+                                            </TextInputAndButton.Container>
+                                        </TextInputAndButton>
+                                    </div>
+                                    <Flex gap={3}>
+                                        <TertiaryIconButton>
+                                            <ArrowDownWideNarrowIcon size={16} />
+                                        </TertiaryIconButton>
+                                        <TertiaryIconButton>
+                                            <FunnelIcon size={16} />
+                                        </TertiaryIconButton>
+                                        <PrimaryButton
+                                            showIcon
+                                            icon={<PlusIcon size={16} />}
+                                            onClick={onCreateModalOpen}
+                                        >
+                                            Create
+                                        </PrimaryButton>
                                     </Flex>
                                 </Flex>
-                            </Card>
-                            <Card>
-                                <div className="w-full overflow-x-auto">
+                                <div className="w-full overflow-x-auto mt-4">
                                     <DataTable size="medium" interactive={true} className="w-full">
                                         <DataTable.Header>
                                             <DataTable.Row>
@@ -343,67 +441,79 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
                                         <DataTable.Body>
                                             {channels && channels.length > 0
                                                 ? getSortedChannels(channels).map((channel) => (
-                                                      <DataTable.Row key={channel.id}>
-                                                          <DataTable.Cell
-                                                              alignment="left"
-                                                              className="min-w-[200px] max-w-[200px]"
-                                                          >
-                                                              <div className="truncate" title={channel.name}>
-                                                                  {channel.name}
-                                                              </div>
-                                                          </DataTable.Cell>
-                                                          <DataTable.Cell
-                                                              alignment="left"
-                                                              className="min-w-[300px] max-w-[300px]"
-                                                          >
-                                                              <div
-                                                                  className="truncate"
-                                                                  title={channel.description || '-'}
-                                                              >
-                                                                  {channel.description || '-'}
-                                                              </div>
-                                                          </DataTable.Cell>
-                                                          <DataTable.Cell alignment="left" className="min-w-[150px]">
-                                                              {channel.creatorOrganization}
-                                                              {channel.creatorOrganization === user?.custom.org &&
-                                                                  ' (you)'}
-                                                          </DataTable.Cell>
-                                                          <DataTable.Cell alignment="left">
-                                                              {channel.accessSwitch ? (
-                                                                  <Badges style="positive">Operational</Badges>
-                                                              ) : (
-                                                                  <Badges style="default">Disabled</Badges>
-                                                              )}
-                                                          </DataTable.Cell>
-                                                          <DataTable.Cell alignment="center">-</DataTable.Cell>
-                                                      </DataTable.Row>
-                                                  ))
+                                                    <DataTable.Row 
+                                                        key={channel.id}
+                                                    >
+                                                        <div 
+                                                            onClick={() => router.push(`/channels/${channel.id}`)}
+                                                            className="contents cursor-pointer [&>*]:hover:bg-gray-50 [&>*]:transition-colors"
+                                                        >
+                                                            <DataTable.Cell
+                                                                alignment="left"
+                                                                className="min-w-[200px] max-w-[200px]"
+                                                            >
+                                                                <div className="truncate" title={channel.name}>
+                                                                    {channel.name}
+                                                                </div>
+                                                            </DataTable.Cell>
+                                                            <DataTable.Cell
+                                                                alignment="left"
+                                                                className="min-w-[300px] max-w-[300px]"
+                                                            >
+                                                                <div
+                                                                    className="truncate"
+                                                                    title={channel.description || '-'}
+                                                                >
+                                                                    {channel.description || '-'}
+                                                                </div>
+                                                            </DataTable.Cell>
+                                                            <DataTable.Cell 
+                                                                alignment="left" 
+                                                                className="min-w-[150px]"
+                                                            >
+                                                                {channel.creatorOrganization}
+                                                                {channel.creatorOrganization === user?.custom.org &&
+                                                                    ' (you)'}
+                                                            </DataTable.Cell>
+                                                            <DataTable.Cell alignment="left">
+                                                                {channel.accessSwitch ? (
+                                                                    <Badges style="positive">Operational</Badges>
+                                                                ) : (
+                                                                    <Badges style="default">Disabled</Badges>
+                                                                )}
+                                                            </DataTable.Cell>
+                                                            <DataTable.Cell alignment="center">
+                                                                <ComplianceStatusBadge status={channel.lastComplianceResult?.status} />
+                                                            </DataTable.Cell>
+                                                        </div>
+                                                    </DataTable.Row>
+                                                ))
                                                 : null}
                                         </DataTable.Body>
                                     </DataTable>
                                     {channels && channels.length === 0 && renderNoData(search.trim() !== '')}
                                 </div>
+                                {!isLoading && channels !== null && (
+                                    <div className="space-y-4 mt-4">
+                                        <Pagination
+                                            itemsPerPage={10}
+                                            onItemsPerPageChange={function Xs() { }}
+                                            onPageChange={function Xs() { }}
+                                            selected={1}
+                                            showMoreLeft
+                                            showMoreRight
+                                            showResultCount
+                                            showSelectCount
+                                            totalResults={channels.length}
+                                        />
+                                    </div>
+                                )}
                             </Card>
                         </Flex>
                     )
                 }
                 topbartitle="Data Channels"
             >
-                {!isLoading && channels !== null && (
-                    <div className="p-4 space-y-4">
-                        <Pagination
-                            itemsPerPage={10}
-                            onItemsPerPageChange={function Xs() {}}
-                            onPageChange={function Xs() {}}
-                            selected={1}
-                            showMoreLeft
-                            showMoreRight
-                            showResultCount
-                            showSelectCount
-                            totalResults={channels.length}
-                        />
-                    </div>
-                )}
             </ListView>
             <Modal isOpen={isOpen} onClose={onClose}>
                 <ModalOverlay />
@@ -434,6 +544,105 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
                     </ModalBody>
                 </ModalContent>
             </Modal>
+            <Modal isOpen={isCreateModalOpen} onClose={onCreateModalClose} size="xl">
+                <ModalOverlay />
+                <ModalContent>
+                    <ModalHeader>
+                        <Text>Create Data Channel</Text>
+                        <Text fontSize="sm" color="gray.600" fontWeight="normal" mt={2}>
+                            It can be shared with selected partners when needed.
+                        </Text>
+                    </ModalHeader>
+                    <ModalCloseButton />
+                    <form
+                        action={async (formData) => {
+                            handleCreateChannel(formData);
+                        }}
+                    >
+                        <ModalBody pb={6}>
+                            <Grid gap={5}>
+                                <FormControl display={'grid'} gap={2} isInvalid={!!nameError}>
+                                    <FormLabel htmlFor="name">Channel Name</FormLabel>
+                                    <Input
+                                        rounded="md"
+                                        value={newChannel.name}
+                                        onChange={(e) => {
+                                            setNewChannel({
+                                                ...newChannel,
+                                                name: e.target.value,
+                                            });
+                                        }}
+                                        name="name"
+                                        required={true}
+                                        placeholder="Data Channel Name"
+                                        maxLength={64}
+                                        isDisabled={isSubmitting}
+                                    />
+                                    {nameError && <FormErrorMessage>{nameError}</FormErrorMessage>}
+                                </FormControl>
+                                <FormControl display={'grid'} gap={2}>
+                                    <FormLabel htmlFor="description">Channel Description</FormLabel>
+                                    <Input
+                                        rounded="md"
+                                        value={newChannel.description}
+                                        onChange={(e) => {
+                                            setNewChannel({
+                                                ...newChannel,
+                                                description: e.target.value,
+                                            });
+                                        }}
+                                        name="description"
+                                        required={true}
+                                        placeholder="Description"
+                                        isDisabled={isSubmitting}
+                                    />
+                                </FormControl>
+                                <FormControl display={'grid'} gap={2}>
+                                    <FormLabel htmlFor="endpoint">Endpoint / URL</FormLabel>
+                                    <Input
+                                        rounded="md"
+                                        name="endpoint"
+                                        value={newChannel.endpoint}
+                                        onChange={(e) => {
+                                            setNewChannel({
+                                                ...newChannel,
+                                                endpoint: e.target.value,
+                                            });
+                                        }}
+                                        required={true}
+                                        placeholder="Endpoint URL"
+                                        isDisabled={isSubmitting}
+                                    />
+                                </FormControl>
+                            </Grid>
+                        </ModalBody>
+                        <ModalFooter>
+                            <Flex justifyContent={'space-between'} width="100%">
+                                <OrbisButton
+                                    colorScheme="gray"
+                                    onClick={() => {
+                                        onCreateModalClose();
+                                        setNewChannel({
+                                            name: '',
+                                            description: '',
+                                            endpoint: '',
+                                            creatorOrganization: String(user?.custom.org || ''),
+                                            accessSwitch: true,
+                                        });
+                                        setNameError('');
+                                    }}
+                                    isDisabled={isSubmitting}
+                                >
+                                    Cancel
+                                </OrbisButton>
+                                <OrbisButton type="submit" isLoading={isSubmitting} loadingText="Creating...">
+                                    Create
+                                </OrbisButton>
+                            </Flex>
+                        </ModalFooter>
+                    </form>
+                </ModalContent>
+            </Modal>
             <ListView
                 //$showspinner={false ? true : undefined}
                 actions={
@@ -460,7 +669,7 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
                         />
                     ) : (
                         <Flex gap={5} direction={'column'}>
-                            <Card p={2}>
+                            <Card>
                                 <Flex gap={5} align={'center'}>
                                     <Select
                                         value={filterMode}
@@ -486,7 +695,7 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
                                 </Flex>
                             </Card>
                             {isLoading || channels === null ? (
-                                <Card sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                                <Card>
                                     <Spinner color="blue.500" sx={{ margin: '1em' }} />
                                 </Card>
                             ) : channels.length > 0 ? (
@@ -523,7 +732,7 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
                                                 // 1. User has data custodian permissions (canCheckCompliance)
                                                 // 2. Channel belongs to user's organization
                                                 canCheckCompliance &&
-                                                channel.creatorOrganization === user?.custom.org ? (
+                                                    channel.creatorOrganization === user?.custom.org ? (
                                                     <div key={index + '-compliance'}>
                                                         <ComplianceStatusBadge
                                                             status={channel.lastComplianceResult?.status}
@@ -578,21 +787,21 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
                                                             </MenuItem>
                                                         )}
                                                     </MenuList>
-                                                </Menu>,                                                                                                                                             
+                                                </Menu>,
                                             ];
                                         })}
                                     />
                                 </Card>
                             ) : (
                                 <Card>
-                                    <CardBody>No Channels Available</CardBody>
+                                    <Text>No Channels Available</Text>
                                 </Card>
                             )}
                         </Flex>
                     )
                 }
                 topbartitle="Data Channels"
-            /> */}
+            />
         </>
     );
 }
