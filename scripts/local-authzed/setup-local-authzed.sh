@@ -190,7 +190,7 @@ log_info "🔍 Checking for existing user with data_custodian permissions..."
 EXISTING_USER_ID=$(zed relationship read \
     --endpoint "$AUTHZED_GRPC_ENDPOINT" --token "$AUTHZED_TOKEN" --insecure \
     "$RESOURCE_TYPE:$ORG_ID" "$DATA_CUSTODIAN_REL" --json 2>/dev/null \
-    | jq -r '.relationship.subject.object.objectId' 2>/dev/null || echo "")
+    | jq -r '.relationship.subject.object.objectId' 2>/dev/null | head -1 || echo "")
 
 if [[ -n "$EXISTING_USER_ID" && "$EXISTING_USER_ID" != "null" && "$EXISTING_USER_ID" != "" ]]; then
     EMAIL=$(echo "$EXISTING_USER_ID" | base64 --decode)

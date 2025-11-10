@@ -4,7 +4,7 @@ import {
 	DataChannelAccessToken,
 	DataChannelMultiAccessResponse,
 	DataChannelMultiAccessResponseSchema,
-	DataChannelSchema,
+	DataChannelStoredSchema,
 	DEFAULT_STANDARD_DURATIONS,
 	JWTParsingResponseSchema,
 	JWTRotateResponseSchema,
@@ -336,12 +336,39 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 			return { success: false, error: 'no resources found' };
 		}
 
-		// Validate the channels array
-		const result = DataChannelSchema.array().safeParse(allChannels);
+		console.log('[splitTokenIntoSingleUseTokens] Retrieved channels from registrar:', {
+			count: allChannels.length,
+			channels: allChannels.map((ch) => ({
+				id: ch.id,
+				name: ch.name,
+				endpoint: ch.endpoint,
+				creatorOrganization: ch.creatorOrganization,
+				accessSwitch: ch.accessSwitch,
+			})),
+		});
+
+		// Validate the channels array using stored schema (lenient for old data)
+		const result = DataChannelStoredSchema.array().safeParse(allChannels);
 		if (!result.success) {
-			console.error('Failed to parse array of data channels:', result.error.format());
+			console.error('[splitTokenIntoSingleUseTokens] Failed to parse array of data channels');
+			console.error('[splitTokenIntoSingleUseTokens] Validation errors:', JSON.stringify(result.error.format(), null, 2));
+			console.error('[splitTokenIntoSingleUseTokens] Raw channel data:', JSON.stringify(allChannels, null, 2));
+
+			// Try parsing each channel individually to identify which one(s) fail
+			allChannels.forEach((ch, idx: number) => {
+				const singleResult = DataChannelStoredSchema.safeParse(ch);
+				if (!singleResult.success) {
+					console.error(`[splitTokenIntoSingleUseTokens] Channel ${idx} (${ch.id}) failed validation:`, {
+						channel: ch,
+						errors: singleResult.error.format(),
+					});
+				}
+			});
+
 			return DataChannelMultiAccessResponseSchema.parse({ success: false, error: 'internal error processing channel information' });
 		}
+
+		console.log('[splitTokenIntoSingleUseTokens] Successfully parsed channels:', result.data.length);
 
 		// NOTE: claims are channel.id
 		// Filter channels by claims already extracted from the validated token

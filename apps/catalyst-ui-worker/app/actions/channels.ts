@@ -1,6 +1,6 @@
 'use server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
-import { CloudflareEnv, getRegistrar, DataChannelSchema, DataChannel } from '@catalyst/schemas';
+import { CloudflareEnv, getRegistrar, DataChannelInputSchema, DataChannel } from '@catalyst/schemas';
 
 function getEnv(): CloudflareEnv {
     return getCloudflareContext().env as CloudflareEnv;
@@ -21,7 +21,7 @@ export async function createDataChannel(formData: FormData, token: string) {
         accessSwitch: true,
     };
 
-    const parsed = DataChannelSchema.omit({ id: true }).safeParse(data);
+    const parsed = DataChannelInputSchema.omit({ id: true }).safeParse(data);
 
     if (!parsed.success) {
         console.error('Validation failed for data:', data);
@@ -116,7 +116,7 @@ export async function updateChannel(formData: FormData, token: string) {
         id: formData.get('id') as string,
     };
 
-    const parsed = DataChannelSchema.safeParse(dataChannel);
+    const parsed = DataChannelInputSchema.safeParse(dataChannel);
     if (!parsed.success) {
         console.error('Validation failed for data:', dataChannel);
         console.error('Full error object:', JSON.stringify(parsed.error, null, 2));
