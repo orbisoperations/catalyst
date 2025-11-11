@@ -71,8 +71,7 @@ describe('Testing the catalyst token access controls to data channels', () => {
 
   describe('entity in catalyst token is org admin', () => {
     beforeEach(async () => {
-      await clearAllAuthzedRoles();
-      // Also clean up channels to avoid name conflicts
+      // Also clean up channels to avoid name conflicts (do this BEFORE clearing roles)
       const listDataChannels = await SELF.list('default', {
         cfToken: 'cf-custodian-token',
       });
@@ -84,6 +83,7 @@ describe('Testing the catalyst token access controls to data channels', () => {
           await SELF.remove('default', channel.id, { cfToken: 'cf-custodian-token' });
         }
       }
+      await clearAllAuthzedRoles();
     });
 
     it('can READ a data channel', async () => {

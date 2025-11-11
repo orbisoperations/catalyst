@@ -13,7 +13,6 @@ export async function listInvites(token: string): Promise<OrgInvite[]> {
     if (!result.success) {
         throw new Error(result.error);
     }
-    // Runtime validation to ensure we got an array
     return OrgInviteSchema.array().parse(result.data);
 }
 
@@ -24,7 +23,7 @@ export async function sendInvite(receivingOrg: string, token: string, message: s
     if (!result.success) {
         throw new Error('Sending Invite Failed');
     }
-    // Runtime validation to ensure we got a single invite
+
     return OrgInviteSchema.parse(result.data);
 }
 
@@ -41,7 +40,6 @@ export async function readInvite(inviteId: string, token: string): Promise<OrgIn
 export async function declineInvite(inviteId: string, token: string): Promise<OrgInvite> {
     const env = getEnv();
     const matcher = getMatchmaking(env);
-    console.log({ inviteId, token });
     const result = await matcher.declineInvite(inviteId, { cfToken: token });
     if (!result.success) {
         throw new Error('Declining Invite Failed');
@@ -60,10 +58,10 @@ export async function acceptInvite(inviteId: string, token: string): Promise<Org
     return OrgInviteSchema.parse(result.data);
 }
 
-export async function togglePartnership(orgId: string, token: string): Promise<OrgInvite> {
+export async function togglePartnership(inviteId: string, token: string): Promise<OrgInvite> {
     const env = getEnv();
     const matcher = getMatchmaking(env);
-    const result = await matcher.togglePartnership(orgId, { cfToken: token });
+    const result = await matcher.togglePartnership(inviteId, { cfToken: token });
     if (!result.success) {
         throw new Error('Toggling Partnership Failed');
     }

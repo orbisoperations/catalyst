@@ -24,8 +24,8 @@ describe('Integration: Complete JWT Lifecycle', () => {
 	const PLATFORM_ADMIN_CF_TOKEN = 'cf-platform-admin-token';
 
 	beforeEach(async () => {
-		await clearAllAuthzedRoles();
 		await cleanupDataChannels();
+		await clearAllAuthzedRoles();
 	});
 
 	describe('End-to-End JWT Workflows', () => {
