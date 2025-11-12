@@ -251,6 +251,7 @@ app.post('/validate-tokens', async (ctx) => {
 const createGatewayYoga = async (endpoints: { token: string; endpoint: string }[]) => {
     return createYoga({
         schema: await makeGatewaySchema(endpoints),
+        graphiql: false, // Disable GraphQL playground for security
         maskedErrors: {
             maskError: (error) => {
                 // Suppress "Cannot query field" errors - these happen when users query
