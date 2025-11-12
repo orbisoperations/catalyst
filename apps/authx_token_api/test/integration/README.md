@@ -134,7 +134,7 @@ pnpm vitest --project integration
 ✅ **Complete splitting flow (5 tests)**
 
 - Split multi-claim catalyst token
-- Create single-use JWTs
+- Create single-use JWTs (ephemeral, not registered in registry)
 - Validate catalyst token before splitting
 - Handle partial failures
 - Verify security properties
@@ -144,6 +144,15 @@ pnpm vitest --project integration
 - Empty claims array
 - Missing catalyst token
 - Invalid claim values
+
+**Important Note on Ephemeral Tokens:**
+Tokens with `catalyst:datachannel` audience are ephemeral and NOT registered in `ISSUED_JWT_REGISTRY`. This includes:
+
+- Single-use tokens created by `signSingleUseJWT()`
+- System tokens from `data-channel-certifier` service
+- System tokens from `scheduled-validator` service
+
+This design prevents storage bloat from frequently-created, short-lived (5-minute) tokens. These tokens rely solely on cryptographic validation (signature, expiry, audience) and cannot be revoked before their expiration.
 
 ### Key Management (key-management.spec.ts)
 
