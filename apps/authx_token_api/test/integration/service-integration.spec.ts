@@ -30,8 +30,8 @@ describe('Integration: Cross-Service Interactions', () => {
 	const ORG_USER = validUsers[ORG_USER_CF_TOKEN];
 
 	beforeEach(async () => {
-		await clearAllAuthzedRoles();
 		await cleanupDataChannels();
+		await clearAllAuthzedRoles();
 	});
 
 	describe('AuthZed Permission Integration', () => {

@@ -48,8 +48,10 @@ export class OrganizationMatchmakingDO extends DurableObject {
 		await this.ctx.blockConcurrencyWhile(async () => {
 			const senderMailbox = (await this.ctx.storage.get<OrgInvite[]>(sender)) ?? [];
 			const receiverMailbox = (await this.ctx.storage.get<OrgInvite[]>(receiver)) ?? [];
+
 			senderMailbox.push(newInvite);
 			receiverMailbox.push(newInvite);
+
 			await this.ctx.storage.put(sender, senderMailbox);
 			await this.ctx.storage.put(receiver, receiverMailbox);
 		});
@@ -58,7 +60,8 @@ export class OrganizationMatchmakingDO extends DurableObject {
 	}
 
 	async list(orgId: OrgId): Promise<OrgInvite[]> {
-		return (await this.ctx.storage.get<OrgInvite[]>(orgId)) ?? [];
+		const mailbox = (await this.ctx.storage.get<OrgInvite[]>(orgId)) ?? [];
+		return mailbox;
 	}
 
 	/**
@@ -95,6 +98,7 @@ export class OrganizationMatchmakingDO extends DurableObject {
 	 */
 	async togglePartnership(orgId: OrgId, inviteId: string): Promise<OrgInvite> {
 		const orgMailbox = (await this.ctx.storage.get<OrgInvite[]>(orgId)) ?? [];
+
 		const invite = orgMailbox.find((inv) => inv.id === inviteId);
 
 		if (!invite) {
@@ -102,24 +106,21 @@ export class OrganizationMatchmakingDO extends DurableObject {
 		}
 
 		const otherOrg = invite.sender === orgId ? invite.receiver : invite.sender;
+
 		const otherMailbox = (await this.ctx.storage.get<OrgInvite[]>(otherOrg)) ?? [];
 
 		if (!otherMailbox.find((inv) => inv.id === inviteId)) {
 			throw new InviteNotFoundError(inviteId);
 		}
 
-		// Validate updated entity before storing
-		const updatedInvite = OrgInviteSchema.parse({ ...invite, isActive: !invite.isActive });
+		const updatedInvite: OrgInvite = { ...invite, isActive: !invite.isActive, updatedAt: Date.now() };
 
 		await this.ctx.blockConcurrencyWhile(async () => {
-			await this.ctx.storage.put(
-				orgId,
-				orgMailbox.map((inv) => (inv.id === inviteId ? updatedInvite : inv)),
-			);
-			await this.ctx.storage.put(
-				otherOrg,
-				otherMailbox.map((inv) => (inv.id === inviteId ? updatedInvite : inv)),
-			);
+			const updatedOrgMailbox = orgMailbox.map((inv) => (inv.id === inviteId ? updatedInvite : inv));
+			const updatedOtherMailbox = otherMailbox.map((inv) => (inv.id === inviteId ? updatedInvite : inv));
+
+			await this.ctx.storage.put(orgId, updatedOrgMailbox);
+			await this.ctx.storage.put(otherOrg, updatedOtherMailbox);
 		});
 
 		return updatedInvite;
@@ -130,6 +131,7 @@ export class OrganizationMatchmakingDO extends DurableObject {
 		const validatedStatus = OrgInviteStatusSchema.parse(status);
 
 		const responder = (await this.ctx.storage.get<OrgInvite[]>(orgId)) ?? [];
+
 		const invite = responder.find((inv) => inv.id === inviteId);
 
 		if (!invite) {
@@ -137,6 +139,7 @@ export class OrganizationMatchmakingDO extends DurableObject {
 		}
 
 		const otherOrg = invite.sender === orgId ? invite.receiver : invite.sender;
+
 		const otherMailbox = (await this.ctx.storage.get<OrgInvite[]>(otherOrg)) ?? [];
 
 		if (!otherMailbox.find((inv) => inv.id === inviteId)) {
@@ -146,17 +149,14 @@ export class OrganizationMatchmakingDO extends DurableObject {
 		// Everyone can decline
 		if (validatedStatus === 'declined') {
 			await this.ctx.blockConcurrencyWhile(async () => {
-				await this.ctx.storage.put(
-					orgId,
-					responder.filter((inv) => inv.id !== inviteId),
-				);
-				await this.ctx.storage.put(
-					otherOrg,
-					otherMailbox.filter((inv) => inv.id !== inviteId),
-				);
+				const filteredResponder = responder.filter((inv) => inv.id !== inviteId);
+				const filteredOther = otherMailbox.filter((inv) => inv.id !== inviteId);
+
+				await this.ctx.storage.put(orgId, filteredResponder);
+				await this.ctx.storage.put(otherOrg, filteredOther);
 			});
-			// Validate updated entity before returning
-			return OrgInviteSchema.parse({ ...invite, status: validatedStatus });
+			const declinedInvite: OrgInvite = { ...invite, status: validatedStatus, updatedAt: Date.now() };
+			return declinedInvite;
 		}
 
 		// Only receiver can accept
@@ -165,17 +165,14 @@ export class OrganizationMatchmakingDO extends DurableObject {
 				throw new InvalidOperationError('Sender cannot accept their own invite');
 			}
 
-			// Validate updated entity before storing
-			const updatedInvite = OrgInviteSchema.parse({ ...invite, status: validatedStatus });
+			const updatedInvite: OrgInvite = { ...invite, status: validatedStatus, updatedAt: Date.now() };
+
 			await this.ctx.blockConcurrencyWhile(async () => {
-				await this.ctx.storage.put(
-					orgId,
-					responder.map((inv) => (inv.id === inviteId ? updatedInvite : inv)),
-				);
-				await this.ctx.storage.put(
-					otherOrg,
-					otherMailbox.map((inv) => (inv.id === inviteId ? updatedInvite : inv)),
-				);
+				const updatedResponder = responder.map((inv) => (inv.id === inviteId ? updatedInvite : inv));
+				const updatedOther = otherMailbox.map((inv) => (inv.id === inviteId ? updatedInvite : inv));
+
+				await this.ctx.storage.put(orgId, updatedResponder);
+				await this.ctx.storage.put(otherOrg, updatedOther);
 			});
 
 			return updatedInvite;
@@ -234,19 +231,19 @@ export default class OrganizationMatchmakingWorker extends WorkerEntrypoint<Env>
 
 			const id = this.env.ORG_MATCHMAKING.idFromName(doNamespace);
 			const stub = this.env.ORG_MATCHMAKING.get(id);
+
 			const invite = await stub.togglePartnership(user.orgId, inviteId);
 
-			console.log({ invite });
 			const partner = user.orgId === invite.sender ? invite.receiver : invite.sender;
-			const resp = invite.isActive
-				? await this.env.AUTHZED.addPartnerToOrg(user.orgId, partner)
-				: await this.env.AUTHZED.deletePartnerInOrg(user.orgId, partner);
-			console.log({ resp });
 
-			// Validate response at Worker boundary
-			return OrgInviteResponseSchema.parse({ success: true, data: invite });
+			if (invite.isActive) {
+				await this.env.AUTHZED.addPartnerToOrg(user.orgId, partner);
+			} else {
+				await this.env.AUTHZED.deletePartnerInOrg(user.orgId, partner);
+			}
+
+			return OrgInviteStoredResponseSchema.parse({ success: true, data: invite });
 		} catch (error) {
-			// Validate error response
 			return OrgInviteResponseSchema.parse({
 				success: false,
 				error: error instanceof CatalystError ? error.message : error instanceof Error ? error.message : 'Unknown error',
@@ -303,11 +300,10 @@ export default class OrganizationMatchmakingWorker extends WorkerEntrypoint<Env>
 			const stub = this.env.ORG_MATCHMAKING.get(id);
 			const invite = await stub.respond(user.orgId, inviteId, 'accepted');
 
-			const partnerWrites = await Promise.all([
+			await Promise.all([
 				this.env.AUTHZED.addPartnerToOrg(invite.sender, invite.receiver),
 				this.env.AUTHZED.addPartnerToOrg(invite.receiver, invite.sender),
 			]);
-			console.log(partnerWrites);
 
 			// Validate response at Worker boundary
 			return OrgInviteResponseSchema.parse({ success: true, data: invite });
@@ -339,11 +335,10 @@ export default class OrganizationMatchmakingWorker extends WorkerEntrypoint<Env>
 			const stub = this.env.ORG_MATCHMAKING.get(id);
 			const invite = await stub.respond(user.orgId, inviteId, 'declined');
 
-			const partnerWrites = await Promise.all([
+			await Promise.all([
 				this.env.AUTHZED.deletePartnerInOrg(invite.sender, invite.receiver),
 				this.env.AUTHZED.deletePartnerInOrg(invite.receiver, invite.sender),
 			]);
-			console.log(partnerWrites);
 
 			// Validate response at Worker boundary
 			return OrgInviteResponseSchema.parse({ success: true, data: invite });
@@ -378,7 +373,6 @@ export default class OrganizationMatchmakingWorker extends WorkerEntrypoint<Env>
 			// Validate response at Worker boundary using stored schema (lenient for old data)
 			return OrgInviteStoredResponseSchema.parse({ success: true, data });
 		} catch (error) {
-			console.error(error);
 			// Validate error response
 			return OrgInviteResponseSchema.parse({
 				success: false,
