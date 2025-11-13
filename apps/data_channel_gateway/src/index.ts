@@ -116,8 +116,17 @@ export async function makeGatewaySchema(
                 .map((result) => (result as PromiseFulfilledResult<any>).value)
         );
     });
+
+    const filteredSubschemas = await subschemas;
+
+    // Security: Return error if all channels failed during schema fetching
+    // This makes unresponsive channels indistinguishable from unshared channels (both return 503)
+    if (filteredSubschemas.length === 0) {
+        throw new Error('All data channels unavailable during schema fetch');
+    }
+
     return stitchSchemas({
-        subschemas: await subschemas,
+        subschemas: filteredSubschemas,
         subschemaConfigTransforms: [stitchingDirectivesTransformer],
         typeDefs: 'type Query { health: String! }',
         resolvers: {
@@ -258,15 +267,22 @@ const createGatewayYoga = async (endpoints: { token: string; endpoint: string }[
                 if (!(error instanceof Error)) {
                     return new Error(String(error));
                 }
-                // Suppress "Cannot query field" errors - these happen when users query
-                // fields from channels they don't have access to
-                if (error.message.includes('Cannot query field')) {
-                    // Return the original error unchanged - GraphQL will handle it
-                    return error;
+                // Only mask data channel errors (errors from remote schema fetching)
+                // Allow all GraphQL Yoga validation errors to pass through unchanged
+                const isDataChannelError =
+                    error.message.includes('error fetching remote schema') ||
+                    error.message.includes('Failed to parse JSON response') ||
+                    error.message.includes('Network connection lost') ||
+                    error.message.includes('Timeout');
+
+                if (isDataChannelError) {
+                    // Mask data channel errors to prevent information disclosure
+                    // Log the actual error for debugging, but return generic message to client
+                    console.warn('GraphQL error masked:', error.message);
+                    return new Error('One or more channels currently unavailable for synchronization.');
                 }
-                // Log and pass through all errors
-                console.warn('GraphQL error suppressed:', error.message);
-                // Return the original error - GraphQL Yoga handles masking
+
+                // Allow all other errors (GraphQL validation, etc.) to pass through
                 return error;
             },
         },
@@ -285,8 +301,6 @@ const executeYogaWithContext = (
     ctx: Context<{ Bindings: Env; Variables: Variables }>
 ) => {
     // Yoga's fetch() expects (Request, env) - see https://github.com/orgs/honojs/discussions/1063
-    // Type definitions don't align with Hono's context, but works correctly at runtime
-    // @ts-expect-error - Expected type mismatch between Yoga and Hono context types
     return yoga(ctx.req.raw, ctx.env);
 };
 
@@ -347,18 +361,16 @@ app.use('/graphql', authenticateRequestMiddleware, async (ctx) => {
     });
     if (!token.success) {
         // Expected auth failure - client provided invalid token format
-        console.info('Invalid token format, returning empty schema');
-        const yoga = await createGatewayYoga([]);
-        return executeYogaWithContext(yoga, ctx);
+        console.info('Invalid token format');
+        return ctx.json({ errors: [{ message: 'Unauthorized: Invalid or missing authentication token' }] }, 401);
     }
 
     // Auth guard: Verify claims exist
     const claims = ctx.get('claims');
     if (!claims || claims.length === 0) {
         // Expected auth failure - no claims found (handled by auth middleware)
-        console.info('No claims found, returning empty schema');
-        const yoga = await createGatewayYoga([]);
-        return executeYogaWithContext(yoga, ctx);
+        console.info('No claims found');
+        return ctx.json({ errors: [{ message: 'Unauthorized: Invalid or missing authentication token' }] }, 401);
     }
 
     // Auth guard: Split token into single-use tokens
@@ -367,10 +379,24 @@ app.use('/graphql', authenticateRequestMiddleware, async (ctx) => {
         'default'
     );
     if (!channelAccessPermissions.success) {
-        // System issue - token splitting failed
-        console.warn('Failed to split token into single-use tokens, returning empty schema');
-        const yoga = await createGatewayYoga([]);
-        return executeYogaWithContext(yoga, ctx);
+        // Check if failure is due to no accessible channels vs system error
+        if (channelAccessPermissions.error === 'no resources found') {
+            // Valid token but no accessible channels
+            console.info('No accessible channels');
+            return ctx.json(
+                {
+                    errors: [
+                        {
+                            message: 'One or more channels currently unavailable for synchronization.',
+                        },
+                    ],
+                },
+                503
+            );
+        }
+        // System issue - token splitting failed for other reasons
+        console.warn('Failed to split token into single-use tokens:', channelAccessPermissions.error);
+        return ctx.json({ errors: [{ message: 'Unauthorized: Failed to verify channel access' }] }, 401);
     }
 
     // Filter successful channel permissions and map to endpoints
@@ -390,11 +416,41 @@ app.use('/graphql', authenticateRequestMiddleware, async (ctx) => {
         }));
 
     if (endpoints.length === 0) {
-        console.info('No accessible channels, returning empty schema with health query only');
+        console.info('No accessible channels');
+        return ctx.json(
+            {
+                errors: [
+                    {
+                        message: 'One or more channels currently unavailable for synchronization.',
+                    },
+                ],
+            },
+            503
+        );
     }
 
-    const yoga = await createGatewayYoga(endpoints);
-    return executeYogaWithContext(yoga, ctx);
+    try {
+        const yoga = await createGatewayYoga(endpoints);
+        return executeYogaWithContext(yoga, ctx);
+    } catch (error) {
+        // Catch errors from schema creation (all channels failed during fetch)
+        // Return 503 to make unresponsive channels indistinguishable from unshared channels
+        if (error instanceof Error && error.message.includes('All data channels unavailable')) {
+            console.warn('All data channels failed during schema fetch');
+            return ctx.json(
+                {
+                    errors: [
+                        {
+                            message: 'One or more channels currently unavailable for synchronization.',
+                        },
+                    ],
+                },
+                503
+            );
+        }
+        // Re-throw unexpected errors
+        throw error;
+    }
 });
 
 export default app;

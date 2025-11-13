@@ -1,7 +1,7 @@
 import { DataChannel, JWTAudience } from '@catalyst/schemas';
-import { env, SELF } from 'cloudflare:test';
+import { env, fetchMock, SELF } from 'cloudflare:test';
 import { beforeEach, afterEach, describe, expect, it } from 'vitest';
-import { generateCatalystToken, TEST_ORG, TEST_USER } from './testUtils';
+import { createMockGraphqlEndpoint, generateCatalystToken, TEST_ORG, TEST_USER } from './testUtils';
 
 const DUMMY_DATA_CHANNELS: DataChannel[] = [
     {
@@ -45,11 +45,23 @@ const teardown = async () => {
 
 describe('JWT Audience Validation Tests', () => {
     beforeEach(async () => {
+        fetchMock.activate();
+        fetchMock.disableNetConnect();
+
+        // Mock the GraphQL endpoints for data channels
+        createMockGraphqlEndpoint('http://localhost:8080', 'type Query { airplanes: String! }', {
+            airplanes: 'Boeing 747',
+        });
+        createMockGraphqlEndpoint('http://localhost:8081', 'type Query { aircraft: String! }', {
+            aircraft: 'Airbus A380',
+        });
+
         await setup();
     });
 
     afterEach(async () => {
         await teardown();
+        fetchMock.deactivate();
     });
 
     describe('Gateway Access with Different Audiences', () => {
@@ -117,17 +129,16 @@ describe('JWT Audience Validation Tests', () => {
                 headers,
             });
 
-            // Gateway returns 200 with empty schema to avoid information disclosure
-            expect(response.status).toBe(200);
-            const data = await response.json();
-            // Empty schema means no data channels are accessible
-            expect(data.data ?? {}).toEqual({});
+            // Gateway returns 401 for invalid audience before GraphQL validation
+            expect(response.status).toBe(401);
+            const data = (await response.json()) as { errors: Array<{ message: string }> };
+            expect(data.errors[0].message).toContain('Unauthorized');
         });
     });
 
     describe('Single-Use Token Creation', () => {
         it('should create single-use tokens with catalyst:datachannel audience', async () => {
-            // STEP 1: Create a gateway token (UI → Gateway authentication)
+            // Create a gateway token (UI → Gateway authentication)
             // This token has 'catalyst:gateway' audience and proves the user has access to 'airplanes1'
             const gatewayToken = await generateCatalystToken(
                 TEST_ORG,
@@ -135,7 +146,7 @@ describe('JWT Audience Validation Tests', () => {
                 JWTAudience.enum['catalyst:gateway']
             );
 
-            // STEP 2: Use gateway token to create single-use token (Gateway → Data Channel)
+            // Use gateway token to create single-use token (Gateway → Data Channel)
             // The API validates the gateway token and creates a NEW token with 'catalyst:datachannel' audience
             // The gateway token acts as a "permission slip" to prove we can create single-use tokens
             const singleUseToken = await env.AUTHX_TOKEN_API.signSingleUseJWT(
@@ -147,7 +158,7 @@ describe('JWT Audience Validation Tests', () => {
             expect(singleUseToken.success).toBe(true);
             expect(singleUseToken.token).toBeDefined();
 
-            // STEP 3: Verify the single-use token has the correct audience
+            // Verify the single-use token has the correct audience
             // Single-use tokens should always have 'catalyst:datachannel' audience (set by the API)
             const jwtDOID = env.JWT_TOKEN_DO.idFromName('default');
             const jwtStub = env.JWT_TOKEN_DO.get(jwtDOID);
@@ -158,7 +169,7 @@ describe('JWT Audience Validation Tests', () => {
         });
 
         it('should prevent single-use tokens from accessing gateway', async () => {
-            // STEP 1: Create a gateway token (UI → Gateway authentication)
+            // Create a gateway token (UI → Gateway authentication)
             // This token has 'catalyst:gateway' audience and proves the user has access to 'airplanes1'
             const gatewayToken = await generateCatalystToken(
                 TEST_ORG,
@@ -166,7 +177,7 @@ describe('JWT Audience Validation Tests', () => {
                 JWTAudience.enum['catalyst:gateway']
             );
 
-            // STEP 2: Use gateway token to create single-use token (Gateway → Data Channel)
+            // Use gateway token to create single-use token (Gateway → Data Channel)
             // The API validates the gateway token and creates a NEW token with 'catalyst:datachannel' audience
             // The gateway token acts as a "permission slip" to prove we can create single-use tokens
             const singleUseToken = await env.AUTHX_TOKEN_API.signSingleUseJWT(
@@ -177,7 +188,7 @@ describe('JWT Audience Validation Tests', () => {
 
             expect(singleUseToken.success).toBe(true);
 
-            // STEP 3: Try to misuse single-use token on gateway (should fail)
+            // Try to misuse single-use token on gateway (should fail)
             // Single-use tokens are meant for data channels, not gateway access
             const gatewayHeaders = new Headers();
             gatewayHeaders.set('Authorization', `Bearer ${singleUseToken.token}`);
@@ -187,7 +198,7 @@ describe('JWT Audience Validation Tests', () => {
                 headers: gatewayHeaders,
             });
 
-            // STEP 4: Verify security boundary enforcement
+            // Verify security boundary enforcement
             // Gateway returns 200 with empty schema to avoid information disclosure
             expect(gatewayResponse.status).toBe(200);
             const gatewayData = await gatewayResponse.json();
@@ -223,7 +234,7 @@ describe('JWT Audience Validation Tests', () => {
         });
 
         it('should reject single-use tokens through validation endpoint', async () => {
-            // STEP 1: Create a gateway token (UI → Gateway authentication)
+            // Create a gateway token (UI → Gateway authentication)
             // This token has 'catalyst:gateway' audience and proves the user has access to 'airplanes1'
             const gatewayToken = await generateCatalystToken(
                 TEST_ORG,
@@ -231,7 +242,7 @@ describe('JWT Audience Validation Tests', () => {
                 JWTAudience.enum['catalyst:gateway']
             );
 
-            // STEP 2: Use gateway token to create single-use token (Gateway → Data Channel)
+            // Use gateway token to create single-use token (Gateway → Data Channel)
             // The API validates the gateway token and creates a NEW token with 'catalyst:datachannel' audience
             // The gateway token acts as a "permission slip" to prove we can create single-use tokens
             const singleUseToken = await env.AUTHX_TOKEN_API.signSingleUseJWT(
@@ -242,7 +253,7 @@ describe('JWT Audience Validation Tests', () => {
 
             expect(singleUseToken.success).toBe(true);
 
-            // STEP 3: Try to validate single-use token through validation endpoint (should fail)
+            // Try to validate single-use token through validation endpoint (should fail)
             // The validation endpoint should reject single-use tokens (only gateway tokens allowed)
             const response = await SELF.fetch('https://data-channel-gateway/validate-tokens', {
                 method: 'POST',
@@ -257,7 +268,7 @@ describe('JWT Audience Validation Tests', () => {
                 ]),
             });
 
-            // STEP 4: Verify validation endpoint enforces audience restrictions
+            // Verify validation endpoint enforces audience restrictions
             // Should return 200 but with valid: false due to wrong audience
             expect(response.status).toBe(200);
             const data = await response.json();

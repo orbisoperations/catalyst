@@ -126,7 +126,8 @@ describe('Schema fetching resilience', () => {
     });
 
     it('should handle all failures with Promise.allSettled', async (ctx) => {
-        // Mock endpoints - one working, one failing
+        // Mock endpoints - all failing
+        // Security: When all channels fail, throw error (returns 503, same as unshared channels)
         const token = await generateCatalystToken(
             'test',
             ['test-claim'],
@@ -139,27 +140,8 @@ describe('Schema fetching resilience', () => {
             { token, endpoint: 'http://failing-endpoint-2/graphql' },
         ];
 
-        const schema = await makeGatewaySchema(endpoints);
-
-        // @ts-expect-error: stiching info is not typed
-        expect(schema.extensions.stitchingInfo.subschemaMap.size).toBe(0);
-
-        // Verify the schema was created (should have the health query)
-        const queryType = schema.getQueryType();
-        expect(queryType).toBeDefined();
-        expect(queryType?.getFields()).toHaveProperty('health');
-
-        // Verify we can execute a query
-        // currently graphql specificaiton defines that if at least on value is not defined, the query should fail
-        // the stiching directive will fail on the "onValidate" query hook
-        // due to the nonExisting field
-        const result = await graphql({
-            schema,
-            source: '{ health, nonExistentField }',
-        });
-
-        expect(result.errors).toBeDefined();
-        expect(result.errors?.length).toBe(1);
+        // Expect error when all channels fail
+        await expect(makeGatewaySchema(endpoints)).rejects.toThrow('All data channels unavailable during schema fetch');
     });
 
     it('should gracefully handle a 500 server error from a data channel', async (ctx) => {
