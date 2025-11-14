@@ -4,7 +4,7 @@ import { decodeJwt } from 'jose';
 import { stitchSchemas } from '@graphql-tools/stitch';
 import { stitchingDirectives } from '@graphql-tools/stitching-directives';
 import { AsyncExecutor, isAsyncIterable, type Executor } from '@graphql-tools/utils';
-import { buildSchema, parse, print } from 'graphql';
+import { buildSchema, parse, print, GraphQLError } from 'graphql';
 import { createYoga } from 'graphql-yoga';
 import { Context, Hono, Next } from 'hono';
 import { Env } from './env';
@@ -279,7 +279,17 @@ const createGatewayYoga = async (endpoints: { token: string; endpoint: string }[
                     // Mask data channel errors to prevent information disclosure
                     // Log the actual error for debugging, but return generic message to client
                     console.warn('GraphQL error masked:', error.message);
-                    return new Error('One or more channels currently unavailable for synchronization.');
+
+                    // Preserve path and locations from original error if it's a GraphQLError
+                    if (error instanceof GraphQLError) {
+                        return new GraphQLError('One or more channels currently unavailable for synchronization.', {
+                            path: error.path,
+                            nodes: error.nodes,
+                            positions: error.positions,
+                        });
+                    }
+
+                    return new GraphQLError('One or more channels currently unavailable for synchronization.');
                 }
 
                 // Allow all other errors (GraphQL validation, etc.) to pass through
