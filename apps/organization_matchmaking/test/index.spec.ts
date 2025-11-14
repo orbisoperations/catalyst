@@ -308,12 +308,12 @@ describe('organization matchmaking worker', () => {
 		// Get the invite from both mailboxes before toggle
 		const senderReadInvite: OrgInvite = await stub.read(invites[1].sender, sentInvites[1].id);
 		const receiverReadInvite: OrgInvite = await stub.read(invites[1].receiver, sentInvites[1].id);
-		expect(senderReadInvite.isActive).toBe(true);
-		expect(receiverReadInvite.isActive).toBe(true);
+		expect(senderReadInvite.isActive).toBe(false);
+		expect(receiverReadInvite.isActive).toBe(false);
 
 		// Toggle the invite
 		const toggledInvite: OrgInvite = await stub.togglePartnership(invites[1].sender, sentInvites[1].id);
-		expect(toggledInvite.isActive).toBe(false);
+		expect(toggledInvite.isActive).toBe(true);
 
 		// Verify the toggle in both mailboxes
 		const receiverMailboxInvites: OrgInvite[] = await stub.list(invites[1].receiver);
@@ -325,17 +325,17 @@ describe('organization matchmaking worker', () => {
 		// Check that only the target invite was updated in both mailboxes
 		for (const invite of receiverMailboxInvites) {
 			if (invite.id === sentInvites[1].id) {
-				expect(invite.isActive).toBe(false);
-			} else {
 				expect(invite.isActive).toBe(true);
+			} else {
+				expect(invite.isActive).toBe(false);
 			}
 		}
 
 		for (const invite of senderMailboxInvites) {
 			if (invite.id === sentInvites[1].id) {
-				expect(invite.isActive).toBe(false);
-			} else {
 				expect(invite.isActive).toBe(true);
+			} else {
+				expect(invite.isActive).toBe(false);
 			}
 		}
 	});
@@ -538,9 +538,9 @@ describe('organization matchmaking worker', () => {
 				throw new Error('Failed to toggle invite');
 			}
 
-			// Verify the toggle
+			// Verify the toggle (starts false, toggles to true)
 			const toggledInvite = response.data as OrgInvite;
-			expect(toggledInvite.isActive).toBe(false);
+			expect(toggledInvite.isActive).toBe(true);
 		});
 
 		it('should return error when token is missing', async () => {
@@ -645,7 +645,7 @@ describe('Invite Management', () => {
 			expect(invite.receiver).toBe(inviteToSend.receiver);
 			expect(invite.message).toBe(inviteToSend.message);
 			expect(invite.status).toBe('pending');
-			expect(invite.isActive).toBe(true);
+			expect(invite.isActive).toBe(false);
 		});
 
 		it('should return error when token is missing', async () => {
@@ -810,7 +810,7 @@ describe('Invite Management', () => {
 				expect(listedInvites[i].receiver).toBe(invites[i].receiver);
 				expect(listedInvites[i].message).toBe(invites[i].message);
 				expect(listedInvites[i].status).toBe('pending');
-				expect(listedInvites[i].isActive).toBe(true);
+				expect(listedInvites[i].isActive).toBe(false);
 			}
 		});
 
