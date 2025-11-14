@@ -105,6 +105,71 @@ describe('gateway integration tests', () => {
         expect(json.errors[0].message).toContain('Unauthorized');
     });
 
+    it('should return 400 for malformed JSON in request body', async () => {
+        fetchMock.activate();
+        fetchMock.disableNetConnect();
+
+        // Create a non-persistent mock for schema fetching only
+        // Malformed JSON fails at Yoga parsing layer, so only the _sdl call happens
+        const endpoint = 'http://localhost:9999';
+        const typeDefs = 'type Query { testField: String! }';
+
+        fetchMock
+            .get(endpoint)
+            .intercept({
+                path: '/graphql',
+                method: 'POST',
+                body: (body) => body.toString().includes('_sdl'),
+            })
+            .reply(200, { data: { _sdl: typeDefs } })
+            .times(1); // Only called once during schema stitching
+
+        // Create and register test channel
+        const testChannel = {
+            id: 'malformed-json-test',
+            name: 'malformed-json-test',
+            endpoint: `${endpoint}/graphql`,
+            accessSwitch: true,
+            description: 'Test channel',
+            creatorOrganization: TEST_ORG,
+        };
+
+        await env.AUTHX_AUTHZED_API.addUserToOrg(TEST_ORG, TEST_USER);
+        await env.AUTHX_AUTHZED_API.addOrgToDataChannel(testChannel.id, TEST_ORG);
+        await env.AUTHX_AUTHZED_API.addDataChannelToOrg(TEST_ORG, testChannel.id);
+        const id = env.DATA_CHANNEL_REGISTRAR_DO.idFromName('default');
+        const stub = env.DATA_CHANNEL_REGISTRAR_DO.get(id);
+        await stub.update(testChannel);
+
+        const token = await generateCatalystToken(TEST_ORG, [testChannel.id], JWTAudience.enum['catalyst:gateway']);
+
+        // Send malformed JSON - this will fail at GraphQL Yoga's parsing layer
+        const response = await SELF.fetch('https://data-channel-gateway/graphql', {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: 'invalid-json-{{{', // Malformed JSON
+        });
+
+        // GraphQL Yoga returns 400 for malformed JSON
+        expect(response.status).toBe(400);
+        const json = await response.json();
+        expect(json.errors).toBeDefined();
+        expect(json.errors[0].message).toContain('POST body sent invalid JSON');
+        expect(json.errors[0].extensions.code).toBe('BAD_REQUEST');
+
+        // Cleanup
+        await stub.delete(testChannel.id);
+        await env.AUTHX_AUTHZED_API.deleteOrgInDataChannel(testChannel.id, TEST_ORG);
+        await env.AUTHX_AUTHZED_API.deleteDataChannelInOrg(TEST_ORG, testChannel.id);
+        await env.AUTHX_AUTHZED_API.deleteUserFromOrg(TEST_ORG, TEST_USER);
+
+        fetchMock.deactivate();
+        fetchMock.enableNetConnect();
+    });
+
     it('should return 503 when token has claims but no accessible channels', async (textCtx) => {
         // Token has claims ['airplanes1'] but no channels are registered
         // Security: This should return 503 (same as unresponsive channels)
@@ -358,6 +423,129 @@ describe('gateway integration tests', () => {
         // Should return unavailable error
         expect(gatewayData.errors).toBeDefined();
         expect(gatewayData.errors[0].message).toContain('One or more channels currently unavailable');
+    });
+
+    it('should handle data channel runtime errors with partial data', async (testContext) => {
+        // Valid auth, both channels accessible during schema stitching,
+        // but one channel returns 500 error during query execution
+        // Expected: 200 OK with partial data + masked error
+
+        fetchMock.activate();
+        fetchMock.disableNetConnect();
+
+        // Use separate channels to avoid conflicts with other tests
+        const channelA: DataChannel = {
+            id: 'runtime-test-a',
+            name: 'runtime-test-a',
+            endpoint: 'http://localhost:9997/graphql',
+            accessSwitch: true,
+            description: 'Test channel A - works',
+            creatorOrganization: TEST_ORG,
+        };
+
+        const channelB: DataChannel = {
+            id: 'runtime-test-b',
+            name: 'runtime-test-b',
+            endpoint: 'http://localhost:9998/graphql',
+            accessSwitch: true,
+            description: 'Test channel B - fails at runtime',
+            creatorOrganization: TEST_ORG,
+        };
+
+        // Channel A: Works correctly during both schema stitching and runtime
+        createMockGraphqlEndpoint(channelA.endpoint, 'type Query { usersFromA: String }', {
+            usersFromA: 'data-from-channel-a',
+        });
+
+        // Channel B: Returns schema successfully during stitching
+        fetchMock
+            .get('http://localhost:9998')
+            .intercept({
+                path: '/graphql',
+                method: 'POST',
+                body: (body) => body.toString().includes('_sdl'),
+            })
+            .reply(200, { data: { _sdl: 'type Query { usersFromB: String }' } })
+            .persist();
+
+        // Channel B: Returns 500 error during actual query execution (runtime)
+        fetchMock
+            .get('http://localhost:9998')
+            .intercept({
+                path: '/graphql',
+                method: 'POST',
+                body: (body) => !body.toString().includes('_sdl') && body.toString().includes('usersFromB'),
+            })
+            .reply(500, 'Internal Server Error')
+            .persist();
+
+        // Register channels (user/org already set up by beforeEach)
+        const id = env.DATA_CHANNEL_REGISTRAR_DO.idFromName('default');
+        const stub = env.DATA_CHANNEL_REGISTRAR_DO.get(id);
+        await stub.update(channelA);
+        await stub.update(channelB);
+
+        // Add permissions (addUserToOrg already done by beforeEach)
+        await env.AUTHX_AUTHZED_API.addOrgToDataChannel(channelA.id, TEST_ORG);
+        await env.AUTHX_AUTHZED_API.addDataChannelToOrg(TEST_ORG, channelA.id);
+        await env.AUTHX_AUTHZED_API.addOrgToDataChannel(channelB.id, TEST_ORG);
+        await env.AUTHX_AUTHZED_API.addDataChannelToOrg(TEST_ORG, channelB.id);
+
+        const token = await generateCatalystToken(
+            TEST_ORG,
+            [channelA.id, channelB.id],
+            JWTAudience.enum['catalyst:gateway'],
+            testContext
+        );
+
+        // Execute query that requests data from both channels
+        const response = await SELF.fetch('https://data-channel-gateway/graphql', {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                query: '{ usersFromA, usersFromB }',
+            }),
+        });
+
+        const json: {
+            data?: { usersFromA?: string; usersFromB?: string | null };
+            errors?: Array<{ message: string; path?: string[] }>;
+        } = await response.json();
+
+        // Should return 200 OK (
+        expect(response.status).toBe(200);
+
+        // Should have partial data from channel A
+        if (json.data) {
+            expect(json.data.usersFromA).toBe('data-from-channel-a');
+            expect(json.data.usersFromB).toBeNull(); // Failed field returns null
+        } else {
+            expect(json.data).toBeDefined(); // Will fail with helpful message
+        }
+
+        // Should have masked error for channel B
+        expect(json.errors).toBeDefined();
+        expect(json.errors!.length).toBeGreaterThan(0);
+        expect(json.errors![0].message).toBe('One or more channels currently unavailable for synchronization.');
+
+        // Path might be preserved from original error
+        if (json.errors![0].path) {
+            expect(json.errors![0].path).toContain('usersFromB');
+        }
+
+        // Cleanup - remove only what we added
+        await stub.delete(channelA.id);
+        await stub.delete(channelB.id);
+        await env.AUTHX_AUTHZED_API.deleteOrgInDataChannel(channelA.id, TEST_ORG);
+        await env.AUTHX_AUTHZED_API.deleteOrgInDataChannel(channelB.id, TEST_ORG);
+        await env.AUTHX_AUTHZED_API.deleteDataChannelInOrg(TEST_ORG, channelA.id);
+        await env.AUTHX_AUTHZED_API.deleteDataChannelInOrg(TEST_ORG, channelB.id);
+
+        fetchMock.deactivate();
+        fetchMock.enableNetConnect();
     });
 
     describe('GraphQL Playground Security', () => {
