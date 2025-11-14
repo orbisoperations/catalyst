@@ -57,8 +57,8 @@ export const timestamp = () =>
         .number()
         .int('Timestamp must be an integer')
         .positive('Timestamp must be positive')
-        .max(
-            Date.now() + 86400 * 365 * 10 * 1000, // 10 years from now in milliseconds
+        .refine(
+            (val) => val <= Date.now() + 86400 * 365 * 10 * 1000, // 10 years from now in milliseconds
             'Timestamp cannot be more than 10 years in the future'
         );
 

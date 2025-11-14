@@ -1,6 +1,5 @@
 import { DurableObject, WorkerEntrypoint } from 'cloudflare:workers';
 import {
-	OrgInviteSchema,
 	OrgInviteStoredResponseSchema,
 	OrgInvite,
 	OrgInviteStatusSchema,
@@ -33,17 +32,17 @@ import { Env } from './env';
 
 export class OrganizationMatchmakingDO extends DurableObject {
 	async send(sender: OrgId, receiver: OrgId, message: string = ''): Promise<OrgInvite> {
-		// Validate entity creation at boundary
-		const newInvite = OrgInviteSchema.parse({
+		// Create invite with validated types (no schema validation needed for internal creation)
+		const newInvite: OrgInvite = {
 			id: crypto.randomUUID(),
 			sender,
 			receiver,
 			status: 'pending',
 			message,
-			isActive: true,
+			isActive: false,
 			createdAt: Date.now(),
 			updatedAt: Date.now(),
-		});
+		};
 
 		await this.ctx.blockConcurrencyWhile(async () => {
 			const senderMailbox = (await this.ctx.storage.get<OrgInvite[]>(sender)) ?? [];
