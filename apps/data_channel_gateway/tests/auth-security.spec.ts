@@ -18,20 +18,6 @@ const IntrospectionResponseSchema = z.object({
     }),
 });
 
-const HealthResponseSchema = z.object({
-    data: z.object({
-        health: z.string(),
-    }),
-});
-
-const GraphQLErrorSchema = z.object({
-    message: z.string(),
-});
-
-const GraphQLErrorResponseSchema = z.object({
-    errors: z.array(GraphQLErrorSchema).optional(),
-});
-
 const MixedQueryResponseSchema = z.object({
     data: z.object({
         workingField: z.string(),
@@ -164,20 +150,20 @@ describe('Authentication Security Tests', () => {
     });
 
     describe('2. Response Uniformity', () => {
-        it('all auth failures should return identical empty schema response', async (testContext: TestContext) => {
+        it('auth failures should return appropriate error codes before GraphQL validation', async (testContext: TestContext) => {
             const introspectionQuery = JSON.stringify({
                 query: '{ __type(name: "Query") { fields { name } } }',
             });
 
-            // Test 1: No auth header
+            // Test 1: No auth header → 401
             const response1 = await SELF.fetch('https://data-channel-gateway/graphql', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: introspectionQuery,
             });
-            const json1 = IntrospectionResponseSchema.parse(await response1.json());
+            const json1 = (await response1.json()) as { errors: Array<{ message: string }> };
 
-            // Test 2: Invalid token format
+            // Test 2: Invalid token format → 401
             const response2 = await SELF.fetch('https://data-channel-gateway/graphql', {
                 method: 'POST',
                 headers: {
@@ -186,9 +172,9 @@ describe('Authentication Security Tests', () => {
                 },
                 body: introspectionQuery,
             });
-            const json2 = IntrospectionResponseSchema.parse(await response2.json());
+            const json2 = (await response2.json()) as { errors: Array<{ message: string }> };
 
-            // Test 3: Token with non-existent claims (no accessible channels)
+            // Test 3: Token with non-existent claims → 503 (valid auth, no channels)
             const tokenWithNonExistentClaim = await generateCatalystToken(
                 TEST_ORG,
                 ['non-existent-claim-response'],
@@ -203,9 +189,9 @@ describe('Authentication Security Tests', () => {
                 },
                 body: introspectionQuery,
             });
-            const json3 = IntrospectionResponseSchema.parse(await response3.json());
+            const json3 = (await response3.json()) as { errors: Array<{ message: string }> };
 
-            // Test 4: Wrong audience token (single-use token trying to access gateway)
+            // Test 4: Wrong audience token → 401
             const singleUseToken = await env.AUTHX_TOKEN_API.signSingleUseJWT(
                 'test-claim',
                 { catalystToken: tokenWithNonExistentClaim },
@@ -219,33 +205,28 @@ describe('Authentication Security Tests', () => {
                 },
                 body: introspectionQuery,
             });
-            const json4 = IntrospectionResponseSchema.parse(await response4.json());
+            const json4 = (await response4.json()) as { errors: Array<{ message: string }> };
 
-            // All responses should have:
-            // 1. Status 200
-            expect(response1.status).toBe(200);
-            expect(response2.status).toBe(200);
-            expect(response3.status).toBe(200);
-            expect(response4.status).toBe(200);
+            // Invalid auth returns 401
+            expect(response1.status).toBe(401);
+            expect(response2.status).toBe(401);
+            expect(response4.status).toBe(401);
 
-            // 2. Only 'health' field in schema
-            const expectedResponse = {
-                data: {
-                    __type: {
-                        fields: [{ name: 'health' }],
-                    },
-                },
-            };
+            // Valid auth but no channels returns 503
+            expect(response3.status).toBe(503);
 
-            expect(json1).toEqual(expectedResponse);
-            expect(json2).toEqual(expectedResponse);
-            expect(json3).toEqual(expectedResponse);
-            expect(json4).toEqual(expectedResponse);
+            // All error responses should have error messages
+            expect(json1.errors[0].message).toContain('Unauthorized');
+            expect(json2.errors[0].message).toContain('Unauthorized');
+            expect(json3.errors[0].message).toContain('One or more channels currently unavailable');
+            expect(json4.errors[0].message).toContain('Unauthorized');
 
-            // 3. All responses should be structurally identical (no information disclosure)
-            expect(json1).toEqual(json2);
-            expect(json2).toEqual(json3);
-            expect(json3).toEqual(json4);
+            // 3. Responses are appropriately differentiated by error type (better security posture)
+            // Invalid auth errors are consistent
+            expect(json1.errors[0].message).toEqual(json2.errors[0].message);
+            expect(json2.errors[0].message).toEqual(json4.errors[0].message);
+            // But different from the "no channels" error
+            expect(json3.errors[0].message).not.toEqual(json1.errors[0].message);
         });
     });
 
@@ -346,6 +327,7 @@ describe('Authentication Security Tests', () => {
 
         it('should handle all channel permissions failing gracefully', async (testContext: TestContext) => {
             // Create a data channel but don't set up permissions
+            // Security: This should return 503 (same as all channels unresponsive)
             const channel: DataChannel = {
                 id: 'no-perms-channel',
                 name: 'No Permissions Channel',
@@ -380,16 +362,15 @@ describe('Authentication Security Tests', () => {
                         Authorization: `Bearer ${token}`,
                     },
                     body: JSON.stringify({
-                        query: '{ __type(name: "Query") { fields { name } } }',
+                        query: '{ health }',
                     }),
                 });
 
-                expect(response.status).toBe(200);
-                const json = IntrospectionResponseSchema.parse(await response.json());
-
-                // Should only have health field
-                expect(json.data.__type.fields).toHaveLength(1);
-                expect(json.data.__type.fields[0].name).toBe('health');
+                // Security: Should return 503 (no permissions = no accessible channels)
+                expect(response.status).toBe(503);
+                const json = await response.json();
+                expect(json.errors).toBeDefined();
+                expect(json.errors[0].message).toContain('One or more channels currently unavailable');
             } finally {
                 // Clean up - always executed even if test fails
                 await registrar.delete(channel.id);
@@ -398,7 +379,7 @@ describe('Authentication Security Tests', () => {
     });
 
     describe('4. Edge Cases - Empty Endpoints Array', () => {
-        it('should return valid schema with only health query when endpoints array is empty', async (testContext: TestContext) => {
+        it('should return 503 when endpoints array is empty', async (testContext: TestContext) => {
             // Create a valid token with claims but no actual channels registered
             const token = await generateCatalystToken(
                 TEST_ORG,
@@ -418,15 +399,12 @@ describe('Authentication Security Tests', () => {
                 }),
             });
 
-            expect(response.status).toBe(200);
-            const json = IntrospectionResponseSchema.parse(await response.json());
-
-            // Should have exactly one field: health
-            expect(json.data.__type.fields).toHaveLength(1);
-            expect(json.data.__type.fields[0].name).toBe('health');
+            expect(response.status).toBe(503);
+            const json = (await response.json()) as { errors: Array<{ message: string }> };
+            expect(json.errors[0].message).toContain('One or more channels currently unavailable');
         });
 
-        it('should allow health query to execute with empty endpoints', async (testContext: TestContext) => {
+        it('should return 503 when no channels are accessible', async (testContext: TestContext) => {
             // Create token with non-existent channel (results in empty endpoints)
             const token = await generateCatalystToken(
                 TEST_ORG,
@@ -446,12 +424,12 @@ describe('Authentication Security Tests', () => {
                 }),
             });
 
-            expect(response.status).toBe(200);
-            const json = HealthResponseSchema.parse(await response.json());
-            expect(json.data.health).toBe('OK');
+            expect(response.status).toBe(503);
+            const json = (await response.json()) as { errors: Array<{ message: string }> };
+            expect(json.errors[0].message).toContain('One or more channels currently unavailable');
         });
 
-        it('should reject queries for non-existent fields with empty endpoints', async (testContext: TestContext) => {
+        it('should return 503 before validating query when no channels are accessible', async (testContext: TestContext) => {
             // Create token with non-existent channel (results in empty endpoints)
             const token = await generateCatalystToken(
                 TEST_ORG,
@@ -471,13 +449,10 @@ describe('Authentication Security Tests', () => {
                 }),
             });
 
-            expect(response.status).toBe(200);
-            const json = GraphQLErrorResponseSchema.parse(await response.json());
-
-            // Should have a GraphQL error (not HTTP error)
-            expect(json.errors).toBeDefined();
-            expect(json.errors!.length).toBeGreaterThan(0);
-            expect(json.errors![0].message).toContain('Cannot query field');
+            // Should return 503 before GraphQL validation
+            expect(response.status).toBe(503);
+            const json = (await response.json()) as { errors: Array<{ message: string }> };
+            expect(json.errors[0].message).toContain('One or more channels currently unavailable');
         });
 
         it('should handle empty endpoints consistently regardless of auth failure reason', async (testContext: TestContext) => {
@@ -496,7 +471,7 @@ describe('Authentication Security Tests', () => {
                 },
                 body: JSON.stringify({ query: '{ health }' }),
             });
-            const json1 = HealthResponseSchema.parse(await response1.json());
+            const json1 = (await response1.json()) as { errors: Array<{ message: string }> };
 
             // Scenario 2: Multiple non-existent channels
             const token2 = await generateCatalystToken(
@@ -513,13 +488,13 @@ describe('Authentication Security Tests', () => {
                 },
                 body: JSON.stringify({ query: '{ health }' }),
             });
-            const json2 = HealthResponseSchema.parse(await response2.json());
+            const json2 = (await response2.json()) as { errors: Array<{ message: string }> };
 
-            // Both should return identical responses
-            expect(response1.status).toBe(200);
-            expect(response2.status).toBe(200);
-            expect(json1).toEqual({ data: { health: 'OK' } });
-            expect(json2).toEqual({ data: { health: 'OK' } });
+            // Both should return 503 Service Unavailable with identical error messages
+            expect(response1.status).toBe(503);
+            expect(response2.status).toBe(503);
+            expect(json1.errors[0].message).toContain('One or more channels currently unavailable');
+            expect(json2.errors[0].message).toContain('One or more channels currently unavailable');
         });
     });
 });

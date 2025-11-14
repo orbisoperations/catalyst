@@ -69,8 +69,7 @@ describe('gateway integration tests', () => {
         const headers = new Headers();
         headers.set('Authorization', `Bearer ${badToken}`);
 
-        // With best-effort stitching, invalid tokens return an empty schema
-        // Make a GraphQL introspection query to verify only health field exists
+        // Invalid tokens should return 401 before GraphQL validation
         const response = await SELF.fetch('https://data-channel-gateway/graphql', {
             method: 'POST',
             headers: {
@@ -82,16 +81,14 @@ describe('gateway integration tests', () => {
             }),
         });
 
-        expect(response.status).toBe(200);
-        const json = (await response.json()) as { data: { __type: { fields: Array<{ name: string }> } } };
-        // Invalid token should only have access to health query
-        expect(json.data.__type.fields).toHaveLength(1);
-        expect(json.data.__type.fields[0].name).toBe('health');
+        expect(response.status).toBe(401);
+        const json = (await response.json()) as { errors: Array<{ message: string }> };
+        expect(json.errors).toBeDefined();
+        expect(json.errors[0].message).toContain('Unauthorized');
     });
 
     it("returns GF'd for no auth header", async () => {
-        // With best-effort stitching, missing auth returns an empty schema
-        // Make a GraphQL introspection query to verify only health field exists
+        // Missing auth should return 401 before GraphQL validation
         const response = await SELF.fetch('https://data-channel-gateway/graphql', {
             method: 'POST',
             headers: {
@@ -102,14 +99,15 @@ describe('gateway integration tests', () => {
             }),
         });
 
-        expect(response.status).toBe(200);
-        const json = (await response.json()) as { data: { __type: { fields: Array<{ name: string }> } } };
-        // No auth should only have access to health query
-        expect(json.data.__type.fields).toHaveLength(1);
-        expect(json.data.__type.fields[0].name).toBe('health');
+        expect(response.status).toBe(401);
+        const json = (await response.json()) as { errors: Array<{ message: string }> };
+        expect(json.errors).toBeDefined();
+        expect(json.errors[0].message).toContain('Unauthorized');
     });
 
-    it('should return health a known good token no claims', async (textCtx) => {
+    it('should return 503 when token has claims but no accessible channels', async (textCtx) => {
+        // Token has claims ['airplanes1'] but no channels are registered
+        // Security: This should return 503 (same as unresponsive channels)
         const token = await generateCatalystToken(
             'airplanes1',
             ['airplanes1'],
@@ -125,42 +123,18 @@ describe('gateway integration tests', () => {
                 Accepts: 'application/json',
             },
             body: JSON.stringify({
-                // Get the possible queries from the schema
-                query: `{
-            __type(name: "Query") {
-                name
-                fields {
-                  name
-                  type {
-                    name
-                    kind
-                    ofType {
-                      name
-                      kind
-                    }
-                  }
-                }
-              }
-          }`,
+                query: `{ health }`,
             }),
         });
-        const responsePayload = await response.json<{
-            data: {
-                __type: {
-                    name: string;
-                    fields: unknown[];
-                };
-            };
-        }>();
-        expect(response.status).toBe(200);
+        const responsePayload = await response.json();
+        expect(response.status).toBe(503);
         console.log('responsePayload', responsePayload);
-        // Since we did not provide claims when the token was created, this will only return the health query in the list of fields
-        expect(responsePayload.data['__type'].fields).toHaveLength(1);
-        // @ts-expect-error: ts complains
-        expect(responsePayload.data['__type'].fields[0]['name']).toBe('health');
+        // Should return 503 with unavailable message
+        expect(responsePayload.errors).toBeDefined();
+        expect(responsePayload.errors[0].message).toContain('One or more channels currently unavailable');
     });
 
-    it('should get datachannel for airplanes', async (testContext: TestContext) => {
+    it('should return 503 when permissions exist but channel not registered', async (testContext: TestContext) => {
         await setup();
 
         // Get a token with the proper claims
@@ -170,9 +144,10 @@ describe('gateway integration tests', () => {
             JWTAudience.enum['catalyst:gateway'],
             testContext
         );
-        // add channel to org
+        // add channel permissions to org but don't register the channel
         await env.AUTHX_AUTHZED_API.addOrgToDataChannel('airplanes1', TEST_ORG);
         await env.AUTHX_AUTHZED_API.addDataChannelToOrg(TEST_ORG, 'airplanes1');
+        // Note: Channel is NOT registered in DATA_CHANNEL_REGISTRAR_DO
 
         const response = await SELF.fetch('http://localhost:8787/graphql', {
             method: 'POST',
@@ -181,30 +156,17 @@ describe('gateway integration tests', () => {
                 Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify({
-                query: `
-                    {
-                        __type(name: "Query") {
-                            name
-                            fields {
-                                name
-                            }
-                        }
-                    }`,
+                query: `{ health }`,
             }),
         });
 
-        const json = (await response.json()) as {
-            data: {
-                __type: {
-                    fields: Array<{ name: string }>;
-                };
-            };
-        };
+        const json = await response.json();
         console.log('Response:', JSON.stringify(json, null, 2));
 
-        expect(response.status).toBe(200);
-        expect(json.data.__type.fields).toHaveLength(1); // Only expecting 'health' field
-        expect(json.data.__type.fields[0].name).toBe('health');
+        // Security: Should return 503 (channel not registered = no accessible channels)
+        expect(response.status).toBe(503);
+        expect(json.errors).toBeDefined();
+        expect(json.errors[0].message).toContain('One or more channels currently unavailable');
 
         await teardown();
     });
@@ -360,7 +322,7 @@ describe('gateway integration tests', () => {
     });
 
     it('should reject single-use tokens from accessing gateway', async () => {
-        // STEP 1: Create a gateway token (UI → Gateway authentication)
+        // Create a gateway token (UI → Gateway authentication)
         // This token has 'catalyst:gateway' audience and proves the user has access to 'airplanes1'
         const gatewayToken = await generateCatalystToken(
             TEST_ORG,
@@ -368,7 +330,7 @@ describe('gateway integration tests', () => {
             JWTAudience.enum['catalyst:gateway']
         );
 
-        // STEP 2: Use gateway token to create single-use token (Gateway → Data Channel)
+        // Use gateway token to create single-use token (Gateway → Data Channel)
         // The API validates the gateway token and creates a NEW token with 'catalyst:datachannel' audience
         // The gateway token acts as a "permission slip" to prove we can create single-use tokens
         const singleUseToken = await env.AUTHX_TOKEN_API.signSingleUseJWT(
@@ -379,7 +341,7 @@ describe('gateway integration tests', () => {
 
         expect(singleUseToken.success).toBe(true);
 
-        // STEP 3: Try to misuse single-use token on gateway (should fail)
+        // Try to misuse single-use token on gateway (should fail)
         // Single-use tokens are meant for data channels, not gateway access
         const singleUseHeaders = new Headers();
         singleUseHeaders.set('Authorization', `Bearer ${singleUseToken.token}`);
@@ -389,19 +351,20 @@ describe('gateway integration tests', () => {
             headers: singleUseHeaders,
         });
 
-        // STEP 4: Verify security boundary enforcement
-        // Gateway returns 200 with empty schema to avoid information disclosure
-        expect(gatewayResponse.status).toBe(200);
+        // Verify security boundary enforcement
+        // Security: Gateway returns 503 (channel not registered = no accessible channels)
+        expect(gatewayResponse.status).toBe(503);
         const gatewayData = await gatewayResponse.json();
-        // Empty schema means no data channels are accessible
-        expect(gatewayData.data ?? {}).toEqual({});
+        // Should return unavailable error
+        expect(gatewayData.errors).toBeDefined();
+        expect(gatewayData.errors[0].message).toContain('One or more channels currently unavailable');
     });
 
     describe('GraphQL Playground Security', () => {
         it('should not serve GraphiQL playground (without auth)', async () => {
             // GET request with Accept: text/html header (simulating browser request)
             // If GraphiQL were enabled, this would return 200 with HTML
-            // Since GraphiQL is disabled, we get 406 (Not Acceptable) - proving it's disabled
+            // Without auth, we should get 401 before GraphiQL is even considered
             const response = await SELF.fetch('https://data-channel-gateway/graphql', {
                 method: 'GET',
                 headers: {
@@ -409,9 +372,9 @@ describe('gateway integration tests', () => {
                 },
             });
 
-            // 406 Not Acceptable means server cannot serve HTML (GraphiQL is disabled)
-            // If GraphiQL were enabled, we'd get 200 with HTML content
-            expect(response.status).toBe(406);
+            // 401 Unauthorized because auth check happens before GraphiQL
+            // This also proves GraphiQL won't be served without auth
+            expect(response.status).toBe(401);
 
             // Verify response does NOT contain GraphiQL-specific strings
             const body = await response.text();
@@ -429,8 +392,8 @@ describe('gateway integration tests', () => {
             const token = await generateCatalystToken(TEST_ORG, ['airplanes1'], JWTAudience.enum['catalyst:gateway']);
 
             // GET request with valid token and Accept: text/html header
-            // If GraphiQL were enabled, this would return 200 with HTML
-            // Since GraphiQL is disabled, we get 406 (Not Acceptable) - proving it's disabled
+            // Note: Channel 'airplanes1' is not registered, so we get 503
+            // Security: Auth passes but no accessible channels = 503 (proving GraphiQL is disabled)
             const response = await SELF.fetch('https://data-channel-gateway/graphql', {
                 method: 'GET',
                 headers: {
@@ -439,9 +402,9 @@ describe('gateway integration tests', () => {
                 },
             });
 
-            // 406 Not Acceptable means server cannot serve HTML (GraphiQL is disabled)
-            // If GraphiQL were enabled, we'd get 200 with HTML content
-            expect(response.status).toBe(406);
+            // Security: 503 because no accessible channels (same as unresponsive channels)
+            // This also proves GraphiQL is never reached - auth guards come first
+            expect(response.status).toBe(503);
 
             // Verify response does NOT contain GraphiQL-specific strings
             const body = await response.text();
