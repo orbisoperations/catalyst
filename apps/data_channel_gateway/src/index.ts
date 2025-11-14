@@ -253,7 +253,11 @@ const createGatewayYoga = async (endpoints: { token: string; endpoint: string }[
         schema: await makeGatewaySchema(endpoints),
         graphiql: false, // Disable GraphQL playground for security
         maskedErrors: {
-            maskError: (error) => {
+            maskError: (error: unknown): Error => {
+                // Type guard: ensure error is an Error instance
+                if (!(error instanceof Error)) {
+                    return new Error(String(error));
+                }
                 // Suppress "Cannot query field" errors - these happen when users query
                 // fields from channels they don't have access to
                 if (error.message.includes('Cannot query field')) {

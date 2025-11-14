@@ -396,4 +396,62 @@ describe('gateway integration tests', () => {
         // Empty schema means no data channels are accessible
         expect(gatewayData.data ?? {}).toEqual({});
     });
+
+    describe('GraphQL Playground Security', () => {
+        it('should not serve GraphiQL playground (without auth)', async () => {
+            // GET request with Accept: text/html header (simulating browser request)
+            // If GraphiQL were enabled, this would return 200 with HTML
+            // Since GraphiQL is disabled, we get 406 (Not Acceptable) - proving it's disabled
+            const response = await SELF.fetch('https://data-channel-gateway/graphql', {
+                method: 'GET',
+                headers: {
+                    Accept: 'text/html',
+                },
+            });
+
+            // 406 Not Acceptable means server cannot serve HTML (GraphiQL is disabled)
+            // If GraphiQL were enabled, we'd get 200 with HTML content
+            expect(response.status).toBe(406);
+
+            // Verify response does NOT contain GraphiQL-specific strings
+            const body = await response.text();
+            expect(body).not.toContain('graphiql');
+            expect(body).not.toContain('GraphQL Playground');
+            expect(body).not.toContain('graphiql-react');
+            expect(body).not.toContain('graphiql.css');
+            expect(body).not.toContain('graphiql.js');
+            expect(body).not.toContain('<!DOCTYPE html>');
+            expect(body).not.toContain('<html>');
+        });
+
+        it('should not serve GraphiQL playground (with valid token)', async () => {
+            // Generate a valid token
+            const token = await generateCatalystToken(TEST_ORG, ['airplanes1'], JWTAudience.enum['catalyst:gateway']);
+
+            // GET request with valid token and Accept: text/html header
+            // If GraphiQL were enabled, this would return 200 with HTML
+            // Since GraphiQL is disabled, we get 406 (Not Acceptable) - proving it's disabled
+            const response = await SELF.fetch('https://data-channel-gateway/graphql', {
+                method: 'GET',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    Accept: 'text/html',
+                },
+            });
+
+            // 406 Not Acceptable means server cannot serve HTML (GraphiQL is disabled)
+            // If GraphiQL were enabled, we'd get 200 with HTML content
+            expect(response.status).toBe(406);
+
+            // Verify response does NOT contain GraphiQL-specific strings
+            const body = await response.text();
+            expect(body).not.toContain('graphiql');
+            expect(body).not.toContain('GraphQL Playground');
+            expect(body).not.toContain('graphiql-react');
+            expect(body).not.toContain('graphiql.css');
+            expect(body).not.toContain('graphiql.js');
+            expect(body).not.toContain('<!DOCTYPE html>');
+            expect(body).not.toContain('<html>');
+        });
+    });
 });
