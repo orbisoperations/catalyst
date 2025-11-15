@@ -1,7 +1,5 @@
 'use client';
 import { APIKeyText, EditButton, ErrorCard, OrbisBadge, OrbisButton, TrashButton } from '@/components/elements';
-import { DetailedView } from '@/components/layouts';
-import { navigationItems } from '@/utils/nav.utils';
 import { Card, CardBody, CardHeader } from '@chakra-ui/card';
 import { Box, Flex, Grid, Heading, Stack, StackDivider, Text } from '@chakra-ui/layout';
 import {
@@ -81,12 +79,19 @@ export default function DataChannelDetailsComponent({
     }, []);
     useEffect(fetchChannelDetails, [token]);
 
+    if (!channel && !hasError) {
+        return (
+            <Flex justify="center" align="center" minH="400px">
+                <Text>Loading...</Text>
+            </Flex>
+        );
+    }
+
     return (
-        <DetailedView
-            showspinner={!channel && !hasError}
-            actions={
-                !hasError && channel && channel.creatorOrganization === user?.custom.org ? (
-                    <Flex gap={10}>
+        <>
+            <Flex direction="column" gap={5}>
+                {!hasError && channel && channel.creatorOrganization === user?.custom.org && (
+                    <Flex gap={10} justifyContent="flex-end">
                         <Flex gap={2} align={'center'}>
                             <Switch
                                 colorScheme="green"
@@ -111,25 +116,8 @@ export default function DataChannelDetailsComponent({
                             <TrashButton onClick={onOpen} />
                         </Flex>
                     </Flex>
-                ) : (
-                    <></>
-                )
-            }
-            headerTitle={{
-                adjacent:
-                    !channel?.creatorOrganization === (user?.custom.org || '') ? (
-                        // TODO: Enable Shared with you badge
-                        <OrbisBadge> Shared with you </OrbisBadge>
-                    ) : (
-                        <></>
-                    ),
-                text: channel ? 'Channel: ' + channel.name : '',
-            }}
-            subtitle={channel?.description}
-            topbaractions={navigationItems}
-            topbartitle="Data Channel Details"
-        >
-            <div>
+                )}
+                <div>
                 <div id="modals">
                     <div id="delete-modal">
                         <Modal isOpen={isOpen} onClose={onClose}>
@@ -417,6 +405,7 @@ export default function DataChannelDetailsComponent({
                     </Grid>
                 )}
             </div>
-        </DetailedView>
+            </Flex>
+        </>
     );
 }

@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { OrbisProvider } from '@/components/utils';
+import { AppLayout } from '@/components/layouts/AppLayout';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -21,7 +22,9 @@ export default function RootLayout({
         <html lang="en">
             <body className={inter.className}>
                 <UserProvider>
-                    <OrbisProvider>{children}</OrbisProvider>
+                    <OrbisProvider>
+                        <AppLayout>{children}</AppLayout>
+                    </OrbisProvider>
                 </UserProvider>
             </body>
         </html>

@@ -1,6 +1,4 @@
 'use client';
-import { ListView } from '@/components/layouts';
-import { navigationItems } from '@/utils/nav.utils';
 import { ComplianceResult, DataChannel } from '@catalyst/schemas';
 import { Flex } from '@chakra-ui/layout';
 import {
@@ -39,6 +37,7 @@ import {
     OrbisTable,
 } from '@/components/elements';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useEffect, useState, useCallback } from 'react';
 import { useUser } from '../contexts/User/UserContext';
 import { canUserCheckCompliance, checkCompliance } from '@/app/actions/compliance';
@@ -55,7 +54,7 @@ import {
 import { SearchIcon, PlusIcon, ArrowDownWideNarrowIcon, FunnelIcon } from 'lucide-react';
 import { DetailedComplianceResult } from './DetailedComplianceResult';
 import { ComplianceStatusBadge } from './ComplianceStatus';
-import { EllipsisVerticalIcon } from '@heroicons/react/24/outline';
+import { EllipsisVerticalIcon, CheckCircleIcon, MinusCircleIcon } from '@heroicons/react/24/outline';
 import { TrashIcon } from '@heroicons/react/24/outline';
 type ListChannelsProps = {
     listChannels: (token: string) => Promise<DataChannel[]>;
@@ -346,175 +345,200 @@ export default function DataChannelListComponents({ listChannels, deleteChannel,
     }
 
     // TODO: Update to use the dynamic organization id
+    if (isLoading || channels === null) {
+        return (
+            <Flex justify="center" align="center" minH="400px">
+                <Spinner size="xl" />
+            </Flex>
+        );
+    }
+
     return (
         <>
-            <ListView
-                showspinner={isLoading || channels === null}
-                topbaractions={navigationItems}
-                positionChildren="bottom"
-                table={
-                    hasError ? (
-                        <ErrorCard
-                            title="Error"
-                            message="An error occurred while fetching the channels. Please try again later."
-                            retry={fetchChannels}
-                        />
-                    ) : (
-                        <Flex gap={5} direction={'column'}>
-                            <Card className="p-4">
-                                <Flex className="border-none" justify={'space-between'} align={'center'}>
-                                    <div className="w-[336px]">
-                                        <TextInputAndButton
-                                            value={search}
-                                            onChange={setSearch}
-                                            size={'medium'}
-                                            state={'default'}
+            {hasError ? (
+                <ErrorCard
+                    title="Error"
+                    message="An error occurred while fetching the channels. Please try again later."
+                    retry={fetchChannels}
+                />
+            ) : (
+                <Flex gap={5} direction={'column'}>
+                    <Card className="p-4">
+                        <Flex className="border-none" justify={'space-between'} align={'center'}>
+                            <div className="w-[336px]">
+                                <TextInputAndButton
+                                    value={search}
+                                    onChange={setSearch}
+                                    size={'medium'}
+                                    state={'default'}
+                                >
+                                    <TextInputAndButton.Container>
+                                        <TextInputAndButton.Input placeholder={'Search by name'} />
+                                        <TextInputAndButton.Button
+                                            onClick={() => filterChannels(filterMode, search)}
+                                            aria-label="Search"
                                         >
-                                            <TextInputAndButton.Container>
-                                                <TextInputAndButton.Input placeholder={'Search by name'} />
-                                                <TextInputAndButton.Button
-                                                    onClick={() => filterChannels(filterMode, search)}
-                                                    aria-label="Search"
-                                                >
-                                                    <SearchIcon size={16} />
-                                                </TextInputAndButton.Button>
-                                            </TextInputAndButton.Container>
-                                        </TextInputAndButton>
-                                    </div>
-                                    <Flex gap={3}>
-                                        <TertiaryIconButton>
-                                            <ArrowDownWideNarrowIcon size={16} />
-                                        </TertiaryIconButton>
-                                        <TertiaryIconButton>
-                                            <FunnelIcon size={16} />
-                                        </TertiaryIconButton>
-                                        <PrimaryButton
-                                            showIcon
-                                            icon={<PlusIcon size={16} />}
-                                            onClick={onCreateModalOpen}
+                                            <SearchIcon size={16} />
+                                        </TextInputAndButton.Button>
+                                    </TextInputAndButton.Container>
+                                </TextInputAndButton>
+                            </div>
+                            <Flex gap={3}>
+                                <TertiaryIconButton>
+                                    <ArrowDownWideNarrowIcon size={16} />
+                                </TertiaryIconButton>
+                                <TertiaryIconButton>
+                                    <FunnelIcon size={16} />
+                                </TertiaryIconButton>
+                                <PrimaryButton
+                                    showIcon
+                                    icon={<PlusIcon size={16} />}
+                                    onClick={onCreateModalOpen}
+                                >
+                                    Create
+                                </PrimaryButton>
+                            </Flex>
+                        </Flex>
+                        <div className="w-full overflow-x-auto mt-4">
+                            <DataTable size="medium" interactive={true} className="w-full">
+                                <DataTable.Header>
+                                    <DataTable.Row>
+                                        <DataTable.HeaderCell
+                                            sortable
+                                            sortDirection={sortColumn === 'name' ? sortDirection : null}
+                                            onSort={() => handleSort('name')}
+                                            className="min-w-[200px] max-w-[200px]"
                                         >
-                                            Create
-                                        </PrimaryButton>
-                                    </Flex>
-                                </Flex>
-                                <div className="w-full overflow-x-auto mt-4">
-                                    <DataTable size="medium" interactive={true} className="w-full">
-                                        <DataTable.Header>
-                                            <DataTable.Row>
-                                                <DataTable.HeaderCell
-                                                    sortable
-                                                    sortDirection={sortColumn === 'name' ? sortDirection : null}
-                                                    onSort={() => handleSort('name')}
-                                                    className="min-w-[200px] max-w-[200px]"
+                                            Data channel
+                                        </DataTable.HeaderCell>
+                                        <DataTable.HeaderCell
+                                            sortable
+                                            sortDirection={sortColumn === 'description' ? sortDirection : null}
+                                            onSort={() => handleSort('description')}
+                                            className="min-w-[300px] max-w-[300px]"
+                                        >
+                                            Description
+                                        </DataTable.HeaderCell>
+                                        <DataTable.HeaderCell
+                                            sortable
+                                            sortDirection={sortColumn === 'organization' ? sortDirection : null}
+                                            onSort={() => handleSort('organization')}
+                                            className="min-w-[150px]"
+                                        >
+                                            Owned by
+                                        </DataTable.HeaderCell>
+                                        <DataTable.HeaderCell
+                                            sortable
+                                            sortDirection={sortColumn === 'status' ? sortDirection : null}
+                                            onSort={() => handleSort('status')}
+                                            className="min-w-[120px]"
+                                        >
+                                            Status
+                                        </DataTable.HeaderCell>
+                                        <DataTable.HeaderCell alignment="center" className="min-w-[120px]">
+                                            Compliance
+                                        </DataTable.HeaderCell>
+                                    </DataTable.Row>
+                                </DataTable.Header>
+                                <DataTable.Body>
+                                    {channels && channels.length > 0
+                                        ? getSortedChannels(channels).map((channel) => (
+                                            <DataTable.Row 
+                                                key={channel.id}
+                                            >
+                                                <div 
+                                                    onClick={() => router.push(`/channels/${channel.id}`)}
+                                                    className="contents cursor-pointer [&>*]:hover:bg-gray-50 [&>*]:transition-colors"
                                                 >
-                                                    Data channel
-                                                </DataTable.HeaderCell>
-                                                <DataTable.HeaderCell
-                                                    sortable
-                                                    sortDirection={sortColumn === 'description' ? sortDirection : null}
-                                                    onSort={() => handleSort('description')}
-                                                    className="min-w-[300px] max-w-[300px]"
-                                                >
-                                                    Description
-                                                </DataTable.HeaderCell>
-                                                <DataTable.HeaderCell
-                                                    sortable
-                                                    sortDirection={sortColumn === 'organization' ? sortDirection : null}
-                                                    onSort={() => handleSort('organization')}
-                                                    className="min-w-[150px]"
-                                                >
-                                                    Owned by
-                                                </DataTable.HeaderCell>
-                                                <DataTable.HeaderCell
-                                                    sortable
-                                                    sortDirection={sortColumn === 'status' ? sortDirection : null}
-                                                    onSort={() => handleSort('status')}
-                                                    className="min-w-[120px]"
-                                                >
-                                                    Status
-                                                </DataTable.HeaderCell>
-                                                <DataTable.HeaderCell alignment="center" className="min-w-[120px]">
-                                                    Compliance
-                                                </DataTable.HeaderCell>
-                                            </DataTable.Row>
-                                        </DataTable.Header>
-                                        <DataTable.Body>
-                                            {channels && channels.length > 0
-                                                ? getSortedChannels(channels).map((channel) => (
-                                                    <DataTable.Row 
-                                                        key={channel.id}
+                                                    <DataTable.Cell
+                                                        alignment="left"
+                                                        className="min-w-[200px] max-w-[200px]"
                                                     >
-                                                        <div 
-                                                            onClick={() => router.push(`/channels/${channel.id}`)}
-                                                            className="contents cursor-pointer [&>*]:hover:bg-gray-50 [&>*]:transition-colors"
+                                                        <div className="truncate" title={channel.name}>
+                                                            {channel.name}
+                                                        </div>
+                                                    </DataTable.Cell>
+                                                    <DataTable.Cell
+                                                        alignment="left"
+                                                        className="min-w-[300px] max-w-[300px]"
+                                                    >
+                                                        <div
+                                                            className="truncate"
+                                                            title={channel.description || '-'}
                                                         >
-                                                            <DataTable.Cell
-                                                                alignment="left"
-                                                                className="min-w-[200px] max-w-[200px]"
-                                                            >
-                                                                <div className="truncate" title={channel.name}>
-                                                                    {channel.name}
-                                                                </div>
-                                                            </DataTable.Cell>
-                                                            <DataTable.Cell
-                                                                alignment="left"
-                                                                className="min-w-[300px] max-w-[300px]"
-                                                            >
-                                                                <div
-                                                                    className="truncate"
-                                                                    title={channel.description || '-'}
-                                                                >
-                                                                    {channel.description || '-'}
-                                                                </div>
-                                                            </DataTable.Cell>
-                                                            <DataTable.Cell 
-                                                                alignment="left" 
-                                                                className="min-w-[150px]"
+                                                            {channel.description || '-'}
+                                                        </div>
+                                                    </DataTable.Cell>
+                                                    <DataTable.Cell 
+                                                        alignment="left" 
+                                                        className="min-w-[150px]"
+                                                    >
+                                                        {channel.creatorOrganization === user?.custom.org ? (
+                                                            <>
+                                                                {channel.creatorOrganization}
+                                                                {' (you)'}
+                                                            </>
+                                                        ) : (
+                                                            <Link 
+                                                                href={`/partners/${channel.creatorOrganization}`}
+                                                                style={{
+                                                                    color: '#3182ce',
+                                                                    textDecoration: 'none',
+                                                                }}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                }}
                                                             >
                                                                 {channel.creatorOrganization}
-                                                                {channel.creatorOrganization === user?.custom.org &&
-                                                                    ' (you)'}
-                                                            </DataTable.Cell>
-                                                            <DataTable.Cell alignment="left">
-                                                                {channel.accessSwitch ? (
-                                                                    <Badges style="positive">Operational</Badges>
-                                                                ) : (
-                                                                    <Badges style="default">Disabled</Badges>
-                                                                )}
-                                                            </DataTable.Cell>
-                                                            <DataTable.Cell alignment="center">
-                                                                <ComplianceStatusBadge status={channel.lastComplianceResult?.status} />
-                                                            </DataTable.Cell>
-                                                        </div>
-                                                    </DataTable.Row>
-                                                ))
-                                                : null}
-                                        </DataTable.Body>
-                                    </DataTable>
-                                    {channels && channels.length === 0 && renderNoData(search.trim() !== '')}
-                                </div>
-                                {!isLoading && channels !== null && (
-                                    <div className="space-y-4 mt-4">
-                                        <Pagination
-                                            itemsPerPage={10}
-                                            onItemsPerPageChange={function Xs() { }}
-                                            onPageChange={function Xs() { }}
-                                            selected={1}
-                                            showMoreLeft
-                                            showMoreRight
-                                            showResultCount
-                                            showSelectCount
-                                            totalResults={channels.length}
-                                        />
-                                    </div>
-                                )}
-                            </Card>
-                        </Flex>
-                    )
-                }
-                topbartitle="Data Channels"
-            >
-            </ListView>
+                                                            </Link>
+                                                        )}
+                                                    </DataTable.Cell>
+                                                    <DataTable.Cell alignment="left">
+                                                        {channel.accessSwitch ? (
+                                                            <Badges style="positive">
+                                                                <Flex alignItems="center" gap={1.5}>
+                                                                    <CheckCircleIcon width={16} height={16} />
+                                                                    Operational
+                                                                </Flex>
+                                                            </Badges>
+                                                        ) : (
+                                                            <Badges style="default">
+                                                                <Flex alignItems="center" gap={1.5}>
+                                                                    <MinusCircleIcon width={16} height={16} />
+                                                                    Disabled
+                                                                </Flex>
+                                                            </Badges>
+                                                        )}
+                                                    </DataTable.Cell>
+                                                    <DataTable.Cell alignment="center">
+                                                        <ComplianceStatusBadge status={channel.lastComplianceResult?.status} />
+                                                    </DataTable.Cell>
+                                                </div>
+                                            </DataTable.Row>
+                                        ))
+                                        : null}
+                                </DataTable.Body>
+                            </DataTable>
+                            {channels && channels.length === 0 && renderNoData(search.trim() !== '')}
+                        </div>
+                        {!isLoading && channels !== null && (
+                            <div className="space-y-4 mt-4">
+                                <Pagination
+                                    itemsPerPage={10}
+                                    onItemsPerPageChange={function Xs() { }}
+                                    onPageChange={function Xs() { }}
+                                    selected={1}
+                                    showMoreLeft
+                                    showMoreRight
+                                    showResultCount
+                                    showSelectCount
+                                    totalResults={channels.length}
+                                />
+                            </div>
+                        )}
+                    </Card>
+                </Flex>
+            )}
             <Modal isOpen={isOpen} onClose={onClose}>
                 <ModalOverlay />
                 <ModalContent>
@@ -643,165 +667,6 @@ export default function DataChannelListComponents({ listChannels, deleteChannel,
                     </form>
                 </ModalContent>
             </Modal>
-            <ListView
-                //$showspinner={false ? true : undefined}
-                actions={
-                    <Flex gap={5}>
-                        <CreateButton
-                            onClick={() => {
-                                router.push('/channels/create');
-                            }}
-                        />
-                    </Flex>
-                }
-                topbaractions={navigationItems}
-                headerTitle={{
-                    text: 'Data Channels',
-                }}
-                positionChildren="bottom"
-                subtitle="All your data channels in one place."
-                table={
-                    hasError ? (
-                        <ErrorCard
-                            title="Error"
-                            message="An error occurred while fetching the channels. Please try again later."
-                            retry={fetchChannels}
-                        />
-                    ) : (
-                        <Flex gap={5} direction={'column'}>
-                            <Card>
-                                <Flex gap={5} align={'center'}>
-                                    <Select
-                                        value={filterMode}
-                                        onChange={(e) => {
-                                            filterChannels(e.target.value as 'all' | 'subscribed' | 'owned');
-                                            setFilterMode(e.target.value as 'all' | 'subscribed' | 'owned');
-                                        }}
-                                    >
-                                        <option defaultChecked value="all">
-                                            All Channels
-                                        </option>
-                                        <option value="subscribed">Subscribed Channels</option>
-                                        <option value="owned">My Organization Channels</option>
-                                    </Select>
-                                    <OrbisButton
-                                        onClick={() => {
-                                            filterChannels('all');
-                                            setFilterMode('all');
-                                        }}
-                                    >
-                                        Clear Filter
-                                    </OrbisButton>
-                                </Flex>
-                            </Card>
-                            {isLoading || channels === null ? (
-                                <Card>
-                                    <Spinner color="blue.500" sx={{ margin: '1em' }} />
-                                </Card>
-                            ) : channels.length > 0 ? (
-                                <Card>
-                                    <OrbisTable
-                                        headers={['Data Channel', 'Description', 'Channel ID', 'Compliance', '']}
-                                        rows={channels.map((channel, index) => {
-                                            return [
-                                                <Flex
-                                                    key={'1'}
-                                                    justifyContent={'space-between'}
-                                                    alignItems={'center'}
-                                                    gap={2}
-                                                    justifyItems={'center'}
-                                                >
-                                                    <OpenButton onClick={() => router.push('/channels/' + channel.id)}>
-                                                        {channel.name}
-                                                    </OpenButton>
-                                                    {channel.creatorOrganization === user?.custom.org ? (
-                                                        channel.accessSwitch ? (
-                                                            <OrbisBadge>Published</OrbisBadge>
-                                                        ) : (
-                                                            <OrbisBadge colorScheme="red">Disabled</OrbisBadge>
-                                                        )
-                                                    ) : (
-                                                        <OrbisBadge colorScheme="green">Subscribed</OrbisBadge>
-                                                    )}
-                                                </Flex>,
-                                                channel.description,
-                                                <APIKeyText allowCopy showAsClearText key={index + '-channel-id'}>
-                                                    {channel.id}
-                                                </APIKeyText>,
-                                                // Only show compliance badge if:
-                                                // 1. User has data custodian permissions (canCheckCompliance)
-                                                // 2. Channel belongs to user's organization
-                                                canCheckCompliance &&
-                                                    channel.creatorOrganization === user?.custom.org ? (
-                                                    <div key={index + '-compliance'}>
-                                                        <ComplianceStatusBadge
-                                                            status={channel.lastComplianceResult?.status}
-                                                        />
-                                                    </div>
-                                                ) : (
-                                                    <div key={index + '-compliance'} />
-                                                ),
-                                                <Menu key={index + '-menu'}>
-                                                    <MenuButton
-                                                        as={IconButton}
-                                                        icon={<EllipsisVerticalIcon width={16} height={16} />}
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        aria-label="Channel options"
-                                                    />
-                                                    <MenuList>
-                                                        <MenuItem
-                                                            onClick={() => router.push('/channels/' + channel.id)}
-                                                        >
-                                                            View Channel
-                                                        </MenuItem>
-                                                        {canCheckCompliance &&
-                                                            channel.creatorOrganization === user?.custom.org && (
-                                                                <>
-                                                                    <MenuItem
-                                                                        onClick={() => handleRetryCompliance(channel)}
-                                                                        isDisabled={isCheckingCompliance === channel.id}
-                                                                    >
-                                                                        {isCheckingCompliance === channel.id
-                                                                            ? 'Checking...'
-                                                                            : 'Retry Compliance Check'}
-                                                                    </MenuItem>
-                                                                    {channel.lastComplianceResult && (
-                                                                        <MenuItem
-                                                                            onClick={() =>
-                                                                                handleViewComplianceResults(channel)
-                                                                            }
-                                                                        >
-                                                                            View Last Compliance Results
-                                                                        </MenuItem>
-                                                                    )}
-                                                                </>
-                                                            )}
-                                                        {channel.creatorOrganization === user?.custom.org && (
-                                                            <MenuItem
-                                                                icon={<TrashIcon width={16} height={16} />}
-                                                                color="red.500"
-                                                                onClick={() => handleDeleteChannel(channel.id)}
-                                                            >
-                                                                Delete Channel
-                                                            </MenuItem>
-                                                        )}
-                                                    </MenuList>
-                                                </Menu>,
-                                            ];
-                                        })}
-                                    />
-                                </Card>
-                            ) : (
-                                <Card>
-                                    <Text>No Channels Available</Text>
-                                </Card>
-                            )}
-                        </Flex>
-                    )
-                }
-                topbartitle="Data Channels"
-            />
         </>
     );
 }
