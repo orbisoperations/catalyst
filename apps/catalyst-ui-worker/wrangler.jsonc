@@ -11,6 +11,9 @@
     },
     "observability": {
         "enabled": true,
+        "traces": {
+            "enabled": true,
+        },
     },
     "minify": true,
     "services": [

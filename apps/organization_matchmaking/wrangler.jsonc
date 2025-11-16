@@ -11,6 +11,9 @@
 	"send_metrics": false,
 	"observability": {
 		"enabled": true,
+		"traces": {
+			"enabled": true,
+		},
 	},
 	"services": [
 		{ "binding": "USERCACHE", "service": "user-credentials-cache" },

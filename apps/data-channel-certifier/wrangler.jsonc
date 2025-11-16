@@ -15,6 +15,9 @@
   // wrangler v3.78.6^
   "observability": {
     "enabled": true,
+    "traces": {
+      "enabled": true,
+    },
   },
 
   "services": [
