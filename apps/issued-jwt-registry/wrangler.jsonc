@@ -12,6 +12,9 @@
 	"send_metrics": false,
 	"observability": {
 		"enabled": true,
+		"traces": {
+			"enabled": true,
+		},
 	},
 
 	// Service bindings for inter-worker communication
