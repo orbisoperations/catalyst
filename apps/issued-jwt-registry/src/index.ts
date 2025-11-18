@@ -218,6 +218,38 @@ export default class IssuedJWTRegistryWorker extends WorkerEntrypoint<Env> {
 		const stub = this.env.ISSUED_JWT_REGISTRY_DO.get(doId);
 		return await stub.validateToken(jwtId);
 	}
+
+	/**
+	 * Cron trigger handler - runs cleanup on schedule
+	 *
+	 *
+	 * This method triggers cleanup of single-use tokens in the Durable Object
+	 * to prevent memory overflow and keep storage clean.
+	 */
+	async scheduled(controller: ScheduledController): Promise<void> {
+		console.log('[IssuedJWTRegistry] Starting scheduled cleanup run', {
+			scheduledTime: controller.scheduledTime,
+			cron: controller.cron,
+		});
+
+		try {
+			const doId = this.env.ISSUED_JWT_REGISTRY_DO.idFromName('default');
+			const stub = this.env.ISSUED_JWT_REGISTRY_DO.get(doId);
+			const result = await stub.runCleanup();
+
+			console.log('[IssuedJWTRegistry] Scheduled cleanup completed', {
+				totalScanned: result.totalScanned,
+				tokensDeleted: result.tokensDeleted,
+				errors: result.errors.length,
+			});
+		} catch (error) {
+			console.error('[IssuedJWTRegistry] Scheduled cleanup failed:', error);
+
+			// Re-throw to signal failure to Cloudflare's cron system
+			// This ensures the failure is visible in Workers metrics/logs
+			throw error;
+		}
+	}
 }
 
 export class I_JWT_Registry_DO extends DurableObject {
@@ -274,19 +306,7 @@ export class I_JWT_Registry_DO extends DurableObject {
 		// Fetch all tokens once
 		const allIJR = await this.ctx.storage.list<IssuedJWTRegistry>();
 
-		// Run cleanup using the fetched tokens
-		try {
-			const cleanupResult = await this.cleanupSingleUseTokens(allIJR);
-			console.log('Automatic single-use token cleanup completed', {
-				totalScanned: cleanupResult.totalScanned,
-				tokensDeleted: cleanupResult.tokensDeleted,
-			});
-		} catch (error) {
-			console.error('Error during automatic cleanup', error);
-		}
-
 		// Return the filtered list for the requested organization
-		// Note: Some tokens may have been deleted, so we filter from the original Map
 		return Array.from(allIJR.values()).filter((ijr) => ijr.organization === orgId && ijr.status !== JWTRegisterStatus.enum.deleted);
 	}
 
@@ -368,10 +388,68 @@ export class I_JWT_Registry_DO extends DurableObject {
 	}
 
 	/**
+	 * Run cleanup of single-use tokens
+	 * Called by scheduled cron trigger to prevent memory overflow
+	 * Uses pagination to process tokens in batches
+	 * @returns Cleanup result with counts and details
+	 */
+	async runCleanup() {
+		// Use pagination to prevent memory overflow with large token lists
+		// Process tokens in batches of 50 to stay within memory limits
+		const BATCH_SIZE = 50;
+		const MAX_ITERATIONS = 10; // Safety limit to prevent infinite loops
+		const result = {
+			totalScanned: 0,
+			tokensDeleted: 0,
+			errors: [] as string[],
+			deletedTokenIds: [] as string[],
+		};
+
+		let lastKey: string | undefined = undefined;
+		let hasMore = true;
+		let iterations = 0;
+
+		while (hasMore && iterations < MAX_ITERATIONS) {
+			iterations++;
+
+			// Fetch a batch of tokens
+			const batch = await this.ctx.storage.list<IssuedJWTRegistry>({
+				limit: BATCH_SIZE,
+				startAfter: lastKey,
+			});
+
+			// Process cleanup on this batch
+			const batchResult = await this.cleanupSingleUseTokens(batch);
+			result.totalScanned += batchResult.totalScanned;
+			result.tokensDeleted += batchResult.tokensDeleted;
+			result.errors.push(...batchResult.errors);
+			result.deletedTokenIds.push(...batchResult.deletedTokenIds);
+
+			// Update lastKey for next iteration
+			if (batch.size > 0) {
+				const keys: string[] = Array.from(batch.keys());
+				lastKey = keys[keys.length - 1];
+			}
+
+			// Check if there are more tokens to process
+			hasMore = batch.size === BATCH_SIZE;
+		}
+
+		if (iterations >= MAX_ITERATIONS && hasMore) {
+			console.error(`Cleanup pagination exceeded max iterations (${MAX_ITERATIONS})`, {
+				totalScanned: result.totalScanned,
+				tokensDeleted: result.tokensDeleted,
+				lastKey,
+			});
+		}
+
+		return result;
+	}
+
+	/**
 	 * Clean up single-use tokens that were mistakenly registered
 	 * Only deletes tokens with description starting with "Single-use token for data channel" or tokens with no claims
 	 * @param allTokens - Map of all tokens from ctx.storage.list
-	 * @param dryRun - Whether to perform a dry run without actual deletion
 	 * @returns Cleanup result with counts and details
 	 */
 	async cleanupSingleUseTokens(allTokens: Map<string, IssuedJWTRegistry>) {
