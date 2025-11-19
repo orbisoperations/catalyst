@@ -1,5 +1,6 @@
 'use client';
 import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import type { UserRole } from '@catalyst/schemas';
 
 export type CloudflareUser = {
     id: string;
@@ -39,25 +40,21 @@ type UserProviderProps = {
 };
 
 function getOrgFromRoles(roles: Record<string, Record<string, string>>): string | undefined {
-    const roleKeys = Object.keys(roles);
-    const key = roleKeys.find((key) => key === 'platform-admin' || key === 'org-admin' || key === 'org-user') as
-        | 'platform-admin'
-        | 'org-admin'
-        | 'org-user'
-        | undefined;
+    const roleKeys = Object.keys(roles) as UserRole[];
+    const key = roleKeys.find(
+        (key) => key === 'platform-admin' || key === 'org-admin' || key === 'data-custodian' || key === 'org-user'
+    );
 
     if (!key) return undefined;
 
-    if (roleKeys.includes(key)) {
-        const role = roles[key];
-        const orgKeys = Object.keys(role);
-        if (orgKeys.length > 0) {
-            const org = orgKeys[0];
-            return role[org].split('.')[0];
-        } else {
-            return undefined;
-        }
+    const role = roles[key];
+    const orgKeys = Object.keys(role);
+    if (orgKeys.length > 0) {
+        const org = orgKeys[0];
+        return role[org].split('.')[0];
     }
+
+    return undefined;
 }
 
 function getIdentity() {
