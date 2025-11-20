@@ -1,6 +1,6 @@
 import DataChannelListComponents from '@/components/channels/ListChannels';
-import { listChannels, deleteChannel } from '../actions/channels';
+import { listChannels, deleteChannel, createDataChannel } from '../actions/channels';
 
 export default function DataChannelListPage() {
-    return <DataChannelListComponents listChannels={listChannels} deleteChannel={deleteChannel} />;
+    return <DataChannelListComponents listChannels={listChannels} deleteChannel={deleteChannel} createDataChannel={createDataChannel} />;
 }

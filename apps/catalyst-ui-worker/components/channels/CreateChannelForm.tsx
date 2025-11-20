@@ -1,8 +1,6 @@
 'use client';
 import { useUser } from '@/components/contexts/User/UserContext';
 import { ErrorCard, OrbisButton } from '@/components/elements';
-import { DetailedView } from '@/components/layouts';
-import { navigationItems } from '@/utils/nav.utils';
 import { DataChannel, DataChannelActionResponse } from '@catalyst/schemas';
 import { Flex, Grid } from '@chakra-ui/layout';
 import { Card, CardBody, FormControl, Input, FormErrorMessage, FormLabel } from '@chakra-ui/react';
@@ -30,15 +28,7 @@ export default function CreateChannelForm({ createDataChannel }: DataChannelForm
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
     return (
-        <DetailedView
-            actions={<></>}
-            headerTitle={{
-                text: 'Create Data Channel',
-            }}
-            topbaractions={navigationItems}
-            showspinner={false}
-            topbartitle="Catalyst"
-        >
+        <>
             {hasError ? (
                 <ErrorCard
                     title="Error"
@@ -159,6 +149,6 @@ export default function CreateChannelForm({ createDataChannel }: DataChannelForm
                     </CardBody>
                 </Card>
             )}
-        </DetailedView>
+        </>
     );
 }

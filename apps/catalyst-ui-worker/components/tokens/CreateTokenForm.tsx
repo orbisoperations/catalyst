@@ -1,8 +1,6 @@
 'use client';
 import { JWTRequest } from '@/app/types';
 import { APIKeyText, ErrorCard, OrbisButton, OrbisCard, SelectableTable } from '@/components/elements';
-import { DetailedView } from '@/components/layouts';
-import { navigationItems } from '@/utils/nav.utils';
 import { DataChannel, JWTAudience, JWTSigningResponse } from '@catalyst/schemas';
 import { Box, Flex } from '@chakra-ui/layout';
 import {
@@ -159,127 +157,123 @@ export default function CreateTokensForm({ signToken, listChannels }: CreateToke
     }
 
     return (
-        <DetailedView
-            topbaractions={navigationItems}
-            topbartitle="API Keys"
-            showspinner={false}
-            headerTitle={{ text: 'Create API Key' }}
-            subtitle="Create a new API Key"
-            actions={
-                !hasError ? (
-                    <OrbisButton
-                        isDisabled={
-                            selectedChannels.length === 0 ||
-                            apiKeyName.length === 0 ||
-                            apiKeyDescription.length === 0 ||
-                            expirationError.length > 0 ||
-                            !expiration.value
-                        }
-                        onClick={createToken}
-                    >
-                        Create
-                    </OrbisButton>
-                ) : undefined
-            }
-        >
-            {selectedChannels.length === 0 && (
-                <Text color="gray.500" fontSize="sm" mb={2}>
-                    Please select at least one channel
-                </Text>
-            )}
-            {hasError ? (
-                <ErrorCard title="Error" message={errorMessage} retry={fetchChannels} />
-            ) : (
-                <Box>
-                    <Flex gap={2} mb={5}>
-                        <FormControl>
-                            <label htmlFor="apiKeyName">API Key Name</label>
-                            <Input
-                                rounded={'md'}
-                                name="apiKeyName"
-                                value={apiKeyName}
-                                onChange={(e) => setApiKeyName(e.target.value)}
-                            />
-                        </FormControl>
-                        <FormControl>
-                            <label htmlFor="apiKeyDescription">Description</label>
-                            <Input
-                                rounded={'md'}
-                                name="description"
-                                value={apiKeyDescription}
-                                onChange={(e) => setApiKeyDescription(e.target.value)}
-                            />
-                        </FormControl>
+        <>
+            <Flex direction="column" gap={5}>
+                {!hasError && (
+                    <Flex gap={5} justifyContent="flex-end">
+                        <OrbisButton
+                            isDisabled={
+                                selectedChannels.length === 0 ||
+                                apiKeyName.length === 0 ||
+                                apiKeyDescription.length === 0 ||
+                                expirationError.length > 0 ||
+                                !expiration.value
+                            }
+                            onClick={createToken}
+                        >
+                            Create
+                        </OrbisButton>
                     </Flex>
-                    <Box gap={2} mb={5}>
-                        <FormControl>
-                            <label htmlFor="expiration">Expiration</label>
-                            <InputGroup gap={2}>
+                )}
+                {selectedChannels.length === 0 && (
+                    <Text color="gray.500" fontSize="sm" mb={2}>
+                        Please select at least one channel
+                    </Text>
+                )}
+                {hasError ? (
+                    <ErrorCard title="Error" message={errorMessage} retry={fetchChannels} />
+                ) : (
+                    <Box>
+                        <Flex gap={2} mb={5}>
+                            <FormControl>
+                                <label htmlFor="apiKeyName">API Key Name</label>
                                 <Input
                                     rounded={'md'}
-                                    type="number"
-                                    name="expiration"
-                                    value={expiration.value}
-                                    // undefined = use default border color, red.300 = error state
-                                    borderColor={expirationError ? 'red.300' : undefined}
-                                    _focus={{ borderColor: expirationError ? 'red.500' : 'blue.500' }}
-                                    onChange={(e) => {
-                                        const newValue = parseInt(e.target.value);
-                                        setExpiration({
-                                            ...expiration,
-                                            value: newValue,
-                                        });
-                                    }}
-                                    onBlur={() => {
-                                        // Validate on blur for better UX
-                                        validateExpiration(expiration, setExpirationError);
-                                    }}
-                                    placeholder="Expiration"
+                                    name="apiKeyName"
+                                    value={apiKeyName}
+                                    onChange={(e) => setApiKeyName(e.target.value)}
                                 />
-                                <Select
-                                    value={expiration.unit}
-                                    // undefined = use default border color, red.300 = error state
-                                    borderColor={expirationError ? 'red.300' : undefined}
-                                    _focus={{ borderColor: expirationError ? 'red.500' : 'blue.500' }}
-                                    onChange={(e) => {
-                                        setExpiration({
-                                            ...expiration,
-                                            unit: e.target.value as 'days' | 'weeks',
-                                        });
-                                    }}
-                                >
-                                    <option defaultChecked value="days">
-                                        Days
-                                    </option>
-                                    <option value="weeks">Weeks</option>
-                                </Select>
-                            </InputGroup>
-                            {expirationError && (
-                                <Text color="red" fontSize="sm" mt={2}>
-                                    {expirationError}
-                                </Text>
-                            )}
-                            {!expirationError && (
-                                <Text color="gray.500" fontSize="sm" mt={1}>
-                                    {getExpirationHelpText(expiration)}
-                                </Text>
-                            )}
-                        </FormControl>
+                            </FormControl>
+                            <FormControl>
+                                <label htmlFor="apiKeyDescription">Description</label>
+                                <Input
+                                    rounded={'md'}
+                                    name="description"
+                                    value={apiKeyDescription}
+                                    onChange={(e) => setApiKeyDescription(e.target.value)}
+                                />
+                            </FormControl>
+                        </Flex>
+                        <Box gap={2} mb={5}>
+                            <FormControl>
+                                <label htmlFor="expiration">Expiration</label>
+                                <InputGroup gap={2}>
+                                    <Input
+                                        rounded={'md'}
+                                        type="number"
+                                        name="expiration"
+                                        value={expiration.value}
+                                        // undefined = use default border color, red.300 = error state
+                                        borderColor={expirationError ? 'red.300' : undefined}
+                                        _focus={{ borderColor: expirationError ? 'red.500' : 'blue.500' }}
+                                        onChange={(e) => {
+                                            const newValue = parseInt(e.target.value);
+                                            setExpiration({
+                                                ...expiration,
+                                                value: newValue,
+                                            });
+                                        }}
+                                        onBlur={() => {
+                                            // Validate on blur for better UX
+                                            validateExpiration(expiration, setExpirationError);
+                                        }}
+                                        placeholder="Expiration"
+                                    />
+                                    <Select
+                                        value={expiration.unit}
+                                        // undefined = use default border color, red.300 = error state
+                                        borderColor={expirationError ? 'red.300' : undefined}
+                                        _focus={{ borderColor: expirationError ? 'red.500' : 'blue.500' }}
+                                        onChange={(e) => {
+                                            setExpiration({
+                                                ...expiration,
+                                                unit: e.target.value as 'days' | 'weeks',
+                                            });
+                                        }}
+                                    >
+                                        <option defaultChecked value="days">
+                                            Days
+                                        </option>
+                                        <option value="weeks">Weeks</option>
+                                    </Select>
+                                </InputGroup>
+                                {expirationError && (
+                                    <Text color="red" fontSize="sm" mt={2}>
+                                        {expirationError}
+                                    </Text>
+                                )}
+                                {!expirationError && (
+                                    <Text color="gray.500" fontSize="sm" mt={1}>
+                                        {getExpirationHelpText(expiration)}
+                                    </Text>
+                                )}
+                            </FormControl>
+                        </Box>
+                        <OrbisCard>
+                            <SelectableTable
+                                headers={['', 'Channel', 'Description']}
+                                rows={channels.map((channel) => [channel.name, channel.description])}
+                                handleChange={(rows: number[]) => {
+                                    setSelectedChannels(rows);
+                                }}
+                            />
+                        </OrbisCard>
                     </Box>
-                    <OrbisCard>
-                        <SelectableTable
-                            headers={['', 'Channel', 'Description']}
-                            rows={channels.map((channel) => [channel.name, channel.description])}
-                            handleChange={(rows: number[]) => {
-                                setSelectedChannels(rows);
-                            }}
-                        />
-                    </OrbisCard>
-                </Box>
-            )}
+                )}
+            </Flex>
 
             <TokenCreatedModal token={token} tokenConfirmation={tokenConfirmation} onClose={closeModal} />
-        </DetailedView>
+        </>
     );
 }
 

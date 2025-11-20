@@ -1,8 +1,6 @@
 'use client';
 
 import { ErrorCard, OrbisButton } from '@/components/elements';
-import { DetailedView } from '@/components/layouts';
-import { navigationItems } from '@/utils/nav.utils';
 import { Flex, FormControl, Grid, Input, Text, Textarea } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -24,13 +22,7 @@ export default function CreateInviteComponent({ sendInvite }: CreateInviteProps)
     });
     const [displayError, setDisplayError] = useState<boolean>(false);
     return (
-        <DetailedView
-            topbartitle="Invite Partner"
-            topbaractions={navigationItems}
-            showspinner={false}
-            subtitle="Invite a partner to start sharing data."
-            headerTitle={{ text: 'Invite Parner' }}
-        >
+        <>
             {hasError ? (
                 <ErrorCard
                     title="Error"
@@ -110,6 +102,6 @@ export default function CreateInviteComponent({ sendInvite }: CreateInviteProps)
                     </Grid>
                 </form>
             )}
-        </DetailedView>
+        </>
     );
 }

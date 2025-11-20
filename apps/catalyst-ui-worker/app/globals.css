@@ -1,3 +1,4 @@
+@import '@orbisoperations/o2-ui/dist/index.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

@@ -10,8 +10,6 @@ import {
     OrbisTabs,
     TrashButton,
 } from '@/components/elements';
-import { DetailedView } from '@/components/layouts';
-import { navigationItems } from '@/utils/nav.utils';
 import { DataChannel, IssuedJWTRegistry } from '@catalyst/schemas';
 import { Box, Flex } from '@chakra-ui/layout';
 import { Card, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Text, useDisclosure } from '@chakra-ui/react';
@@ -75,63 +73,57 @@ export default function TokenDetailsComponent({
     useEffect(fetchDetails, [token, id]);
 
     return (
-        <DetailedView
-            topbaractions={navigationItems}
-            topbartitle="Token Details"
-            showspinner={false}
-            headerTitle={{ text: iJWTRegistry?.name }}
-            subtitle={iJWTRegistry?.description}
-            actions={
-                !hasError ? (
-                    <Flex gap={10} align={'center'}>
+        <>
+            <Flex direction="column" gap={5}>
+                {!hasError && (
+                    <Flex gap={10} align={'center'} justifyContent="flex-end">
                         <TrashButton onClick={onOpen} colorScheme="red" />
                     </Flex>
-                ) : undefined
-            }
-        >
-            {hasError ? (
-                <ErrorCard title="Error" message={errorMessage} retry={fetchDetails} />
-            ) : (
-                <Box>
-                    <Card p={2} mb={5} variant={'outline'} shadow={'sm'}>
-                        <Flex gap={2} mt={0} justify={'space-between'} px={5}>
-                            <Text>Created By: {iJWTRegistry?.organization}</Text>
-                            <Text>Valid Until: {iJWTRegistry?.expiry.toLocaleString()}</Text>
-                        </Flex>
-                    </Card>
-                    <Box mb={5}>
-                        <OrbisTabs
-                            tabsProps={{
-                                size: 'md',
-                                variant: 'enclosed',
-                                colorScheme: 'blue',
-                            }}
-                            tabs={['Scopes']}
-                            content={[
-                                <Box key={1}>
-                                    <OrbisCard header={'Key Scopes'}>
-                                        <OrbisTable
-                                            headers={['Channel', 'Description', 'Channel ID']}
-                                            rows={iJWTRegistry?.claims.map((claim, index) => [
-                                                <Flex key={index + '-claim-name'} justify={'space-between'}>
-                                                    <Text>{claim.name}</Text>
-                                                    {user && !claim.name.includes(user.custom.org as string) && (
-                                                        <OrbisBadge>Shared</OrbisBadge>
-                                                    )}
-                                                </Flex>,
-                                                claim.description,
-                                                <APIKeyText allowCopy showAsClearText key={index + '-claim-id'}>
-                                                    {claim.id}
-                                                </APIKeyText>,
-                                            ])}
-                                        />
-                                    </OrbisCard>
-                                </Box>,
-                            ]}
-                        />
+                )}
+                {hasError ? (
+                    <ErrorCard title="Error" message={errorMessage} retry={fetchDetails} />
+                ) : (
+                    <Box>
+                        <Card p={2} mb={5} variant={'outline'} shadow={'sm'}>
+                            <Flex gap={2} mt={0} justify={'space-between'} px={5}>
+                                <Text>Created By: {iJWTRegistry?.organization}</Text>
+                                <Text>Valid Until: {iJWTRegistry?.expiry.toLocaleString()}</Text>
+                            </Flex>
+                        </Card>
+                        <Box mb={5}>
+                            <OrbisTabs
+                                tabsProps={{
+                                    size: 'md',
+                                    variant: 'enclosed',
+                                    colorScheme: 'blue',
+                                }}
+                                tabs={['Scopes']}
+                                content={[
+                                    <Box key={1}>
+                                        <OrbisCard header={'Key Scopes'}>
+                                            <OrbisTable
+                                                headers={['Channel', 'Description', 'Channel ID']}
+                                                rows={iJWTRegistry?.claims.map((claim, index) => [
+                                                    <Flex key={index + '-claim-name'} justify={'space-between'}>
+                                                        <Text>{claim.name}</Text>
+                                                        {user && !claim.name.includes(user.custom.org as string) && (
+                                                            <OrbisBadge>Shared</OrbisBadge>
+                                                        )}
+                                                    </Flex>,
+                                                    claim.description,
+                                                    <APIKeyText allowCopy showAsClearText key={index + '-claim-id'}>
+                                                        {claim.id}
+                                                    </APIKeyText>,
+                                                ])}
+                                            />
+                                        </OrbisCard>
+                                    </Box>,
+                                ]}
+                            />
+                        </Box>
                     </Box>
-                </Box>
-            )}
+                )}
+            </Flex>
             {/* Delete API Key Confirmation Modal */}
             <Modal isOpen={isOpen} onClose={onClose}>
                 <ModalContent>
@@ -169,6 +161,6 @@ export default function TokenDetailsComponent({
                     </ModalFooter>
                 </ModalContent>
             </Modal>
-        </DetailedView>
+        </>
     );
 }
