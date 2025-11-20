@@ -2,7 +2,6 @@
 import { ComplianceResult, DataChannel } from '@catalyst/schemas';
 import { Flex } from '@chakra-ui/layout';
 import {
-    // Spinner,
     Modal,
     ModalBody,
     ModalContent,
@@ -12,36 +11,27 @@ import {
     ModalCloseButton,
     Text,
     useDisclosure,
-    Select,
-    Menu,
-    MenuButton,
-    MenuList,
-    MenuItem,
-    IconButton,
     Spinner,
     FormControl,
     FormLabel,
     FormErrorMessage,
     Input,
-    InputGroup,
-    InputLeftAddon,
     Grid,
+    Menu,
+    MenuButton,
+    MenuList,
+    MenuItem,
+    Box,
 } from '@chakra-ui/react';
 import {
-    APIKeyText,
-    CreateButton,
     ErrorCard,
-    OpenButton,
-    OrbisBadge,
     OrbisButton,
-    OrbisTable,
 } from '@/components/elements';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useEffect, useState, useCallback } from 'react';
 import { useUser } from '../contexts/User/UserContext';
 import { canUserCheckCompliance, checkCompliance } from '@/app/actions/compliance';
-import { createDataChannel } from '@/app/actions/channels';
 import {
     PrimaryButton,
     Card,
@@ -54,8 +44,8 @@ import {
 import { SearchIcon, PlusIcon, ArrowDownWideNarrowIcon, FunnelIcon } from 'lucide-react';
 import { DetailedComplianceResult } from './DetailedComplianceResult';
 import { ComplianceStatusBadge } from './ComplianceStatus';
-import { EllipsisVerticalIcon, CheckCircleIcon, MinusCircleIcon } from '@heroicons/react/24/outline';
-import { TrashIcon } from '@heroicons/react/24/outline';
+import { CheckCircleIcon, MinusCircleIcon } from '@heroicons/react/24/outline';
+
 type ListChannelsProps = {
     listChannels: (token: string) => Promise<DataChannel[]>;
     deleteChannel: (channelId: string, token: string) => Promise<DataChannel>;
@@ -68,7 +58,7 @@ export default function DataChannelListComponents({ listChannels, deleteChannel,
     const [allChannels, setAllChannels] = useState<DataChannel[]>([]);
     const [hasError, setHasError] = useState<boolean>(false);
     const [isLoading, setIsLoading] = useState<boolean>(true);
-    const [filterMode, setFilterMode] = useState<'all' | 'subscribed' | 'owned'>('all');
+    const [filterMode, setFilterMode] = useState<'all' | 'operational' | 'disabled' | 'owned' | 'partner'>('all');
     const [channelToDelete, setChannelToDelete] = useState<string | null>(null);
     const [canCheckCompliance, setCanCheckCompliance] = useState<boolean>(false);
     const [isCheckingCompliance, setIsCheckingCompliance] = useState<string | null>(null);
@@ -99,18 +89,28 @@ export default function DataChannelListComponents({ listChannels, deleteChannel,
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
     const filterChannels = useCallback(
-        (filterMode: 'all' | 'subscribed' | 'owned' = 'all', searchTerm: string = '') => {
+        (filterMode: 'all' | 'operational' | 'disabled' | 'owned' | 'partner' = 'all', searchTerm: string = '') => {
             let filteredChannels = allChannels;
 
             // Apply filter mode
-            if (filterMode === 'subscribed') {
+            if (filterMode === 'operational') {
                 filteredChannels = filteredChannels.filter((channel) => {
-                    return channel.creatorOrganization !== user?.custom.org;
+                    return channel.accessSwitch === true;
+                });
+            }
+            if (filterMode === 'disabled') {
+                filteredChannels = filteredChannels.filter((channel) => {
+                    return channel.accessSwitch === false;
                 });
             }
             if (filterMode === 'owned') {
                 filteredChannels = filteredChannels.filter((channel) => {
                     return channel.creatorOrganization === user?.custom.org;
+                });
+            }
+            if (filterMode === 'partner') {
+                filteredChannels = filteredChannels.filter((channel) => {
+                    return channel.creatorOrganization !== user?.custom.org;
                 });
             }
 
@@ -130,6 +130,10 @@ export default function DataChannelListComponents({ listChannels, deleteChannel,
         [allChannels, user?.custom.org]
     );
 
+    function handleFilterMenu(filterType: 'all' | 'operational' | 'disabled' | 'owned' | 'partner') {
+        setFilterMode(filterType);
+    }
+
     function handleSort(column: string) {
         if (sortColumn === column) {
             setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -137,6 +141,34 @@ export default function DataChannelListComponents({ listChannels, deleteChannel,
             setSortColumn(column);
             setSortDirection('asc');
         }
+    }
+
+    function handleSortMenu(sortType: 'a-z' | 'z-a' | 'status' | 'compliance') {
+        switch (sortType) {
+            case 'a-z':
+                setSortColumn('name');
+                setSortDirection('asc');
+                break;
+            case 'z-a':
+                setSortColumn('name');
+                setSortDirection('desc');
+                break;
+            case 'status':
+                setSortColumn('status');
+                setSortDirection('asc');
+                break;
+            case 'compliance':
+                setSortColumn('compliance');
+                setSortDirection('asc');
+                break;
+        }
+    }
+
+    function getComplianceStatus(channel: DataChannel): string {
+        if (!channel.lastComplianceResult) {
+            return 'unknown';
+        }
+        return channel.lastComplianceResult.status || 'unknown';
     }
 
     function getSortedChannels(channelsToSort: DataChannel[]) {
@@ -158,6 +190,11 @@ export default function DataChannelListComponents({ listChannels, deleteChannel,
                     const statusA = getChannelStatus(a);
                     const statusB = getChannelStatus(b);
                     comparison = statusA.localeCompare(statusB);
+                    break;
+                case 'compliance':
+                    const complianceA = getComplianceStatus(a);
+                    const complianceB = getComplianceStatus(b);
+                    comparison = complianceA.localeCompare(complianceB);
                     break;
                 default:
                     return 0;
@@ -384,12 +421,59 @@ export default function DataChannelListComponents({ listChannels, deleteChannel,
                                 </TextInputAndButton>
                             </div>
                             <Flex gap={3}>
-                                <TertiaryIconButton>
-                                    <ArrowDownWideNarrowIcon size={16} />
-                                </TertiaryIconButton>
-                                <TertiaryIconButton>
-                                    <FunnelIcon size={16} />
-                                </TertiaryIconButton>
+                                <Menu placement="bottom-start">
+                                    <MenuButton
+                                        as={Box}
+                                        display="inline-block"
+                                        cursor="pointer"
+                                    >
+                                        <TertiaryIconButton>
+                                            <ArrowDownWideNarrowIcon size={16} />
+                                        </TertiaryIconButton>
+                                    </MenuButton>
+                                    <MenuList>
+                                        <MenuItem onClick={() => handleSortMenu('a-z')}>
+                                            A-Z
+                                        </MenuItem>
+                                        <MenuItem onClick={() => handleSortMenu('z-a')}>
+                                            Z-A
+                                        </MenuItem>
+                                        <MenuItem onClick={() => handleSortMenu('status')}>
+                                            Status
+                                        </MenuItem>
+                                        <MenuItem onClick={() => handleSortMenu('compliance')}>
+                                            Compliance
+                                        </MenuItem>
+                                    </MenuList>
+                                </Menu>
+                                <Menu placement="bottom-start">
+                                    <MenuButton
+                                        as={Box}
+                                        display="inline-block"
+                                        cursor="pointer"
+                                    >
+                                        <TertiaryIconButton>
+                                            <FunnelIcon size={16} />
+                                        </TertiaryIconButton>
+                                    </MenuButton>
+                                    <MenuList>
+                                        <MenuItem onClick={() => handleFilterMenu('all')}>
+                                            All
+                                        </MenuItem>
+                                        <MenuItem onClick={() => handleFilterMenu('operational')}>
+                                            Operational
+                                        </MenuItem>
+                                        <MenuItem onClick={() => handleFilterMenu('disabled')}>
+                                            Disabled
+                                        </MenuItem>
+                                        <MenuItem onClick={() => handleFilterMenu('owned')}>
+                                            Owned by organization
+                                        </MenuItem>
+                                        <MenuItem onClick={() => handleFilterMenu('partner')}>
+                                            Owned by partner
+                                        </MenuItem>
+                                    </MenuList>
+                                </Menu>
                                 <PrimaryButton
                                     showIcon
                                     icon={<PlusIcon size={16} />}
@@ -399,7 +483,7 @@ export default function DataChannelListComponents({ listChannels, deleteChannel,
                                 </PrimaryButton>
                             </Flex>
                         </Flex>
-                        <div className="w-full overflow-x-auto mt-4">
+                        <div className="w-full mt-4" data-table-container style={{ position: 'relative' }}>
                             <DataTable size="medium" interactive={true} className="w-full">
                                 <DataTable.Header>
                                     <DataTable.Row>
@@ -443,35 +527,38 @@ export default function DataChannelListComponents({ listChannels, deleteChannel,
                                 <DataTable.Body>
                                     {channels && channels.length > 0
                                         ? getSortedChannels(channels).map((channel) => (
-                                            <DataTable.Row 
-                                                key={channel.id}
-                                            >
-                                                <div 
-                                                    onClick={() => router.push(`/channels/${channel.id}`)}
-                                                    className="contents cursor-pointer [&>*]:hover:bg-gray-50 [&>*]:transition-colors"
+                                            <DataTable.Row key={channel.id}>
+                                                <DataTable.Cell
+                                                    alignment="left"
+                                                    className="min-w-[200px] max-w-[200px]"
                                                 >
-                                                    <DataTable.Cell
-                                                        alignment="left"
-                                                        className="min-w-[200px] max-w-[200px]"
+                                                    <div 
+                                                        className="truncate cursor-pointer" 
+                                                        title={channel.name}
+                                                        onClick={() => router.push(`/channels/${channel.id}`)}
                                                     >
-                                                        <div className="truncate" title={channel.name}>
-                                                            {channel.name}
-                                                        </div>
-                                                    </DataTable.Cell>
-                                                    <DataTable.Cell
-                                                        alignment="left"
-                                                        className="min-w-[300px] max-w-[300px]"
+                                                        {channel.name}
+                                                    </div>
+                                                </DataTable.Cell>
+                                                <DataTable.Cell
+                                                    alignment="left"
+                                                    className="min-w-[300px] max-w-[300px]"
+                                                >
+                                                    <div
+                                                        className="truncate cursor-pointer"
+                                                        title={channel.description || '-'}
+                                                        onClick={() => router.push(`/channels/${channel.id}`)}
                                                     >
-                                                        <div
-                                                            className="truncate"
-                                                            title={channel.description || '-'}
-                                                        >
-                                                            {channel.description || '-'}
-                                                        </div>
-                                                    </DataTable.Cell>
-                                                    <DataTable.Cell 
-                                                        alignment="left" 
-                                                        className="min-w-[150px]"
+                                                        {channel.description || '-'}
+                                                    </div>
+                                                </DataTable.Cell>
+                                                <DataTable.Cell 
+                                                    alignment="left" 
+                                                    className="min-w-[150px]"
+                                                >
+                                                    <div 
+                                                        className="cursor-pointer"
+                                                        onClick={() => router.push(`/channels/${channel.id}`)}
                                                     >
                                                         {channel.creatorOrganization === user?.custom.org ? (
                                                             <>
@@ -492,8 +579,13 @@ export default function DataChannelListComponents({ listChannels, deleteChannel,
                                                                 {channel.creatorOrganization}
                                                             </Link>
                                                         )}
-                                                    </DataTable.Cell>
-                                                    <DataTable.Cell alignment="left">
+                                                    </div>
+                                                </DataTable.Cell>
+                                                <DataTable.Cell alignment="left">
+                                                    <div 
+                                                        className="cursor-pointer"
+                                                        onClick={() => router.push(`/channels/${channel.id}`)}
+                                                    >
                                                         {channel.accessSwitch ? (
                                                             <Badges style="positive">
                                                                 <Flex alignItems="center" gap={1.5}>
@@ -509,11 +601,16 @@ export default function DataChannelListComponents({ listChannels, deleteChannel,
                                                                 </Flex>
                                                             </Badges>
                                                         )}
-                                                    </DataTable.Cell>
-                                                    <DataTable.Cell alignment="center">
+                                                    </div>
+                                                </DataTable.Cell>
+                                                <DataTable.Cell alignment="center">
+                                                    <div 
+                                                        className="cursor-pointer"
+                                                        onClick={() => router.push(`/channels/${channel.id}`)}
+                                                    >
                                                         <ComplianceStatusBadge status={channel.lastComplianceResult?.status} />
-                                                    </DataTable.Cell>
-                                                </div>
+                                                    </div>
+                                                </DataTable.Cell>
                                             </DataTable.Row>
                                         ))
                                         : null}
