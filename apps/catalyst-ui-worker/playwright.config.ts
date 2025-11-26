@@ -158,12 +158,11 @@ export default defineConfig({
         },
     ],
 
-    // Run UI via opennextjs-cloudflare preview
+    // Run UI via wrangler dev so it can find backend workers via local service registry
     // Backend workers are started in globalSetup via wrangler dev
     // Service bindings work natively because all workers use wrangler's local registry
     webServer: {
-        command: 'opennextjs-cloudflare build && opennextjs-cloudflare preview -- --port=4000',
-        // command: "pnpm dev",
+        command: 'opennextjs-cloudflare build && pnpm wrangler dev --port=4000 --inspector-port=6000',
         url: 'http://localhost:4000',
         reuseExistingServer: !process.env.CI,
         timeout: 180 * 1000, // Allow time for Next.js build + worker startup

@@ -1,6 +1,6 @@
 import { test, expect } from './fixtures/auth';
 import { verifyTopBarOrganization } from './utils/test-helpers';
-import { TOPBAR } from './utils/test-id-constants';
+import { NAVBAR } from './utils/test-id-constants';
 
 /**
  * Authentication & Authorization Tests
@@ -17,7 +17,7 @@ test.describe('TC-AUTH-003: Data Custodian Only User Login', () => {
         await verifyTopBarOrganization(page, 'test-org-alpha');
 
         // Verify user email is displayed
-        const userEmail = page.getByTestId(TOPBAR.USER_EMAIL_DISPLAY);
+        const userEmail = page.getByTestId(NAVBAR.USER_EMAIL_DISPLAY);
         await expect(userEmail).toBeVisible();
         await expect(userEmail).toHaveText('test-data-custodian');
     });

@@ -59,6 +59,7 @@
   "repository": "OrbisOps/catalyst",
   "scripts": {
     "build": "shx rm -rf dist && tsc -b",
+    "clean": "shx rm -rf dist oclif.manifest.json",
     "dev": "tsc --watch",
     "lint": "eslint . --ext .ts",
     "postpack": "shx rm -f oclif.manifest.json",

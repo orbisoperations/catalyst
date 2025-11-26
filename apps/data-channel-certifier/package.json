@@ -1,45 +1,46 @@
 {
-  "name": "@catalyst/data_channel_certifier",
-  "version": "1.0.0",
-  "private": true,
-  "description": "Catalyst data channel certification service - certifies and validates data channel endpoints on schedule",
-  "main": "src/worker.ts",
-  "type": "module",
-  "scripts": {
-    "dev": "wrangler dev --port 4008 --inspector-port 6008",
-    "build": "wrangler build",
-    "deploy": "wrangler deploy",
-    "deploy:preview": "wrangler deploy --env preview",
-    "deploy:staging": "wrangler deploy --env staging",
-    "deploy:uxr": "wrangler deploy --env uxr",
-    "deploy:production": "wrangler deploy --env production",
-    "test": "vitest",
-    "test:coverage": "vitest --coverage",
-    "lint": "eslint . --ext .ts,.tsx",
-    "lint:fix": "eslint . --ext .ts,.tsx --fix",
-    "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "@catalyst/schemas": "workspace:*",
-    "@catalyst/data_channel_registrar": "workspace:*",
-    "@catalyst/authx_token_api": "workspace:*",
-    "zod": "^4.1.11"
-  },
-  "devDependencies": {
-    "@catalyst/test-utils": "workspace:^",
-    "@cloudflare/vitest-pool-workers": "catalog:",
-    "@vitest/coverage-istanbul": "catalog:",
-    "eslint": "catalog:",
-    "typescript": "catalog:",
-    "vitest": "catalog:",
-    "wrangler": "catalog:"
-  },
-  "keywords": [
-    "cloudflare",
-    "workers",
-    "validation",
-    "adapter",
-    "graphql",
-    "catalyst"
-  ]
+    "name": "@catalyst/data_channel_certifier",
+    "version": "1.0.0",
+    "private": true,
+    "description": "Catalyst data channel certification service - certifies and validates data channel endpoints on schedule",
+    "main": "src/worker.ts",
+    "type": "module",
+    "scripts": {
+        "dev": "wrangler dev --port 4008 --inspector-port 6008",
+        "build": "wrangler build",
+        "deploy": "wrangler deploy",
+        "deploy:preview": "wrangler deploy --env preview",
+        "deploy:staging": "wrangler deploy --env staging",
+        "deploy:uxr": "wrangler deploy --env uxr",
+        "deploy:production": "wrangler deploy --env production",
+        "test": "vitest",
+        "test:coverage": "vitest --coverage",
+        "clean": "rm -rf dist .wrangler node_modules",
+        "lint": "eslint . --ext .ts,.tsx",
+        "lint:fix": "eslint . --ext .ts,.tsx --fix",
+        "typecheck": "tsc --noEmit"
+    },
+    "dependencies": {
+        "@catalyst/schemas": "workspace:*",
+        "@catalyst/data_channel_registrar": "workspace:*",
+        "@catalyst/authx_token_api": "workspace:*",
+        "zod": "^4.1.11"
+    },
+    "devDependencies": {
+        "@catalyst/test-utils": "workspace:^",
+        "@cloudflare/vitest-pool-workers": "catalog:",
+        "@vitest/coverage-istanbul": "catalog:",
+        "eslint": "catalog:",
+        "typescript": "catalog:",
+        "vitest": "catalog:",
+        "wrangler": "catalog:"
+    },
+    "keywords": [
+        "cloudflare",
+        "workers",
+        "validation",
+        "adapter",
+        "graphql",
+        "catalyst"
+    ]
 }

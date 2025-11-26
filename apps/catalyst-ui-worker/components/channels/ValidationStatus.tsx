@@ -82,7 +82,8 @@ export function ValidationButton({
     channelId,
     endpoint,
     organizationId,
-}: Omit<ValidationStatusProps, 'lastValidation'>) {
+    'data-testid': dataTestId,
+}: Omit<ValidationStatusProps, 'lastValidation'> & { 'data-testid'?: string }) {
     const [isValidating, setIsValidating] = useState(false);
     const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
     const { isOpen, onOpen, onClose } = useDisclosure();
@@ -150,6 +151,7 @@ export function ValidationButton({
                     onClick={handleValidate}
                     isLoading={isValidating}
                     loadingText="Validating..."
+                    data-testid={dataTestId}
                 >
                     Validate
                 </Button>
