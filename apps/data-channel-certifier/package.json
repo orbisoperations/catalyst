@@ -26,6 +26,7 @@
     "zod": "^4.1.11"
   },
   "devDependencies": {
+    "@catalyst/test-utils": "workspace:^",
     "@cloudflare/vitest-pool-workers": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
     "eslint": "catalog:",
