@@ -15,6 +15,7 @@
     "deploy:uxr": "wrangler deploy --env uxr",
     "deploy:staging": "wrangler deploy --env staging",
     "deploy:preview": "wrangler deploy --env preview",
+    "clean": "rm -rf dist .wrangler node_modules",
     "fmt": "prettier --write .",
     "lint": "eslint . --ext .ts",
     "build": "wrangler build"

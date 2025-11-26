@@ -16,6 +16,7 @@
 		"test:coverage": "vitest --coverage",
 		"test:coverage:unit": "vitest --project unit --coverage",
 		"test:coverage:integration": "vitest --project integration --coverage",
+		"clean": "rm -rf dist .wrangler node_modules",
 		"lint": "eslint . --ext .ts",
 		"build": "wrangler build"
 	},

@@ -9,6 +9,7 @@
         "test": "vitest",
         "test:workspace": "vitest run --silent",
         "test:coverage": "vitest --coverage",
+        "clean": "rm -rf dist .wrangler node_modules",
         "fmt": "prettier --write .",
         "lint": "eslint . --ext .ts"
     },

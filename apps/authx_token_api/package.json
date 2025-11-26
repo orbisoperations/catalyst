@@ -16,6 +16,7 @@
 		"test:coverage:unit": "vitest run --project unit --coverage",
 		"test:coverage:integration": "vitest run --project integration --coverage",
 		"test:workspace": "vitest run --silent",
+		"clean": "rm -rf dist .wrangler node_modules",
 		"lint": "eslint . --ext .ts",
 		"build": "wrangler build",
 		"postinstall": "pnpm build",
