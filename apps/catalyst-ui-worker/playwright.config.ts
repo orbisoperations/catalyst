@@ -56,7 +56,6 @@ export default defineConfig({
 
     // Shared settings for all projects
     use: {
-        // Base URL for all tests - wrangler pages dev serves the UI
         baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:4000',
 
         // Collect trace on failure
