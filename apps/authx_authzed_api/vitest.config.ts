@@ -13,6 +13,7 @@ export default defineWorkersConfig({
 				isolatedStorage: false,
 				singleWorker: true,
 				miniflare: {
+					compatibilityDate: '2025-04-01',
 					compatibilityFlags: ['nodejs_compat'],
 					bindings: {
 						AUTHZED_ENDPOINT: 'http://localhost:8449',
@@ -24,7 +25,7 @@ export default defineWorkersConfig({
 		},
 		coverage: {
 			provider: 'istanbul',
-			reporter: ['text', 'html', 'json-summary'],
+			reporter: ['text', 'html', 'json-summary', 'lcov'],
 			reportsDirectory: './coverage',
 			include: ['src/**/*.{ts,js}'],
 			exclude: [
@@ -34,10 +35,12 @@ export default defineWorkersConfig({
 				'**/tests/**',
 				'**/*.{test,spec}.?(c|m)[jt]s?(x)',
 				'**/wrangler.jsonc',
+				'**/wrangler.toml',
 				'**/vitest.config.*',
 				'**/.wrangler/**',
 				'**/env.d.ts',
 				'**/global-setup.ts',
+				'**/global-teardown.ts',
 			],
 		},
 	},

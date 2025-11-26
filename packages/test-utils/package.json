@@ -10,8 +10,14 @@
         "./spicedb": {
             "types": "./src/spicedb-health.ts",
             "default": "./src/spicedb-health.ts"
+        },
+        "./vitest-config": {
+            "types": "./src/vitest-config.ts",
+            "default": "./src/vitest-config.ts"
         }
     },
+    "main": "./src/index.ts",
+    "types": "./src/index.ts",
     "scripts": {
         "build": "echo 'No build needed for test utilities'"
     },
