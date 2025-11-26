@@ -318,9 +318,12 @@ export const test = base.extend<AuthFixtures>({
 
     // Generic authenticated page factory
     authenticatedPage: async ({ browser }, use) => {
+        const contexts: BrowserContext[] = [];
+
         const factory = async (userType: UserRole) => {
             const storagePath = await getStorageState(browser, userType);
             const context = await browser.newContext({ storageState: storagePath });
+            contexts.push(context);
 
             // Enforce offline mode - block all external requests
             await enforceOfflineMode(context);
@@ -329,8 +332,58 @@ export const test = base.extend<AuthFixtures>({
             await setupAuth(page, userType);
             return page;
         };
+
         await use(factory);
+
+        // Clean up all created contexts
+        await Promise.all(contexts.map((ctx) => ctx.close()));
     },
 });
 
 export { expect };
+
+/**
+ * Mock Identity Server Helpers
+ *
+ * These helpers allow tests to dynamically configure the mock identity response
+ * returned by the user-credentials-cache worker during E2E tests.
+ *
+ * Usage:
+ * ```typescript
+ * test.afterEach(async () => {
+ *   await resetMockIdentity();
+ * });
+ *
+ * test('admin user scenario', async ({ page }) => {
+ *   await setMockIdentity({
+ *     email: 'admin@example.com',
+ *     custom: {
+ *       'urn:zitadel:iam:org:project:roles': {
+ *         'platform-admin': { 'admin-org': 'admin-org.domain' },
+ *       },
+ *     },
+ *   });
+ *   // ... test code
+ * });
+ * ```
+ */
+
+import { getMockIdentityServer, MockIdentityResponse } from '../e2e/setup/mock-identity-server';
+
+/**
+ * Set a custom mock identity response for the current test
+ * This affects the user-credentials-cache worker's validateUser() response
+ */
+export async function setMockIdentity(response: MockIdentityResponse): Promise<void> {
+    const server = getMockIdentityServer();
+    await server.setResponse(response);
+}
+
+/**
+ * Reset the mock identity response to the default test user
+ * Should be called in afterEach to ensure test isolation
+ */
+export async function resetMockIdentity(): Promise<void> {
+    const server = getMockIdentityServer();
+    await server.reset();
+}

@@ -13,6 +13,7 @@
 
 import { spawn, ChildProcess, execSync } from 'child_process';
 import path from 'path';
+import { getMockIdentityServer } from './mock-identity-server';
 
 export interface WorkerConfig {
     name: string;
@@ -136,6 +137,11 @@ export class WranglerManager {
      * Start all workers in dependency order
      */
     async startAll(): Promise<void> {
+        // Start mock identity server first (used by user-credentials-cache)
+        console.log('\n🔐 Starting mock identity server...');
+        const mockServer = getMockIdentityServer();
+        await mockServer.start();
+
         console.log('\n🚀 Starting backend workers...\n');
 
         // Group workers by layer (based on dependencies)
@@ -289,6 +295,11 @@ export class WranglerManager {
 
         await Promise.all(stopPromises);
         this.workers.clear();
+
+        // Stop mock identity server
+        const mockServer = getMockIdentityServer();
+        await mockServer.stop();
+        console.log('    ✓ Mock identity server stopped');
 
         console.log('\n✓ All workers stopped\n');
     }

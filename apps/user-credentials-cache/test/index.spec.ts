@@ -199,9 +199,9 @@ describe('UserCredsCacheWorker', () => {
 			}
 
 			expect(user).toEqual(mockUser);
-			// Use the hardcoded URL and check only for the Cookie header using objectContaining
+			// Check the identity endpoint path (URL may vary based on env.IDENTITY_ENDPOINT)
 			expect(mockFetch).toHaveBeenCalledWith(
-				'https://orbisops.cloudflareaccess.com/cdn-cgi/access/get-identity',
+				expect.stringContaining('/cdn-cgi/access/get-identity'),
 				expect.objectContaining({
 					headers: expect.objectContaining({
 						cookie: `CF_Authorization=valid-token`,
@@ -234,9 +234,9 @@ describe('UserCredsCacheWorker', () => {
 
 			expect(user).toBeUndefined();
 			expect(mockFetch).toHaveBeenCalledTimes(1);
-			// Check the actual call arguments using objectContaining
+			// Check the identity endpoint path (URL may vary based on env.IDENTITY_ENDPOINT)
 			expect(mockFetch).toHaveBeenCalledWith(
-				'https://orbisops.cloudflareaccess.com/cdn-cgi/access/get-identity',
+				expect.stringContaining('/cdn-cgi/access/get-identity'),
 				expect.objectContaining({
 					headers: expect.objectContaining({
 						cookie: `CF_Authorization=invalid-token-roles`,
@@ -268,9 +268,9 @@ describe('UserCredsCacheWorker', () => {
 
 			expect(user).toBeUndefined();
 			expect(mockFetch).toHaveBeenCalledTimes(1);
-			// Check the actual call arguments using objectContaining
+			// Check the identity endpoint path (URL may vary based on env.IDENTITY_ENDPOINT)
 			expect(mockFetch).toHaveBeenCalledWith(
-				'https://orbisops.cloudflareaccess.com/cdn-cgi/access/get-identity',
+				expect.stringContaining('/cdn-cgi/access/get-identity'),
 				expect.objectContaining({
 					headers: expect.objectContaining({
 						cookie: `CF_Authorization=token-fetch-fails`,
@@ -305,14 +305,14 @@ describe('UserCredsCacheWorker', () => {
 
 			expect(user).toBeUndefined();
 			expect(mockFetch).toHaveBeenCalledTimes(1);
-			// Optionally, add a check for the fetch arguments if needed, similar to other tests
+			// Check the identity endpoint path (URL may vary based on env.IDENTITY_ENDPOINT)
 			expect(mockFetch).toHaveBeenCalledWith(
-				'https://orbisops.cloudflareaccess.com/cdn-cgi/access/get-identity',
+				expect.stringContaining('/cdn-cgi/access/get-identity'),
 				expect.objectContaining({
 					headers: expect.objectContaining({
 						cookie: `CF_Authorization=token-zod-fail`,
 					}),
-				}), // Remember to add the comma here manually if needed
+				}),
 			);
 		});
 
@@ -344,14 +344,14 @@ describe('UserCredsCacheWorker', () => {
 
 			expect(user).toBeUndefined();
 			expect(mockFetch).toHaveBeenCalledTimes(1);
-			// Optionally, add a check for the fetch arguments if needed
+			// Check the identity endpoint path (URL may vary based on env.IDENTITY_ENDPOINT)
 			expect(mockFetch).toHaveBeenCalledWith(
-				'https://orbisops.cloudflareaccess.com/cdn-cgi/access/get-identity',
+				expect.stringContaining('/cdn-cgi/access/get-identity'),
 				expect.objectContaining({
 					headers: expect.objectContaining({
 						cookie: `CF_Authorization=token-missing-email`,
 					}),
-				}), // Remember to add the comma here manually if needed
+				}),
 			);
 		});
 	});

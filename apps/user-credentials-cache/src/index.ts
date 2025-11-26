@@ -62,7 +62,9 @@ export class UserCredsCache extends DurableObject<Env> {
 	}
 
 	async validateUser(token: string) {
-		const resp = await fetch('https://orbisops.cloudflareaccess.com/cdn-cgi/access/get-identity', {
+		const identityEndpoint = this.env.IDENTITY_ENDPOINT ?? 'https://orbisops.cloudflareaccess.com/cdn-cgi/access/get-identity';
+
+		const resp = await fetch(identityEndpoint, {
 			method: 'GET',
 			headers: {
 				cookie: `CF_Authorization=${token}`,

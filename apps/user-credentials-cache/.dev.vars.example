@@ -1,2 +1,3 @@
-ENVIRONMENT=development
-SERVICE_NAME=catalyst/development/user-credentials-cache
+# Mock identity endpoint for E2E tests (copy to .dev.vars)
+# This is used when running Playwright E2E tests to mock the Cloudflare Access identity endpoint
+IDENTITY_ENDPOINT=http://localhost:9999/cdn-cgi/access/get-identity
