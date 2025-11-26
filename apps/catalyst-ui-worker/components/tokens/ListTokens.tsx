@@ -138,9 +138,10 @@ export default function APIKeysComponent({ listIJWTRegistry, deleteIJWTRegistry 
                         <Box>
                             {adminFlag && (
                                 <>
-                                    <OrbisCard title="JWT Admin Pannel" mb={5}>
+                                    <OrbisCard title="JWT Admin Pannel" mb={5} data-testid="tokens-admin-panel">
                                         <Text>JWT Admin Actions</Text>
                                         <OrbisButton
+                                            data-testid="tokens-admin-rotate-button"
                                             onClick={async () => {
                                                 if (!token) return;
                                                 rotateJWTKeyMaterial(token)
@@ -163,7 +164,11 @@ export default function APIKeysComponent({ listIJWTRegistry, deleteIJWTRegistry 
                             )}
                             {isLoading || issuedJWTRegistry === null ? (
                                 <Card sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                                    <Spinner color="blue.500" sx={{ margin: '1em' }} />
+                                    <Spinner
+                                        color="blue.500"
+                                        sx={{ margin: '1em' }}
+                                        data-testid="tokens-loading-spinner"
+                                    />
                                 </Card>
                             ) : issuedJWTRegistry.length > 0 ? (
                                 <Card variant={'outline'} shadow={'md'}>
@@ -182,17 +187,30 @@ export default function APIKeysComponent({ listIJWTRegistry, deleteIJWTRegistry 
                                                 index: number
                                             ) => {
                                                 return [
-                                                    <Flex key={jwt.id} justifyContent={'space-between'}>
-                                                        <OpenButton onClick={() => router.push('/tokens/' + jwt.id)}>
+                                                    <Flex
+                                                        key={jwt.id}
+                                                        justifyContent={'space-between'}
+                                                        data-testid={`tokens-row-${jwt.id}`}
+                                                    >
+                                                        <OpenButton
+                                                            onClick={() => router.push('/tokens/' + jwt.id)}
+                                                            data-testid={`tokens-row-${jwt.id}-name`}
+                                                        >
                                                             {jwt.name}
                                                         </OpenButton>
                                                     </Flex>,
-                                                    jwt.description,
+                                                    <span
+                                                        key={`${jwt.id}-desc`}
+                                                        data-testid={`tokens-row-${jwt.id}-description`}
+                                                    >
+                                                        {jwt.description}
+                                                    </span>,
                                                     jwt.expiry.toLocaleDateString(),
                                                     jwt.organization,
                                                     <Menu key={index + '-menu'}>
                                                         <MenuButton
                                                             as={IconButton}
+                                                            data-testid={`tokens-row-${jwt.id}-menu-button`}
                                                             icon={<EllipsisVerticalIcon width={16} height={16} />}
                                                             variant="ghost"
                                                             size="sm"
@@ -200,6 +218,7 @@ export default function APIKeysComponent({ listIJWTRegistry, deleteIJWTRegistry 
                                                         />
                                                         <MenuList>
                                                             <MenuItem
+                                                                data-testid={`tokens-row-${jwt.id}-delete-button`}
                                                                 icon={<TrashIcon width={16} height={16} />}
                                                                 color="red.500"
                                                                 onClick={() => handleDeleteToken(jwt.id)}
@@ -215,7 +234,7 @@ export default function APIKeysComponent({ listIJWTRegistry, deleteIJWTRegistry 
                                 </Card>
                             ) : (
                                 <Card>
-                                    <CardBody>
+                                    <CardBody data-testid="tokens-empty-state">
                                         No tokens exist for{' '}
                                         {user !== undefined ? (user.custom.org as string) : 'this user'}!
                                     </CardBody>

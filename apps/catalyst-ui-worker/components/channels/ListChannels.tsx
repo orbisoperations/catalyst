@@ -164,6 +164,7 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
                             <Card p={2}>
                                 <Flex gap={5} align={'center'}>
                                     <Select
+                                        data-testid="channels-filter-dropdown"
                                         value={filterMode}
                                         onChange={(e) => {
                                             filterChannels(e.target.value as 'all' | 'subscribed' | 'owned');
@@ -188,7 +189,11 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
                             </Card>
                             {isLoading || channels === null ? (
                                 <Card sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                                    <Spinner color="blue.500" sx={{ margin: '1em' }} />
+                                    <Spinner
+                                        color="blue.500"
+                                        sx={{ margin: '1em' }}
+                                        data-testid="channels-loading-spinner"
+                                    />
                                 </Card>
                             ) : channels.length > 0 ? (
                                 <Card>
@@ -198,6 +203,7 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
                                             return [
                                                 <Flex
                                                     key={'1'}
+                                                    data-testid={`channels-row-${channel.id}`}
                                                     justifyContent={'space-between'}
                                                     alignItems={'center'}
                                                     gap={2}
@@ -208,12 +214,26 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
                                                     </OpenButton>
                                                     {channel.creatorOrganization === user?.custom.org ? (
                                                         channel.accessSwitch ? (
-                                                            <OrbisBadge>Published</OrbisBadge>
+                                                            <OrbisBadge
+                                                                data-testid={`channels-row-${channel.id}-badge`}
+                                                            >
+                                                                Published
+                                                            </OrbisBadge>
                                                         ) : (
-                                                            <OrbisBadge colorScheme="red">Disabled</OrbisBadge>
+                                                            <OrbisBadge
+                                                                data-testid={`channels-row-${channel.id}-badge`}
+                                                                colorScheme="red"
+                                                            >
+                                                                Disabled
+                                                            </OrbisBadge>
                                                         )
                                                     ) : (
-                                                        <OrbisBadge colorScheme="green">Subscribed</OrbisBadge>
+                                                        <OrbisBadge
+                                                            data-testid={`channels-row-${channel.id}-badge`}
+                                                            colorScheme="green"
+                                                        >
+                                                            Subscribed
+                                                        </OrbisBadge>
                                                     )}
                                                 </Flex>,
                                                 channel.description,
@@ -226,6 +246,7 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
                                                 canValidate && channel.creatorOrganization === user?.custom.org ? (
                                                     <ValidationButton
                                                         key={index + '-validation'}
+                                                        data-testid={`channels-row-${channel.id}-validate-button`}
                                                         channelId={channel.id}
                                                         endpoint={channel.endpoint}
                                                         organizationId={channel.creatorOrganization}
@@ -236,6 +257,7 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
                                                 <Menu key={index + '-menu'}>
                                                     <MenuButton
                                                         as={IconButton}
+                                                        data-testid={`channels-row-${channel.id}-menu-button`}
                                                         icon={<EllipsisVerticalIcon width={16} height={16} />}
                                                         variant="ghost"
                                                         size="sm"
@@ -244,6 +266,7 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
                                                     <MenuList>
                                                         {channel.creatorOrganization === user?.custom.org ? (
                                                             <MenuItem
+                                                                data-testid={`channels-row-${channel.id}-delete-button`}
                                                                 icon={<TrashIcon width={16} height={16} />}
                                                                 color="red.500"
                                                                 onClick={() => handleDeleteChannel(channel.id)}
@@ -261,7 +284,7 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
                                 </Card>
                             ) : (
                                 <Card>
-                                    <CardBody>No Channels Available</CardBody>
+                                    <CardBody data-testid="channels-empty-state">No Channels Available</CardBody>
                                 </Card>
                             )}
                         </Flex>

@@ -42,7 +42,7 @@ type UserProviderProps = {
 function getOrgFromRoles(roles: Record<string, Record<string, string>>): string | undefined {
     const roleKeys = Object.keys(roles) as UserRole[];
     const key = roleKeys.find(
-        (key) => key === 'platform-admin' || key === 'org-admin' || key === 'data-custodian' || key === 'org-user'
+        (key) => key === 'platform-admin' || key === 'org-admin' || key === 'org-user' || key === 'data-custodian'
     );
 
     if (!key) return undefined;
