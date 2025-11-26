@@ -6,8 +6,8 @@ export default defineWorkersConfig({
       workers: {
         // Do not load wrangler.jsonc in tests to avoid missing service errors
         miniflare: {
-          // Required by @cloudflare/vitest-pool-workers
           compatibilityDate: '2025-04-01',
+          compatibilityFlags: ['nodejs_compat'],
           // Add any test-only bindings here if needed later
           bindings: {},
         },
@@ -15,14 +15,22 @@ export default defineWorkersConfig({
     },
     coverage: {
       provider: 'istanbul',
-      reporter: ['text', 'json', 'html'],
+      reporter: ['text', 'html', 'json-summary', 'lcov'],
+      reportsDirectory: './coverage',
+      include: ['src/**/*.{ts,js}'],
       exclude: [
-        'node_modules/**',
-        'dist/**',
-        '.wrangler/**',
-        'test/**',
-        'vitest.config.ts',
-        'global-setup.ts',
+        '**/node_modules/**',
+        '**/dist/**',
+        '**/test/**',
+        '**/tests/**',
+        '**/*.{test,spec}.?(c|m)[jt]s?(x)',
+        '**/wrangler.jsonc',
+        '**/wrangler.toml',
+        '**/vitest.config.*',
+        '**/.wrangler/**',
+        '**/env.d.ts',
+        '**/global-setup.ts',
+        '**/global-teardown.ts',
       ],
     },
   },

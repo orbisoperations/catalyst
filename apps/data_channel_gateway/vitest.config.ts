@@ -1,6 +1,9 @@
 import { defineWorkersConfig } from '@cloudflare/vitest-pool-workers/config';
 import path from 'node:path';
 import { Logger } from 'tslog';
+// Standardized test configuration values
+const STANDARD_COMPATIBILITY_DATE = '2025-04-01';
+const STANDARD_COMPATIBILITY_FLAGS = ['nodejs_compat'];
 
 const logger = new Logger({});
 
@@ -53,8 +56,8 @@ export default defineWorkersConfig({
                             modules: true,
                             modulesRoot: path.resolve('../authx_token_api'),
                             scriptPath: authxServicePath,
-                            compatibilityDate: '2025-04-01',
-                            compatibilityFlags: ['nodejs_compat'],
+                            compatibilityDate: STANDARD_COMPATIBILITY_DATE,
+                            compatibilityFlags: STANDARD_COMPATIBILITY_FLAGS,
                             unsafeEphemeralDurableObjects: true,
                             durableObjects: {
                                 KEY_PROVIDER: 'JWTKeyProvider',
@@ -71,8 +74,8 @@ export default defineWorkersConfig({
                             modules: true,
                             modulesRoot: path.resolve('../data_channel_registrar'),
                             scriptPath: dataChannelRegistrarPath,
-                            compatibilityDate: '2025-04-01',
-                            compatibilityFlags: ['nodejs_compat'],
+                            compatibilityDate: STANDARD_COMPATIBILITY_DATE,
+                            compatibilityFlags: STANDARD_COMPATIBILITY_FLAGS,
                             entrypoint: 'RegistrarWorker',
                             unsafeEphemeralDurableObjects: true,
                             durableObjects: {
@@ -88,8 +91,8 @@ export default defineWorkersConfig({
                             modules: true,
                             modulesRoot: path.resolve('../authx_authzed_api'),
                             scriptPath: authzedServicePath,
-                            compatibilityDate: '2025-04-01',
-                            compatibilityFlags: ['nodejs_compat'],
+                            compatibilityDate: STANDARD_COMPATIBILITY_DATE,
+                            compatibilityFlags: STANDARD_COMPATIBILITY_FLAGS,
                             bindings: {
                                 AUTHZED_ENDPOINT: 'http://localhost:8449',
                                 AUTHZED_KEY: 'atoken',
@@ -101,8 +104,8 @@ export default defineWorkersConfig({
                             modules: true,
                             modulesRoot: path.resolve('../issued-jwt-registry'),
                             scriptPath: jwtRegistryPath,
-                            compatibilityDate: '2025-04-01',
-                            compatibilityFlags: ['nodejs_compat'],
+                            compatibilityDate: STANDARD_COMPATIBILITY_DATE,
+                            compatibilityFlags: STANDARD_COMPATIBILITY_FLAGS,
                             unsafeEphemeralDurableObjects: true,
                             durableObjects: {
                                 ISSUED_JWT_REGISTRY_DO: 'I_JWT_Registry_DO',
@@ -112,8 +115,8 @@ export default defineWorkersConfig({
                             name: 'mock-usercache',
                             modules: true,
                             scriptPath: path.resolve('./tests/__mocks__/usercache.js'),
-                            compatibilityDate: '2025-04-01',
-                            compatibilityFlags: ['nodejs_compat'],
+                            compatibilityDate: STANDARD_COMPATIBILITY_DATE,
+                            compatibilityFlags: STANDARD_COMPATIBILITY_FLAGS,
                         },
                     ],
                 },
@@ -121,21 +124,22 @@ export default defineWorkersConfig({
         },
         coverage: {
             provider: 'istanbul',
-            reporter: ['text', 'html', 'json-summary'],
+            reporter: ['text', 'html', 'json-summary', 'lcov'],
             reportsDirectory: './coverage',
-            include: ['src/**/*.{ts,js}'], // Adjust if your source files are elsewhere
+            include: ['src/**/*.{ts,js}'],
             exclude: [
-                // Common exclusions
                 '**/node_modules/**',
                 '**/dist/**',
                 '**/test/**',
                 '**/tests/**',
-                '**/*.{test,spec}.?(c|m)[jt]s?(x)', // Exclude test file patterns
+                '**/*.{test,spec}.?(c|m)[jt]s?(x)',
                 '**/wrangler.jsonc',
+                '**/wrangler.toml',
                 '**/vitest.config.*',
                 '**/.wrangler/**',
                 '**/env.d.ts',
                 '**/global-setup.ts',
+                '**/global-teardown.ts',
             ],
         },
     },

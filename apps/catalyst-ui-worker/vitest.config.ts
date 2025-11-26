@@ -1,6 +1,9 @@
 import { defineWorkersProject } from '@cloudflare/vitest-pool-workers/config';
 import path from 'node:path';
 import { Logger } from 'tslog';
+// Standardized test configuration values
+const STANDARD_COMPATIBILITY_DATE = '2025-04-01';
+const STANDARD_COMPATIBILITY_FLAGS = ['nodejs_compat'];
 
 const logger = new Logger({});
 
@@ -31,12 +34,14 @@ export default defineWorkersProject(async () => {
                                 className: 'OrganizationMatchmakingDO',
                             },
                         },
-                        compatibilityFlags: ['nodejs_compat'],
+                        compatibilityDate: STANDARD_COMPATIBILITY_DATE,
+                        compatibilityFlags: STANDARD_COMPATIBILITY_FLAGS,
                         workers: [
                             {
                                 name: 'issued_jwt_registry',
                                 modules: true,
-                                compatibilityDate: '2024-04-05',
+                                compatibilityDate: STANDARD_COMPATIBILITY_DATE,
+                                compatibilityFlags: STANDARD_COMPATIBILITY_FLAGS,
                                 modulesRoot: path.resolve('../issued-jwt-registry'),
                                 unsafeEphemeralDurableObjects: true,
                                 scriptPath: issuedJWTRegistryServicePath,
@@ -49,8 +54,8 @@ export default defineWorkersProject(async () => {
                                 modules: true,
                                 modulesRoot: path.resolve('../data_channel_registrar'),
                                 scriptPath: dataChannelRegistrarPath, // Built by `global-setup.ts`
-                                compatibilityDate: '2024-04-05',
-                                compatibilityFlags: ['nodejs_compat'],
+                                compatibilityDate: STANDARD_COMPATIBILITY_DATE,
+                                compatibilityFlags: STANDARD_COMPATIBILITY_FLAGS,
                                 entrypoint: 'RegistrarWorker',
                                 unsafeEphemeralDurableObjects: true,
                                 durableObjects: {
@@ -63,8 +68,8 @@ export default defineWorkersProject(async () => {
                                 modulesRoot: path.resolve('../authx_token_api'),
                                 scriptPath: authxServicePath, // Built by `global-setup.ts`
                                 entrypoint: 'JWTWorker',
-                                compatibilityDate: '2024-04-05',
-                                compatibilityFlags: ['nodejs_compat'],
+                                compatibilityDate: STANDARD_COMPATIBILITY_DATE,
+                                compatibilityFlags: STANDARD_COMPATIBILITY_FLAGS,
                                 unsafeEphemeralDurableObjects: true,
                                 durableObjects: {
                                     KEY_PROVIDER: 'JWTKeyProvider',
@@ -76,11 +81,11 @@ export default defineWorkersProject(async () => {
                                 modules: true,
                                 modulesRoot: path.resolve('../authx_authzed_api'),
                                 scriptPath: authzedServicePath, // Built by `global-setup.ts`
-                                compatibilityDate: '2024-04-05',
-                                compatibilityFlags: ['nodejs_compat'],
+                                compatibilityDate: STANDARD_COMPATIBILITY_DATE,
+                                compatibilityFlags: STANDARD_COMPATIBILITY_FLAGS,
                                 entrypoint: 'AuthzedWorker',
                                 bindings: {
-                                    AUTHZED_ENDPOINT: 'http://localhost:8081',
+                                    AUTHZED_ENDPOINT: 'http://localhost:8449',
                                     AUTHZED_KEY: 'atoken',
                                     AUTHZED_PREFIX: 'orbisops_catalyst_dev/',
                                 },
@@ -93,8 +98,8 @@ export default defineWorkersProject(async () => {
                                 modules: true,
                                 modulesRoot: path.resolve('../user-credentials-cache'),
                                 scriptPath: credsCacheServicePath, // Built by `global-setup.ts`
-                                compatibilityDate: '2024-04-05',
-                                compatibilityFlags: ['nodejs_compat'],
+                                compatibilityDate: STANDARD_COMPATIBILITY_DATE,
+                                compatibilityFlags: STANDARD_COMPATIBILITY_FLAGS,
                                 entrypoint: 'UserCredsCacheWorker',
                                 durableObjects: {
                                     CACHE: 'UserCredsCache',
@@ -103,7 +108,8 @@ export default defineWorkersProject(async () => {
                             {
                                 name: 'organization-matchmaking',
                                 modules: true,
-                                compatibilityDate: '2024-04-05',
+                                compatibilityDate: STANDARD_COMPATIBILITY_DATE,
+                                compatibilityFlags: STANDARD_COMPATIBILITY_FLAGS,
                                 modulesRoot: path.resolve('../organization_matchmaking'),
                                 unsafeEphemeralDurableObjects: true,
                                 scriptPath: organizationMatchmakingServicePath,
