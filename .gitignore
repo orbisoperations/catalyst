@@ -4,6 +4,9 @@
 .wrangler/
 .dev.vars
 
+# Playwright auth state
+.auth/
+
 # Logs
 
 logs

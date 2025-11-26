@@ -1,19 +1,14 @@
-import { test, expect } from '../fixtures/auth';
-import { verifyTopBarOrganization } from '../utils/test-helpers';
-import { NAVBAR } from '../TEST_ID_CONSTANTS';
+import { test, expect } from './fixtures/auth';
+import { verifyTopBarOrganization } from './utils/test-helpers';
+import { TOPBAR } from './utils/test-id-constants';
 
 /**
  * Authentication & Authorization Tests
  *
- * CRITICAL: Minimal test to demonstrate the 18-month bug where
- * data-custodian-only users had user.custom.org = undefined
- *
- * Additional test scenarios saved in auth.spec.full.ts
  */
 
-test.describe('TC-AUTH-003: Data Custodian Only User Login ⚠️ CRITICAL', () => {
+test.describe('TC-AUTH-003: Data Custodian Only User Login', () => {
     test('should extract organization correctly for data-custodian-only user', async ({ dataCustodianPage: page }) => {
-        // CRITICAL: This is the exact scenario that caused the 18-month bug
         // User with ONLY data-custodian role (no org-admin, no org-user)
 
         await page.goto('/');
@@ -22,7 +17,7 @@ test.describe('TC-AUTH-003: Data Custodian Only User Login ⚠️ CRITICAL', () 
         await verifyTopBarOrganization(page, 'test-org-alpha');
 
         // Verify user email is displayed
-        const userEmail = page.getByTestId(NAVBAR.USER_EMAIL);
+        const userEmail = page.getByTestId(TOPBAR.USER_EMAIL_DISPLAY);
         await expect(userEmail).toBeVisible();
         await expect(userEmail).toHaveText('test-data-custodian');
     });

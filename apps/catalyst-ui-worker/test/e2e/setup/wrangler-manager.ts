@@ -14,6 +14,7 @@
  */
 
 import { spawn, ChildProcess, execSync } from 'child_process';
+import fs from 'fs';
 import path from 'path';
 
 export interface WorkerConfig {
@@ -156,6 +157,7 @@ export class WranglerManager {
 
     /**
      * Build all workers before starting
+     * Skips workers without a build script (wrangler handles TS compilation)
      */
     async buildWorkers(): Promise<void> {
         console.log('\n📦 Building backend workers...\n');
@@ -163,6 +165,19 @@ export class WranglerManager {
         for (const config of WORKER_CONFIGS) {
             // Use config.directory if provided, otherwise use config.name
             const workerDir = path.resolve(this.appsDir, config.directory || config.name);
+            const pkgJsonPath = path.join(workerDir, 'package.json');
+
+            // Check if package has a build script
+            if (fs.existsSync(pkgJsonPath)) {
+                const pkgJson = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf-8'));
+                if (!pkgJson.scripts?.build) {
+                    console.log(`  ⏭ ${config.name} (no build script)`);
+                    continue;
+                }
+            } else {
+                console.log(`  ⏭ ${config.name} (no package.json)`);
+                continue;
+            }
 
             console.log(`  Building ${config.name}...`);
             try {
@@ -178,7 +193,7 @@ export class WranglerManager {
             }
         }
 
-        console.log('\n✓ All workers built\n');
+        console.log('\n✓ All workers ready\n');
     }
 
     /**
