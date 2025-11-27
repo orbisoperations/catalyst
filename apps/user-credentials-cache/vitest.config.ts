@@ -21,7 +21,6 @@ export default defineWorkersConfig({
 				'**/tests/**',
 				'**/*.{test,spec}.?(c|m)[jt]s?(x)',
 				'**/wrangler.jsonc',
-				'**/wrangler.toml',
 				'**/vitest.config.*',
 				'**/.wrangler/**',
 				'**/env.d.ts',

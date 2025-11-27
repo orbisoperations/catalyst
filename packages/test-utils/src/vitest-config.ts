@@ -42,7 +42,6 @@ export const STANDARD_COVERAGE_CONFIG = {
         '**/tests/**',
         '**/*.{test,spec}.?(c|m)[jt]s?(x)',
         '**/wrangler.jsonc',
-        '**/wrangler.toml',
         '**/vitest.config.*',
         '**/.wrangler/**',
         '**/env.d.ts',

@@ -26,7 +26,7 @@ export default defineWorkersProject(async () => {
                 workers: {
                     isolatedStorage: true,
                     //singleWorker: true,
-                    wrangler: { configPath: './wrangler.toml' },
+                    wrangler: { configPath: './wrangler.jsonc' },
                     miniflare: {
                         durableObjects: {
                             ORG_MATCHMAKING: {
