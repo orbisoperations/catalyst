@@ -1,0 +1,163 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "datachannel_tak",
+	"main": "src/index.ts",
+	"compatibility_date": "2024-04-05",
+	"compatibility_flags": ["nodejs_compat"],
+	"account_id": "3be6f7bb0cc73869d555e1156586c1f2",
+	"workers_dev": false,
+
+	"vars": {
+		"CATALYST_GATEWAY_URL": "https://gateway.catalyst.devintelops.io/graphql",
+		"TAK_HOST": "https://tak-server-2-broken-haze-8097.fly.dev",
+		"TAK_UI": "https://tak-server-2-auth-proxy.fly.dev/",
+		"TAK_PORT": 8999,
+		"ENABLED": "true",
+		"NAMESPACE": "broken-haze",
+		"CATALYST_DC_ID": "8a9c86ae-7ff2-4cca-9fe7-b72b54605c84",
+		"TAK_USER": "user",
+	},
+
+	// Cron Triggers
+	// Docs: https://developers.cloudflare.com/workers/platform/triggers/cron-triggers/
+	// Configuration: https://developers.cloudflare.com/workers/wrangler/configuration/#triggers
+	// triggers: {
+	// 	crons: ["* * * * *"] // * * * * * = run every minute
+	// }
+	"dev": {
+		"port": 4005,
+	},
+
+	"durable_objects": {
+		"bindings": [
+			{
+				"name": "TAK_MANAGER",
+				"class_name": "TAKDataManager",
+			},
+		],
+	},
+
+	// Durable Object migrations.
+	// Docs: https://developers.cloudflare.com/workers/learning/using-durable-objects#configure-durable-object-classes-with-migrations
+	"migrations": [
+		{
+			"tag": "v1",
+			"new_classes": ["TAKDataManager"],
+		},
+	],
+
+	// ============================ STAGING VALUES =============================
+	"env": {
+		"staging": {
+			// CATALYST_GATEWAY_TOKEN
+			// TAK_PASSWORD
+			"vars": {
+				"TAK_HOST": "https://tak-server-2-broken-haze-8097.fly.dev",
+				"TAK_PORT": 8999,
+				"TAK_UI": "https://tak-server-2-auth-proxy.fly.dev/",
+				"ENABLED": "true",
+				"NAMESPACE": "broken-haze",
+				"CATALYST_GATEWAY_URL": "https://gateway.catalyst.devintelops.io/graphql",
+				"CATALYST_DC_ID": "8a9c86ae-7ff2-4cca-9fe7-b72b54605c84",
+				"TAK_USER": "user",
+			},
+			"routes": [
+				{
+					"pattern": "datachannel-tak-broken-haze.catalyst.devintelops.io",
+					"custom_domain": true,
+				},
+			],
+			"durable_objects": {
+				"bindings": [
+					{
+						"name": "TAK_MANAGER",
+						"class_name": "TAKDataManager",
+					},
+				],
+			},
+			// Durable Object migrations.
+			// Docs: https://developers.cloudflare.com/workers/learning/using-durable-objects#configure-durable-object-classes-with-migrations
+			"migrations": [
+				{
+					"tag": "v1",
+					"new_classes": ["TAKDataManager"],
+				},
+			],
+		},
+
+		"staging2": {
+			// CATALYST_GATEWAY_TOKEN
+			// TAK_PASSWORD
+			"vars": {
+				"TAK_HOST": "https://goatak-empty-violet-5442.fly.dev",
+				"TAK_PORT": 8999,
+				"TAK_UI": "https://tak-server-1-auth-proxy.fly.dev/",
+				"ENABLED": "true",
+				"NAMESPACE": "empty-violet",
+				"CATALYST_GATEWAY_URL": "https://gateway.catalyst.devintelops.io/graphql",
+				"CATALYST_DC_ID": "791a630c-6a39-4ea1-b271-140e28ac75dc",
+				"TAK_USER": "user",
+			},
+			"routes": [
+				{
+					"pattern": "datachannel-tak-empty-violet.catalyst.devintelops.io",
+					"custom_domain": true,
+				},
+			],
+			"durable_objects": {
+				"bindings": [
+					{
+						"name": "TAK_MANAGER",
+						"class_name": "TAKDataManager",
+					},
+				],
+			},
+			// Durable Object migrations.
+			// Docs: https://developers.cloudflare.com/workers/learning/using-durable-objects#configure-durable-object-classes-with-migrations
+			"migrations": [
+				{
+					"tag": "v1",
+					"new_classes": ["TAKDataManager"],
+				},
+			],
+		},
+
+		// ============================ DEMO VALUES =============================
+		"demo": {
+			// CATALYST_GATEWAY_TOKEN
+			// TAK_PASSWORD
+			"vars": {
+				"TAK_HOST": "https://goatak-empty-violet-5442.fly.dev",
+				"TAK_PORT": 8999,
+				"TAK_UI": "https://tak-server-1-auth-proxy.fly.dev/",
+				"ENABLED": "true",
+				"NAMESPACE": "empty-violet",
+				"CATALYST_GATEWAY_URL": "https://gateway.catalyst.demointelops.io/graphql",
+				"CATALYST_DC_ID": "791a630c-6a39-4ea1-b271-140e28ac75dc",
+				"TAK_USER": "user",
+			},
+			"routes": [
+				{
+					"pattern": "datachannel-tak-empty-violet.catalyst.demointelops.io",
+					"custom_domain": true,
+				},
+			],
+			"durable_objects": {
+				"bindings": [
+					{
+						"name": "TAK_MANAGER",
+						"class_name": "TAKDataManager",
+					},
+				],
+			},
+			// Durable Object migrations.
+			// Docs: https://developers.cloudflare.com/workers/learning/using-durable-objects#configure-durable-object-classes-with-migrations
+			"migrations": [
+				{
+					"tag": "v1",
+					"new_classes": ["TAKDataManager"],
+				},
+			],
+		},
+	},
+}
