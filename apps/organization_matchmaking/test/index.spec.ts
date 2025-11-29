@@ -49,6 +49,11 @@ const createMockUser = (orgId: string) =>
 		zitadelRoles: ['org-admin'] as const,
 	}) as User;
 
+// Helper to mock USERCACHE.getUser with proper typing
+const mockGetUser = (user: User | undefined) => {
+	env.USERCACHE.getUser = (async () => user) as typeof env.USERCACHE.getUser;
+};
+
 describe('organization matchmaking worker', () => {
 	// create a test to check that the worker is correctly initialized
 	it('should be initialized', () => {
@@ -138,10 +143,18 @@ describe('organization matchmaking worker', () => {
 
 		const inviteToSend = generateInvites(1)[0];
 
-		const createdInvite: OrgInvite = await stub.send(inviteToSend.sender, inviteToSend.receiver, inviteToSend.message);
+		const createdInvite: OrgInvite = await stub.send(
+			inviteToSend.sender,
+			inviteToSend.receiver,
+			inviteToSend.message
+		);
 		expect(createdInvite).toBeDefined();
 
-		const acceptedInvite: OrgInvite = await stub.respond(inviteToSend.receiver, createdInvite.id, OrgInviteStatusSchema.enum.accepted);
+		const acceptedInvite: OrgInvite = await stub.respond(
+			inviteToSend.receiver,
+			createdInvite.id,
+			OrgInviteStatusSchema.enum.accepted
+		);
 		expect(acceptedInvite.status).toBe('accepted');
 	});
 
@@ -156,10 +169,18 @@ describe('organization matchmaking worker', () => {
 
 		const inviteToSend = generateInvites(1)[0];
 
-		const createdInvite: OrgInvite = await stub.send(inviteToSend.sender, inviteToSend.receiver, inviteToSend.message);
+		const createdInvite: OrgInvite = await stub.send(
+			inviteToSend.sender,
+			inviteToSend.receiver,
+			inviteToSend.message
+		);
 		expect(createdInvite).toBeDefined();
 
-		const declinedInvite: OrgInvite = await stub.respond(inviteToSend.receiver, createdInvite.id, OrgInviteStatusSchema.enum.declined);
+		const declinedInvite: OrgInvite = await stub.respond(
+			inviteToSend.receiver,
+			createdInvite.id,
+			OrgInviteStatusSchema.enum.declined
+		);
 		expect(declinedInvite.status).toBe('declined');
 
 		// check if the invite is still in the sender's mailbox (should be removed)
@@ -183,7 +204,11 @@ describe('organization matchmaking worker', () => {
 
 		const inviteToSend = generateInvites(1)[0];
 
-		const createdInvite: OrgInvite = await stub.send(inviteToSend.sender, inviteToSend.receiver, inviteToSend.message);
+		const createdInvite: OrgInvite = await stub.send(
+			inviteToSend.sender,
+			inviteToSend.receiver,
+			inviteToSend.message
+		);
 		expect(createdInvite).toBeDefined();
 
 		// Try to accept as sender - should throw
@@ -208,7 +233,11 @@ describe('organization matchmaking worker', () => {
 
 		const inviteToSend = generateInvites(1)[0];
 
-		const createdInvite: OrgInvite = await stub.send(inviteToSend.sender, inviteToSend.receiver, inviteToSend.message);
+		const createdInvite: OrgInvite = await stub.send(
+			inviteToSend.sender,
+			inviteToSend.receiver,
+			inviteToSend.message
+		);
 		expect(createdInvite).toBeDefined();
 
 		// get the invite from the sender's mailbox
@@ -271,7 +300,11 @@ describe('organization matchmaking worker', () => {
 
 		// Create an invite
 		const inviteToSend = generateInvites(1)[0];
-		const createdInvite: OrgInvite = await stub.send(inviteToSend.sender, inviteToSend.receiver, inviteToSend.message);
+		const createdInvite: OrgInvite = await stub.send(
+			inviteToSend.sender,
+			inviteToSend.receiver,
+			inviteToSend.message
+		);
 		expect(createdInvite).toBeDefined();
 
 		// Try to change status back to pending (which should fail)
@@ -294,7 +327,7 @@ describe('organization matchmaking worker', () => {
 		});
 
 		// Create and send multiple invites
-		const invites = generateInvites(3).map((invite) => ({
+		const invites = generateInvites(3).map(invite => ({
 			...invite,
 			receiver: 'test-receiver-org', // Override receiver to be the same for all invites
 		}));
@@ -370,7 +403,11 @@ describe('organization matchmaking worker', () => {
 
 		// Create an invite
 		const inviteToSend = generateInvites(1)[0];
-		const createdInvite: OrgInvite = await stub.send(inviteToSend.sender, inviteToSend.receiver, inviteToSend.message);
+		const createdInvite: OrgInvite = await stub.send(
+			inviteToSend.sender,
+			inviteToSend.receiver,
+			inviteToSend.message
+		);
 		expect(createdInvite).toBeDefined();
 
 		// Try to accept the invite as the sender - DO method should throw
@@ -394,7 +431,11 @@ describe('organization matchmaking worker', () => {
 
 		// Create an invite
 		const inviteToSend = generateInvites(1)[0];
-		const createdInvite: OrgInvite = await stub.send(inviteToSend.sender, inviteToSend.receiver, inviteToSend.message);
+		const createdInvite: OrgInvite = await stub.send(
+			inviteToSend.sender,
+			inviteToSend.receiver,
+			inviteToSend.message
+		);
 		expect(createdInvite).toBeDefined();
 
 		// Manually delete the invite from the sender's mailbox to simulate inconsistency
@@ -402,7 +443,7 @@ describe('organization matchmaking worker', () => {
 			const senderMailbox = ((await state.storage.get(inviteToSend.sender)) as OrgInvite[]) ?? [];
 			await state.storage.put(
 				inviteToSend.sender,
-				senderMailbox.filter((i: OrgInvite) => i.id !== createdInvite.id),
+				senderMailbox.filter((i: OrgInvite) => i.id !== createdInvite.id)
 			);
 		});
 
@@ -423,7 +464,11 @@ describe('organization matchmaking worker', () => {
 
 			// Create an invite first
 			const inviteToSend = generateInvites(1)[0];
-			const createdInvite: OrgInvite = await stub.send(inviteToSend.sender, inviteToSend.receiver, inviteToSend.message);
+			const createdInvite: OrgInvite = await stub.send(
+				inviteToSend.sender,
+				inviteToSend.receiver,
+				inviteToSend.message
+			);
 			expect(createdInvite).toBeDefined();
 
 			const mockUser: User = {
@@ -432,7 +477,7 @@ describe('organization matchmaking worker', () => {
 			} as User;
 
 			// Mock the USERCACHE binding used inside the worker
-			env.USERCACHE.getUser = async () => mockUser;
+			mockGetUser(mockUser);
 			env.AUTHZED.canUpdateOrgPartnersInOrg = async () => true;
 
 			// Read the invite using the worker
@@ -461,7 +506,7 @@ describe('organization matchmaking worker', () => {
 
 		it('should return error when user is not found', async () => {
 			// Mock USERCACHE to return no user
-			env.USERCACHE.getUser = async () => undefined;
+			mockGetUser(undefined);
 
 			const worker = SELF;
 			const response = await worker.readInvite('some-id', { cfToken: 'valid-token' });
@@ -478,7 +523,11 @@ describe('organization matchmaking worker', () => {
 
 			// Create an invite first
 			const inviteToSend = generateInvites(1)[0];
-			const createdInvite: OrgInvite = await stub.send(inviteToSend.sender, inviteToSend.receiver, inviteToSend.message);
+			const createdInvite: OrgInvite = await stub.send(
+				inviteToSend.sender,
+				inviteToSend.receiver,
+				inviteToSend.message
+			);
 			expect(createdInvite).toBeDefined();
 
 			// Mock the USERCACHE binding with a user
@@ -486,7 +535,7 @@ describe('organization matchmaking worker', () => {
 				userId: 'test-user',
 				orgId: inviteToSend.sender,
 			} as User;
-			env.USERCACHE.getUser = async () => mockUser;
+			mockGetUser(mockUser);
 			env.AUTHZED.canUpdateOrgPartnersInOrg = async () => false;
 
 			const worker = SELF;
@@ -516,7 +565,11 @@ describe('organization matchmaking worker', () => {
 
 			// Create an invite
 			const inviteToSend = generateInvites(1)[0];
-			const createdInvite: OrgInvite = await stub.send(inviteToSend.sender, inviteToSend.receiver, inviteToSend.message);
+			const createdInvite: OrgInvite = await stub.send(
+				inviteToSend.sender,
+				inviteToSend.receiver,
+				inviteToSend.message
+			);
 			expect(createdInvite).toBeDefined();
 
 			// Mock the USERCACHE binding with a user
@@ -527,7 +580,7 @@ describe('organization matchmaking worker', () => {
 
 			await env.AUTHZED.addUserToOrg(inviteToSend.sender, mockUser.userId);
 
-			env.USERCACHE.getUser = async () => mockUser;
+			mockGetUser(mockUser);
 			env.AUTHZED.canUpdateOrgPartnersInOrg = async () => true;
 
 			// Toggle the invite using the worker
@@ -555,7 +608,7 @@ describe('organization matchmaking worker', () => {
 
 		it('should return error when user is not found', async () => {
 			// Mock USERCACHE to return no user
-			env.USERCACHE.getUser = async () => undefined;
+			mockGetUser(undefined);
 
 			const worker = SELF;
 			const response = await worker.togglePartnership('some-id', { cfToken: 'valid-token' });
@@ -572,7 +625,11 @@ describe('organization matchmaking worker', () => {
 
 			// Create an invite
 			const inviteToSend = generateInvites(1)[0];
-			const createdInvite: OrgInvite = await stub.send(inviteToSend.sender, inviteToSend.receiver, inviteToSend.message);
+			const createdInvite: OrgInvite = await stub.send(
+				inviteToSend.sender,
+				inviteToSend.receiver,
+				inviteToSend.message
+			);
 			expect(createdInvite).toBeDefined();
 
 			// Mock the USERCACHE binding with a user
@@ -580,7 +637,7 @@ describe('organization matchmaking worker', () => {
 				userId: 'test-user',
 				orgId: inviteToSend.sender,
 			} as User;
-			env.USERCACHE.getUser = async () => mockUser;
+			mockGetUser(mockUser);
 			env.AUTHZED.canUpdateOrgPartnersInOrg = async () => false;
 
 			const worker = SELF;
@@ -598,7 +655,7 @@ describe('organization matchmaking worker', () => {
 				userId: 'test-user',
 				orgId: SENDER_ORGANIZATION,
 			} as User;
-			env.USERCACHE.getUser = async () => mockUser;
+			mockGetUser(mockUser);
 			env.AUTHZED.canUpdateOrgPartnersInOrg = async () => true;
 
 			const worker = SELF;
@@ -629,11 +686,15 @@ describe('Invite Management', () => {
 			const mockUser = createMockUser('default');
 
 			await env.AUTHZED.addUserToOrg(mockUser.orgId, mockUser.userId);
-			env.USERCACHE.getUser = async () => mockUser;
+			mockGetUser(mockUser);
 			env.AUTHZED.canUpdateOrgPartnersInOrg = async () => true;
 
 			const inviteToSend = generateInvites(1)[0];
-			const response = await worker.sendInvite(inviteToSend.receiver, { cfToken: 'valid-token' }, inviteToSend.message);
+			const response = await worker.sendInvite(
+				inviteToSend.receiver,
+				{ cfToken: 'valid-token' },
+				inviteToSend.message
+			);
 
 			expect(response.success).toBe(true);
 			if (!response.success) {
@@ -664,14 +725,56 @@ describe('Invite Management', () => {
 
 			// Add user to org first
 			await env.AUTHZED.addUserToOrg(mockUser.orgId, mockUser.userId);
-			env.USERCACHE.getUser = async () => mockUser;
+			mockGetUser(mockUser);
 			env.AUTHZED.canUpdateOrgPartnersInOrg = async () => false;
 
-			const response = await worker.sendInvite('test-receiver-org-1', { cfToken: 'valid-token' }, 'Test invite message');
+			const response = await worker.sendInvite(
+				'test-receiver-org-1',
+				{ cfToken: 'valid-token' },
+				'Test invite message'
+			);
 
 			expect(response.success).toBe(false);
 			if (!response.success) {
 				expect(response.error).toBe('Permission denied: send org invites');
+			}
+		});
+
+		it('should return error when trying to invite own organization', async () => {
+			const worker = SELF;
+			const mockUser = createMockUser('default');
+
+			await env.AUTHZED.addUserToOrg(mockUser.orgId, mockUser.userId);
+			mockGetUser(mockUser);
+			env.AUTHZED.canUpdateOrgPartnersInOrg = async () => true;
+
+			// Try to invite own organization
+			const response = await worker.sendInvite('default', { cfToken: 'valid-token' }, 'Test invite message');
+
+			expect(response.success).toBe(false);
+			if (!response.success) {
+				expect(response.error).toBe('Cannot invite your own organization');
+			}
+		});
+
+		it('should return error when receiving org ID format is invalid', async () => {
+			const worker = SELF;
+			const mockUser = createMockUser('default');
+
+			await env.AUTHZED.addUserToOrg(mockUser.orgId, mockUser.userId);
+			mockGetUser(mockUser);
+			env.AUTHZED.canUpdateOrgPartnersInOrg = async () => true;
+
+			// Try to send invite with invalid org ID format (contains special characters)
+			const response = await worker.sendInvite(
+				'invalid@org#id!',
+				{ cfToken: 'valid-token' },
+				'Test invite message'
+			);
+
+			expect(response.success).toBe(false);
+			if (!response.success) {
+				expect(response.error).toContain('Organization ID');
 			}
 		});
 	});
@@ -685,11 +788,15 @@ describe('Invite Management', () => {
 			await env.AUTHZED.addUserToOrg(senderUser.orgId, senderUser.userId);
 			await env.AUTHZED.addUserToOrg(receiverUser.orgId, receiverUser.userId);
 
-			env.USERCACHE.getUser = async () => senderUser;
+			mockGetUser(senderUser);
 			env.AUTHZED.canUpdateOrgPartnersInOrg = async () => true;
 
 			const inviteToSend = generateInvites(1)[0];
-			const sendResponse = await worker.sendInvite(inviteToSend.receiver, { cfToken: 'valid-token' }, inviteToSend.message);
+			const sendResponse = await worker.sendInvite(
+				inviteToSend.receiver,
+				{ cfToken: 'valid-token' },
+				inviteToSend.message
+			);
 
 			expect(sendResponse.success).toBe(true);
 			if (!sendResponse.success) {
@@ -698,7 +805,7 @@ describe('Invite Management', () => {
 
 			const invite = sendResponse.data as OrgInvite;
 
-			env.USERCACHE.getUser = async () => receiverUser;
+			mockGetUser(receiverUser);
 			env.AUTHZED.canUpdateOrgPartnersInOrg = async () => true;
 
 			const acceptResponse = await worker.acceptInvite(invite.id, { cfToken: 'valid-token' });
@@ -718,11 +825,15 @@ describe('Invite Management', () => {
 
 			// First send an invite
 			await env.AUTHZED.addUserToOrg(mockUser.orgId, mockUser.userId);
-			env.USERCACHE.getUser = async () => mockUser;
+			mockGetUser(mockUser);
 			env.AUTHZED.canUpdateOrgPartnersInOrg = async () => true;
 
 			const inviteToSend = generateInvites(1)[0];
-			const sendResponse = await worker.sendInvite(inviteToSend.receiver, { cfToken: 'valid-token' }, inviteToSend.message);
+			const sendResponse = await worker.sendInvite(
+				inviteToSend.receiver,
+				{ cfToken: 'valid-token' },
+				inviteToSend.message
+			);
 
 			expect(sendResponse.success).toBe(true);
 			if (!sendResponse.success) {
@@ -750,11 +861,15 @@ describe('Invite Management', () => {
 			await env.AUTHZED.addUserToOrg(senderUser.orgId, senderUser.userId);
 			await env.AUTHZED.addUserToOrg(receiverUser.orgId, receiverUser.userId);
 
-			env.USERCACHE.getUser = async () => senderUser;
+			mockGetUser(senderUser);
 			env.AUTHZED.canUpdateOrgPartnersInOrg = async () => true;
 
 			const inviteToSend = generateInvites(1)[0];
-			const sendResponse = await worker.sendInvite(inviteToSend.receiver, { cfToken: 'valid-token' }, inviteToSend.message);
+			const sendResponse = await worker.sendInvite(
+				inviteToSend.receiver,
+				{ cfToken: 'valid-token' },
+				inviteToSend.message
+			);
 
 			expect(sendResponse.success).toBe(true);
 			if (!sendResponse.success) {
@@ -763,7 +878,7 @@ describe('Invite Management', () => {
 
 			const invite = sendResponse.data as OrgInvite;
 
-			env.USERCACHE.getUser = async () => receiverUser;
+			mockGetUser(receiverUser);
 			env.AUTHZED.canUpdateOrgPartnersInOrg = async () => true;
 
 			const declineResponse = await worker.declineInvite(invite.id, { cfToken: 'valid-token' });
@@ -784,7 +899,7 @@ describe('Invite Management', () => {
 			const mockUser = createMockUser('default');
 
 			await env.AUTHZED.addUserToOrg(mockUser.orgId, mockUser.userId);
-			env.USERCACHE.getUser = async () => mockUser;
+			mockGetUser(mockUser);
 			env.AUTHZED.canUpdateOrgPartnersInOrg = async () => true;
 
 			const invites = generateInvites(3);
@@ -826,7 +941,7 @@ describe('Invite Management', () => {
 
 		it('should return error when user is not found', async () => {
 			const worker = SELF;
-			env.USERCACHE.getUser = async () => undefined;
+			mockGetUser(undefined);
 
 			const response = await worker.listInvites({ cfToken: 'valid-token' });
 
@@ -842,7 +957,7 @@ describe('Invite Management', () => {
 
 			// Add user to org first
 			await env.AUTHZED.addUserToOrg(mockUser.orgId, mockUser.userId);
-			env.USERCACHE.getUser = async () => mockUser;
+			mockGetUser(mockUser);
 			env.AUTHZED.canUpdateOrgPartnersInOrg = async () => false;
 
 			const response = await worker.listInvites({ cfToken: 'valid-token' });
