@@ -23,12 +23,7 @@ async function checkSpiceDBHealth(endpoint: string): Promise<boolean> {
  * @returns Promise that resolves to true if SpiceDB is running and healthy
  */
 export async function isSpiceDBRunning(endpoint: string = 'http://localhost:8449'): Promise<boolean> {
-    try {
-        const response = await fetch(`${endpoint}/healthz`);
-        return response.ok;
-    } catch {
-        return false;
-    }
+    return checkSpiceDBHealth(endpoint);
 }
 
 /**
@@ -57,7 +52,7 @@ export async function waitForSpiceDB(
         console.log(`Waiting for SpiceDB to be ready... (${Math.round((Date.now() - startTime) / 1000)}s)`);
 
         // Wait before next check with exponential backoff
-        await new Promise((resolve) => setTimeout(resolve, currentInterval));
+        await new Promise(resolve => setTimeout(resolve, currentInterval));
         currentInterval = Math.min(currentInterval * 1.5, 2000); // Max 2s between checks
     }
 

@@ -7,7 +7,7 @@
             "outputs": [".next/**", "!.next/cache/**", "dist/**", ".vercel/**"]
         },
         "@catalyst/test-utils#build": {
-            "outputs": []
+            "outputs": ["dist/**"]
         },
         "dev": {
             "cache": false,

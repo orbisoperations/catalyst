@@ -4,7 +4,7 @@
     "private": true,
     "packageManager": "pnpm@10.18.0",
     "scripts": {
-        "test": "pnpm run -r --filter='!./examples/**' --filter='!./apps/datachannel-next' --filter='!./apps/catalyst_cli' test:workspace",
+        "test": "turbo run test:workspace --filter='!./examples/**' --filter='!./apps/datachannel-next' --filter='!./apps/catalyst_cli'",
         "build": "turbo run build --filter='!./examples/**' --filter='!./apps/datachannel-next' --filter='!./apps/catalyst_cli'",
         "dev": "turbo run dev --filter='!./examples/**' --filter='!./apps/datachannel-next' --filter='!./apps/catalyst_cli'",
         "kill-dev": "./scripts/kill-dev.sh",
