@@ -26,6 +26,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useUser } from '../contexts/User/UserContext';
 import { OrgInvite } from '@catalyst/schemas';
+import { canUserUpdatePartners } from '@/app/actions/partners';
 type PartnersListComponentProps = {
     listInvites: (token: string) => Promise<OrgInvite[]>;
     declineInvite: (inviteId: string, token: string) => Promise<OrgInvite>;
@@ -42,15 +43,16 @@ export default function PartnersListComponent({
     const [partners, setPartners] = useState<OrgInvite[]>([]);
     const [invitations, setInvitations] = useState<OrgInvite[]>([]);
     const [selectedPartner, setSelectedPartner] = useState<OrgInvite | null>(null);
+    const [canUpdatePartners, setCanUpdatePartners] = useState<boolean>(false);
     const { token, user } = useUser();
     function fetchInvites() {
         setHasError(false);
         if (token)
             return listInvites(token)
-                .then((invites) => {
+                .then(invites => {
                     const partners: OrgInvite[] = [];
                     const invitations: OrgInvite[] = [];
-                    invites.forEach((invite) => {
+                    invites.forEach(invite => {
                         if (invite.status === 'accepted') {
                             partners.push(invite);
                         }
@@ -81,18 +83,31 @@ export default function PartnersListComponent({
         fetchInvites();
     }, [token]);
 
+    useEffect(() => {
+        // Check user permissions for partner updates
+        canUserUpdatePartners()
+            .then(setCanUpdatePartners)
+            .catch(() => {
+                setCanUpdatePartners(false);
+            });
+    }, []);
+
     const { isOpen, onOpen, onClose } = useDisclosure();
     return (
         <ListView
             topbaractions={navigationItems}
             actions={
-                <Flex gap={5}>
-                    <CreateButton
-                        onClick={() => {
-                            router.push('/partners/invite');
-                        }}
-                    />
-                </Flex>
+                canUpdatePartners ? (
+                    <Flex gap={5}>
+                        <CreateButton
+                            onClick={() => {
+                                router.push('/partners/invite');
+                            }}
+                        />
+                    </Flex>
+                ) : (
+                    <></>
+                )
             }
             headerTitle={{
                 text: 'Partners',
@@ -108,7 +123,7 @@ export default function PartnersListComponent({
                             {partners.length > 0 ? (
                                 <OrbisTable
                                     headers={['Partner']}
-                                    rows={partners.map((partner) => [
+                                    rows={partners.map(partner => [
                                         <Box key={partner.id}>
                                             <Flex justifyContent={'space-between'}>
                                                 <OpenButton
@@ -125,28 +140,32 @@ export default function PartnersListComponent({
                                                         ? partner.receiver
                                                         : partner.sender}
                                                 </OpenButton>
-                                                <Flex gap={10} align={'center'}>
-                                                    <Switch
-                                                        colorScheme="green"
-                                                        defaultChecked={partner.isActive}
-                                                        onChange={() => {
-                                                            togglePartnership(partner.id, token ?? '')
-                                                                .then(fetchInvites)
-                                                                .catch(() => {
-                                                                    setHasError(true);
-                                                                    setErrorMessage(
-                                                                        'An error occurred while toggling the partner. Please try again later.'
-                                                                    );
-                                                                });
-                                                        }}
-                                                    />
-                                                    <TrashButton
-                                                        onClick={() => {
-                                                            setSelectedPartner(partner);
-                                                            onOpen();
-                                                        }}
-                                                    />
-                                                </Flex>
+                                                {canUpdatePartners ? (
+                                                    <Flex gap={10} align={'center'}>
+                                                        <Switch
+                                                            colorScheme="green"
+                                                            defaultChecked={partner.isActive}
+                                                            onChange={() => {
+                                                                togglePartnership(partner.id, token ?? '')
+                                                                    .then(fetchInvites)
+                                                                    .catch(() => {
+                                                                        setHasError(true);
+                                                                        setErrorMessage(
+                                                                            'An error occurred while toggling the partner. Please try again later.'
+                                                                        );
+                                                                    });
+                                                            }}
+                                                        />
+                                                        <TrashButton
+                                                            onClick={() => {
+                                                                setSelectedPartner(partner);
+                                                                onOpen();
+                                                            }}
+                                                        />
+                                                    </Flex>
+                                                ) : (
+                                                    <></>
+                                                )}
                                             </Flex>
                                         </Box>,
                                     ])}
@@ -159,7 +178,7 @@ export default function PartnersListComponent({
                         <OrbisCard header={`Invitations (${invitations.length})`} h={'min-content'} flex={2}>
                             {invitations.length > 0 ? (
                                 <Stack divider={<StackDivider />}>
-                                    {invitations.map((invitation) => (
+                                    {invitations.map(invitation => (
                                         <StackItem key={invitation.id}>
                                             <OpenButton
                                                 onClick={() => router.push(`/partners/invite/accept/${invitation.id}`)}
