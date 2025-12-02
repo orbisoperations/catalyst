@@ -1,6 +1,6 @@
 // test/index.spec.ts
 import { env, runInDurableObject, SELF } from 'cloudflare:test';
-import { describe, expect, it, beforeEach } from 'vitest';
+import { describe, expect, it, beforeEach, afterEach } from 'vitest';
 import { OrgInvite, OrgInviteStatusSchema, User } from '@catalyst/schemas';
 
 const SENDER_ORGANIZATION = 'default';
@@ -967,5 +967,205 @@ describe('Invite Management', () => {
 				expect(response.error).toBe('Permission denied: list org invites');
 			}
 		});
+	});
+});
+
+describe('Data Custodian Partner Update Restrictions', () => {
+	const testOrgId = 'test-org-custodian-restrictions';
+	const dataCustodianUser: User = {
+		userId: 'test-data-custodian',
+		orgId: testOrgId,
+		zitadelRoles: ['data-custodian'] as const,
+	} as User;
+
+	beforeEach(async () => {
+		const id = env.ORG_MATCHMAKING.idFromName('default');
+		const stub = env.ORG_MATCHMAKING.get(id);
+
+		// Clear storage before each test
+		await runInDurableObject(stub, async (_: unknown, state: DurableObjectState) => {
+			await state.storage.deleteAll();
+		});
+
+		// Set up data custodian user in AuthZed
+		await env.AUTHZED.addDataCustodianToOrg(testOrgId, dataCustodianUser.userId);
+		mockGetUser(dataCustodianUser);
+	});
+
+	afterEach(async () => {
+		// Cleanup AuthZed
+		await env.AUTHZED.deleteDataCustodianFromOrg(testOrgId, dataCustodianUser.userId);
+	});
+
+	it('should deny Data Custodian from sending invites', async () => {
+		const worker = SELF;
+		const response = await worker.sendInvite('test-receiver-org', { cfToken: 'valid-token' }, 'Test message');
+
+		expect(response.success).toBe(false);
+		if (!response.success) {
+			expect(response.error).toBe('Permission denied: send org invites');
+		}
+	});
+
+	it('should deny Data Custodian from toggling partnerships', async () => {
+		const id = env.ORG_MATCHMAKING.idFromName('default');
+		const stub = env.ORG_MATCHMAKING.get(id);
+
+		// Create an invite first (using admin permissions)
+		const adminUser: User = {
+			userId: 'test-admin',
+			orgId: testOrgId,
+		} as User;
+		await env.AUTHZED.addAdminToOrg(testOrgId, adminUser.userId);
+		mockGetUser(adminUser);
+		env.AUTHZED.canUpdateOrgPartnersInOrg = async () => true;
+
+		const inviteToSend = generateInvites(1)[0];
+		inviteToSend.sender = testOrgId;
+		const createdInvite: OrgInvite = await stub.send(
+			inviteToSend.sender,
+			inviteToSend.receiver,
+			inviteToSend.message
+		);
+
+		// Now try to toggle as Data Custodian
+		mockGetUser(dataCustodianUser);
+		// Remove mock to use real AuthZed permission check
+		delete (env.AUTHZED as Record<string, unknown>).canUpdateOrgPartnersInOrg;
+		const worker = SELF;
+		const response = await worker.togglePartnership(createdInvite.id, { cfToken: 'valid-token' });
+
+		expect(response.success).toBe(false);
+		if (!response.success) {
+			expect(response.error).toBe('Permission denied: update org partners');
+		}
+
+		// Cleanup
+		await env.AUTHZED.deleteAdminFromOrg(testOrgId, adminUser.userId);
+	});
+
+	it('should deny Data Custodian from accepting invites', async () => {
+		const id = env.ORG_MATCHMAKING.idFromName('default');
+		const stub = env.ORG_MATCHMAKING.get(id);
+
+		// Create an invite first (using admin permissions)
+		const adminUser: User = {
+			userId: 'test-admin',
+			orgId: testOrgId,
+		} as User;
+		await env.AUTHZED.addAdminToOrg(testOrgId, adminUser.userId);
+		mockGetUser(adminUser);
+		env.AUTHZED.canUpdateOrgPartnersInOrg = async () => true;
+
+		const inviteToSend = generateInvites(1)[0];
+		inviteToSend.sender = 'sender-org';
+		inviteToSend.receiver = testOrgId;
+		const createdInvite: OrgInvite = await stub.send(
+			inviteToSend.sender,
+			inviteToSend.receiver,
+			inviteToSend.message
+		);
+
+		// Now try to accept as Data Custodian
+		mockGetUser(dataCustodianUser);
+		// Remove mock to use real AuthZed permission check
+		delete (env.AUTHZED as Record<string, unknown>).canUpdateOrgPartnersInOrg;
+		const worker = SELF;
+		const response = await worker.acceptInvite(createdInvite.id, { cfToken: 'valid-token' });
+
+		expect(response.success).toBe(false);
+		if (!response.success) {
+			expect(response.error).toBe('Permission denied: accept org invites');
+		}
+
+		// Cleanup
+		await env.AUTHZED.deleteAdminFromOrg(testOrgId, adminUser.userId);
+	});
+
+	it('should deny Data Custodian from declining invites', async () => {
+		const id = env.ORG_MATCHMAKING.idFromName('default');
+		const stub = env.ORG_MATCHMAKING.get(id);
+
+		// Create an invite first (using admin permissions)
+		const adminUser: User = {
+			userId: 'test-admin',
+			orgId: testOrgId,
+		} as User;
+		await env.AUTHZED.addAdminToOrg(testOrgId, adminUser.userId);
+		mockGetUser(adminUser);
+		env.AUTHZED.canUpdateOrgPartnersInOrg = async () => true;
+
+		const inviteToSend = generateInvites(1)[0];
+		inviteToSend.sender = 'sender-org';
+		inviteToSend.receiver = testOrgId;
+		const createdInvite: OrgInvite = await stub.send(
+			inviteToSend.sender,
+			inviteToSend.receiver,
+			inviteToSend.message
+		);
+
+		// Now try to decline as Data Custodian
+		mockGetUser(dataCustodianUser);
+		// Remove mock to use real AuthZed permission check
+		delete (env.AUTHZED as Record<string, unknown>).canUpdateOrgPartnersInOrg;
+		const worker = SELF;
+		const response = await worker.declineInvite(createdInvite.id, { cfToken: 'valid-token' });
+
+		expect(response.success).toBe(false);
+		if (!response.success) {
+			expect(response.error).toBe('Permission denied: decline org invites');
+		}
+
+		// Cleanup
+		await env.AUTHZED.deleteAdminFromOrg(testOrgId, adminUser.userId);
+	});
+
+	it('should deny Data Custodian from reading invites', async () => {
+		const id = env.ORG_MATCHMAKING.idFromName('default');
+		const stub = env.ORG_MATCHMAKING.get(id);
+
+		// Create an invite first (using admin permissions)
+		const adminUser: User = {
+			userId: 'test-admin',
+			orgId: testOrgId,
+		} as User;
+		await env.AUTHZED.addAdminToOrg(testOrgId, adminUser.userId);
+		mockGetUser(adminUser);
+		env.AUTHZED.canUpdateOrgPartnersInOrg = async () => true;
+
+		const inviteToSend = generateInvites(1)[0];
+		inviteToSend.sender = testOrgId;
+		const createdInvite: OrgInvite = await stub.send(
+			inviteToSend.sender,
+			inviteToSend.receiver,
+			inviteToSend.message
+		);
+
+		// Now try to read as Data Custodian
+		mockGetUser(dataCustodianUser);
+		// Remove mock to use real AuthZed permission check
+		delete (env.AUTHZED as Record<string, unknown>).canUpdateOrgPartnersInOrg;
+		const worker = SELF;
+		const response = await worker.readInvite(createdInvite.id, { cfToken: 'valid-token' });
+
+		expect(response.success).toBe(false);
+		if (!response.success) {
+			expect(response.error).toBe('Permission denied: update org partners');
+		}
+
+		// Cleanup
+		await env.AUTHZED.deleteAdminFromOrg(testOrgId, adminUser.userId);
+	});
+
+	it('should deny Data Custodian from listing invites', async () => {
+		// Ensure no mock is set - use real AuthZed permission check
+		delete (env.AUTHZED as Record<string, unknown>).canUpdateOrgPartnersInOrg;
+		const worker = SELF;
+		const response = await worker.listInvites({ cfToken: 'valid-token' });
+
+		expect(response.success).toBe(false);
+		if (!response.success) {
+			expect(response.error).toBe('Permission denied: list org invites');
+		}
 	});
 });

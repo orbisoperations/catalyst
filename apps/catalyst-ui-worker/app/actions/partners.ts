@@ -1,9 +1,46 @@
 'use server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
-import { CloudflareEnv, getMatchmaking, OrgInvite, OrgInviteSchema } from '@catalyst/schemas';
+import {
+    CloudflareEnv,
+    getMatchmaking,
+    getAuthzed,
+    getUserCache,
+    User,
+    OrgInvite,
+    OrgInviteSchema,
+} from '@catalyst/schemas';
+import { cookies } from 'next/headers';
 
 function getEnv(): CloudflareEnv {
     return getCloudflareContext().env as CloudflareEnv;
+}
+
+export async function canUserUpdatePartners(): Promise<boolean> {
+    const env = getEnv();
+
+    try {
+        // Get the CF_Authorization token from cookies
+        const cfToken = (await cookies()).get('CF_Authorization')?.value;
+        if (!cfToken) {
+            return false;
+        }
+
+        // Validate the token and get user details
+        const userCache = getUserCache(env);
+        const user: User | undefined = (await userCache.getUser(cfToken)) as User | undefined;
+        if (!user) {
+            return false;
+        }
+
+        // Check if user has partner_update permission (admin only)
+        const authzed = getAuthzed(env);
+        const hasPermission = await authzed.canUpdateOrgPartnersInOrg(user.orgId, user.userId);
+
+        return hasPermission;
+    } catch (error) {
+        console.error('Failed to check user permissions:', error);
+        return false;
+    }
 }
 
 export async function listInvites(token: string): Promise<OrgInvite[]> {
