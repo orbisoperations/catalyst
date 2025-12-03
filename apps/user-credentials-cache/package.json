@@ -19,6 +19,7 @@
 		"@catalyst/schemas": "workspace:*"
 	},
 	"devDependencies": {
+		"@catalyst/test-utils": "workspace:^",
 		"@cloudflare/vitest-pool-workers": "catalog:",
 		"@cloudflare/workers-types": "catalog:",
 		"@eslint/js": "catalog:",

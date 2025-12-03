@@ -1,6 +1,13 @@
 import { defineConfig } from 'vitest/config';
 import { defineWorkersProject } from '@cloudflare/vitest-pool-workers/config';
 import path from 'path';
+// Standardized test configuration values
+const STANDARD_COMPATIBILITY_DATE = '2025-04-01';
+const STANDARD_COMPATIBILITY_FLAGS = ['nodejs_compat'];
+const STANDARD_TEST_PATTERNS = {
+	unit: 'test/unit/**/*.spec.ts',
+	integration: 'test/integration/**/*.spec.ts',
+};
 
 export default defineConfig({
 	test: {
@@ -16,10 +23,12 @@ export default defineConfig({
 				'**/tests/**',
 				'**/*.{test,spec}.?(c|m)[jt]s?(x)',
 				'**/wrangler.jsonc',
+				'**/wrangler.toml',
 				'**/vitest.config.*',
 				'**/.wrangler/**',
 				'**/env.d.ts',
 				'**/global-setup.ts',
+				'**/global-teardown.ts',
 			],
 		},
 		// Modern projects pattern instead of deprecated workspace
@@ -28,15 +37,15 @@ export default defineConfig({
 			defineWorkersProject({
 				test: {
 					name: 'unit',
-					include: ['test/unit/**/*.test.ts'],
+					include: [STANDARD_TEST_PATTERNS.unit],
 					poolOptions: {
 						workers: {
 							main: 'src/index.ts',
 							singleWorker: true,
 							isolatedStorage: true,
 							miniflare: {
-								compatibilityDate: '2025-04-01',
-								compatibilityFlags: ['nodejs_compat'],
+								compatibilityDate: STANDARD_COMPATIBILITY_DATE,
+								compatibilityFlags: STANDARD_COMPATIBILITY_FLAGS,
 								durableObjects: {
 									ISSUED_JWT_REGISTRY_DO: 'I_JWT_Registry_DO',
 								},
@@ -49,8 +58,8 @@ export default defineConfig({
 										name: 'mock-usercache',
 										modules: true,
 										scriptPath: path.resolve('./test/unit/__mocks__/usercache.js'),
-										compatibilityDate: '2025-04-01',
-										compatibilityFlags: ['nodejs_compat'],
+										compatibilityDate: STANDARD_COMPATIBILITY_DATE,
+										compatibilityFlags: STANDARD_COMPATIBILITY_FLAGS,
 									},
 								],
 							},
@@ -63,7 +72,7 @@ export default defineConfig({
 			defineWorkersProject({
 				test: {
 					name: 'integration',
-					include: ['test/integration/**/*.spec.ts'],
+					include: [STANDARD_TEST_PATTERNS.integration],
 					globalSetup: './global-setup.ts',
 					poolOptions: {
 						workers: {
@@ -72,8 +81,8 @@ export default defineConfig({
 							singleWorker: true,
 							isolatedStorage: true,
 							miniflare: {
-								compatibilityDate: '2025-04-01',
-								compatibilityFlags: ['nodejs_compat'],
+								compatibilityDate: STANDARD_COMPATIBILITY_DATE,
+								compatibilityFlags: STANDARD_COMPATIBILITY_FLAGS,
 								unsafeEphemeralDurableObjects: true,
 								durableObjects: {
 									ISSUED_JWT_REGISTRY_DO: 'I_JWT_Registry_DO',
@@ -84,8 +93,8 @@ export default defineConfig({
 										modules: true,
 										modulesRoot: path.resolve('../user-credentials-cache'),
 										scriptPath: path.resolve('../user-credentials-cache/dist/index.js'),
-										compatibilityDate: '2025-04-01',
-										compatibilityFlags: ['nodejs_compat'],
+										compatibilityDate: STANDARD_COMPATIBILITY_DATE,
+										compatibilityFlags: STANDARD_COMPATIBILITY_FLAGS,
 										entrypoint: 'UserCredsCacheWorker',
 										unsafeEphemeralDurableObjects: true,
 										durableObjects: {

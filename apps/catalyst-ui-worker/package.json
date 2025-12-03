@@ -42,6 +42,7 @@
         "zod": "^3.23.5"
     },
     "devDependencies": {
+        "@catalyst/test-utils": "workspace:^",
         "@cloudflare/vitest-pool-workers": "catalog:",
         "wrangler": "catalog:",
         "@eslint/compat": "^1.2.8",

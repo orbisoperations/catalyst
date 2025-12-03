@@ -30,6 +30,7 @@
     },
     "devDependencies": {
         "@apollo/client": "^3.10.1",
+        "@catalyst/test-utils": "workspace:^",
         "@cloudflare/vitest-pool-workers": "catalog:",
         "@cloudflare/workers-types": "catalog:",
         "@eslint/js": "catalog:",
