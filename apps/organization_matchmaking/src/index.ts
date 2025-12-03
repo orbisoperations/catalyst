@@ -408,7 +408,7 @@ export default class OrganizationMatchmakingWorker extends WorkerEntrypoint<Env>
 				throw new InvalidUserError();
 			}
 
-			const permCheck = await this.env.AUTHZED.canUpdateOrgPartnersInOrg(user.orgId, user.userId);
+			const permCheck = await this.env.AUTHZED.isMemberOfOrg(user.orgId, user.userId);
 			if (!permCheck) {
 				throw new PermissionDeniedError('list org invites');
 			}

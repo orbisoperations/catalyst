@@ -678,6 +678,10 @@ describe('Invite Management', () => {
 		await runInDurableObject(stub, async (_: unknown, state: DurableObjectState) => {
 			await state.storage.deleteAll();
 		});
+
+		// Clear any permission check mocks
+		delete (env.AUTHZED as Record<string, unknown>).canUpdateOrgPartnersInOrg;
+		delete (env.AUTHZED as Record<string, unknown>).isMemberOfOrg;
 	});
 
 	describe('sendInvite', () => {
@@ -951,14 +955,14 @@ describe('Invite Management', () => {
 			}
 		});
 
-		it('should return error when user lacks permissions', async () => {
+		it('should return error when user is not a member of the organization', async () => {
 			const worker = SELF;
-			const mockUser = createMockUser('default');
+			const mockUser = createMockUser('non-member-org');
 
-			// Add user to org first
-			await env.AUTHZED.addUserToOrg(mockUser.orgId, mockUser.userId);
+			// Don't add user to org - they should not be a member
 			mockGetUser(mockUser);
-			env.AUTHZED.canUpdateOrgPartnersInOrg = async () => false;
+			// Ensure no mocks are interfering
+			delete (env.AUTHZED as Record<string, unknown>).isMemberOfOrg;
 
 			const response = await worker.listInvites({ cfToken: 'valid-token' });
 
@@ -990,6 +994,8 @@ describe('Data Custodian Partner Update Restrictions', () => {
 		// Set up data custodian user in AuthZed
 		await env.AUTHZED.addDataCustodianToOrg(testOrgId, dataCustodianUser.userId);
 		mockGetUser(dataCustodianUser);
+		// Ensure no mocks are set for permission checks - use real AuthZed
+		delete (env.AUTHZED as Record<string, unknown>).canUpdateOrgPartnersInOrg;
 	});
 
 	afterEach(async () => {
@@ -998,6 +1004,13 @@ describe('Data Custodian Partner Update Restrictions', () => {
 	});
 
 	it('should deny Data Custodian from sending invites', async () => {
+		// Ensure no mocks are set - use real AuthZed permission check
+		delete (env.AUTHZED as Record<string, unknown>).canUpdateOrgPartnersInOrg;
+
+		// Verify the permission check returns false for Data Custodian
+		const hasPermission = await env.AUTHZED.canUpdateOrgPartnersInOrg(testOrgId, dataCustodianUser.userId);
+		expect(hasPermission).toBe(false);
+
 		const worker = SELF;
 		const response = await worker.sendInvite('test-receiver-org', { cfToken: 'valid-token' }, 'Test message');
 
@@ -1157,15 +1170,41 @@ describe('Data Custodian Partner Update Restrictions', () => {
 		await env.AUTHZED.deleteAdminFromOrg(testOrgId, adminUser.userId);
 	});
 
-	it('should deny Data Custodian from listing invites', async () => {
-		// Ensure no mock is set - use real AuthZed permission check
-		delete (env.AUTHZED as Record<string, unknown>).canUpdateOrgPartnersInOrg;
+	it('should allow Data Custodian to list invites (read-only operation)', async () => {
+		const id = env.ORG_MATCHMAKING.idFromName('default');
+		const stub = env.ORG_MATCHMAKING.get(id);
+
+		// Create an invite first (using admin permissions)
+		const adminUser: User = {
+			userId: 'test-admin',
+			orgId: testOrgId,
+		} as User;
+		await env.AUTHZED.addAdminToOrg(testOrgId, adminUser.userId);
+		mockGetUser(adminUser);
+		env.AUTHZED.canUpdateOrgPartnersInOrg = async () => true;
+
+		const inviteToSend = generateInvites(1)[0];
+		inviteToSend.sender = testOrgId;
+		const createdInvite: OrgInvite = await stub.send(
+			inviteToSend.sender,
+			inviteToSend.receiver,
+			inviteToSend.message
+		);
+
+		// Now try to list as Data Custodian - should succeed since they're a member
+		mockGetUser(dataCustodianUser);
 		const worker = SELF;
 		const response = await worker.listInvites({ cfToken: 'valid-token' });
 
-		expect(response.success).toBe(false);
-		if (!response.success) {
-			expect(response.error).toBe('Permission denied: list org invites');
+		expect(response.success).toBe(true);
+		if (response.success) {
+			const invites = response.data as OrgInvite[];
+			expect(invites.length).toBeGreaterThan(0);
+			// Verify the invite we created is in the list
+			expect(invites.some(inv => inv.id === createdInvite.id)).toBe(true);
 		}
+
+		// Cleanup
+		await env.AUTHZED.deleteAdminFromOrg(testOrgId, adminUser.userId);
 	});
 });

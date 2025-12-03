@@ -26,7 +26,6 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useUser } from '../contexts/User/UserContext';
 import { OrgInvite } from '@catalyst/schemas';
-import { canUserUpdatePartners } from '@/app/actions/partners';
 type PartnersListComponentProps = {
     listInvites: (token: string) => Promise<OrgInvite[]>;
     declineInvite: (inviteId: string, token: string) => Promise<OrgInvite>;
@@ -43,7 +42,6 @@ export default function PartnersListComponent({
     const [partners, setPartners] = useState<OrgInvite[]>([]);
     const [invitations, setInvitations] = useState<OrgInvite[]>([]);
     const [selectedPartner, setSelectedPartner] = useState<OrgInvite | null>(null);
-    const [canUpdatePartners, setCanUpdatePartners] = useState<boolean>(false);
     const { token, user } = useUser();
     function fetchInvites() {
         setHasError(false);
@@ -83,21 +81,12 @@ export default function PartnersListComponent({
         fetchInvites();
     }, [token]);
 
-    useEffect(() => {
-        // Check user permissions for partner updates
-        canUserUpdatePartners()
-            .then(setCanUpdatePartners)
-            .catch(() => {
-                setCanUpdatePartners(false);
-            });
-    }, []);
-
     const { isOpen, onOpen, onClose } = useDisclosure();
     return (
         <ListView
             topbaractions={navigationItems}
             actions={
-                canUpdatePartners ? (
+                user?.custom.isAdmin ? (
                     <Flex gap={5}>
                         <CreateButton
                             onClick={() => {
@@ -140,7 +129,7 @@ export default function PartnersListComponent({
                                                         ? partner.receiver
                                                         : partner.sender}
                                                 </OpenButton>
-                                                {canUpdatePartners ? (
+                                                {user?.custom.isAdmin ? (
                                                     <Flex gap={10} align={'center'}>
                                                         <Switch
                                                             colorScheme="green"
