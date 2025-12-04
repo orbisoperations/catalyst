@@ -6,6 +6,5 @@
     "printWidth": 120,
     "proseWrap": "preserve",
     "endOfLine": "lf",
-    "arrowParens": "avoid",
     "bracketSpacing": true
 }

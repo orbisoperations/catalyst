@@ -73,7 +73,7 @@ export default function CreateInviteComponent({ sendInvite }: CreateInviteProps)
             ) : (
                 <form
                     aria-label="Send partner invitation form"
-                    action={async formData => {
+                    action={async (formData) => {
                         // Prevent double-submission with ref guard
                         if (submittingRef.current) return;
                         submittingRef.current = true;
@@ -141,7 +141,7 @@ export default function CreateInviteComponent({ sendInvite }: CreateInviteProps)
                                 value={inviteState.org}
                                 aria-describedby={hasOrgError ? 'orgId-error' : 'orgId-help'}
                                 isDisabled={isSubmitting}
-                                onChange={e => {
+                                onChange={(e) => {
                                     setInviteState({
                                         ...inviteState,
                                         org: e.target.value,
@@ -177,7 +177,7 @@ export default function CreateInviteComponent({ sendInvite }: CreateInviteProps)
                                 aria-label="Optional invitation message"
                                 aria-describedby="message-help"
                                 isDisabled={isSubmitting}
-                                onChange={e => {
+                                onChange={(e) => {
                                     setInviteState({
                                         ...inviteState,
                                         message: e.target.value,
