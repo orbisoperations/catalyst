@@ -1,7 +1,7 @@
 {
     "extends": "../tsconfig.json",
     "compilerOptions": {
-        "types": ["@cloudflare/vitest-pool-workers", "@playwright/test"]
+        "types": ["node", "@cloudflare/vitest-pool-workers", "@playwright/test"]
     },
     "include": ["./**/*.ts"]
 }

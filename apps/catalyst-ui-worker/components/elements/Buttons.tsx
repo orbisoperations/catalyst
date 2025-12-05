@@ -79,10 +79,12 @@ export const ProfileButton = (props: ProfileButtonProps) => {
         <Flex>
             {props.userInfo && (
                 <Flex flexDirection="column" pr="8px" textAlign={'right'}>
-                    <Text fontSize="sm" fontWeight="bold">
+                    <Text fontSize="sm" fontWeight="bold" data-testid="topbar-user-org-name">
                         {props.userInfo.organization}
                     </Text>
-                    <Text fontSize="sm">{props.userInfo.userEmail.split('@')[0]}</Text>
+                    <Text fontSize="sm" data-testid="topbar-user-email-display">
+                        {props.userInfo.userEmail.split('@')[0]}
+                    </Text>
                 </Flex>
             )}
             <Menu>
@@ -185,7 +187,7 @@ export const DisplayButton = (props: ButtonProps & { visible: boolean; toggletex
     const { visible, toggletext, ...rest } = props;
     const [visibleStatus, setVisible] = useState(visible);
     function onCLick() {
-        setVisible((prev) => !prev);
+        setVisible(prev => !prev);
         toggletext();
     }
     return (
