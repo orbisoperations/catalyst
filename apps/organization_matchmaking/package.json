@@ -11,6 +11,8 @@
 		"test": "vitest",
 		"test:workspace": "vitest run --silent",
 		"test:coverage": "vitest run --coverage",
+		"build": "wrangler build",
+		"clean": "rm -rf dist .wrangler node_modules",
 		"lint": "eslint . --ext .ts",
 		"cf-typegen": "wrangler types"
 	},

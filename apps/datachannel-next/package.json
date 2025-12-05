@@ -7,6 +7,7 @@
         "dev": "bun run.ts",
         "build": "next build",
         "build:prod": "NODE_ENV=production next build",
+        "clean": "rm -rf .next",
         "deploymentStaging": "pnpm install --ignore-workspace && fly deploy",
         "lint": "eslint . --ext .ts",
         "start": "bun run.ts",

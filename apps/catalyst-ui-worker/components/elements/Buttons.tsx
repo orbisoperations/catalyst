@@ -76,13 +76,13 @@ export type ProfileButtonProps = {
 
 export const ProfileButton = (props: ProfileButtonProps) => {
     return (
-        <Flex>
+        <Flex data-testid="navbar-profile-button">
             {props.userInfo && (
                 <Flex flexDirection="column" pr="8px" textAlign={'right'}>
-                    <Text fontSize="sm" fontWeight="bold" data-testid="topbar-user-org-name">
+                    <Text fontSize="sm" fontWeight="bold" data-testid="navbar-user-org-name">
                         {props.userInfo.organization}
                     </Text>
-                    <Text fontSize="sm" data-testid="topbar-user-email-display">
+                    <Text fontSize="sm" data-testid="navbar-user-email-display">
                         {props.userInfo.userEmail.split('@')[0]}
                     </Text>
                 </Flex>
