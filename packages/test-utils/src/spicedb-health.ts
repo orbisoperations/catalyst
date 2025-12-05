@@ -111,3 +111,39 @@ export function stopSpiceDBContainer(runtime: 'docker' | 'podman', containerName
         return false;
     }
 }
+
+/**
+ * Removes a SpiceDB container and its associated volume
+ * @param runtime - Container runtime ('docker' or 'podman')
+ * @param containerName - Name of the container to remove (default: 'spicedb-test')
+ * @param volumeName - Name of the volume to remove (default: containerName + '-data')
+ * @returns Object with container and volume removal status
+ */
+export function removeSpiceDBContainerAndVolume(
+    runtime: 'docker' | 'podman',
+    containerName: string = 'spicedb-test',
+    volumeName?: string
+): { containerRemoved: boolean; volumeRemoved: boolean } {
+    const result = { containerRemoved: false, volumeRemoved: false };
+    const volume = volumeName || `${containerName}-data`;
+
+    try {
+        // Remove container (force to handle running containers)
+        execSync(`${runtime} rm -f ${containerName}`, { stdio: 'ignore' });
+        result.containerRemoved = true;
+        console.log(`    ✓ Removed container: ${containerName}`);
+    } catch {
+        // Container doesn't exist - that's fine
+    }
+
+    try {
+        // Remove volume
+        execSync(`${runtime} volume rm ${volume}`, { stdio: 'ignore' });
+        result.volumeRemoved = true;
+        console.log(`    ✓ Removed volume: ${volume}`);
+    } catch {
+        // Volume doesn't exist - that's fine
+    }
+
+    return result;
+}
