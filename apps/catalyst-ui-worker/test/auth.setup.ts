@@ -1,6 +1,5 @@
 import { test as setup } from '@playwright/test';
-import { UserRole } from '@catalyst/schemas';
-import { TEST_USERS, AUTH_FILES } from './auth.constants';
+import { ALL_TEST_USERS, AUTH_FILES, ExtendedUserType } from './auth.constants';
 
 /**
  * Playwright Auth Setup
@@ -17,8 +16,8 @@ import { TEST_USERS, AUTH_FILES } from './auth.constants';
 /**
  * Setup authentication for a specific user role
  */
-async function setupAuthForRole(page: import('@playwright/test').Page, userType: UserRole): Promise<void> {
-    const user = TEST_USERS[userType];
+async function setupAuthForRole(page: import('@playwright/test').Page, userType: ExtendedUserType): Promise<void> {
+    const user = ALL_TEST_USERS[userType];
 
     // Set CF_Authorization cookie that mock-user-credentials-cache expects
     await page.context().addCookies([
@@ -31,7 +30,7 @@ async function setupAuthForRole(page: import('@playwright/test').Page, userType:
     ]);
 
     // Mock Cloudflare Access identity endpoint
-    await page.route('**/cdn-cgi/access/get-identity', async route => {
+    await page.route('**/cdn-cgi/access/get-identity', async (route) => {
         await route.fulfill({
             status: 200,
             contentType: 'application/json',
@@ -64,7 +63,7 @@ async function setupAuthForRole(page: import('@playwright/test').Page, userType:
     });
 
     // Mock user sync endpoint
-    await page.route('**/api/v1/user/sync', async route => {
+    await page.route('**/api/v1/user/sync', async (route) => {
         await route.fulfill({
             status: 200,
             contentType: 'application/json',
@@ -101,4 +100,10 @@ setup('authenticate as data-custodian', async ({ page }) => {
 setup('authenticate as org-user', async ({ page }) => {
     await setupAuthForRole(page, 'org-user');
     await page.context().storageState({ path: AUTH_FILES['org-user'] });
+});
+
+// Setup for org-admin-beta (test-org-beta) - for cross-org partnership testing
+setup('authenticate as org-admin-beta', async ({ page }) => {
+    await setupAuthForRole(page, 'org-admin-beta');
+    await page.context().storageState({ path: AUTH_FILES['org-admin-beta'] });
 });

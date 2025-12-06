@@ -16,15 +16,18 @@ export async function listInvites(token: string): Promise<OrgInvite[]> {
     return OrgInviteSchema.array().parse(result.data);
 }
 
-export async function sendInvite(receivingOrg: string, token: string, message: string): Promise<OrgInvite> {
+export type SendInviteResult = { success: true; data: OrgInvite } | { success: false; error: string };
+
+export async function sendInvite(receivingOrg: string, token: string, message: string): Promise<SendInviteResult> {
     const env = getEnv();
     const matcher = getMatchmaking(env);
     const result = await matcher.sendInvite(receivingOrg, { cfToken: token }, message);
     if (!result.success) {
-        throw new Error('Sending Invite Failed');
+        // Return error as data instead of throwing - Next.js server actions redact thrown error messages
+        return { success: false, error: result.error || 'Sending Invite Failed' };
     }
 
-    return OrgInviteSchema.parse(result.data);
+    return { success: true, data: OrgInviteSchema.parse(result.data) };
 }
 
 export async function readInvite(inviteId: string, token: string): Promise<OrgInvite> {

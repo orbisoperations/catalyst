@@ -111,18 +111,14 @@ export default function DataChannelDetailsComponent({
                             <TrashButton onClick={onOpen} />
                         </Flex>
                     </Flex>
-                ) : (
-                    <></>
-                )
+                ) : undefined
             }
             headerTitle={{
                 adjacent:
+                    // TODO: Enable Shared with you badge
                     !channel?.creatorOrganization === (user?.custom.org || '') ? (
-                        // TODO: Enable Shared with you badge
                         <OrbisBadge> Shared with you </OrbisBadge>
-                    ) : (
-                        <></>
-                    ),
+                    ) : undefined,
                 text: channel ? 'Channel: ' + channel.name : '',
             }}
             subtitle={channel?.description}
@@ -344,15 +340,13 @@ export default function DataChannelDetailsComponent({
                                     {gatewayUrl}
                                 </APIKeyText>
                             </FormControl>
-                            {channel?.creatorOrganization === user?.custom.org ? (
+                            {channel?.creatorOrganization === user?.custom.org && (
                                 <FormControl display={'grid'} gap={2}>
                                     <label htmlFor="endpoint">Source URL</label>
                                     <APIKeyText width={'100%'} allowCopy showAsClearText>
                                         {channel?.endpoint}
                                     </APIKeyText>
                                 </FormControl>
-                            ) : (
-                                <></>
                             )}
                             <FormControl display={'grid'} gap={2}>
                                 <label htmlFor="description">Channel ID</label>

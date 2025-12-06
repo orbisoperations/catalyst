@@ -326,11 +326,8 @@ describe('organization matchmaking worker', () => {
 			await state.storage.deleteAll();
 		});
 
-		// Create and send multiple invites
-		const invites = generateInvites(3).map(invite => ({
-			...invite,
-			receiver: 'test-receiver-org', // Override receiver to be the same for all invites
-		}));
+		// Create and send multiple invites to DIFFERENT receivers (respecting duplicate constraint)
+		const invites = generateInvites(3); // Each has unique receiver already
 
 		const sentInvites: OrgInvite[] = [];
 		for (const invite of invites) {
@@ -348,22 +345,11 @@ describe('organization matchmaking worker', () => {
 		const toggledInvite: OrgInvite = await stub.togglePartnership(invites[1].sender, sentInvites[1].id);
 		expect(toggledInvite.isActive).toBe(true);
 
-		// Verify the toggle in both mailboxes
-		const receiverMailboxInvites: OrgInvite[] = await stub.list(invites[1].receiver);
+		// Verify the toggle in sender's mailbox (has all 3 invites)
 		const senderMailboxInvites: OrgInvite[] = await stub.list(invites[1].sender);
-
-		expect(receiverMailboxInvites.length).toBe(3);
 		expect(senderMailboxInvites.length).toBe(3);
 
-		// Check that only the target invite was updated in both mailboxes
-		for (const invite of receiverMailboxInvites) {
-			if (invite.id === sentInvites[1].id) {
-				expect(invite.isActive).toBe(true);
-			} else {
-				expect(invite.isActive).toBe(false);
-			}
-		}
-
+		// Check that only the target invite was updated
 		for (const invite of senderMailboxInvites) {
 			if (invite.id === sentInvites[1].id) {
 				expect(invite.isActive).toBe(true);
@@ -371,6 +357,11 @@ describe('organization matchmaking worker', () => {
 				expect(invite.isActive).toBe(false);
 			}
 		}
+
+		// Verify in receiver's mailbox (has only 1 invite)
+		const receiverMailboxInvites: OrgInvite[] = await stub.list(invites[1].receiver);
+		expect(receiverMailboxInvites.length).toBe(1);
+		expect(receiverMailboxInvites[0].isActive).toBe(true);
 	});
 
 	it('should return error when invite not found in respond', async () => {
@@ -520,6 +511,11 @@ describe('organization matchmaking worker', () => {
 		it('should return error when user lacks permissions', async () => {
 			const id = env.ORG_MATCHMAKING.idFromName('default');
 			const stub = env.ORG_MATCHMAKING.get(id);
+
+			// Clear storage first to avoid duplicate invite conflicts
+			await runInDurableObject(stub, async (_: unknown, state: DurableObjectState) => {
+				await state.storage.deleteAll();
+			});
 
 			// Create an invite first
 			const inviteToSend = generateInvites(1)[0];
@@ -780,6 +776,104 @@ describe('Invite Management', () => {
 			if (!response.success) {
 				expect(response.error).toContain('Organization ID');
 			}
+		});
+
+		it('should reject duplicate invite to same organization', async () => {
+			const worker = SELF;
+			const mockUser = createMockUser('default');
+
+			await env.AUTHZED.addUserToOrg(mockUser.orgId, mockUser.userId);
+			mockGetUser(mockUser);
+			env.AUTHZED.canUpdateOrgPartnersInOrg = async () => true;
+
+			// Send first invite - should succeed
+			const firstResponse = await worker.sendInvite(
+				'target-org-duplicate-test',
+				{ cfToken: 'valid-token' },
+				'First invite'
+			);
+			expect(firstResponse.success).toBe(true);
+
+			// Send second invite to same org - should fail
+			const secondResponse = await worker.sendInvite(
+				'target-org-duplicate-test',
+				{ cfToken: 'valid-token' },
+				'Second invite'
+			);
+
+			expect(secondResponse.success).toBe(false);
+			if (!secondResponse.success) {
+				expect(secondResponse.error).toContain('pending invite to this organization already exists');
+			}
+		});
+
+		it('should reject invite when reverse direction pending (bidirectional block)', async () => {
+			const worker = SELF;
+
+			// Org A sends invite to Org B
+			const orgAUser = createMockUser('org-a-bidir-test');
+			await env.AUTHZED.addUserToOrg(orgAUser.orgId, orgAUser.userId);
+			mockGetUser(orgAUser);
+			env.AUTHZED.canUpdateOrgPartnersInOrg = async () => true;
+
+			const firstResponse = await worker.sendInvite(
+				'org-b-bidir-test',
+				{ cfToken: 'valid-token' },
+				'Invite from A to B'
+			);
+			expect(firstResponse.success).toBe(true);
+
+			// Now Org B tries to send invite to Org A - should fail
+			const orgBUser = createMockUser('org-b-bidir-test');
+			await env.AUTHZED.addUserToOrg(orgBUser.orgId, orgBUser.userId);
+			mockGetUser(orgBUser);
+
+			const secondResponse = await worker.sendInvite(
+				'org-a-bidir-test',
+				{ cfToken: 'valid-token' },
+				'Invite from B to A'
+			);
+
+			expect(secondResponse.success).toBe(false);
+			if (!secondResponse.success) {
+				expect(secondResponse.error).toContain('pending invite from this organization already exists');
+			}
+		});
+
+		it('should allow new invite after previous one is declined', async () => {
+			const worker = SELF;
+
+			// Org A sends invite to Org B
+			const orgAUser = createMockUser('org-a-decline-test');
+			await env.AUTHZED.addUserToOrg(orgAUser.orgId, orgAUser.userId);
+			mockGetUser(orgAUser);
+			env.AUTHZED.canUpdateOrgPartnersInOrg = async () => true;
+
+			const firstResponse = await worker.sendInvite(
+				'org-b-decline-test',
+				{ cfToken: 'valid-token' },
+				'First invite'
+			);
+			expect(firstResponse.success).toBe(true);
+			const firstInvite = firstResponse.data as OrgInvite;
+
+			// Org B declines the invite
+			const orgBUser = createMockUser('org-b-decline-test');
+			await env.AUTHZED.addUserToOrg(orgBUser.orgId, orgBUser.userId);
+			mockGetUser(orgBUser);
+
+			const declineResponse = await worker.declineInvite(firstInvite.id, { cfToken: 'valid-token' });
+			expect(declineResponse.success).toBe(true);
+
+			// Now Org A can send a new invite
+			mockGetUser(orgAUser);
+			const secondResponse = await worker.sendInvite(
+				'org-b-decline-test',
+				{ cfToken: 'valid-token' },
+				'Second invite after decline'
+			);
+
+			expect(secondResponse.success).toBe(true);
 		});
 	});
 
@@ -1201,7 +1295,7 @@ describe('Data Custodian Partner Update Restrictions', () => {
 			const invites = response.data as OrgInvite[];
 			expect(invites.length).toBeGreaterThan(0);
 			// Verify the invite we created is in the list
-			expect(invites.some(inv => inv.id === createdInvite.id)).toBe(true);
+			expect(invites.some((inv) => inv.id === createdInvite.id)).toBe(true);
 		}
 
 		// Cleanup

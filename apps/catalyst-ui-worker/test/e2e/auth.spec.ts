@@ -7,7 +7,7 @@ import { NAVBAR } from './utils/test-id-constants';
  *
  */
 
-test.describe('TC-AUTH-003: Data Custodian Only User Login', () => {
+test.describe('Data Custodian Only User Login', () => {
     test('should extract organization correctly for data-custodian-only user', async ({ dataCustodianPage: page }) => {
         // User with ONLY data-custodian role (no org-admin, no org-user)
 

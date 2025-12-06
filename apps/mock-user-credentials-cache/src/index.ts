@@ -43,6 +43,12 @@ const MOCK_USERS: Record<string, User> = {
         orgId: 'test-org-alpha',
         zitadelRoles: ['org-user'],
     },
+    // Beta organization admin - for cross-org partnership testing
+    'test-token-org-admin-beta': {
+        userId: 'test-org-admin-beta@example.com',
+        orgId: 'test-org-beta',
+        zitadelRoles: ['org-admin'],
+    },
 };
 
 /**

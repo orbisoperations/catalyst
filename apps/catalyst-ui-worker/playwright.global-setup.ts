@@ -19,15 +19,44 @@
  */
 
 import { execSync } from 'child_process';
-import path from 'path';
+import * as fs from 'fs';
+import * as path from 'path';
 import { getWranglerManager, type WranglerManager } from './test/e2e/setup/wrangler-manager';
-import { TEST_USERS } from './test/auth.constants';
+import { TEST_USERS, TEST_USER_BETA } from './test/auth.constants';
 import {
     waitForSpiceDB,
     detectContainerRuntime,
     isSpiceDBRunning,
     stopSpiceDBContainer,
 } from '@catalyst/test-utils/spicedb';
+
+/**
+ * Clear Durable Object state to ensure tests start with clean state
+ *
+ * This prevents stale data from previous test runs from affecting current tests.
+ * Specifically important for organization_matchmaking which stores partnership invites.
+ */
+function clearDurableObjectState(): void {
+    console.log('\nStep 0.5: Clearing Durable Object state...');
+
+    const doStatePaths = [path.resolve(__dirname, '../organization_matchmaking/.wrangler/state/v3/do')];
+
+    for (const doPath of doStatePaths) {
+        try {
+            if (fs.existsSync(doPath)) {
+                // Delete the entire DO state directory recursively
+                fs.rmSync(doPath, { recursive: true, force: true });
+                console.log(`    ✓ Cleared: ${doPath}`);
+            } else {
+                console.log(`    ℹ No state to clear: ${doPath}`);
+            }
+        } catch (error) {
+            console.warn(`    ⚠ Could not clear DO state at ${doPath}: ${error}`);
+        }
+    }
+
+    console.log('    ✓ Durable Object state cleared');
+}
 
 declare global {
     // eslint-disable-next-line no-var
@@ -148,8 +177,11 @@ async function setupSpiceDBRoles(): Promise<void> {
     // Sync data-custodian user
     await syncTestUser('data-custodian', TEST_USERS['data-custodian']);
 
-    // Sync org-admin user
+    // Sync org-admin user (test-org-alpha)
     await syncTestUser('org-admin', TEST_USERS['org-admin']);
+
+    // Sync org-admin-beta user (test-org-beta) - for cross-org partnership testing
+    await syncTestUser('org-admin-beta', TEST_USER_BETA);
 
     console.log('\n✓ SpiceDB roles setup complete\n');
 }
@@ -163,6 +195,9 @@ async function globalSetup() {
     try {
         // Step 0: Kill any stale processes on our ports
         await manager.killPortProcesses();
+
+        // Step 0.5: Clear Durable Object state to prevent stale data from affecting tests
+        clearDurableObjectState();
 
         // Step 1: Start SpiceDB container (required by authx_authzed_api)
         await startSpiceDB();
@@ -193,7 +228,7 @@ async function globalSetup() {
         console.log('='.repeat(60) + '\n');
 
         // Give everything a moment to settle
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
     } catch (error) {
         console.error('\n❌ Global setup failed:');
         console.error(error);

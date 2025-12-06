@@ -1,7 +1,7 @@
 import { test as base, expect } from '@playwright/test';
 import type { Page, BrowserContext } from '@playwright/test';
 import { UserRole } from '@catalyst/schemas';
-import { TEST_USERS, AUTH_FILES } from '../../auth.constants';
+import { TEST_USERS, AUTH_FILES, ALL_TEST_USERS, ExtendedUserType } from '../../auth.constants';
 
 /**
  * Authentication Fixtures for Catalyst UI Worker Tests
@@ -11,7 +11,8 @@ import { TEST_USERS, AUTH_FILES } from '../../auth.constants';
  *
  * User roles:
  * - platform-admin: Full platform access (can rotate keys)
- * - org-admin: Organization and partner management
+ * - org-admin: Organization and partner management (test-org-alpha)
+ * - org-admin-beta: Organization admin for test-org-beta (cross-org testing)
  * - data-custodian: Data validation and channel management
  * - org-user: Standard user access
  */
@@ -19,20 +20,22 @@ import { TEST_USERS, AUTH_FILES } from '../../auth.constants';
 export interface AuthFixtures {
     platformAdminPage: Page;
     orgAdminPage: Page;
+    orgAdminBetaPage: Page;
     dataCustodianPage: Page;
     orgUserPage: Page;
     authenticatedPage: (userType: UserRole) => Promise<Page>;
+    authenticatedPageExtended: (userType: ExtendedUserType) => Promise<Page>;
 }
 
 /**
  * Setup route mocking for a specific user role
  * This is called after loading storageState to ensure routes are mocked correctly
  */
-async function setupRouteMocking(page: Page, userType: UserRole): Promise<void> {
-    const user = TEST_USERS[userType];
+async function setupRouteMocking(page: Page, userType: ExtendedUserType): Promise<void> {
+    const user = ALL_TEST_USERS[userType];
 
     // Mock Cloudflare Access identity endpoint
-    await page.route('**/cdn-cgi/access/get-identity', async route => {
+    await page.route('**/cdn-cgi/access/get-identity', async (route) => {
         await route.fulfill({
             status: 200,
             contentType: 'application/json',
@@ -65,7 +68,7 @@ async function setupRouteMocking(page: Page, userType: UserRole): Promise<void> 
     });
 
     // Mock user sync endpoint
-    await page.route('**/api/v1/user/sync', async route => {
+    await page.route('**/api/v1/user/sync', async (route) => {
         await route.fulfill({
             status: 200,
             contentType: 'application/json',
@@ -80,7 +83,7 @@ async function setupRouteMocking(page: Page, userType: UserRole): Promise<void> 
  * Block all external network requests, allowing only localhost
  */
 async function enforceOfflineMode(context: BrowserContext): Promise<void> {
-    await context.route('**/*', route => {
+    await context.route('**/*', (route) => {
         const url = new URL(route.request().url());
 
         // Allow all localhost and 127.0.0.1 on any port
@@ -99,7 +102,7 @@ async function enforceOfflineMode(context: BrowserContext): Promise<void> {
  */
 async function createPageForRole(
     browser: import('@playwright/test').Browser,
-    userType: UserRole
+    userType: ExtendedUserType
 ): Promise<{ page: Page; context: BrowserContext }> {
     const context = await browser.newContext({
         storageState: AUTH_FILES[userType],
@@ -131,9 +134,16 @@ export const test = base.extend<AuthFixtures>({
         await context.close();
     },
 
-    // Org admin authenticated page
+    // Org admin authenticated page (test-org-alpha)
     orgAdminPage: async ({ browser }, use) => {
         const { page, context } = await createPageForRole(browser, 'org-admin');
+        await use(page);
+        await context.close();
+    },
+
+    // Org admin beta authenticated page (test-org-beta) - for cross-org testing
+    orgAdminBetaPage: async ({ browser }, use) => {
+        const { page, context } = await createPageForRole(browser, 'org-admin-beta');
         await use(page);
         await context.close();
     },
@@ -152,7 +162,7 @@ export const test = base.extend<AuthFixtures>({
         await context.close();
     },
 
-    // Generic authenticated page factory
+    // Generic authenticated page factory (standard UserRole only)
     authenticatedPage: async ({ browser }, use) => {
         const contexts: BrowserContext[] = [];
 
@@ -165,11 +175,27 @@ export const test = base.extend<AuthFixtures>({
         await use(factory);
 
         // Clean up all created contexts
-        await Promise.all(contexts.map(ctx => ctx.close()));
+        await Promise.all(contexts.map((ctx) => ctx.close()));
+    },
+
+    // Extended authenticated page factory (includes cross-org users)
+    authenticatedPageExtended: async ({ browser }, use) => {
+        const contexts: BrowserContext[] = [];
+
+        const factory = async (userType: ExtendedUserType) => {
+            const { page, context } = await createPageForRole(browser, userType);
+            contexts.push(context);
+            return page;
+        };
+
+        await use(factory);
+
+        // Clean up all created contexts
+        await Promise.all(contexts.map((ctx) => ctx.close()));
     },
 });
 
 export { expect };
 
-// Export TEST_USERS for use in tests that need user info
-export { TEST_USERS };
+// Export TEST_USERS and ALL_TEST_USERS for use in tests that need user info
+export { TEST_USERS, ALL_TEST_USERS };
