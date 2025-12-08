@@ -47,10 +47,10 @@ export default function PartnersListComponent({
         setHasError(false);
         if (token)
             return listInvites(token)
-                .then((invites) => {
+                .then(invites => {
                     const partners: OrgInvite[] = [];
                     const invitations: OrgInvite[] = [];
-                    invites.forEach((invite) => {
+                    invites.forEach(invite => {
                         if (invite.status === 'accepted') {
                             partners.push(invite);
                         }
@@ -86,13 +86,17 @@ export default function PartnersListComponent({
         <ListView
             topbaractions={navigationItems}
             actions={
-                <Flex gap={5}>
-                    <CreateButton
-                        onClick={() => {
-                            router.push('/partners/invite');
-                        }}
-                    />
-                </Flex>
+                user?.custom.isAdmin ? (
+                    <Flex gap={5}>
+                        <CreateButton
+                            onClick={() => {
+                                router.push('/partners/invite');
+                            }}
+                        />
+                    </Flex>
+                ) : (
+                    <></>
+                )
             }
             headerTitle={{
                 text: 'Partners',
@@ -108,7 +112,7 @@ export default function PartnersListComponent({
                             {partners.length > 0 ? (
                                 <OrbisTable
                                     headers={['Partner']}
-                                    rows={partners.map((partner) => [
+                                    rows={partners.map(partner => [
                                         <Box key={partner.id}>
                                             <Flex justifyContent={'space-between'}>
                                                 <OpenButton
@@ -125,28 +129,32 @@ export default function PartnersListComponent({
                                                         ? partner.receiver
                                                         : partner.sender}
                                                 </OpenButton>
-                                                <Flex gap={10} align={'center'}>
-                                                    <Switch
-                                                        colorScheme="green"
-                                                        defaultChecked={partner.isActive}
-                                                        onChange={() => {
-                                                            togglePartnership(partner.id, token ?? '')
-                                                                .then(fetchInvites)
-                                                                .catch(() => {
-                                                                    setHasError(true);
-                                                                    setErrorMessage(
-                                                                        'An error occurred while toggling the partner. Please try again later.'
-                                                                    );
-                                                                });
-                                                        }}
-                                                    />
-                                                    <TrashButton
-                                                        onClick={() => {
-                                                            setSelectedPartner(partner);
-                                                            onOpen();
-                                                        }}
-                                                    />
-                                                </Flex>
+                                                {user?.custom.isAdmin ? (
+                                                    <Flex gap={10} align={'center'}>
+                                                        <Switch
+                                                            colorScheme="green"
+                                                            defaultChecked={partner.isActive}
+                                                            onChange={() => {
+                                                                togglePartnership(partner.id, token ?? '')
+                                                                    .then(fetchInvites)
+                                                                    .catch(() => {
+                                                                        setHasError(true);
+                                                                        setErrorMessage(
+                                                                            'An error occurred while toggling the partner. Please try again later.'
+                                                                        );
+                                                                    });
+                                                            }}
+                                                        />
+                                                        <TrashButton
+                                                            onClick={() => {
+                                                                setSelectedPartner(partner);
+                                                                onOpen();
+                                                            }}
+                                                        />
+                                                    </Flex>
+                                                ) : (
+                                                    <></>
+                                                )}
                                             </Flex>
                                         </Box>,
                                     ])}
@@ -159,7 +167,7 @@ export default function PartnersListComponent({
                         <OrbisCard header={`Invitations (${invitations.length})`} h={'min-content'} flex={2}>
                             {invitations.length > 0 ? (
                                 <Stack divider={<StackDivider />}>
-                                    {invitations.map((invitation) => (
+                                    {invitations.map(invitation => (
                                         <StackItem key={invitation.id}>
                                             <OpenButton
                                                 onClick={() => router.push(`/partners/invite/accept/${invitation.id}`)}
