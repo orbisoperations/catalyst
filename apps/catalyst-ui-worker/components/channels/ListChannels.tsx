@@ -56,12 +56,12 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
     function filterChannels(filterMode: 'all' | 'subscribed' | 'owned' = 'all') {
         let filteredChannels = allChannels;
         if (filterMode === 'subscribed') {
-            filteredChannels = filteredChannels.filter(channel => {
+            filteredChannels = filteredChannels.filter((channel) => {
                 return channel.creatorOrganization !== user?.custom.org;
             });
         }
         if (filterMode === 'owned') {
-            filteredChannels = filteredChannels.filter(channel => {
+            filteredChannels = filteredChannels.filter((channel) => {
                 return channel.creatorOrganization === user?.custom.org;
             });
         }
@@ -72,7 +72,7 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
         setHasError(false);
         if (token)
             listChannels(token)
-                .then(data => {
+                .then((data) => {
                     setIsLoading(false);
                     const response = (data as DataChannel[]).sort((a, b) => a.name.localeCompare(b.name));
                     setAllChannels(response);
@@ -98,7 +98,7 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
                 setChannelToDelete(null);
                 fetchChannels();
             })
-            .catch(error => {
+            .catch((error) => {
                 console.error('Failed to delete channel:', error);
                 onClose();
                 setChannelToDelete(null);
@@ -173,7 +173,7 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
                                     <Select
                                         data-testid="channels-filter-dropdown"
                                         value={filterMode}
-                                        onChange={e => {
+                                        onChange={(e) => {
                                             filterChannels(e.target.value as 'all' | 'subscribed' | 'owned');
                                             setFilterMode(e.target.value as 'all' | 'subscribed' | 'owned');
                                         }}

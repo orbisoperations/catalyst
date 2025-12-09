@@ -52,12 +52,12 @@ export default function CreateChannelForm({ createDataChannel }: DataChannelForm
                 <Card>
                     <CardBody>
                         <form
-                            action={async fd => {
+                            action={async (fd) => {
                                 setIsSubmitting(true);
                                 setNameError(''); // Clear previous errors
                                 fd.set('organization', String(user?.custom.org));
                                 createDataChannel(fd, token ?? '')
-                                    .then(result => {
+                                    .then((result) => {
                                         if (result.success) {
                                             // Handle array response - get first channel if array, otherwise use directly
                                             const channel = Array.isArray(result.data) ? result.data[0] : result.data;
@@ -84,7 +84,7 @@ export default function CreateChannelForm({ createDataChannel }: DataChannelForm
                                             }
                                         }
                                     })
-                                    .catch(e => {
+                                    .catch((e) => {
                                         // Only catch unexpected errors (should not happen with result pattern)
                                         console.error('Unexpected error:', e);
                                         setHasError(true);
@@ -101,7 +101,7 @@ export default function CreateChannelForm({ createDataChannel }: DataChannelForm
                                         data-testid="create-channel-name-input"
                                         rounded="md"
                                         value={dataChannel.name}
-                                        onChange={e => {
+                                        onChange={(e) => {
                                             setDataChannel({
                                                 ...dataChannel,
                                                 name: e.target.value,
@@ -125,7 +125,7 @@ export default function CreateChannelForm({ createDataChannel }: DataChannelForm
                                         data-testid="create-channel-description-input"
                                         rounded="md"
                                         value={dataChannel.description}
-                                        onChange={e => {
+                                        onChange={(e) => {
                                             setDataChannel({
                                                 ...dataChannel,
                                                 description: e.target.value,
@@ -143,7 +143,7 @@ export default function CreateChannelForm({ createDataChannel }: DataChannelForm
                                         rounded="md"
                                         name="endpoint"
                                         value={dataChannel.endpoint}
-                                        onChange={e => {
+                                        onChange={(e) => {
                                             setDataChannel({
                                                 ...dataChannel,
                                                 endpoint: e.target.value,

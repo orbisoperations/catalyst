@@ -50,11 +50,11 @@ export default function APIKeysComponent({ listIJWTRegistry, deleteIJWTRegistry 
         if (user !== undefined && token !== undefined) {
             setAdminFlag(!!user?.custom.isPlatformAdmin);
             listIJWTRegistry(token)
-                .then(data => {
+                .then((data) => {
                     setIsLoading(false);
                     setIssuedJWTRegistry(data as IssuedJWTRegistry[]);
                 })
-                .catch(e => {
+                .catch((e) => {
                     setIsLoading(false);
                     setHasError(true);
                     setErrorMessage('An error occurred while fetching the tokens. Please try again later.');
@@ -80,7 +80,7 @@ export default function APIKeysComponent({ listIJWTRegistry, deleteIJWTRegistry 
                 setTokenToDelete(null);
                 fetchIssuedJWTRegistry();
             })
-            .catch(error => {
+            .catch((error) => {
                 console.error('Failed to delete token:', error);
                 onClose();
                 setTokenToDelete(null);
@@ -152,10 +152,10 @@ export default function APIKeysComponent({ listIJWTRegistry, deleteIJWTRegistry 
                                             onClick={async () => {
                                                 if (!token) return;
                                                 rotateJWTKeyMaterial(token)
-                                                    .then(res => {
+                                                    .then((res) => {
                                                         console.log(res);
                                                     })
-                                                    .catch(e => {
+                                                    .catch((e) => {
                                                         setHasError(true);
                                                         setErrorMessage(
                                                             'An error occurred while rotating the key. Please try again later.'

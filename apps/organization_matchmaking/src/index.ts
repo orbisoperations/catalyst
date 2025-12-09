@@ -49,6 +49,23 @@ export class OrganizationMatchmakingDO extends DurableObject {
 			const senderMailbox = (await this.ctx.storage.get<OrgInvite[]>(sender)) ?? [];
 			const receiverMailbox = (await this.ctx.storage.get<OrgInvite[]>(receiver)) ?? [];
 
+			// BIDIRECTIONAL CHECK: Only one pending invite allowed between any org pair
+			// Check if sender already has a pending invite TO receiver
+			const existingToReceiver = senderMailbox.find(
+				(inv) => inv.receiver === receiver && inv.status === 'pending'
+			);
+			if (existingToReceiver) {
+				throw new InvalidOperationError('A pending invite to this organization already exists');
+			}
+
+			// Check if receiver already has a pending invite TO sender (reverse direction)
+			const existingFromReceiver = receiverMailbox.find(
+				(inv) => inv.sender === receiver && inv.receiver === sender && inv.status === 'pending'
+			);
+			if (existingFromReceiver) {
+				throw new InvalidOperationError('A pending invite from this organization already exists');
+			}
+
 			senderMailbox.push(newInvite);
 			receiverMailbox.push(newInvite);
 
@@ -73,7 +90,7 @@ export class OrganizationMatchmakingDO extends DurableObject {
 	 */
 	async read(orgId: OrgId, inviteId: string): Promise<OrgInvite> {
 		const mailbox = (await this.ctx.storage.get<OrgInvite[]>(orgId)) ?? [];
-		const invite = mailbox.find(inv => inv.id === inviteId);
+		const invite = mailbox.find((inv) => inv.id === inviteId);
 
 		if (!invite) {
 			throw new InviteNotFoundError(inviteId);
@@ -99,7 +116,7 @@ export class OrganizationMatchmakingDO extends DurableObject {
 	async togglePartnership(orgId: OrgId, inviteId: string): Promise<OrgInvite> {
 		const orgMailbox = (await this.ctx.storage.get<OrgInvite[]>(orgId)) ?? [];
 
-		const invite = orgMailbox.find(inv => inv.id === inviteId);
+		const invite = orgMailbox.find((inv) => inv.id === inviteId);
 
 		if (!invite) {
 			throw new InviteNotFoundError(inviteId);
@@ -109,15 +126,15 @@ export class OrganizationMatchmakingDO extends DurableObject {
 
 		const otherMailbox = (await this.ctx.storage.get<OrgInvite[]>(otherOrg)) ?? [];
 
-		if (!otherMailbox.find(inv => inv.id === inviteId)) {
+		if (!otherMailbox.find((inv) => inv.id === inviteId)) {
 			throw new InviteNotFoundError(inviteId);
 		}
 
 		const updatedInvite: OrgInvite = { ...invite, isActive: !invite.isActive, updatedAt: Date.now() };
 
 		await this.ctx.blockConcurrencyWhile(async () => {
-			const updatedOrgMailbox = orgMailbox.map(inv => (inv.id === inviteId ? updatedInvite : inv));
-			const updatedOtherMailbox = otherMailbox.map(inv => (inv.id === inviteId ? updatedInvite : inv));
+			const updatedOrgMailbox = orgMailbox.map((inv) => (inv.id === inviteId ? updatedInvite : inv));
+			const updatedOtherMailbox = otherMailbox.map((inv) => (inv.id === inviteId ? updatedInvite : inv));
 
 			await this.ctx.storage.put(orgId, updatedOrgMailbox);
 			await this.ctx.storage.put(otherOrg, updatedOtherMailbox);
@@ -132,7 +149,7 @@ export class OrganizationMatchmakingDO extends DurableObject {
 
 		const responder = (await this.ctx.storage.get<OrgInvite[]>(orgId)) ?? [];
 
-		const invite = responder.find(inv => inv.id === inviteId);
+		const invite = responder.find((inv) => inv.id === inviteId);
 
 		if (!invite) {
 			throw new InviteNotFoundError(inviteId);
@@ -142,15 +159,15 @@ export class OrganizationMatchmakingDO extends DurableObject {
 
 		const otherMailbox = (await this.ctx.storage.get<OrgInvite[]>(otherOrg)) ?? [];
 
-		if (!otherMailbox.find(inv => inv.id === inviteId)) {
+		if (!otherMailbox.find((inv) => inv.id === inviteId)) {
 			throw new InviteNotFoundError(inviteId);
 		}
 
 		// Everyone can decline
 		if (validatedStatus === 'declined') {
 			await this.ctx.blockConcurrencyWhile(async () => {
-				const filteredResponder = responder.filter(inv => inv.id !== inviteId);
-				const filteredOther = otherMailbox.filter(inv => inv.id !== inviteId);
+				const filteredResponder = responder.filter((inv) => inv.id !== inviteId);
+				const filteredOther = otherMailbox.filter((inv) => inv.id !== inviteId);
 
 				await this.ctx.storage.put(orgId, filteredResponder);
 				await this.ctx.storage.put(otherOrg, filteredOther);
@@ -168,8 +185,8 @@ export class OrganizationMatchmakingDO extends DurableObject {
 			const updatedInvite: OrgInvite = { ...invite, status: validatedStatus, updatedAt: Date.now() };
 
 			await this.ctx.blockConcurrencyWhile(async () => {
-				const updatedResponder = responder.map(inv => (inv.id === inviteId ? updatedInvite : inv));
-				const updatedOther = otherMailbox.map(inv => (inv.id === inviteId ? updatedInvite : inv));
+				const updatedResponder = responder.map((inv) => (inv.id === inviteId ? updatedInvite : inv));
+				const updatedOther = otherMailbox.map((inv) => (inv.id === inviteId ? updatedInvite : inv));
 
 				await this.ctx.storage.put(orgId, updatedResponder);
 				await this.ctx.storage.put(otherOrg, updatedOther);

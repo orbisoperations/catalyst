@@ -83,10 +83,32 @@ export const PARTNERS = {
     CREATE_BUTTON: 'partners-create-button',
     LOADING_SPINNER: 'partners-loading-spinner',
     EMPTY_STATE: 'partners-empty-state',
+    LIST_CARD: 'partners-list-card',
+    INVITATIONS_CARD: 'partners-invitations-card',
 
     row: (partnerId: string) => `partners-row-${partnerId}` as const,
     rowStatus: (partnerId: string) => `partners-row-${partnerId}-status` as const,
+    rowToggle: (partnerId: string) => `partners-row-${partnerId}-toggle` as const,
+    rowDeleteButton: (partnerId: string) => `partners-row-${partnerId}-delete` as const,
     rowMenuButton: (partnerId: string) => `partners-row-${partnerId}-menu-button` as const,
+} as const;
+
+// =============================================================================
+// PARTNER INVITE FORMS
+// =============================================================================
+export const INVITE = {
+    // Send Invite Form
+    ORG_ID_INPUT: 'invite-org-id-input',
+    MESSAGE_INPUT: 'invite-message-input',
+    SEND_BUTTON: 'invite-send-button',
+    CANCEL_BUTTON: 'invite-cancel-button',
+    ERROR_MESSAGE: 'invite-error-message',
+
+    // Accept/Decline Invite
+    ACCEPT_BUTTON: 'invite-accept-button',
+    REJECT_BUTTON: 'invite-reject-button',
+    CONFIRM_REJECT_BUTTON: 'invite-confirm-reject-button',
+    MESSAGE_DISPLAY: 'invite-message-display',
 } as const;
 
 // =============================================================================
@@ -152,15 +174,43 @@ export function getTestId(testId: string): string {
     return `[data-testid="${testId}"]`;
 }
 
+// =============================================================================
+// TYPE UTILITIES
+// =============================================================================
+
 /**
- * Type-safe test ID builder
- * Ensures you can only use defined test IDs
+ * Extract static string values from an object (excludes functions)
+ */
+type StaticValues<T> = {
+    [K in keyof T]: T[K] extends string ? T[K] : never;
+}[keyof T];
+
+/**
+ * Extract return types from function properties in an object
+ */
+type DynamicValues<T> = {
+    [K in keyof T]: T[K] extends (...args: never[]) => infer R ? R : never;
+}[keyof T];
+
+/**
+ * Extract all test ID values from an object (both static strings and function return types)
+ */
+type AllTestIdValues<T> = StaticValues<T> | DynamicValues<T>;
+
+/**
+ * Type-safe test ID union
+ * Includes both static string constants AND dynamic function return types
+ *
+ * Static example: NAVBAR.LOGO -> 'navbar-logo'
+ * Dynamic example: CHANNELS.row('ch-123') -> `channels-row-ch-123`
  */
 export type TestId =
-    | (typeof NAVBAR)[keyof typeof NAVBAR]
-    | (typeof CHANNELS)[keyof typeof CHANNELS]
-    | (typeof TOKENS)[keyof typeof TOKENS]
-    | (typeof PARTNERS)[keyof typeof PARTNERS]
-    | (typeof MODAL)[keyof typeof MODAL]
-    | (typeof FORM)[keyof typeof FORM]
-    | (typeof COMMON)[keyof typeof COMMON];
+    | AllTestIdValues<typeof NAVBAR>
+    | AllTestIdValues<typeof CHANNELS>
+    | AllTestIdValues<typeof TOKENS>
+    | AllTestIdValues<typeof PARTNERS>
+    | AllTestIdValues<typeof INVITE>
+    | AllTestIdValues<typeof MODAL>
+    | AllTestIdValues<typeof FORM>
+    | AllTestIdValues<typeof CREATE_CHANNEL>
+    | AllTestIdValues<typeof COMMON>;

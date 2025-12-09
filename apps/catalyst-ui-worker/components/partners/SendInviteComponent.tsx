@@ -7,10 +7,11 @@ import { Flex, FormControl, FormLabel, FormHelperText, Grid, Input, Text, Textar
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useUser } from '../contexts/User/UserContext';
-import { OrgInvite, OrgIdSchema } from '@catalyst/schemas';
+import { OrgIdSchema } from '@catalyst/schemas';
+import { SendInviteResult } from '@/app/actions/partners';
 
 type CreateInviteProps = {
-    sendInvite: (receivingOrg: string, token: string, message: string) => Promise<OrgInvite>;
+    sendInvite: (receivingOrg: string, token: string, message: string) => Promise<SendInviteResult>;
 };
 export default function CreateInviteComponent({ sendInvite }: CreateInviteProps) {
     const router = useRouter();
@@ -116,13 +117,37 @@ export default function CreateInviteComponent({ sendInvite }: CreateInviteProps)
                                 return;
                             }
 
-                            await sendInvite(
+                            const result = await sendInvite(
                                 org,
                                 token,
                                 message.trim() === '' ? `${user.custom.org} invited you to partner with them` : message
                             );
-                            router.back();
-                        } catch {
+
+                            if (!result.success) {
+                                // Handle specific duplicate invite errors with inline message
+                                const errorMsg = result.error.toLowerCase();
+                                console.error('SendInvite error:', result.error);
+
+                                // Check for duplicate invite errors - differentiate between directions
+                                // "pending invite to this organization" = you already sent one
+                                // "pending invite from this organization" = they already sent you one (bidirectional block)
+                                if (errorMsg.includes('pending invite to')) {
+                                    setErrorMessage('You already have a pending invite to this organization.');
+                                } else if (errorMsg.includes('pending invite from')) {
+                                    setErrorMessage('This organization already has a pending invite to you.');
+                                } else if (errorMsg.includes('pending invite') || errorMsg.includes('already exists')) {
+                                    // Fallback for any other duplicate-related errors
+                                    setErrorMessage('A partnership invite already exists with this organization.');
+                                } else {
+                                    // Show generic error card for other failures
+                                    setHasError(true);
+                                }
+                            } else {
+                                router.back();
+                            }
+                        } catch (error) {
+                            // Catch unexpected errors (network issues, etc.)
+                            console.error('SendInvite unexpected error:', error);
                             setHasError(true);
                         } finally {
                             submittingRef.current = false;
@@ -135,6 +160,7 @@ export default function CreateInviteComponent({ sendInvite }: CreateInviteProps)
                             <FormLabel htmlFor="orgId">Organization ID</FormLabel>
                             <Input
                                 id="orgId"
+                                data-testid="invite-org-id-input"
                                 required
                                 rounded={'md'}
                                 name="orgId"
@@ -152,6 +178,7 @@ export default function CreateInviteComponent({ sendInvite }: CreateInviteProps)
                             {hasOrgError ? (
                                 <Text
                                     id="orgId-error"
+                                    data-testid="invite-error-message"
                                     role="alert"
                                     aria-live="polite"
                                     color={'red'}
@@ -172,6 +199,7 @@ export default function CreateInviteComponent({ sendInvite }: CreateInviteProps)
                             <FormLabel htmlFor="message">Invite Message</FormLabel>
                             <Textarea
                                 id="message"
+                                data-testid="invite-message-input"
                                 name="message"
                                 value={inviteState.message}
                                 aria-label="Optional invitation message"
@@ -190,6 +218,7 @@ export default function CreateInviteComponent({ sendInvite }: CreateInviteProps)
                         </FormControl>
                         <Flex justify={'space-between'} role="group" aria-label="Form actions">
                             <OrbisButton
+                                data-testid="invite-cancel-button"
                                 colorScheme="gray"
                                 onClick={() => router.back()}
                                 aria-label="Cancel and go back"
@@ -198,6 +227,7 @@ export default function CreateInviteComponent({ sendInvite }: CreateInviteProps)
                                 Cancel
                             </OrbisButton>
                             <OrbisButton
+                                data-testid="invite-send-button"
                                 type="submit"
                                 aria-label="Send partnership invitation"
                                 isLoading={isSubmitting}

@@ -187,7 +187,7 @@ export const DisplayButton = (props: ButtonProps & { visible: boolean; toggletex
     const { visible, toggletext, ...rest } = props;
     const [visibleStatus, setVisible] = useState(visible);
     function onCLick() {
-        setVisible(prev => !prev);
+        setVisible((prev) => !prev);
         toggletext();
     }
     return (

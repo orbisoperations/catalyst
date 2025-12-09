@@ -281,10 +281,14 @@ describe.sequential('authzed integration tests', () => {
     };
 
     const authzedTeardown = async (env: ProvidedEnv) => {
-        await env.AUTHX_AUTHZED_API.addOrgToDataChannel('DC1', 'Org1');
-        await env.AUTHX_AUTHZED_API.addOrgToDataChannel('DC2', 'Org2');
-        await env.AUTHX_AUTHZED_API.addUserToOrg('Org1', 'User1');
-        await env.AUTHX_AUTHZED_API.addUserToOrg('Org2', 'User2');
+        // Delete partnerships created during tests (both directions to ensure clean state)
+        await env.AUTHX_AUTHZED_API.deletePartnerInOrg('Org1', 'Org2');
+        await env.AUTHX_AUTHZED_API.deletePartnerInOrg('Org2', 'Org1');
+        // Delete base relationships
+        await env.AUTHX_AUTHZED_API.deleteOrgInDataChannel('DC1', 'Org1');
+        await env.AUTHX_AUTHZED_API.deleteOrgInDataChannel('DC2', 'Org2');
+        await env.AUTHX_AUTHZED_API.deleteUserFromOrg('Org1', 'User1');
+        await env.AUTHX_AUTHZED_API.deleteUserFromOrg('Org2', 'User2');
     };
     describe.sequential('multi functional tests', () => {
         describe.sequential('share data channel between orgs', async () => {

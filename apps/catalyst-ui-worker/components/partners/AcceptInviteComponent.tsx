@@ -91,6 +91,7 @@ export default function AcceptInviteComponent({ acceptInvite, declineInvite, rea
                                     </ModalBody>
                                     <ModalFooter display={'flex'} gap={2}>
                                         <OrbisButton
+                                            data-testid="invite-confirm-reject-button"
                                             colorScheme="red"
                                             onClick={() => {
                                                 if (token) {
@@ -117,12 +118,18 @@ export default function AcceptInviteComponent({ acceptInvite, declineInvite, rea
                                     </ModalFooter>
                                 </ModalContent>
                             </Modal>
-                            <OrbisButton variant={'outline'} colorScheme="red" onClick={onOpen}>
+                            <OrbisButton
+                                data-testid="invite-reject-button"
+                                variant={'outline'}
+                                colorScheme="red"
+                                onClick={onOpen}
+                            >
                                 {orgIsSender ? 'Cancel' : 'Reject'}
                             </OrbisButton>
 
                             {!orgIsSender && (
                                 <OrbisButton
+                                    data-testid="invite-accept-button"
                                     onClick={() => {
                                         if (token)
                                             acceptInvite(id, token)
@@ -145,7 +152,7 @@ export default function AcceptInviteComponent({ acceptInvite, declineInvite, rea
                         <Text fontSize={'sm'} fontWeight={'bold'} mb={5}>
                             Invitation message
                         </Text>
-                        <p>{invite?.message}</p>
+                        <p data-testid="invite-message-display">{invite?.message}</p>
                     </>
                 </OrbisCard>
             )}

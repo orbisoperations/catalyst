@@ -42,7 +42,7 @@ type UserProviderProps = {
 function getOrgFromRoles(roles: Record<string, Record<string, string>>): string | undefined {
     const roleKeys = Object.keys(roles) as UserRole[];
     const key = roleKeys.find(
-        key => key === 'platform-admin' || key === 'org-admin' || key === 'data-custodian' || key === 'org-user'
+        (key) => key === 'platform-admin' || key === 'org-admin' || key === 'data-custodian' || key === 'org-user'
     );
 
     if (!key) return undefined;
@@ -60,7 +60,7 @@ function getOrgFromRoles(roles: Record<string, Record<string, string>>): string 
 function getIdentity() {
     return fetch(`${typeof window !== 'undefined' ? window.location.origin : ''}/cdn-cgi/access/get-identity`, {
         method: 'GET',
-    }).then(res => {
+    }).then((res) => {
         return res.json() as Promise<CloudflareUser>;
     });
 }
@@ -69,7 +69,7 @@ function syncUser() {
     return fetch('/api/v1/user/sync', {
         method: 'GET',
         credentials: 'include',
-    }).then(res => {
+    }).then((res) => {
         return res.json() as Promise<{ token: string } | { error: string }>;
     });
 }
@@ -81,7 +81,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     const [token, setToken] = useState<string | undefined>();
 
     useEffect(() => {
-        getIdentity().then(res => {
+        getIdentity().then((res) => {
             const roles = res?.custom['urn:zitadel:iam:org:project:roles'];
             res.custom.isAdmin = roles && (roles as Record<string, string>)['org-admin'] !== undefined;
             res.custom.isPlatformAdmin = roles && (roles as Record<string, string>)['platform-admin'] !== undefined;
@@ -89,7 +89,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
             setUser(res);
         });
 
-        syncUser().then(res => {
+        syncUser().then((res) => {
             if ('token' in res) {
                 setToken(res.token);
             }

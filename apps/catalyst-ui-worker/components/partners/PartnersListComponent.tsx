@@ -47,10 +47,10 @@ export default function PartnersListComponent({
         setHasError(false);
         if (token)
             return listInvites(token)
-                .then(invites => {
+                .then((invites) => {
                     const partners: OrgInvite[] = [];
                     const invitations: OrgInvite[] = [];
-                    invites.forEach(invite => {
+                    invites.forEach((invite) => {
                         if (invite.status === 'accepted') {
                             partners.push(invite);
                         }
@@ -89,14 +89,13 @@ export default function PartnersListComponent({
                 user?.custom.isAdmin ? (
                     <Flex gap={5}>
                         <CreateButton
+                            data-testid="partners-create-button"
                             onClick={() => {
                                 router.push('/partners/invite');
                             }}
                         />
                     </Flex>
-                ) : (
-                    <></>
-                )
+                ) : undefined
             }
             headerTitle={{
                 text: 'Partners',
@@ -108,12 +107,12 @@ export default function PartnersListComponent({
                     <ErrorCard title="Error" message={errorMessage} retry={fetchInvites} />
                 ) : (
                     <Flex gap={5}>
-                        <OrbisCard header={'Partners'} pb={0} flex={3} h="min-content">
+                        <OrbisCard header={'Partners'} pb={0} flex={3} h="min-content" data-testid="partners-list-card">
                             {partners.length > 0 ? (
                                 <OrbisTable
                                     headers={['Partner']}
-                                    rows={partners.map(partner => [
-                                        <Box key={partner.id}>
+                                    rows={partners.map((partner) => [
+                                        <Box key={partner.id} data-testid={`partners-row-${partner.id}`}>
                                             <Flex justifyContent={'space-between'}>
                                                 <OpenButton
                                                     onClick={() =>
@@ -132,6 +131,7 @@ export default function PartnersListComponent({
                                                 {user?.custom.isAdmin ? (
                                                     <Flex gap={10} align={'center'}>
                                                         <Switch
+                                                            data-testid={`partners-row-${partner.id}-toggle`}
                                                             colorScheme="green"
                                                             defaultChecked={partner.isActive}
                                                             onChange={() => {
@@ -146,15 +146,14 @@ export default function PartnersListComponent({
                                                             }}
                                                         />
                                                         <TrashButton
+                                                            data-testid={`partners-row-${partner.id}-delete`}
                                                             onClick={() => {
                                                                 setSelectedPartner(partner);
                                                                 onOpen();
                                                             }}
                                                         />
                                                     </Flex>
-                                                ) : (
-                                                    <></>
-                                                )}
+                                                ) : null}
                                             </Flex>
                                         </Box>,
                                     ])}
@@ -164,10 +163,15 @@ export default function PartnersListComponent({
                                 <Text my={5}>No Partners</Text>
                             )}
                         </OrbisCard>
-                        <OrbisCard header={`Invitations (${invitations.length})`} h={'min-content'} flex={2}>
+                        <OrbisCard
+                            header={`Invitations (${invitations.length})`}
+                            h={'min-content'}
+                            flex={2}
+                            data-testid="partners-invitations-card"
+                        >
                             {invitations.length > 0 ? (
                                 <Stack divider={<StackDivider />}>
-                                    {invitations.map(invitation => (
+                                    {invitations.map((invitation) => (
                                         <StackItem key={invitation.id}>
                                             <OpenButton
                                                 onClick={() => router.push(`/partners/invite/accept/${invitation.id}`)}
@@ -192,7 +196,7 @@ export default function PartnersListComponent({
             <Modal isOpen={isOpen} onClose={onClose}>
                 <ModalOverlay />
                 <ModalContent>
-                    <ModalHeader>Cancel Parnership</ModalHeader>
+                    <ModalHeader>Cancel Partnership</ModalHeader>
                     <ModalCloseButton />
                     <ModalBody>
                         <p>Are you sure you want to cancel this partnership? This action cannot be undone.</p>
