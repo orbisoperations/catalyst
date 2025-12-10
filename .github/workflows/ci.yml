@@ -1,0 +1,62 @@
+# Continuous Integration
+# Runs on all PRs to staging - validates code quality before merge
+#
+# Flow: Build → Tests (unit, integration) → E2E Tests → Dry-run Deploy
+name: CI
+
+on:
+    pull_request:
+        branches-ignore:
+            - '**/graphite-base/**'
+        types: [opened, synchronize, reopened]
+
+concurrency:
+    group: ci-${{ github.sha }}
+    cancel-in-progress: true
+
+permissions:
+    contents: read
+    packages: read
+    actions: none
+    checks: none
+    issues: none
+    pull-requests: none
+    deployments: none
+
+env:
+    TURBO_TELEMETRY_DISABLED: 1
+
+jobs:
+    # ============================================================
+    # Build and Type Check
+    # ============================================================
+    build:
+        name: Build & Type Check
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v5
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v6
+              with:
+                  registry-url: 'https://npm.pkg.github.com'
+                  scope: '@orbisoperations'
+                  node-version-file: '.nvmrc'
+
+            - name: Setup pnpm
+              uses: pnpm/action-setup@v4
+
+            # Install with --ignore-scripts to prevent malicious scripts from stealing NODE_AUTH_TOKEN
+            # See: https://github.com/actions/setup-node/blob/main/docs/advanced-usage.md#use-private-packages
+            - name: Install dependencies (without scripts)
+              env:
+                  NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: pnpm install --frozen-lockfile --ignore-scripts
+
+            # Rebuild packages to run post-install scripts safely (after NODE_AUTH_TOKEN is no longer in env)
+            - name: Rebuild dependencies
+              run: pnpm rebuild
+
+            - name: Build test dependencies
+              run: pnpm run build:ci
