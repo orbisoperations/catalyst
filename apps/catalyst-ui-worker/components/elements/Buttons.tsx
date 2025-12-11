@@ -1,7 +1,19 @@
 'use client';
 import { Button, ButtonProps } from '@chakra-ui/button';
 import { Flex } from '@chakra-ui/layout';
-import { Avatar, AvatarProps, Icon, Menu, MenuButton, MenuItem, MenuList, Tooltip, Text } from '@chakra-ui/react';
+import {
+    Avatar,
+    AvatarProps,
+    Icon,
+    Menu,
+    MenuButton,
+    MenuItem,
+    MenuList,
+    Tooltip,
+    Text,
+    Box,
+    IconButton,
+} from '@chakra-ui/react';
 import {
     ArrowLeftIcon,
     ArrowPathIcon,
@@ -17,6 +29,7 @@ import {
     TrashIcon,
     XMarkIcon,
 } from '@heroicons/react/20/solid';
+import { BellIcon, ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
 import { MouseEventHandler, useState } from 'react';
 
 export const OrbisButton = (props: ButtonProps) => {
@@ -76,43 +89,64 @@ export type ProfileButtonProps = {
 
 export const ProfileButton = (props: ProfileButtonProps) => {
     return (
-        <Flex data-testid="navbar-profile-button">
-            {props.userInfo && (
-                <Flex flexDirection="column" pr="8px" textAlign={'right'}>
-                    <Text fontSize="sm" fontWeight="bold" data-testid="navbar-user-org-name">
-                        {props.userInfo.organization}
-                    </Text>
-                    <Text fontSize="sm" data-testid="navbar-user-email-display">
-                        {props.userInfo.userEmail.split('@')[0]}
-                    </Text>
-                </Flex>
-            )}
-            <Menu>
-                <MenuButton>
-                    <Avatar
-                        {...props.avatarProps}
-                        // as={Button}
-                        bg="gray.700"
-                        textColor={'white'}
-                    />
-                </MenuButton>
-                <MenuList px={2}>
-                    {props.actions?.map((action, index) => (
-                        <MenuItem key={index} onClick={action.action}>
-                            {action.displayName}
-                        </MenuItem>
-                    ))}
-                    <MenuItem
-                        onClick={() => {
-                            if (typeof window !== 'undefined') {
-                                window.location.href = '/cdn-cgi/auth/logout';
-                            }
-                        }}
-                    >
-                        Logout
-                    </MenuItem>
-                </MenuList>
-            </Menu>
+        <Flex alignItems="center" justifyContent="space-between" gap={3} w="100%">
+            <Box position="relative">
+                <Avatar {...props.avatarProps} bg="gray.700" textColor="white" size="sm" />
+                <Box
+                    position="absolute"
+                    bottom={0}
+                    right={0}
+                    width="10px"
+                    height="10px"
+                    borderRadius="full"
+                    bg="green.500"
+                    border="1.5px solid white"
+                />
+            </Box>
+            <Flex alignItems="center" gap={2} flex={1}>
+                <Menu>
+                    {({ isOpen }) => (
+                        <>
+                            <MenuButton as={Box} cursor="pointer">
+                                <Flex alignItems="center" gap={1}>
+                                    <Text
+                                        fontSize="14px"
+                                        fontWeight="700"
+                                        lineHeight="18px"
+                                        color="#1848A3"
+                                        fontFamily="Open Sans, sans-serif"
+                                    >
+                                        {props.userInfo?.userEmail ? props.userInfo.userEmail.split('@')[0] : 'User'}
+                                    </Text>
+                                    <Icon as={isOpen ? ChevronUpIcon : ChevronDownIcon} w={4} h={4} />
+                                </Flex>
+                            </MenuButton>
+                            <MenuList px={2}>
+                                {props.actions?.map((action, index) => (
+                                    <MenuItem key={index} onClick={action.action}>
+                                        {action.displayName}
+                                    </MenuItem>
+                                ))}
+                                <MenuItem
+                                    onClick={() => {
+                                        if (typeof window !== 'undefined') {
+                                            window.location.href = '/cdn-cgi/auth/logout';
+                                        }
+                                    }}
+                                >
+                                    Logout
+                                </MenuItem>
+                            </MenuList>
+                        </>
+                    )}
+                </Menu>
+            </Flex>
+            <IconButton
+                aria-label="Notifications"
+                icon={<BellIcon width={20} height={20} />}
+                variant="ghost"
+                size="sm"
+            />
         </Flex>
     );
 };

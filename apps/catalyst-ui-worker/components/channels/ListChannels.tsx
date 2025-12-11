@@ -9,8 +9,6 @@ import {
     OrbisTable,
 } from '@/components/elements';
 import { ValidationButton } from './ValidationStatus';
-import { ListView } from '@/components/layouts';
-import { navigationItems } from '@/utils/nav.utils';
 import { DataChannel } from '@catalyst/schemas';
 import { Flex } from '@chakra-ui/layout';
 import {
@@ -141,10 +139,9 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
                     </ModalFooter>
                 </ModalContent>
             </Modal>
-            <ListView
-                //$showspinner={false ? true : undefined}
-                actions={
-                    <Flex gap={5}>
+            <Flex direction="column" gap={5}>
+                {!hasError && (
+                    <Flex gap={5} justifyContent="flex-end">
                         <CreateButton
                             data-testid="channels-create-button"
                             onClick={() => {
@@ -152,153 +149,142 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
                             }}
                         />
                     </Flex>
-                }
-                topbaractions={navigationItems}
-                headerTitle={{
-                    text: 'Data Channels',
-                }}
-                positionChildren="bottom"
-                subtitle="All your data channels in one place."
-                table={
-                    hasError ? (
-                        <ErrorCard
-                            title="Error"
-                            message="An error occurred while fetching the channels. Please try again later."
-                            retry={fetchChannels}
-                        />
-                    ) : (
-                        <Flex gap={5} direction={'column'}>
-                            <Card p={2}>
-                                <Flex gap={5} align={'center'}>
-                                    <Select
-                                        data-testid="channels-filter-dropdown"
-                                        value={filterMode}
-                                        onChange={(e) => {
-                                            filterChannels(e.target.value as 'all' | 'subscribed' | 'owned');
-                                            setFilterMode(e.target.value as 'all' | 'subscribed' | 'owned');
-                                        }}
-                                    >
-                                        <option defaultChecked value="all">
-                                            All Channels
-                                        </option>
-                                        <option value="subscribed">Subscribed Channels</option>
-                                        <option value="owned">My Organization Channels</option>
-                                    </Select>
-                                    <OrbisButton
-                                        onClick={() => {
-                                            filterChannels('all');
-                                            setFilterMode('all');
-                                        }}
-                                    >
-                                        Clear Filter
-                                    </OrbisButton>
-                                </Flex>
+                )}
+                {hasError ? (
+                    <ErrorCard
+                        title="Error"
+                        message="An error occurred while fetching the channels. Please try again later."
+                        retry={fetchChannels}
+                    />
+                ) : (
+                    <Flex gap={5} direction={'column'}>
+                        <Card p={2}>
+                            <Flex gap={5} align={'center'}>
+                                <Select
+                                    data-testid="channels-filter-dropdown"
+                                    value={filterMode}
+                                    onChange={(e) => {
+                                        filterChannels(e.target.value as 'all' | 'subscribed' | 'owned');
+                                        setFilterMode(e.target.value as 'all' | 'subscribed' | 'owned');
+                                    }}
+                                >
+                                    <option defaultChecked value="all">
+                                        All Channels
+                                    </option>
+                                    <option value="subscribed">Subscribed Channels</option>
+                                    <option value="owned">My Organization Channels</option>
+                                </Select>
+                                <OrbisButton
+                                    onClick={() => {
+                                        filterChannels('all');
+                                        setFilterMode('all');
+                                    }}
+                                >
+                                    Clear Filter
+                                </OrbisButton>
+                            </Flex>
+                        </Card>
+                        {isLoading || channels === null ? (
+                            <Card sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                                <Spinner
+                                    data-testid="channels-loading-spinner"
+                                    color="blue.500"
+                                    sx={{ margin: '1em' }}
+                                />
                             </Card>
-                            {isLoading || channels === null ? (
-                                <Card sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                                    <Spinner
-                                        data-testid="channels-loading-spinner"
-                                        color="blue.500"
-                                        sx={{ margin: '1em' }}
-                                    />
-                                </Card>
-                            ) : channels.length > 0 ? (
-                                <Card>
-                                    <OrbisTable
-                                        headers={['Data Channel', 'Description', 'Channel ID', 'Validation', '']}
-                                        rows={channels.map((channel, index) => {
-                                            return [
-                                                <Flex
-                                                    key={'1'}
-                                                    data-testid={`channels-row-${channel.id}`}
-                                                    justifyContent={'space-between'}
-                                                    alignItems={'center'}
-                                                    gap={2}
-                                                    justifyItems={'center'}
-                                                >
-                                                    <OpenButton onClick={() => router.push('/channels/' + channel.id)}>
-                                                        {channel.name}
-                                                    </OpenButton>
-                                                    {channel.creatorOrganization === user?.custom.org ? (
-                                                        channel.accessSwitch ? (
-                                                            <OrbisBadge
-                                                                data-testid={`channels-row-${channel.id}-badge`}
-                                                            >
-                                                                Published
-                                                            </OrbisBadge>
-                                                        ) : (
-                                                            <OrbisBadge
-                                                                data-testid={`channels-row-${channel.id}-badge`}
-                                                                colorScheme="red"
-                                                            >
-                                                                Disabled
-                                                            </OrbisBadge>
-                                                        )
+                        ) : channels.length > 0 ? (
+                            <Card>
+                                <OrbisTable
+                                    headers={['Data Channel', 'Description', 'Channel ID', 'Validation', '']}
+                                    rows={channels.map((channel, index) => {
+                                        return [
+                                            <Flex
+                                                key={'1'}
+                                                data-testid={`channels-row-${channel.id}`}
+                                                justifyContent={'space-between'}
+                                                alignItems={'center'}
+                                                gap={2}
+                                                justifyItems={'center'}
+                                            >
+                                                <OpenButton onClick={() => router.push('/channels/' + channel.id)}>
+                                                    {channel.name}
+                                                </OpenButton>
+                                                {channel.creatorOrganization === user?.custom.org ? (
+                                                    channel.accessSwitch ? (
+                                                        <OrbisBadge data-testid={`channels-row-${channel.id}-badge`}>
+                                                            Published
+                                                        </OrbisBadge>
                                                     ) : (
                                                         <OrbisBadge
                                                             data-testid={`channels-row-${channel.id}-badge`}
-                                                            colorScheme="green"
+                                                            colorScheme="red"
                                                         >
-                                                            Subscribed
+                                                            Disabled
                                                         </OrbisBadge>
-                                                    )}
-                                                </Flex>,
-                                                channel.description,
-                                                <APIKeyText allowCopy showAsClearText key={index + '-channel-id'}>
-                                                    {channel.id}
-                                                </APIKeyText>,
-                                                // Only show validation button if:
-                                                // 1. User has data custodian permissions (canValidate)
-                                                // 2. Channel belongs to user's organization
-                                                canValidate && channel.creatorOrganization === user?.custom.org ? (
-                                                    <ValidationButton
-                                                        key={index + '-validation'}
-                                                        data-testid={`channels-row-${channel.id}-validate-button`}
-                                                        channelId={channel.id}
-                                                        endpoint={channel.endpoint}
-                                                        organizationId={channel.creatorOrganization}
-                                                    />
+                                                    )
                                                 ) : (
-                                                    <div key={index + '-validation'} />
-                                                ),
-                                                <Menu key={index + '-menu'}>
-                                                    <MenuButton
-                                                        as={IconButton}
-                                                        data-testid={`channels-row-${channel.id}-menu-button`}
-                                                        icon={<EllipsisVerticalIcon width={16} height={16} />}
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        aria-label="Channel options"
-                                                    />
-                                                    <MenuList>
-                                                        {channel.creatorOrganization === user?.custom.org ? (
-                                                            <MenuItem
-                                                                data-testid={`channels-row-${channel.id}-delete-button`}
-                                                                icon={<TrashIcon width={16} height={16} />}
-                                                                color="red.500"
-                                                                onClick={() => handleDeleteChannel(channel.id)}
-                                                            >
-                                                                Delete Channel
-                                                            </MenuItem>
-                                                        ) : (
-                                                            <MenuItem isDisabled>No actions available</MenuItem>
-                                                        )}
-                                                    </MenuList>
-                                                </Menu>,
-                                            ];
-                                        })}
-                                    />
-                                </Card>
-                            ) : (
-                                <Card data-testid="channels-empty-state">
-                                    <CardBody>No Channels Available</CardBody>
-                                </Card>
-                            )}
-                        </Flex>
-                    )
-                }
-                topbartitle="Data Channels"
-            />
+                                                    <OrbisBadge
+                                                        data-testid={`channels-row-${channel.id}-badge`}
+                                                        colorScheme="green"
+                                                    >
+                                                        Subscribed
+                                                    </OrbisBadge>
+                                                )}
+                                            </Flex>,
+                                            channel.description,
+                                            <APIKeyText allowCopy showAsClearText key={index + '-channel-id'}>
+                                                {channel.id}
+                                            </APIKeyText>,
+                                            // Only show validation button if:
+                                            // 1. User has data custodian permissions (canValidate)
+                                            // 2. Channel belongs to user's organization
+                                            canValidate && channel.creatorOrganization === user?.custom.org ? (
+                                                <ValidationButton
+                                                    key={index + '-validation'}
+                                                    data-testid={`channels-row-${channel.id}-validate-button`}
+                                                    channelId={channel.id}
+                                                    endpoint={channel.endpoint}
+                                                    organizationId={channel.creatorOrganization}
+                                                />
+                                            ) : (
+                                                <div key={index + '-validation'} />
+                                            ),
+                                            <Menu key={index + '-menu'}>
+                                                <MenuButton
+                                                    as={IconButton}
+                                                    data-testid={`channels-row-${channel.id}-menu-button`}
+                                                    icon={<EllipsisVerticalIcon width={16} height={16} />}
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    aria-label="Channel options"
+                                                />
+                                                <MenuList>
+                                                    {channel.creatorOrganization === user?.custom.org ? (
+                                                        <MenuItem
+                                                            data-testid={`channels-row-${channel.id}-delete-button`}
+                                                            icon={<TrashIcon width={16} height={16} />}
+                                                            color="red.500"
+                                                            onClick={() => handleDeleteChannel(channel.id)}
+                                                        >
+                                                            Delete Channel
+                                                        </MenuItem>
+                                                    ) : (
+                                                        <MenuItem isDisabled>No actions available</MenuItem>
+                                                    )}
+                                                </MenuList>
+                                            </Menu>,
+                                        ];
+                                    })}
+                                />
+                            </Card>
+                        ) : (
+                            <Card data-testid="channels-empty-state">
+                                <CardBody>No Channels Available</CardBody>
+                            </Card>
+                        )}
+                    </Flex>
+                )}
+            </Flex>
         </>
     );
 }

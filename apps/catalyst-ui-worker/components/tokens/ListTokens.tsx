@@ -1,8 +1,6 @@
 'use client';
 import { rotateJWTKeyMaterial } from '@/app/actions/tokens';
 import { CreateButton, ErrorCard, OpenButton, OrbisButton, OrbisCard, OrbisTable } from '@/components/elements';
-import { ListView } from '@/components/layouts';
-import { navigationItems } from '@/utils/nav.utils';
 import { IssuedJWTRegistry } from '@catalyst/schemas';
 import { Box, Flex } from '@chakra-ui/layout';
 import {
@@ -91,6 +89,14 @@ export default function APIKeysComponent({ listIJWTRegistry, deleteIJWTRegistry 
 
     useEffect(fetchIssuedJWTRegistry, [user, token]);
 
+    if (isLoading || issuedJWTRegistry === null) {
+        return (
+            <Flex justify="center" align="center" minH="400px">
+                <Spinner size="xl" />
+            </Flex>
+        );
+    }
+
     return (
         <>
             <Modal isOpen={isOpen} onClose={onClose}>
@@ -118,139 +124,118 @@ export default function APIKeysComponent({ listIJWTRegistry, deleteIJWTRegistry 
                     </ModalFooter>
                 </ModalContent>
             </Modal>
-            <ListView
-                actions={
-                    !hasError ? (
-                        <Flex gap={5}>
-                            <CreateButton
-                                data-testid="tokens-create-button"
-                                onClick={() => {
-                                    router.push('/tokens/create');
-                                }}
-                            />
-                        </Flex>
-                    ) : undefined
-                }
-                topbaractions={navigationItems}
-                headerTitle={{
-                    text: 'API Keys',
-                }}
-                positionChildren="top"
-                topbartitle="API Keys"
-                subtitle="Access Data through your own means"
-                table={
-                    hasError ? (
-                        <ErrorCard title="Error" message={errorMessage} retry={fetchIssuedJWTRegistry} />
-                    ) : (
-                        <Box>
-                            {adminFlag && (
-                                <>
-                                    <OrbisCard title="JWT Admin Pannel" mb={5} data-testid="tokens-admin-panel">
-                                        <Text>JWT Admin Actions</Text>
-                                        <OrbisButton
-                                            data-testid="tokens-admin-rotate-button"
-                                            onClick={async () => {
-                                                if (!token) return;
-                                                rotateJWTKeyMaterial(token)
-                                                    .then((res) => {
-                                                        console.log(res);
-                                                    })
-                                                    .catch((e) => {
-                                                        setHasError(true);
-                                                        setErrorMessage(
-                                                            'An error occurred while rotating the key. Please try again later.'
-                                                        );
-                                                        console.error('error rotating keys: ', e);
-                                                    });
-                                            }}
-                                        >
-                                            Rotate JWT Signing Material
-                                        </OrbisButton>
-                                    </OrbisCard>
-                                </>
-                            )}
-                            {isLoading || issuedJWTRegistry === null ? (
-                                <Card sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                                    <Spinner
-                                        color="blue.500"
-                                        sx={{ margin: '1em' }}
-                                        data-testid="tokens-loading-spinner"
-                                    />
-                                </Card>
-                            ) : issuedJWTRegistry.length > 0 ? (
-                                <Card variant={'outline'} shadow={'md'}>
-                                    <OrbisTable
-                                        headers={['Name', 'Description', 'Expiration', 'Owner', '']}
-                                        rows={issuedJWTRegistry.map(
-                                            (
-                                                jwt: {
-                                                    id: string;
-                                                    name: string;
-                                                    description: string;
-                                                    claims: string[];
-                                                    expiry: Date;
-                                                    organization: string;
-                                                },
-                                                index: number
-                                            ) => {
-                                                return [
-                                                    <Flex
-                                                        key={jwt.id}
-                                                        justifyContent={'space-between'}
-                                                        data-testid={`tokens-row-${jwt.id}`}
+            <Flex direction="column" gap={5}>
+                {!hasError && (
+                    <Flex gap={5} justifyContent="flex-end">
+                        <CreateButton
+                            data-testid="tokens-create-button"
+                            onClick={() => {
+                                router.push('/tokens/create');
+                            }}
+                        />
+                    </Flex>
+                )}
+                {hasError ? (
+                    <ErrorCard title="Error" message={errorMessage} retry={fetchIssuedJWTRegistry} />
+                ) : (
+                    <Box>
+                        {adminFlag && (
+                            <OrbisCard title="JWT Admin Pannel" mb={5} data-testid="tokens-admin-panel">
+                                <Text>JWT Admin Actions</Text>
+                                <OrbisButton
+                                    data-testid="tokens-admin-rotate-button"
+                                    onClick={async () => {
+                                        if (!token) return;
+                                        rotateJWTKeyMaterial(token)
+                                            .then((res) => {
+                                                console.log(res);
+                                            })
+                                            .catch((e) => {
+                                                setHasError(true);
+                                                setErrorMessage(
+                                                    'An error occurred while rotating the key. Please try again later.'
+                                                );
+                                                console.error('error rotating keys: ', e);
+                                            });
+                                    }}
+                                >
+                                    Rotate JWT Signing Material
+                                </OrbisButton>
+                            </OrbisCard>
+                        )}
+                        {issuedJWTRegistry.length > 0 ? (
+                            <Card variant={'outline'} shadow={'md'}>
+                                <OrbisTable
+                                    headers={['Name', 'Description', 'Expiration', 'Owner', '']}
+                                    rows={issuedJWTRegistry.map(
+                                        (
+                                            jwt: {
+                                                id: string;
+                                                name: string;
+                                                description: string;
+                                                claims: string[];
+                                                expiry: Date;
+                                                organization: string;
+                                            },
+                                            index: number
+                                        ) => {
+                                            return [
+                                                <Flex
+                                                    key={jwt.id}
+                                                    justifyContent={'space-between'}
+                                                    data-testid={`tokens-row-${jwt.id}`}
+                                                >
+                                                    <OpenButton
+                                                        onClick={() => router.push('/tokens/' + jwt.id)}
+                                                        data-testid={`tokens-row-${jwt.id}-name`}
                                                     >
-                                                        <OpenButton
-                                                            onClick={() => router.push('/tokens/' + jwt.id)}
-                                                            data-testid={`tokens-row-${jwt.id}-name`}
+                                                        {jwt.name}
+                                                    </OpenButton>
+                                                </Flex>,
+                                                <span
+                                                    key={`${jwt.id}-desc`}
+                                                    data-testid={`tokens-row-${jwt.id}-description`}
+                                                >
+                                                    {jwt.description}
+                                                </span>,
+                                                jwt.expiry.toLocaleDateString(),
+                                                jwt.organization,
+                                                <Menu key={index + '-menu'}>
+                                                    <MenuButton
+                                                        as={IconButton}
+                                                        data-testid={`tokens-row-${jwt.id}-menu-button`}
+                                                        icon={<EllipsisVerticalIcon width={16} height={16} />}
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        aria-label="Token options"
+                                                    />
+                                                    <MenuList>
+                                                        <MenuItem
+                                                            data-testid={`tokens-row-${jwt.id}-delete-button`}
+                                                            icon={<TrashIcon width={16} height={16} />}
+                                                            color="red.500"
+                                                            onClick={() => handleDeleteToken(jwt.id)}
                                                         >
-                                                            {jwt.name}
-                                                        </OpenButton>
-                                                    </Flex>,
-                                                    <span
-                                                        key={`${jwt.id}-desc`}
-                                                        data-testid={`tokens-row-${jwt.id}-description`}
-                                                    >
-                                                        {jwt.description}
-                                                    </span>,
-                                                    jwt.expiry.toLocaleDateString(),
-                                                    jwt.organization,
-                                                    <Menu key={index + '-menu'}>
-                                                        <MenuButton
-                                                            as={IconButton}
-                                                            data-testid={`tokens-row-${jwt.id}-menu-button`}
-                                                            icon={<EllipsisVerticalIcon width={16} height={16} />}
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            aria-label="Token options"
-                                                        />
-                                                        <MenuList>
-                                                            <MenuItem
-                                                                data-testid={`tokens-row-${jwt.id}-delete-button`}
-                                                                icon={<TrashIcon width={16} height={16} />}
-                                                                color="red.500"
-                                                                onClick={() => handleDeleteToken(jwt.id)}
-                                                            >
-                                                                Delete Token
-                                                            </MenuItem>
-                                                        </MenuList>
-                                                    </Menu>,
-                                                ];
-                                            }
-                                        )}
-                                    />
-                                </Card>
-                            ) : (
-                                <Card>
-                                    <CardBody data-testid="tokens-empty-state">
-                                        No tokens exist for{' '}
-                                        {user !== undefined ? (user.custom.org as string) : 'this user'}!
-                                    </CardBody>
-                                </Card>
-                            )}
-                        </Box>
-                    )
-                }
-            ></ListView>
+                                                            Delete Token
+                                                        </MenuItem>
+                                                    </MenuList>
+                                                </Menu>,
+                                            ];
+                                        }
+                                    )}
+                                />
+                            </Card>
+                        ) : (
+                            <Card>
+                                <CardBody data-testid="tokens-empty-state">
+                                    No tokens exist for {user !== undefined ? (user.custom.org as string) : 'this user'}
+                                    !
+                                </CardBody>
+                            </Card>
+                        )}
+                    </Box>
+                )}
+            </Flex>
         </>
     );
 }

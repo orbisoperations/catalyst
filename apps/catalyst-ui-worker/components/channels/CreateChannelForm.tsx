@@ -1,8 +1,6 @@
 'use client';
 import { useUser } from '@/components/contexts/User/UserContext';
 import { ErrorCard, OrbisButton } from '@/components/elements';
-import { DetailedView } from '@/components/layouts';
-import { navigationItems } from '@/utils/nav.utils';
 import { DataChannel, DataChannelActionResponse } from '@catalyst/schemas';
 import { Flex, Grid } from '@chakra-ui/layout';
 import { Card, CardBody, FormControl, Input, FormErrorMessage, FormLabel } from '@chakra-ui/react';
@@ -30,15 +28,28 @@ export default function CreateChannelForm({ createDataChannel }: DataChannelForm
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
     return (
-        <DetailedView
-            actions={<></>}
-            headerTitle={{
-                text: 'Create Data Channel',
-            }}
-            topbaractions={navigationItems}
-            showspinner={false}
-            topbartitle="Catalyst"
-        >
+        <Flex direction="column" gap={5}>
+            {!hasError && (
+                <Flex gap={5} justifyContent="flex-end">
+                    <OrbisButton
+                        data-testid="create-channel-cancel-button"
+                        colorScheme="gray"
+                        onClick={router.back}
+                        isDisabled={isSubmitting}
+                    >
+                        Cancel
+                    </OrbisButton>
+                    <OrbisButton
+                        data-testid="create-channel-submit-button"
+                        type="submit"
+                        form="channel-form"
+                        isLoading={isSubmitting}
+                        loadingText="Creating..."
+                    >
+                        Create
+                    </OrbisButton>
+                </Flex>
+            )}
             {hasError ? (
                 <ErrorCard
                     title="Error"
@@ -52,6 +63,7 @@ export default function CreateChannelForm({ createDataChannel }: DataChannelForm
                 <Card>
                     <CardBody>
                         <form
+                            id="channel-form"
                             action={async (fd) => {
                                 setIsSubmitting(true);
                                 setNameError(''); // Clear previous errors
@@ -153,29 +165,11 @@ export default function CreateChannelForm({ createDataChannel }: DataChannelForm
                                         placeholder="Endpoint URL"
                                     />
                                 </FormControl>
-                                <Flex justifyContent={'space-between'}>
-                                    <OrbisButton
-                                        data-testid="create-channel-cancel-button"
-                                        colorScheme="gray"
-                                        onClick={router.back}
-                                        isDisabled={isSubmitting}
-                                    >
-                                        Cancel
-                                    </OrbisButton>
-                                    <OrbisButton
-                                        data-testid="create-channel-submit-button"
-                                        type="submit"
-                                        isLoading={isSubmitting}
-                                        loadingText="Creating..."
-                                    >
-                                        Create
-                                    </OrbisButton>
-                                </Flex>
                             </Grid>
                         </form>
                     </CardBody>
                 </Card>
             )}
-        </DetailedView>
+        </Flex>
     );
 }
