@@ -9,6 +9,7 @@ import {
     OrbisTable,
 } from '@/components/elements';
 import { ValidationButton } from './ValidationStatus';
+import { CreateChannelModal } from '@/components/modals';
 import { DataChannel } from '@catalyst/schemas';
 import { Flex } from '@chakra-ui/layout';
 import {
@@ -49,7 +50,8 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
     const [filterMode, setFilterMode] = useState<'all' | 'subscribed' | 'owned'>('all');
     const [channelToDelete, setChannelToDelete] = useState<string | null>(null);
     const [canValidate, setCanValidate] = useState<boolean>(false);
-    const { isOpen, onOpen, onClose } = useDisclosure();
+    const deleteDisclosure = useDisclosure();
+    const createChannelDisclosure = useDisclosure();
     const { token, user } = useUser();
     function filterChannels(filterMode: 'all' | 'subscribed' | 'owned' = 'all') {
         let filteredChannels = allChannels;
@@ -84,7 +86,7 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
 
     function handleDeleteChannel(channelId: string) {
         setChannelToDelete(channelId);
-        onOpen();
+        deleteDisclosure.onOpen();
     }
 
     function confirmDeleteChannel() {
@@ -92,13 +94,13 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
 
         deleteChannel(channelToDelete, token)
             .then(() => {
-                onClose();
+                deleteDisclosure.onClose();
                 setChannelToDelete(null);
                 fetchChannels();
             })
             .catch((error) => {
                 console.error('Failed to delete channel:', error);
-                onClose();
+                deleteDisclosure.onClose();
                 setChannelToDelete(null);
                 setHasError(true);
             });
@@ -114,7 +116,7 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
     // TODO: Update to use the dynamic organization id
     return (
         <>
-            <Modal isOpen={isOpen} onClose={onClose}>
+            <Modal isOpen={deleteDisclosure.isOpen} onClose={deleteDisclosure.onClose}>
                 <ModalOverlay />
                 <ModalContent data-testid="modal-confirm-delete">
                     <ModalHeader data-testid="modal-confirm-delete-title">
@@ -125,7 +127,11 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
                     </ModalBody>
                     <ModalFooter>
                         <Flex gap={5}>
-                            <OrbisButton data-testid="modal-cancel-button" colorScheme="gray" onClick={onClose}>
+                            <OrbisButton
+                                data-testid="modal-cancel-button"
+                                colorScheme="gray"
+                                onClick={deleteDisclosure.onClose}
+                            >
                                 Cancel
                             </OrbisButton>
                             <OrbisButton
@@ -139,15 +145,11 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
                     </ModalFooter>
                 </ModalContent>
             </Modal>
+            <CreateChannelModal disclosure={createChannelDisclosure} user={user} token={token} />
             <Flex direction="column" gap={5}>
                 {!hasError && (
                     <Flex gap={5} justifyContent="flex-end">
-                        <CreateButton
-                            data-testid="channels-create-button"
-                            onClick={() => {
-                                router.push('/channels/create');
-                            }}
-                        />
+                        <CreateButton data-testid="channels-create-button" onClick={createChannelDisclosure.onOpen} />
                     </Flex>
                 )}
                 {hasError ? (

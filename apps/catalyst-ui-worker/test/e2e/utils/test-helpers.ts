@@ -24,9 +24,11 @@ export interface ChannelData {
  * Assumes the page is already on /channels
  */
 export async function createChannel(page: Page, data: ChannelData): Promise<string> {
-    // Click create button
+    // Click create button to open modal
     await page.getByTestId(CHANNELS.CREATE_BUTTON).click();
-    await page.waitForURL('/channels/create');
+
+    // Wait for modal to be visible
+    await expect(page.getByTestId(CREATE_CHANNEL.NAME_INPUT)).toBeVisible();
 
     // Fill the form
     await page.getByTestId(CREATE_CHANNEL.NAME_INPUT).fill(data.name);
@@ -36,11 +38,11 @@ export async function createChannel(page: Page, data: ChannelData): Promise<stri
     // Submit the form
     await page.getByTestId(CREATE_CHANNEL.SUBMIT_BUTTON).click();
 
-    // Wait for redirect to channel detail page (exclude /channels/create)
-    await page.waitForURL(url => {
+    // Wait for redirect to channel detail page
+    await page.waitForURL((url) => {
         const pathname = url.pathname;
         const match = pathname.match(/\/channels\/([a-zA-Z0-9-]+)$/);
-        return match !== null && match[1] !== 'create';
+        return match !== null;
     });
 
     // Extract channel ID from URL
