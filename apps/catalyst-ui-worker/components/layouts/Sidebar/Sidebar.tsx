@@ -1,6 +1,6 @@
 'use client';
 import { Box, Flex, IconButton, Image } from '@chakra-ui/react';
-import { Bars3Icon, TableCellsIcon, CodeBracketIcon, UsersIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { Bars3Icon, TableCellsIcon, CodeBracketIcon, UsersIcon } from '@heroicons/react/24/outline';
 import { ProfileButton } from '@/components/elements';
 import { navigationItems } from '@/utils/nav.utils';
 import { usePathname } from 'next/navigation';
@@ -92,24 +92,9 @@ export function Sidebar({
             {/* Account Actions */}
             <Box p={isCollapsed ? 2 : 4} pt={isCollapsed ? 4 : 2}>
                 <Flex flexDirection="column" gap={2}>
-                    <SidebarActionItem
-                        label="Create a channel"
-                        icon={PlusIcon}
-                        onClick={onCreateChannel}
-                        isCollapsed={isCollapsed}
-                    />
-                    <SidebarActionItem
-                        label="New partnership"
-                        icon={UsersIcon}
-                        onClick={onNewPartnership}
-                        isCollapsed={isCollapsed}
-                    />
-                    <SidebarActionItem
-                        label="Create a new API key"
-                        icon={CodeBracketIcon}
-                        onClick={onCreateToken}
-                        isCollapsed={isCollapsed}
-                    />
+                    <SidebarActionItem label="Create a channel" onClick={onCreateChannel} isCollapsed={isCollapsed} />
+                    <SidebarActionItem label="New partnership" onClick={onNewPartnership} isCollapsed={isCollapsed} />
+                    <SidebarActionItem label="Create a new API key" onClick={onCreateToken} isCollapsed={isCollapsed} />
                 </Flex>
             </Box>
 
