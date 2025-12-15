@@ -25,7 +25,7 @@
         "framer-motion": "catalog:",
         "graphql-yoga": "^5.3.1",
         "listhen": "catalog:",
-        "next": "14.2.3",
+        "next": "14.2.35",
         "react": "^18",
         "react-dom": "^18",
         "react-markdown": "catalog:",
