@@ -53,31 +53,33 @@ test.describe('Create Data Channel', () => {
         await deleteChannel(page, channelId);
     });
 
-    test('should cancel channel creation and return to list', async ({ dataCustodianPage: page }) => {
-        // Navigate to channels list first, then to create page
+    test('should cancel channel creation and close modal', async ({ dataCustodianPage: page }) => {
+        // Navigate to channels list
         await page.goto('/');
         await page.getByTestId(NAVBAR.CHANNELS_LINK).click();
         await page.waitForURL('/channels');
 
+        // Click create button to open modal
         await page.getByTestId(CHANNELS.CREATE_BUTTON).click();
-        await page.waitForURL('/channels/create');
+
+        // Wait for modal to be visible
+        const nameInput = page.getByTestId(CREATE_CHANNEL.NAME_INPUT);
+        await expect(nameInput).toBeVisible();
 
         // Fill form partially
-        const nameInput = page.getByTestId(CREATE_CHANNEL.NAME_INPUT);
         await nameInput.fill('Test Channel');
 
         // Click cancel
         const cancelButton = page.getByTestId(CREATE_CHANNEL.CANCEL_BUTTON);
         await cancelButton.click();
 
-        // Verify returned to channels list
-        await page.waitForURL('/channels');
-        expect(page.url()).toContain('/channels');
-
-        // Verify the create form is no longer visible
+        // Verify the modal is closed (form is no longer visible)
         await expect(page.getByTestId(CREATE_CHANNEL.NAME_INPUT)).not.toBeVisible();
 
-        // Verify the channels create button is visible again (confirming we're on list view)
+        // Verify we're still on channels list page
+        expect(page.url()).toContain('/channels');
+
+        // Verify the channels create button is still visible (confirming we're on list view)
         await expect(page.getByTestId(CHANNELS.CREATE_BUTTON)).toBeVisible();
     });
 });
