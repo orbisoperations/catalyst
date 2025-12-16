@@ -1,6 +1,11 @@
 'use server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { CloudflareEnv, getRegistrar, DataChannelInputSchema, DataChannel } from '@catalyst/schemas';
+import { z } from 'zod/v4';
+
+// Input validation schemas for sharing operations
+const ChannelIdSchema = z.string().uuid('Invalid channel ID format');
+const OrgIdSchema = z.string().min(1, 'Organization ID is required').max(100, 'Organization ID too long');
 
 function getEnv(): CloudflareEnv {
     return getCloudflareContext().env as CloudflareEnv;
@@ -206,4 +211,121 @@ export async function deleteChannel(channelID: string, token: string) {
         throw new Error('Failed to delete data channel');
     }
     return deleteOperation.data as DataChannel;
+}
+
+// ============================================
+// Channel Sharing Actions
+// ============================================
+
+/**
+ * Partner info returned from channel sharing APIs.
+ */
+export interface ChannelPartner {
+    id: string;
+    name: string;
+    description: string;
+    sharing: boolean;
+}
+
+/**
+ * Get all partners that a channel is shared with.
+ * Only accessible by channel owner.
+ */
+export async function getChannelPartners(channelId: string, token: string): Promise<ChannelPartner[]> {
+    // Validate inputs
+    const channelParse = ChannelIdSchema.safeParse(channelId);
+    if (!channelParse.success) {
+        console.error('Invalid channel ID:', channelParse.error.message);
+        return [];
+    }
+
+    const env = getEnv();
+    const api = getRegistrar(env);
+    const tokenObject = { cfToken: token };
+
+    const response = await api.listChannelPartners('default', channelId, tokenObject);
+    if (!response.success) {
+        console.error('Failed to list channel partners:', response.error);
+        return [];
+    }
+
+    // The API returns { id: string, sharing: boolean }[]
+    // We need to enrich with partner name/description from matchmaking
+    const partners = response.data as Array<{ id: string; sharing: boolean }>;
+
+    // For now, return with placeholder names - in production, enrich from matchmaking
+    return partners.map((p) => ({
+        id: p.id,
+        name: p.id, // Will be enriched by useChannelSharing hook
+        description: '',
+        sharing: p.sharing,
+    }));
+}
+
+/**
+ * Share a channel with a partner organization.
+ * Only accessible by channel owner.
+ */
+export async function shareChannelWithPartner(
+    channelId: string,
+    partnerOrgId: string,
+    token: string
+): Promise<{ success: boolean; error?: string }> {
+    // Validate inputs
+    const channelParse = ChannelIdSchema.safeParse(channelId);
+    if (!channelParse.success) {
+        return { success: false, error: 'Invalid channel ID format' };
+    }
+    const orgParse = OrgIdSchema.safeParse(partnerOrgId);
+    if (!orgParse.success) {
+        return { success: false, error: 'Invalid partner organization ID' };
+    }
+
+    const env = getEnv();
+    const api = getRegistrar(env);
+    const tokenObject = { cfToken: token };
+
+    const response = await api.shareChannel('default', channelId, partnerOrgId, tokenObject);
+    if (!response.success) {
+        return {
+            success: false,
+            error: response.error || 'Failed to share channel',
+        };
+    }
+
+    return { success: true };
+}
+
+/**
+ * Remove a partner from channel sharing.
+ * Only accessible by channel owner.
+ */
+export async function removeChannelPartner(
+    channelId: string,
+    partnerOrgId: string,
+    token: string
+): Promise<{ success: boolean; error?: string }> {
+    // Validate inputs
+    const channelParse = ChannelIdSchema.safeParse(channelId);
+    if (!channelParse.success) {
+        return { success: false, error: 'Invalid channel ID format' };
+    }
+    const orgParse = OrgIdSchema.safeParse(partnerOrgId);
+    if (!orgParse.success) {
+        return { success: false, error: 'Invalid partner organization ID' };
+    }
+
+    const env = getEnv();
+    const api = getRegistrar(env);
+    const tokenObject = { cfToken: token };
+
+    const response = await api.unshareChannel('default', channelId, partnerOrgId, tokenObject);
+    if (!response.success) {
+        return {
+            success: false,
+            error: response.error || 'Failed to remove channel partner',
+        };
+    }
+
+    return { success: true };
 }
