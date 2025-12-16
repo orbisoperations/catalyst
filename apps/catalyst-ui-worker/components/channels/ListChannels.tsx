@@ -1,43 +1,37 @@
 'use client';
-import {
-    APIKeyText,
-    CreateButton,
-    ErrorCard,
-    OpenButton,
-    OrbisBadge,
-    OrbisButton,
-    OrbisTable,
-} from '@/components/elements';
+
+import { useCallback, useMemo } from 'react';
+import { ErrorCard, NoChannelsState, ChannelNotFoundState } from '@/components/elements';
 import { CreateChannelModal } from '@/components/modals';
+import { DataTable, Loading, Card } from '@orbisoperations/o2-ui';
+import { ChannelsPagination } from './ChannelsPagination';
 import { DataChannel } from '@catalyst/schemas';
 import { Flex } from '@chakra-ui/layout';
-import {
-    Card,
-    CardBody,
-    Select,
-    Spinner,
-    Menu,
-    MenuButton,
-    MenuList,
-    MenuItem,
-    IconButton,
-    Modal,
-    ModalBody,
-    ModalContent,
-    ModalFooter,
-    ModalHeader,
-    ModalOverlay,
-    Text,
-    useDisclosure,
-} from '@chakra-ui/react';
-import { EllipsisVerticalIcon, TrashIcon } from '@heroicons/react/20/solid';
+import { useDisclosure } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+
+// Custom hooks
+import { usePagination } from '@/hooks/usePagination';
+import {
+    useChannels,
+    useChannelSorting,
+    useChannelFiltering,
+    useChannelCompliance,
+    useChannelDeletion,
+} from '@/hooks/channels';
+
+// Extracted components
+import { ChannelListToolbar, type SortOption, type FilterOption } from './ChannelListToolbar';
+import { ChannelTableRow } from './ChannelTableRow';
+import { DeleteChannelModal } from './DeleteChannelModal';
+import { ComplianceResultModal } from './ComplianceResultModal';
+
 import { useUser } from '../contexts/User/UserContext';
 
 type ListChannelsProps = {
     listChannels: (token: string) => Promise<DataChannel[]>;
     deleteChannel: (channelId: string, token: string) => Promise<DataChannel>;
+    createDataChannel?: (dataChannel: DataChannel, token: string) => Promise<DataChannel>;
 };
 
 export default function DataChannelListComponents({ listChannels, deleteChannel }: ListChannelsProps) {
@@ -47,122 +41,184 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
     // Modal disclosures
     const deleteDisclosure = useDisclosure();
     const createChannelDisclosure = useDisclosure();
-    const { token, user } = useUser();
-    function filterChannels(filterMode: 'all' | 'subscribed' | 'owned' = 'all') {
-        let filteredChannels = allChannels;
-        if (filterMode === 'subscribed') {
-            filteredChannels = filteredChannels.filter((channel) => {
-                return channel.creatorOrganization !== user?.custom.org;
-            });
-        }
-        if (filterMode === 'owned') {
-            filteredChannels = filteredChannels.filter((channel) => {
-                return channel.creatorOrganization === user?.custom.org;
-            });
-        }
-        setChannels(filteredChannels);
-    }
-    function fetchChannels() {
-        setIsLoading(true);
-        setHasError(false);
-        if (token)
-            listChannels(token)
-                .then((data) => {
-                    setIsLoading(false);
-                    const response = (data as DataChannel[]).sort((a, b) => a.name.localeCompare(b.name));
-                    setAllChannels(response);
-                    setChannels(response);
-                })
-                .catch(() => {
-                    setIsLoading(false);
-                    setHasError(true);
-                });
-    }
+    const complianceDisclosure = useDisclosure();
 
-    function handleDeleteChannel(channelId: string) {
-        setChannelToDelete(channelId);
-        deleteDisclosure.onOpen();
-    }, [initiateDelete, deleteDisclosure]);
+    // Custom hooks for state management
+    const { channels, isLoading, hasError, refetch } = useChannels({
+        listChannels,
+        token,
+        autoFetch: true,
+    });
+
+    const { sortColumn, sortDirection, sortMenuOption, handleSort, handleSortMenu, getSortedChannels } =
+        useChannelSorting();
+
+    const { filterMode, search, setSearch, setFilterMode, applyFilters } = useChannelFiltering();
+
+    const {
+        complianceResults,
+        checkingCompliance,
+        selectedComplianceResult,
+        canCheckCompliance,
+        checkCompliance,
+        setSelectedComplianceResult,
+    } = useChannelCompliance();
+
+    // Stable callbacks for deletion hook
+    const handleDeletionSuccess = useCallback(() => {
+        deleteDisclosure.onClose();
+        refetch();
+    }, [deleteDisclosure, refetch]);
+
+    const handleDeletionError = useCallback(() => {
+        deleteDisclosure.onClose();
+    }, [deleteDisclosure]);
+
+    const { isDeleting, initiateDelete, confirmDelete, cancelDelete } = useChannelDeletion({
+        deleteChannel,
+        token,
+        onSuccess: handleDeletionSuccess,
+        onError: handleDeletionError,
+    });
+
+    // User organization for ownership check
+    const userOrg = user?.custom?.org as string | undefined;
+
+    // Memoized ownership check function
+    const isChannelOwned = useCallback((channel: DataChannel) => channel.creatorOrganization === userOrg, [userOrg]);
+
+    // Apply filters to channels (removed redundant deps - applyFilters already captures filterMode/search)
+    const filteredChannels = useMemo(() => {
+        if (!channels.length) return [];
+        return applyFilters(channels, userOrg);
+    }, [channels, userOrg, applyFilters]);
+
+    // Apply sorting
+    const sortedChannels = useMemo(() => {
+        return getSortedChannels(filteredChannels, complianceResults);
+    }, [filteredChannels, getSortedChannels, complianceResults]);
+
+    // Pagination
+    const {
+        currentPage,
+        itemsPerPage,
+        paginatedItems: paginatedChannels,
+        totalPages,
+        setCurrentPage,
+        setItemsPerPage,
+        resetToFirstPage,
+    } = usePagination(sortedChannels, {
+        initialItemsPerPage: 8,
+        storageKey: 'channels-items-per-page',
+    });
+
+    // Stable handlers for toolbar
+    const handleSearchSubmit = useCallback(() => {
+        resetToFirstPage();
+    }, [resetToFirstPage]);
+
+    const handleSortOptionChange = useCallback(
+        (option: SortOption) => {
+            handleSortMenu(option);
+            resetToFirstPage();
+        },
+        [handleSortMenu, resetToFirstPage]
+    );
+
+    const handleFilterOptionChange = useCallback(
+        (option: FilterOption) => {
+            const mode = option === 'partner' ? 'subscribed' : option;
+            setFilterMode(mode);
+            resetToFirstPage();
+        },
+        [setFilterMode, resetToFirstPage]
+    );
+
+    const handleClearSearch = useCallback(() => {
+        setSearch('');
+        setFilterMode('all');
+        resetToFirstPage();
+    }, [setSearch, setFilterMode, resetToFirstPage]);
+
+    const handleItemsPerPageChange = useCallback(
+        (value: number) => {
+            setItemsPerPage(value);
+            resetToFirstPage();
+        },
+        [setItemsPerPage, resetToFirstPage]
+    );
+
+    // Stable callbacks for modal close handlers
+    const handleDeleteModalClose = useCallback(() => {
+        cancelDelete();
+        deleteDisclosure.onClose();
+    }, [cancelDelete, deleteDisclosure]);
+
+    const handleComplianceModalClose = useCallback(() => {
+        setSelectedComplianceResult(null);
+        complianceDisclosure.onClose();
+    }, [setSelectedComplianceResult, complianceDisclosure]);
+
+    // Stable callbacks for ChannelTableRow - these receive channelId/channel as parameter
+    const handleViewChannel = useCallback(
+        (channelId: string) => {
+            router.push('/channels/' + channelId);
+        },
+        [router]
+    );
+
+    const handleCheckCompliance = useCallback(
+        async (channel: DataChannel) => {
+            const result = await checkCompliance(channel);
+            if (result && result.status !== 'compliant') {
+                setSelectedComplianceResult(result);
+                complianceDisclosure.onOpen();
+            }
+        },
+        [checkCompliance, setSelectedComplianceResult, complianceDisclosure]
+    );
+
+    const handleDeleteChannel = useCallback(
+        (channelId: string) => {
+            initiateDelete(channelId);
+            deleteDisclosure.onOpen();
+        },
+        [initiateDelete, deleteDisclosure]
+    );
 
     return (
         <>
-            <Modal isOpen={deleteDisclosure.isOpen} onClose={deleteDisclosure.onClose}>
-                <ModalOverlay />
-                <ModalContent data-testid="modal-confirm-delete">
-                    <ModalHeader data-testid="modal-confirm-delete-title">
-                        Are you sure you want to delete this channel?
-                    </ModalHeader>
-                    <ModalBody data-testid="modal-confirm-delete-body">
-                        <Text>Deleting this channel will remove all associated data</Text>
-                    </ModalBody>
-                    <ModalFooter>
-                        <Flex gap={5}>
-                            <OrbisButton
-                                data-testid="modal-cancel-button"
-                                colorScheme="gray"
-                                onClick={deleteDisclosure.onClose}
-                            >
-                                Cancel
-                            </OrbisButton>
-                            <OrbisButton
-                                data-testid="modal-confirm-button"
-                                colorScheme="red"
-                                onClick={confirmDeleteChannel}
-                            >
-                                Delete
-                            </OrbisButton>
-                        </Flex>
-                    </ModalFooter>
-                </ModalContent>
-            </Modal>
+            {/* Delete Confirmation Modal */}
+            <DeleteChannelModal
+                isOpen={deleteDisclosure.isOpen}
+                isDeleting={isDeleting}
+                onClose={handleDeleteModalClose}
+                onConfirm={confirmDelete}
+            />
+
+            {/* Compliance Results Modal */}
+            <ComplianceResultModal
+                isOpen={complianceDisclosure.isOpen}
+                result={selectedComplianceResult}
+                onClose={handleComplianceModalClose}
+            />
+
+            {/* Create Channel Modal */}
             <CreateChannelModal disclosure={createChannelDisclosure} user={user} token={token} />
+
             <Flex direction="column" gap={5}>
-                {!hasError && (
-                    <Flex gap={5} justifyContent="flex-end">
-                        <CreateButton data-testid="channels-create-button" onClick={createChannelDisclosure.onOpen} />
-                    </Flex>
-                )}
                 {hasError ? (
                     <ErrorCard
                         title="Error"
                         message="An error occurred while fetching the channels. Please try again later."
-                        retry={fetchChannels}
+                        retry={refetch}
                     />
                 ) : (
-                    <Flex gap={5} direction={'column'}>
-                        <Card p={2}>
-                            <Flex gap={5} align={'center'}>
-                                <Select
-                                    data-testid="channels-filter-dropdown"
-                                    value={filterMode}
-                                    onChange={(e) => {
-                                        filterChannels(e.target.value as 'all' | 'subscribed' | 'owned');
-                                        setFilterMode(e.target.value as 'all' | 'subscribed' | 'owned');
-                                    }}
-                                >
-                                    <option defaultChecked value="all">
-                                        All Channels
-                                    </option>
-                                    <option value="subscribed">Subscribed Channels</option>
-                                    <option value="owned">My Organization Channels</option>
-                                </Select>
-                                <OrbisButton
-                                    onClick={() => {
-                                        filterChannels('all');
-                                        setFilterMode('all');
-                                    }}
-                                >
-                                    Clear Filter
-                                </OrbisButton>
-                            </Flex>
-                        </Card>
+                    <Flex gap={5} direction="column">
+                        {/* Loading State */}
                         {isLoading || channels === null ? (
-                            <Card sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                                <Spinner
-                                    data-testid="channels-loading-spinner"
-                                    color="blue.500"
-                                    sx={{ margin: '1em' }}
-                                />
+                            <Card className="flex justify-center items-center p-8">
+                                <Loading data-testid="channels-loading-spinner" />
                             </Card>
                         ) : sortedChannels.length > 0 ? (
                             <Card className="p-4">
@@ -170,7 +226,9 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
                                 <ChannelListToolbar
                                     search={search}
                                     selectedSort={sortMenuOption}
-                                    selectedFilter={filterMode === 'subscribed' ? 'partner' : filterMode as FilterOption}
+                                    selectedFilter={
+                                        filterMode === 'subscribed' ? 'partner' : (filterMode as FilterOption)
+                                    }
                                     onSearchChange={setSearch}
                                     onSearchSubmit={handleSearchSubmit}
                                     onSortChange={handleSortOptionChange}
@@ -179,7 +237,11 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
                                 />
 
                                 {/* Table */}
-                                <div className="w-full mt-4" data-table-container="channels" style={{ position: 'relative' }}>
+                                <div
+                                    className="w-full mt-4"
+                                    data-table-container="channels"
+                                    style={{ position: 'relative' }}
+                                >
                                     <DataTable size="medium" className="w-full">
                                         <DataTable.Header>
                                             <DataTable.Row>
@@ -204,7 +266,9 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
                                                 <DataTable.HeaderCell
                                                     sortable
                                                     alignment="left"
-                                                    sortDirection={sortColumn === 'creatorOrganization' ? sortDirection : null}
+                                                    sortDirection={
+                                                        sortColumn === 'creatorOrganization' ? sortDirection : null
+                                                    }
                                                     onSort={() => handleSort('creatorOrganization')}
                                                     className="min-w-[150px] !text-primary-100"
                                                 >
@@ -228,7 +292,9 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
                                                 >
                                                     Compliance
                                                 </DataTable.HeaderCell>
-                                                <DataTable.HeaderCell alignment="left" className="!text-primary-100"> </DataTable.HeaderCell>
+                                                <DataTable.HeaderCell alignment="left" className="!text-primary-100">
+                                                    {' '}
+                                                </DataTable.HeaderCell>
                                             </DataTable.Row>
                                         </DataTable.Header>
                                         <DataTable.Body>
@@ -265,10 +331,13 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
                                     onItemsPerPageChange={handleItemsPerPageChange}
                                 />
                             </Card>
+                        ) : channels.length === 0 ? (
+                            <NoChannelsState onCreateChannel={createChannelDisclosure.onOpen} />
                         ) : (
-                            <Card data-testid="channels-empty-state">
-                                <CardBody>No Channels Available</CardBody>
-                            </Card>
+                            <ChannelNotFoundState
+                                searchTerm={search.trim() || (filterMode !== 'all' ? filterMode : undefined)}
+                                onClearSearch={handleClearSearch}
+                            />
                         )}
                     </Flex>
                 )}

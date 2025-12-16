@@ -2,3 +2,109 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Remove any border/line from toolbar area */
+[data-testid='channel-list-toolbar'] {
+    border: none !important;
+    box-shadow: none !important;
+}
+
+[data-testid='channel-list-toolbar']::after,
+[data-testid='channel-list-toolbar']::before {
+    display: none !important;
+}
+
+/* Custom DataTable styling for channels list */
+[data-table-container='channels'] {
+    border: 1px solid #bbc5d6;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 16px; /* Space between toolbar and table */
+}
+
+/* Reset default table styling */
+[data-table-container='channels'] table {
+    border-collapse: collapse;
+    box-shadow: none !important;
+}
+
+[data-table-container='channels'] table thead,
+[data-table-container='channels'] table tbody {
+    box-shadow: none !important;
+}
+
+/* Header row styling */
+[data-table-container='channels'] thead tr {
+    background-color: #f6faff; /* bg-light-secondary */
+    height: 48px;
+    border: none !important;
+}
+
+/* Header cells */
+[data-table-container='channels'] thead th {
+    color: #062766; /* dark-accent */
+    font-weight: 600;
+    padding-right: 8px; /* Spacing/XS */
+    padding-left: 16px; /* Spacing/S */
+    border: none !important;
+    border-bottom: 1px solid #bbc5d6 !important; /* separator from body */
+}
+
+/* Sort icons styling */
+[data-table-container='channels'] thead th svg {
+    width: 16px; /* medium */
+    height: 16px;
+    color: #0b3481; /* primary-100 */
+}
+
+/* Table body rows */
+[data-table-container='channels'] tbody tr {
+    height: 48px;
+    background-color: #fff;
+    border: none !important;
+}
+
+/* Table body cells */
+[data-table-container='channels'] tbody td {
+    color: #2e2e2e; /* dark-secondary */
+    padding-left: 16px; /* Spacing/S */
+    padding-right: 8px; /* Spacing/XS */
+    border: none !important;
+    border-top: 1px solid #bbc5d6 !important; /* horizontal row border */
+}
+
+/* First row cells - no top border (header has bottom border) */
+[data-table-container='channels'] tbody tr:first-child td {
+    border-top: none !important;
+}
+
+/* Channel name button styling */
+[data-table-container='channels'] tbody td button {
+    color: #2e2e2e; /* dark-secondary */
+    font-weight: 500;
+}
+
+/* Partner link styling */
+[data-table-container='channels'] tbody td a[data-partner-link] {
+    color: #1848a3; /* accent blue */
+    text-decoration: none;
+}
+
+[data-table-container='channels'] tbody td a[data-partner-link]:hover {
+    text-decoration: underline;
+}
+
+/* Owned organization styling */
+[data-table-container='channels'] [data-owned-org] {
+    color: #4e4e4e;
+}
+
+/* Row actions button - hidden by default, shown on hover */
+[data-table-container='channels'] .row-actions-button {
+    opacity: 0;
+    transition: opacity 0.15s ease-in-out;
+}
+
+[data-table-container='channels'] tbody tr:hover .row-actions-button {
+    opacity: 1;
+}
