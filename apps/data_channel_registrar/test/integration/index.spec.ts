@@ -140,10 +140,12 @@ describe('Data Channel Registrar as Durable Object integration tests', () => {
         };
 
         const updateResponse = await stub.update(updatedDataChannel);
-        expect(updateResponse).toStrictEqual(updatedDataChannel);
+        expect(updateResponse).toMatchObject(updatedDataChannel);
+        expect(updateResponse.updatedAt).toBeDefined();
 
         const getResponse = await stub.get(updatedDataChannel.id);
-        expect(getResponse).toStrictEqual(updatedDataChannel);
+        expect(getResponse).toMatchObject(updatedDataChannel);
+        expect(getResponse.updatedAt).toBeDefined();
     });
 
     it('invalid user token', async () => {

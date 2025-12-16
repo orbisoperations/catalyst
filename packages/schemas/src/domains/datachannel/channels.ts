@@ -10,6 +10,8 @@ export const DataChannelInputSchema = z.object({
     endpoint: safeUrl(),
     description: safeDescription(),
     creatorOrganization: OrgIdSchema,
+    createdAt: z.string().datetime().optional(),
+    updatedAt: z.string().datetime().optional(),
 });
 
 // Lenient schema for parsing stored data (allows old formats without strict validation)
@@ -21,6 +23,8 @@ export const DataChannelStoredSchema = z.object({
     endpoint: z.string(),
     description: z.string(),
     creatorOrganization: z.string().max(100, 'Organization ID too long'), // Allow empty strings for old data
+    createdAt: z.string().optional(), // Optional for backwards compatibility with existing data
+    updatedAt: z.string().optional(), // Optional for backwards compatibility with existing data
 });
 
 // Backwards compatibility: DataChannelSchema points to the input schema

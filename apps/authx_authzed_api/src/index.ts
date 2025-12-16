@@ -35,7 +35,11 @@ export default class AuthzedWorker extends WorkerEntrypoint<Env> {
 
 	async deleteUserFromOrg(orgId: OrgId, userId: UserId) {
 		const client = new AuthzedClient(this.env.AUTHZED_ENDPOINT, this.env.AUTHZED_KEY, this.env.AUTHZED_PREFIX);
-		const resp = await client.removeUserRoleFromOrganization(orgId, emailTob64(userId), Catalyst.RoleEnum.enum.user);
+		const resp = await client.removeUserRoleFromOrganization(
+			orgId,
+			emailTob64(userId),
+			Catalyst.RoleEnum.enum.user
+		);
 		return {
 			entity: `${client.utils.schemaPrefix}organization:${orgId}#user@${client.utils.schemaPrefix}user:${emailTob64(userId)}`,
 			...resp,
@@ -53,7 +57,11 @@ export default class AuthzedWorker extends WorkerEntrypoint<Env> {
 
 	async deleteDataCustodianFromOrg(orgId: OrgId, userId: UserId) {
 		const client = new AuthzedClient(this.env.AUTHZED_ENDPOINT, this.env.AUTHZED_KEY, this.env.AUTHZED_PREFIX);
-		const resp = await client.removeUserRoleFromOrganization(orgId, emailTob64(userId), Catalyst.RoleEnum.enum.data_custodian);
+		const resp = await client.removeUserRoleFromOrganization(
+			orgId,
+			emailTob64(userId),
+			Catalyst.RoleEnum.enum.data_custodian
+		);
 		return {
 			entity: `${client.utils.schemaPrefix}organization:${orgId}#data_custodian@${client.utils.schemaPrefix}user:${emailTob64(userId)}`,
 			...resp,
@@ -71,7 +79,11 @@ export default class AuthzedWorker extends WorkerEntrypoint<Env> {
 
 	async deleteAdminFromOrg(orgId: OrgId, userId: UserId) {
 		const client = new AuthzedClient(this.env.AUTHZED_ENDPOINT, this.env.AUTHZED_KEY, this.env.AUTHZED_PREFIX);
-		const resp = await client.removeUserRoleFromOrganization(orgId, emailTob64(userId), Catalyst.RoleEnum.enum.admin);
+		const resp = await client.removeUserRoleFromOrganization(
+			orgId,
+			emailTob64(userId),
+			Catalyst.RoleEnum.enum.admin
+		);
 		return {
 			entity: `${client.utils.schemaPrefix}organization:${orgId}#admin@${client.utils.schemaPrefix}user:${emailTob64(userId)}`,
 			...resp,
@@ -126,26 +138,50 @@ export default class AuthzedWorker extends WorkerEntrypoint<Env> {
 
 	async canUpdateOrgPartnersInOrg(orgId: OrgId, userId: UserId) {
 		const client = new AuthzedClient(this.env.AUTHZED_ENDPOINT, this.env.AUTHZED_KEY, this.env.AUTHZED_PREFIX);
-		return client.organizationPermissionsCheck(orgId, emailTob64(userId), Catalyst.Org.PermissionsEnum.enum.partner_update);
+		return client.organizationPermissionsCheck(
+			orgId,
+			emailTob64(userId),
+			Catalyst.Org.PermissionsEnum.enum.partner_update
+		);
 	}
 
 	async canAssignRolesInOrg(orgId: OrgId, userId: UserId) {
 		const client = new AuthzedClient(this.env.AUTHZED_ENDPOINT, this.env.AUTHZED_KEY, this.env.AUTHZED_PREFIX);
-		return client.organizationPermissionsCheck(orgId, emailTob64(userId), Catalyst.Org.PermissionsEnum.enum.role_assign);
+		return client.organizationPermissionsCheck(
+			orgId,
+			emailTob64(userId),
+			Catalyst.Org.PermissionsEnum.enum.role_assign
+		);
 	}
 
 	async canCreateUpdateDeleteDataChannel(orgId: OrgId, userId: UserId) {
 		const client = new AuthzedClient(this.env.AUTHZED_ENDPOINT, this.env.AUTHZED_KEY, this.env.AUTHZED_PREFIX);
 		return (
-			(await client.organizationPermissionsCheck(orgId, emailTob64(userId), Catalyst.Org.PermissionsEnum.enum.data_channel_create)) &&
-			(await client.organizationPermissionsCheck(orgId, emailTob64(userId), Catalyst.Org.PermissionsEnum.enum.data_channel_update)) &&
-			(await client.organizationPermissionsCheck(orgId, emailTob64(userId), Catalyst.Org.PermissionsEnum.enum.data_channel_delete))
+			(await client.organizationPermissionsCheck(
+				orgId,
+				emailTob64(userId),
+				Catalyst.Org.PermissionsEnum.enum.data_channel_create
+			)) &&
+			(await client.organizationPermissionsCheck(
+				orgId,
+				emailTob64(userId),
+				Catalyst.Org.PermissionsEnum.enum.data_channel_update
+			)) &&
+			(await client.organizationPermissionsCheck(
+				orgId,
+				emailTob64(userId),
+				Catalyst.Org.PermissionsEnum.enum.data_channel_delete
+			))
 		);
 	}
 
 	async canReadDataChannel(orgId: OrgId, userId: UserId) {
 		const client = new AuthzedClient(this.env.AUTHZED_ENDPOINT, this.env.AUTHZED_KEY, this.env.AUTHZED_PREFIX);
-		return await client.organizationPermissionsCheck(orgId, emailTob64(userId), Catalyst.Org.PermissionsEnum.enum.data_channel_read);
+		return await client.organizationPermissionsCheck(
+			orgId,
+			emailTob64(userId),
+			Catalyst.Org.PermissionsEnum.enum.data_channel_read
+		);
 	}
 
 	async addOrgToDataChannel(dataChannelId: DataChannelId, orgId: OrgId) {
@@ -165,16 +201,60 @@ export default class AuthzedWorker extends WorkerEntrypoint<Env> {
 
 	async canReadFromDataChannel(dataChannelId: DataChannelId, userId: UserId) {
 		const client = new AuthzedClient(this.env.AUTHZED_ENDPOINT, this.env.AUTHZED_KEY, this.env.AUTHZED_PREFIX);
-		const owningResp = await client.dataChannelPermissionsCheck(
-			dataChannelId,
-			emailTob64(userId),
-			Catalyst.DataChannel.PermissionsEnum.enum.read_by_owning_org,
-		);
-		const partnerResp = await client.dataChannelPermissionsCheck(
-			dataChannelId,
-			emailTob64(userId),
-			Catalyst.DataChannel.PermissionsEnum.enum.read_by_partner_org,
-		);
-		return owningResp || partnerResp;
+		// Check all three permission types in parallel for better performance
+		const [owningResp, partnerResp, sharedResp] = await Promise.all([
+			client.dataChannelPermissionsCheck(
+				dataChannelId,
+				emailTob64(userId),
+				Catalyst.DataChannel.PermissionsEnum.enum.read_by_owning_org
+			),
+			client.dataChannelPermissionsCheck(
+				dataChannelId,
+				emailTob64(userId),
+				Catalyst.DataChannel.PermissionsEnum.enum.read_by_partner_org
+			),
+			client.dataChannelPermissionsCheck(
+				dataChannelId,
+				emailTob64(userId),
+				Catalyst.DataChannel.PermissionsEnum.enum.read_by_shared_org
+			),
+		]);
+		return owningResp || partnerResp || sharedResp;
+	}
+
+	// ============================================
+	// Channel Sharing Methods
+	// ============================================
+
+	/**
+	 * Share a data channel with a partner organization.
+	 */
+	async shareDataChannelWithOrg(dataChannelId: DataChannelId, partnerOrgId: OrgId) {
+		const client = new AuthzedClient(this.env.AUTHZED_ENDPOINT, this.env.AUTHZED_KEY, this.env.AUTHZED_PREFIX);
+		return await client.shareDataChannelWithOrg(dataChannelId, partnerOrgId);
+	}
+
+	/**
+	 * Remove sharing of a data channel from a partner organization.
+	 */
+	async unshareDataChannelFromOrg(dataChannelId: DataChannelId, partnerOrgId: OrgId) {
+		const client = new AuthzedClient(this.env.AUTHZED_ENDPOINT, this.env.AUTHZED_KEY, this.env.AUTHZED_PREFIX);
+		return await client.unshareDataChannelFromOrg(dataChannelId, partnerOrgId);
+	}
+
+	/**
+	 * List all organizations a data channel is shared with.
+	 */
+	async listOrgsSharedWithDataChannel(dataChannelId: DataChannelId, partnerOrgId?: OrgId) {
+		const client = new AuthzedClient(this.env.AUTHZED_ENDPOINT, this.env.AUTHZED_KEY, this.env.AUTHZED_PREFIX);
+		return await client.listOrgsSharedWithDataChannel(dataChannelId, partnerOrgId);
+	}
+
+	/**
+	 * Check if a partner organization has access to a shared data channel.
+	 */
+	async canAccessSharedDataChannel(dataChannelId: DataChannelId, partnerOrgId: OrgId) {
+		const client = new AuthzedClient(this.env.AUTHZED_ENDPOINT, this.env.AUTHZED_KEY, this.env.AUTHZED_PREFIX);
+		return await client.canAccessSharedDataChannel(dataChannelId, partnerOrgId);
 	}
 }
