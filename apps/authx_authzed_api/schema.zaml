@@ -1,8 +1,10 @@
 schema: |-
     definition orbisops_catalyst_dev/data_channel {
         relation organization: orbisops_catalyst_dev/organization
+        relation shared_with_organization: orbisops_catalyst_dev/organization
         permission read_by_owning_org = organization->data_channel_read
         permission read_by_partner_org = organization->data_channel_read_partner
+        permission read_by_shared_org = shared_with_organization->data_channel_read
     }
 
     definition orbisops_catalyst_dev/organization {

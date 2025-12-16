@@ -94,7 +94,10 @@ export class AuthzedClient {
 		return result;
 	}
 
-	async addDataChannelToOrganization(orgId: OrgId, dataChannelId: DataChannelId): Promise<Authzed.Relationships.WriteResult> {
+	async addDataChannelToOrganization(
+		orgId: OrgId,
+		dataChannelId: DataChannelId
+	): Promise<Authzed.Relationships.WriteResult> {
 		const body = this.utils.writeRelationship({
 			relationOwner: {
 				objectType: Catalyst.EntityEnum.enum.organization,
@@ -126,7 +129,10 @@ export class AuthzedClient {
 		const { data } = await this.utils.fetcher('read', body);
 		return this.utils.parseOrganizationData(data);
 	}
-	async deleteDataChannelInOrganization(orgId: OrgId, dataChannelId: DataChannelId): Promise<Authzed.Relationships.DeleteResult> {
+	async deleteDataChannelInOrganization(
+		orgId: OrgId,
+		dataChannelId: DataChannelId
+	): Promise<Authzed.Relationships.DeleteResult> {
 		const body = this.utils.deleteRelationship({
 			relationOwner: {
 				objectType: Catalyst.EntityEnum.enum.organization,
@@ -210,7 +216,7 @@ export class AuthzedClient {
 	async removeUserRoleFromOrganization(
 		org: string,
 		user: string,
-		role: Catalyst.RoleEnumType,
+		role: Catalyst.RoleEnumType
 	): Promise<Authzed.Relationships.DeleteResult> {
 		const body = this.utils.deleteRelationship({
 			relationOwner: {
@@ -266,9 +272,13 @@ export class AuthzedClient {
 		args: {
 			userId?: UserId;
 			roles?: Catalyst.RoleEnumType[];
-		},
+		}
 	) {
-		const searchRoles = args.roles ?? [Catalyst.RoleEnum.enum.user, Catalyst.RoleEnum.enum.data_custodian, Catalyst.RoleEnum.enum.admin];
+		const searchRoles = args.roles ?? [
+			Catalyst.RoleEnum.enum.user,
+			Catalyst.RoleEnum.enum.data_custodian,
+			Catalyst.RoleEnum.enum.admin,
+		];
 
 		const results: Catalyst.Relationship[] = [];
 
@@ -302,7 +312,10 @@ export class AuthzedClient {
 		return result.data.permissionship === Authzed.Permissions.PermissionValues.enum.PERMISSIONSHIP_HAS_PERMISSION;
 	}
 
-	async addOrganizationToDataChannel(dataChannelId: DataChannelId, orgId: OrgId): Promise<Authzed.Relationships.WriteResult> {
+	async addOrganizationToDataChannel(
+		dataChannelId: DataChannelId,
+		orgId: OrgId
+	): Promise<Authzed.Relationships.WriteResult> {
 		const body = this.utils.writeRelationship({
 			relationOwner: {
 				objectType: Catalyst.EntityEnum.enum.data_channel,
@@ -334,7 +347,10 @@ export class AuthzedClient {
 		const { data } = await this.utils.fetcher('read', body);
 		return this.utils.parseOrganizationData(data);
 	}
-	async deleteOrgInDataChannel(dataChannelId: DataChannelId, orgId: OrgId): Promise<Authzed.Relationships.DeleteResult> {
+	async deleteOrgInDataChannel(
+		dataChannelId: DataChannelId,
+		orgId: OrgId
+	): Promise<Authzed.Relationships.DeleteResult> {
 		const body = this.utils.deleteRelationship({
 			relationOwner: {
 				objectType: Catalyst.EntityEnum.enum.data_channel,
@@ -350,7 +366,11 @@ export class AuthzedClient {
 		return Authzed.Relationships.DeleteResult.parse(data);
 	}
 
-	async dataChannelPermissionsCheck(dataChannelId: DataChannelId, userId: UserId, permission: Catalyst.DataChannel.PermissionsEnum) {
+	async dataChannelPermissionsCheck(
+		dataChannelId: DataChannelId,
+		userId: UserId,
+		permission: Catalyst.DataChannel.PermissionsEnum
+	) {
 		const req = this.utils.checkDataChannelPermission(dataChannelId, userId, permission);
 		const { data } = await this.utils.permissionFetcher(req);
 
@@ -361,6 +381,90 @@ export class AuthzedClient {
 		}
 
 		return result.data.permissionship === Authzed.Permissions.PermissionValues.enum.PERMISSIONSHIP_HAS_PERMISSION;
+	}
+
+	// ============================================
+	// Channel Sharing Methods
+	// ============================================
+
+	/**
+	 * Share a data channel with a partner organization.
+	 * Creates a shared_with_organization relationship.
+	 */
+	async shareDataChannelWithOrg(
+		dataChannelId: DataChannelId,
+		partnerOrgId: OrgId
+	): Promise<Authzed.Relationships.WriteResult> {
+		const body = this.utils.writeRelationship({
+			relationOwner: {
+				objectType: Catalyst.EntityEnum.enum.data_channel,
+				objectId: dataChannelId,
+			},
+			relation: Catalyst.DataChannel.EntityEnum.enum.shared_with_organization,
+			relatedItem: {
+				objectType: Catalyst.EntityEnum.enum.organization,
+				objectId: partnerOrgId,
+			},
+		});
+		const { data } = await this.utils.fetcher('write', body);
+
+		return Authzed.Relationships.WriteResult.parse(data);
+	}
+
+	/**
+	 * Remove sharing of a data channel from a partner organization.
+	 * Deletes the shared_with_organization relationship.
+	 */
+	async unshareDataChannelFromOrg(
+		dataChannelId: DataChannelId,
+		partnerOrgId: OrgId
+	): Promise<Authzed.Relationships.DeleteResult> {
+		const body = this.utils.deleteRelationship({
+			relationOwner: {
+				objectType: Catalyst.EntityEnum.enum.data_channel,
+				objectId: dataChannelId,
+			},
+			relation: Catalyst.DataChannel.EntityEnum.enum.shared_with_organization,
+			relatedItem: {
+				objectType: Catalyst.EntityEnum.enum.organization,
+				objectId: partnerOrgId,
+			},
+		});
+		const { data } = await this.utils.fetcher('delete', body);
+		return Authzed.Relationships.DeleteResult.parse(data);
+	}
+
+	/**
+	 * List all organizations a data channel is shared with.
+	 * Optionally filter by a specific partner org ID.
+	 */
+	async listOrgsSharedWithDataChannel(
+		dataChannelId: DataChannelId,
+		partnerOrgId?: OrgId
+	): Promise<Catalyst.Relationship[]> {
+		const body = this.utils.readRelationship({
+			resourceType: Catalyst.EntityEnum.enum.data_channel,
+			resourceId: dataChannelId,
+			relation: Catalyst.DataChannel.EntityEnum.enum.shared_with_organization,
+			optionalSubjectFilter: partnerOrgId
+				? {
+						subjectType: Catalyst.EntityEnum.enum.organization,
+						optionalSubjectId: partnerOrgId,
+					}
+				: undefined,
+		});
+
+		const { data } = await this.utils.fetcher('read', body);
+		return this.utils.parseOrganizationData(data);
+	}
+
+	/**
+	 * Check if a partner organization has access to a shared data channel.
+	 * Returns true if the channel is shared with the specified org.
+	 */
+	async canAccessSharedDataChannel(dataChannelId: DataChannelId, partnerOrgId: OrgId): Promise<boolean> {
+		const relationships = await this.listOrgsSharedWithDataChannel(dataChannelId, partnerOrgId);
+		return relationships.length > 0;
 	}
 }
 
@@ -385,49 +489,73 @@ export class AuthzedUtils {
 
 	async fetcher(
 		action: 'read' | 'write' | 'delete',
-		data: SearchInfoBody | Authzed.Relationships.WriteBody | Authzed.Relationships.DeleteBody,
+		data: SearchInfoBody | Authzed.Relationships.WriteBody | Authzed.Relationships.DeleteBody
 	) {
-		return await fetch(`${this.endpoint}/v1/relationships/${action}`, {
-			method: 'POST',
-			headers: {
-				...this.headers(),
-			},
-			body: JSON.stringify(data),
-		})
-			.then(async (res) => {
-				try {
-					return {
-						data: action == 'read' ? await res.text() : await res.json(),
-						success: true,
-					};
-				} catch (e) {
-					console.log(`Error converting JSON: ${JSON.stringify(e, null, 4)}`);
-					return { data: {}, success: false };
-				}
-			})
-			.then((res) => res);
+		const controller = new AbortController();
+		const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+		try {
+			const res = await fetch(`${this.endpoint}/v1/relationships/${action}`, {
+				method: 'POST',
+				headers: {
+					...this.headers(),
+				},
+				body: JSON.stringify(data),
+				signal: controller.signal,
+			});
+
+			try {
+				return {
+					data: action == 'read' ? await res.text() : await res.json(),
+					success: true,
+				};
+			} catch (e) {
+				console.log(`Error converting JSON: ${JSON.stringify(e, null, 4)}`);
+				return { data: {}, success: false };
+			}
+		} catch (e) {
+			if (e instanceof Error && e.name === 'AbortError') {
+				console.error('Authzed request timed out');
+				return { data: {}, success: false, error: 'Request timed out' };
+			}
+			throw e;
+		} finally {
+			clearTimeout(timeoutId);
+		}
 	}
 
 	async permissionFetcher(data: PermissionCheckRequest) {
-		return await fetch(`${this.endpoint}/v1/permissions/check`, {
-			method: 'POST',
-			headers: {
-				...this.headers(),
-			},
-			body: JSON.stringify(data),
-		})
-			.then(async (res) => {
-				try {
-					return {
-						data: await res.json(),
-						success: true,
-					};
-				} catch (e) {
-					console.log(`Error converting JSON: ${JSON.stringify(e, null, 4)}`);
-					return { data: {}, success: false };
-				}
-			})
-			.then((res) => res);
+		const controller = new AbortController();
+		const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+		try {
+			const res = await fetch(`${this.endpoint}/v1/permissions/check`, {
+				method: 'POST',
+				headers: {
+					...this.headers(),
+				},
+				body: JSON.stringify(data),
+				signal: controller.signal,
+			});
+
+			try {
+				return {
+					data: await res.json(),
+					success: true,
+				};
+			} catch (e) {
+				console.log(`Error converting JSON: ${JSON.stringify(e, null, 4)}`);
+				return { data: {}, success: false };
+			}
+		} catch (e) {
+			if (e instanceof Error && e.name === 'AbortError') {
+				console.error('Authzed permission check timed out');
+				return { data: {}, success: false, error: 'Request timed out' };
+			}
+			throw e;
+		} finally {
+			clearTimeout(timeoutId);
+		}
 	}
 
 	parseResourceIdsFromResults(data: string | unknown): string[] {
@@ -498,11 +626,13 @@ export class AuthzedUtils {
 	deleteRelationship(relationshipInfo: Authzed.Relationships.Relationship): Authzed.Relationships.DeleteBody {
 		return {
 			relationshipFilter: {
-				resourceType: (this.schemaPrefix + relationshipInfo.relationOwner.objectType) as unknown as Catalyst.EntityEnumType,
+				resourceType: (this.schemaPrefix +
+					relationshipInfo.relationOwner.objectType) as unknown as Catalyst.EntityEnumType,
 				optionalResourceId: relationshipInfo.relationOwner.objectId,
 				optionalRelation: relationshipInfo.relation,
 				optionalSubjectFilter: {
-					subjectType: (this.schemaPrefix + relationshipInfo.relatedItem.objectType) as unknown as Catalyst.EntityEnumType,
+					subjectType: (this.schemaPrefix +
+						relationshipInfo.relatedItem.objectType) as unknown as Catalyst.EntityEnumType,
 					optionalSubjectId: relationshipInfo.relatedItem.objectId,
 				},
 			},
@@ -515,13 +645,15 @@ export class AuthzedUtils {
 					operation: 'OPERATION_TOUCH',
 					relationship: {
 						resource: {
-							objectType: (this.schemaPrefix + relationshipInfo.relationOwner.objectType) as unknown as Catalyst.EntityEnumType,
+							objectType: (this.schemaPrefix +
+								relationshipInfo.relationOwner.objectType) as unknown as Catalyst.EntityEnumType,
 							objectId: relationshipInfo.relationOwner.objectId,
 						},
 						relation: relationshipInfo.relation,
 						subject: {
 							object: {
-								objectType: (this.schemaPrefix + relationshipInfo.relatedItem.objectType) as unknown as Catalyst.EntityEnumType,
+								objectType: (this.schemaPrefix +
+									relationshipInfo.relatedItem.objectType) as unknown as Catalyst.EntityEnumType,
 								objectId: relationshipInfo.relatedItem.objectId,
 							},
 						},
@@ -563,13 +695,15 @@ export class AuthzedUtils {
 				fullyConsistent: true,
 			},
 			resource: {
-				objectType: (this.schemaPrefix + Catalyst.EntityEnum.enum.organization) as unknown as Catalyst.EntityEnumType,
+				objectType: (this.schemaPrefix +
+					Catalyst.EntityEnum.enum.organization) as unknown as Catalyst.EntityEnumType,
 				objectId: orgId,
 			},
 			permission: permission,
 			subject: {
 				object: {
-					objectType: (this.schemaPrefix + Catalyst.EntityEnum.enum.user) as unknown as Catalyst.EntityEnumType,
+					objectType: (this.schemaPrefix +
+						Catalyst.EntityEnum.enum.user) as unknown as Catalyst.EntityEnumType,
 					objectId: userId,
 				},
 			},
@@ -579,20 +713,22 @@ export class AuthzedUtils {
 	checkDataChannelPermission(
 		dataChannelId: DataChannelId,
 		userId: UserId,
-		permission: Catalyst.DataChannel.PermissionsEnum,
+		permission: Catalyst.DataChannel.PermissionsEnum
 	): PermissionCheckRequest {
 		return {
 			consistency: {
 				fullyConsistent: true,
 			},
 			resource: {
-				objectType: (this.schemaPrefix + Catalyst.EntityEnum.enum.data_channel) as unknown as Catalyst.EntityEnumType,
+				objectType: (this.schemaPrefix +
+					Catalyst.EntityEnum.enum.data_channel) as unknown as Catalyst.EntityEnumType,
 				objectId: dataChannelId,
 			},
 			permission: permission,
 			subject: {
 				object: {
-					objectType: (this.schemaPrefix + Catalyst.EntityEnum.enum.user) as unknown as Catalyst.EntityEnumType,
+					objectType: (this.schemaPrefix +
+						Catalyst.EntityEnum.enum.user) as unknown as Catalyst.EntityEnumType,
 					objectId: userId,
 				},
 			},
