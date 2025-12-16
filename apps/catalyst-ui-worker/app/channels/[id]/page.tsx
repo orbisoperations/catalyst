@@ -1,4 +1,4 @@
-import { deleteChannel, getChannel, handleSwitch, updateChannel } from '@/app/actions/channels';
+import { deleteChannel, getChannel, updateChannel } from '@/app/actions/channels';
 import DataChannelDetailsComponent from '@/components/channels/ChannelDetails';
 
 export default function DataChannelDetailsPage() {
@@ -7,7 +7,6 @@ export default function DataChannelDetailsPage() {
             updateChannel={updateChannel}
             deleteChannel={deleteChannel}
             channelDetails={getChannel}
-            handleSwitch={handleSwitch}
         />
     );
 }

@@ -5,3 +5,4 @@ export * from './Fields';
 export * from './Table';
 export * from './Modals';
 export * from './Tabs';
+export * from './EmptyState';
