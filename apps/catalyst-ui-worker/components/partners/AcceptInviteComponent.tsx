@@ -1,8 +1,6 @@
 'use client';
 
 import { ErrorCard, OrbisButton, OrbisCard } from '@/components/elements';
-import { DetailedView } from '@/components/layouts';
-import { navigationItems } from '@/utils/nav.utils';
 import { OrgInvite } from '@catalyst/schemas';
 import {
     Flex,
@@ -55,20 +53,17 @@ export default function AcceptInviteComponent({ acceptInvite, declineInvite, rea
     useEffect(fetchInvite, [params.id, token]);
 
     const { isOpen, onOpen, onClose } = useDisclosure();
+
+    if (!invite && !hasError) {
+        return (
+            <Flex justify="center" align="center" minH="400px">
+                <Text>Loading...</Text>
+            </Flex>
+        );
+    }
+
     return (
-        <DetailedView
-            topbartitle="Accept Invite"
-            topbaractions={navigationItems}
-            showspinner={!invite && !hasError}
-            subtitle={
-                invite && user
-                    ? orgIsSender
-                        ? `You invited ${invite?.receiver} to partner with you`
-                        : `${invite?.sender} invited you to partner with them`
-                    : ''
-            }
-            headerTitle={{ text: 'Accept Invite' }}
-        >
+        <>
             {hasError ? (
                 <ErrorCard title="Error" message={errorMessage} goBack={router.back} retry={fetchInvite} />
             ) : (
@@ -156,6 +151,6 @@ export default function AcceptInviteComponent({ acceptInvite, declineInvite, rea
                     </>
                 </OrbisCard>
             )}
-        </DetailedView>
+        </>
     );
 }

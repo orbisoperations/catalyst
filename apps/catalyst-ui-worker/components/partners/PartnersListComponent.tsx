@@ -8,8 +8,6 @@ import {
     OrbisTable,
     TrashButton,
 } from '@/components/elements';
-import { ListView } from '@/components/layouts';
-import { navigationItems } from '@/utils/nav.utils';
 import { Box, Flex, Stack, StackDivider, StackItem, Text } from '@chakra-ui/layout';
 import {
     Modal,
@@ -83,27 +81,19 @@ export default function PartnersListComponent({
 
     const { isOpen, onOpen, onClose } = useDisclosure();
     return (
-        <ListView
-            topbaractions={navigationItems}
-            actions={
-                user?.custom.isAdmin ? (
-                    <Flex gap={5}>
+        <>
+            <Flex direction="column" gap={5}>
+                <Flex gap={5} justifyContent="flex-end">
+                    {user?.custom.isAdmin ? (
                         <CreateButton
                             data-testid="partners-create-button"
                             onClick={() => {
                                 router.push('/partners/invite');
                             }}
                         />
-                    </Flex>
-                ) : undefined
-            }
-            headerTitle={{
-                text: 'Partners',
-            }}
-            positionChildren="bottom"
-            subtitle="Partners you can trust."
-            table={
-                hasError ? (
+                    ) : undefined}
+                </Flex>
+                {hasError ? (
                     <ErrorCard title="Error" message={errorMessage} retry={fetchInvites} />
                 ) : (
                     <Flex gap={5}>
@@ -189,10 +179,8 @@ export default function PartnersListComponent({
                             )}
                         </OrbisCard>
                     </Flex>
-                )
-            }
-            topbartitle="Partners"
-        >
+                )}
+            </Flex>
             <Modal isOpen={isOpen} onClose={onClose}>
                 <ModalOverlay />
                 <ModalContent>
@@ -218,7 +206,7 @@ export default function PartnersListComponent({
                     </ModalFooter>
                 </ModalContent>
             </Modal>
-        </ListView>
+        </>
     );
 }
 
