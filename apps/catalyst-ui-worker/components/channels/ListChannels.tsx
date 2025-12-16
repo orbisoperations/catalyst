@@ -8,7 +8,6 @@ import {
     OrbisButton,
     OrbisTable,
 } from '@/components/elements';
-import { ValidationButton } from './ValidationStatus';
 import { CreateChannelModal } from '@/components/modals';
 import { DataChannel } from '@catalyst/schemas';
 import { Flex } from '@chakra-ui/layout';
@@ -35,7 +34,7 @@ import { EllipsisVerticalIcon, TrashIcon } from '@heroicons/react/20/solid';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useUser } from '../contexts/User/UserContext';
-import { canUserValidateChannels } from '@/app/actions/validation';
+
 type ListChannelsProps = {
     listChannels: (token: string) => Promise<DataChannel[]>;
     deleteChannel: (channelId: string, token: string) => Promise<DataChannel>;
@@ -43,13 +42,9 @@ type ListChannelsProps = {
 
 export default function DataChannelListComponents({ listChannels, deleteChannel }: ListChannelsProps) {
     const router = useRouter();
-    const [channels, setChannels] = useState<DataChannel[] | null>(null);
-    const [allChannels, setAllChannels] = useState<DataChannel[]>([]);
-    const [hasError, setHasError] = useState<boolean>(false);
-    const [isLoading, setIsLoading] = useState<boolean>(true);
-    const [filterMode, setFilterMode] = useState<'all' | 'subscribed' | 'owned'>('all');
-    const [channelToDelete, setChannelToDelete] = useState<string | null>(null);
-    const [canValidate, setCanValidate] = useState<boolean>(false);
+    const { token, user } = useUser();
+
+    // Modal disclosures
     const deleteDisclosure = useDisclosure();
     const createChannelDisclosure = useDisclosure();
     const { token, user } = useUser();
@@ -87,33 +82,8 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
     function handleDeleteChannel(channelId: string) {
         setChannelToDelete(channelId);
         deleteDisclosure.onOpen();
-    }
+    }, [initiateDelete, deleteDisclosure]);
 
-    function confirmDeleteChannel() {
-        if (!token || !channelToDelete) return;
-
-        deleteChannel(channelToDelete, token)
-            .then(() => {
-                deleteDisclosure.onClose();
-                setChannelToDelete(null);
-                fetchChannels();
-            })
-            .catch((error) => {
-                console.error('Failed to delete channel:', error);
-                deleteDisclosure.onClose();
-                setChannelToDelete(null);
-                setHasError(true);
-            });
-    }
-    useEffect(() => {
-        fetchChannels();
-        // Check if user has permission to validate channels
-        canUserValidateChannels()
-            .then(setCanValidate)
-            .catch(() => setCanValidate(false));
-    }, [token]);
-
-    // TODO: Update to use the dynamic organization id
     return (
         <>
             <Modal isOpen={deleteDisclosure.isOpen} onClose={deleteDisclosure.onClose}>
@@ -194,89 +164,105 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
                                     sx={{ margin: '1em' }}
                                 />
                             </Card>
-                        ) : channels.length > 0 ? (
-                            <Card>
-                                <OrbisTable
-                                    headers={['Data Channel', 'Description', 'Channel ID', 'Validation', '']}
-                                    rows={channels.map((channel, index) => {
-                                        return [
-                                            <Flex
-                                                key={'1'}
-                                                data-testid={`channels-row-${channel.id}`}
-                                                justifyContent={'space-between'}
-                                                alignItems={'center'}
-                                                gap={2}
-                                                justifyItems={'center'}
-                                            >
-                                                <OpenButton onClick={() => router.push('/channels/' + channel.id)}>
-                                                    {channel.name}
-                                                </OpenButton>
-                                                {channel.creatorOrganization === user?.custom.org ? (
-                                                    channel.accessSwitch ? (
-                                                        <OrbisBadge data-testid={`channels-row-${channel.id}-badge`}>
-                                                            Published
-                                                        </OrbisBadge>
-                                                    ) : (
-                                                        <OrbisBadge
-                                                            data-testid={`channels-row-${channel.id}-badge`}
-                                                            colorScheme="red"
-                                                        >
-                                                            Disabled
-                                                        </OrbisBadge>
-                                                    )
-                                                ) : (
-                                                    <OrbisBadge
-                                                        data-testid={`channels-row-${channel.id}-badge`}
-                                                        colorScheme="green"
-                                                    >
-                                                        Subscribed
-                                                    </OrbisBadge>
-                                                )}
-                                            </Flex>,
-                                            channel.description,
-                                            <APIKeyText allowCopy showAsClearText key={index + '-channel-id'}>
-                                                {channel.id}
-                                            </APIKeyText>,
-                                            // Only show validation button if:
-                                            // 1. User has data custodian permissions (canValidate)
-                                            // 2. Channel belongs to user's organization
-                                            canValidate && channel.creatorOrganization === user?.custom.org ? (
-                                                <ValidationButton
-                                                    key={index + '-validation'}
-                                                    data-testid={`channels-row-${channel.id}-validate-button`}
-                                                    channelId={channel.id}
-                                                    endpoint={channel.endpoint}
-                                                    organizationId={channel.creatorOrganization}
-                                                />
-                                            ) : (
-                                                <div key={index + '-validation'} />
-                                            ),
-                                            <Menu key={index + '-menu'}>
-                                                <MenuButton
-                                                    as={IconButton}
-                                                    data-testid={`channels-row-${channel.id}-menu-button`}
-                                                    icon={<EllipsisVerticalIcon width={16} height={16} />}
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    aria-label="Channel options"
-                                                />
-                                                <MenuList>
-                                                    {channel.creatorOrganization === user?.custom.org ? (
-                                                        <MenuItem
-                                                            data-testid={`channels-row-${channel.id}-delete-button`}
-                                                            icon={<TrashIcon width={16} height={16} />}
-                                                            color="red.500"
-                                                            onClick={() => handleDeleteChannel(channel.id)}
-                                                        >
-                                                            Delete Channel
-                                                        </MenuItem>
-                                                    ) : (
-                                                        <MenuItem isDisabled>No actions available</MenuItem>
-                                                    )}
-                                                </MenuList>
-                                            </Menu>,
-                                        ];
-                                    })}
+                        ) : sortedChannels.length > 0 ? (
+                            <Card className="p-4">
+                                {/* Toolbar */}
+                                <ChannelListToolbar
+                                    search={search}
+                                    selectedSort={sortMenuOption}
+                                    selectedFilter={filterMode === 'subscribed' ? 'partner' : filterMode as FilterOption}
+                                    onSearchChange={setSearch}
+                                    onSearchSubmit={handleSearchSubmit}
+                                    onSortChange={handleSortOptionChange}
+                                    onFilterChange={handleFilterOptionChange}
+                                    onCreateChannel={createChannelDisclosure.onOpen}
+                                />
+
+                                {/* Table */}
+                                <div className="w-full mt-4" data-table-container="channels" style={{ position: 'relative' }}>
+                                    <DataTable size="medium" className="w-full">
+                                        <DataTable.Header>
+                                            <DataTable.Row>
+                                                <DataTable.HeaderCell
+                                                    sortable
+                                                    alignment="left"
+                                                    sortDirection={sortColumn === 'name' ? sortDirection : null}
+                                                    onSort={() => handleSort('name')}
+                                                    className="w-[196px] min-w-[196px] max-w-[196px] h-[48px] border-l border-solid gap-2 py-1 px-3 !text-primary-100"
+                                                >
+                                                    Data Channel
+                                                </DataTable.HeaderCell>
+                                                <DataTable.HeaderCell
+                                                    sortable
+                                                    alignment="left"
+                                                    sortDirection={sortColumn === 'description' ? sortDirection : null}
+                                                    onSort={() => handleSort('description')}
+                                                    className="min-w-[300px] max-w-[300px] !text-primary-100"
+                                                >
+                                                    Description
+                                                </DataTable.HeaderCell>
+                                                <DataTable.HeaderCell
+                                                    sortable
+                                                    alignment="left"
+                                                    sortDirection={sortColumn === 'creatorOrganization' ? sortDirection : null}
+                                                    onSort={() => handleSort('creatorOrganization')}
+                                                    className="min-w-[150px] !text-primary-100"
+                                                >
+                                                    Owned by
+                                                </DataTable.HeaderCell>
+                                                <DataTable.HeaderCell
+                                                    sortable
+                                                    alignment="left"
+                                                    sortDirection={sortColumn === 'status' ? sortDirection : null}
+                                                    onSort={() => handleSort('status')}
+                                                    className="min-w-[120px] !text-primary-100"
+                                                >
+                                                    Status
+                                                </DataTable.HeaderCell>
+                                                <DataTable.HeaderCell
+                                                    sortable
+                                                    alignment="left"
+                                                    sortDirection={sortColumn === 'compliance' ? sortDirection : null}
+                                                    onSort={() => handleSort('compliance')}
+                                                    className="min-w-[120px] !text-primary-100"
+                                                >
+                                                    Compliance
+                                                </DataTable.HeaderCell>
+                                                <DataTable.HeaderCell alignment="left" className="!text-primary-100"> </DataTable.HeaderCell>
+                                            </DataTable.Row>
+                                        </DataTable.Header>
+                                        <DataTable.Body>
+                                            {paginatedChannels.map((channel) => {
+                                                const isOwned = isChannelOwned(channel);
+                                                const complianceResult = complianceResults[channel.id];
+
+                                                return (
+                                                    <ChannelTableRow
+                                                        key={channel.id}
+                                                        channel={channel}
+                                                        isOwned={isOwned}
+                                                        complianceStatus={complianceResult?.status}
+                                                        isCheckingCompliance={checkingCompliance[channel.id] || false}
+                                                        hasComplianceResult={!!complianceResult}
+                                                        canCheckCompliance={canCheckCompliance}
+                                                        onView={handleViewChannel}
+                                                        onCheckCompliance={handleCheckCompliance}
+                                                        onDelete={handleDeleteChannel}
+                                                    />
+                                                );
+                                            })}
+                                        </DataTable.Body>
+                                    </DataTable>
+                                </div>
+
+                                {/* Pagination */}
+                                <ChannelsPagination
+                                    currentPage={currentPage}
+                                    totalPages={totalPages}
+                                    totalItems={sortedChannels.length}
+                                    itemsPerPage={itemsPerPage}
+                                    onPageChange={setCurrentPage}
+                                    onItemsPerPageChange={handleItemsPerPageChange}
                                 />
                             </Card>
                         ) : (

@@ -15,22 +15,24 @@ import {
 } from '@chakra-ui/react';
 import { CheckCircleIcon, XCircleIcon, ExclamationCircleIcon, ClockIcon } from '@heroicons/react/20/solid';
 import { useState } from 'react';
-import { validateChannel } from '@/app/actions/validation';
-import { DetailedValidationResult } from './DetailedValidationResult';
-import type { ValidationResult, ValidationStatus } from '@catalyst/schemas';
+import { checkChannelCompliance } from '@/app/actions/compliance';
+import { DetailedComplianceResult } from './DetailedComplianceResult';
+import type { ComplianceResult } from '@catalyst/schemas';
 
-interface ValidationStatusProps {
+type ComplianceStatus = ComplianceResult['status'];
+
+interface ComplianceStatusProps {
     channelId: string;
     endpoint: string;
     organizationId: string;
-    lastValidation?: {
-        status: 'valid' | 'invalid' | 'error';
+    lastCheck?: {
+        status: ComplianceStatus;
         timestamp: number;
         error?: string;
     };
 }
 
-export function ValidationStatusBadge({ status }: { status?: ValidationStatus }) {
+export function ComplianceStatusBadge({ status }: { status?: ComplianceStatus }) {
     if (!status) {
         return (
             <Badge colorScheme="gray" display="flex" alignItems="center" gap={1}>
@@ -41,15 +43,15 @@ export function ValidationStatusBadge({ status }: { status?: ValidationStatus })
     }
 
     const configs = {
-        valid: {
+        compliant: {
             color: 'green',
             icon: <CheckCircleIcon width={12} height={12} />,
-            label: 'Valid',
+            label: 'Compliant',
         },
-        invalid: {
+        non_compliant: {
             color: 'red',
             icon: <XCircleIcon width={12} height={12} />,
-            label: 'Invalid',
+            label: 'Non-compliant',
         },
         error: {
             color: 'orange',
@@ -59,12 +61,12 @@ export function ValidationStatusBadge({ status }: { status?: ValidationStatus })
         pending: {
             color: 'blue',
             icon: <Spinner size="xs" />,
-            label: 'Validating',
+            label: 'Verifying...',
         },
-        unknown: {
+        not_checked: {
             color: 'gray',
             icon: <ExclamationCircleIcon width={12} height={12} />,
-            label: 'Unknown',
+            label: 'Not Checked',
         },
     };
 
@@ -78,35 +80,35 @@ export function ValidationStatusBadge({ status }: { status?: ValidationStatus })
     );
 }
 
-export function ValidationButton({
+export function ComplianceCheckButton({
     channelId,
     endpoint,
     organizationId,
     'data-testid': dataTestId,
-}: Omit<ValidationStatusProps, 'lastValidation'> & { 'data-testid'?: string }) {
-    const [isValidating, setIsValidating] = useState(false);
-    const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
+}: Omit<ComplianceStatusProps, 'lastCheck'> & { 'data-testid'?: string }) {
+    const [isChecking, setIsChecking] = useState(false);
+    const [complianceResult, setComplianceResult] = useState<ComplianceResult | null>(null);
     const { isOpen, onOpen, onClose } = useDisclosure();
 
-    const handleValidate = async () => {
-        setIsValidating(true);
-        setValidationResult(null);
+    const handleCheckCompliance = async () => {
+        setIsChecking(true);
+        setComplianceResult(null);
 
         try {
-            const result = await validateChannel(channelId, endpoint, organizationId);
-            setValidationResult(result);
+            const result = await checkChannelCompliance(channelId, endpoint, organizationId);
+            setComplianceResult(result);
 
-            // Open modal to show detailed results if validation failed
-            if (result.status !== 'valid') {
+            // Open modal to show detailed results if check failed
+            if (result.status !== 'compliant') {
                 onOpen();
             }
         } catch (error) {
-            console.error('Validation error:', error);
-            setValidationResult({
+            console.error('Compliance check error:', error);
+            setComplianceResult({
                 channelId,
                 status: 'error',
                 timestamp: Date.now(),
-                error: 'Failed to run validation',
+                error: 'Failed to run compliance check',
                 details: {
                     endpoint,
                     organizationId,
@@ -115,29 +117,29 @@ export function ValidationButton({
                 },
             });
         } finally {
-            setIsValidating(false);
+            setIsChecking(false);
         }
     };
 
     const getTestsSummary = () => {
-        if (!validationResult?.details?.tests) return null;
-        const passed = validationResult.details.tests.filter((t) => t.success).length;
-        const total = validationResult.details.tests.length;
+        if (!complianceResult?.details?.tests) return null;
+        const passed = complianceResult.details.tests.filter((t) => t.success).length;
+        const total = complianceResult.details.tests.length;
         return `${passed}/${total} tests`;
     };
 
     return (
         <>
             <HStack spacing={2}>
-                {validationResult && (
+                {complianceResult && (
                     <HStack spacing={2}>
-                        <ValidationStatusBadge status={validationResult.status} />
-                        {validationResult.details?.tests && validationResult.details.tests.length > 0 && (
+                        <ComplianceStatusBadge status={complianceResult.status} />
+                        {complianceResult.details?.tests && complianceResult.details.tests.length > 0 && (
                             <Text fontSize="xs" color="gray.600">
                                 {getTestsSummary()}
                             </Text>
                         )}
-                        {validationResult.status !== 'valid' && (
+                        {complianceResult.status !== 'compliant' && (
                             <Button size="xs" variant="link" onClick={onOpen} color="blue.500">
                                 View Details
                             </Button>
@@ -148,22 +150,22 @@ export function ValidationButton({
                     size="sm"
                     colorScheme="blue"
                     variant="outline"
-                    onClick={handleValidate}
-                    isLoading={isValidating}
-                    loadingText="Validating..."
+                    onClick={handleCheckCompliance}
+                    isLoading={isChecking}
+                    loadingText="Checking..."
                     data-testid={dataTestId}
                 >
-                    Validate
+                    Check Compliance
                 </Button>
             </HStack>
 
             <Modal isOpen={isOpen} onClose={onClose} size="xl">
                 <ModalOverlay />
                 <ModalContent>
-                    <ModalHeader>Validation Results</ModalHeader>
+                    <ModalHeader>Compliance Results</ModalHeader>
                     <ModalCloseButton />
                     <ModalBody pb={6}>
-                        {validationResult && <DetailedValidationResult result={validationResult} />}
+                        {complianceResult && <DetailedComplianceResult result={complianceResult} />}
                     </ModalBody>
                 </ModalContent>
             </Modal>
