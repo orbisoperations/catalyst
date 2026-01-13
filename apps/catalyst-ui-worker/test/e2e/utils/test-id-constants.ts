@@ -83,6 +83,7 @@ export const PARTNERS = {
     CREATE_BUTTON: 'partners-create-button',
     LOADING_SPINNER: 'partners-loading-spinner',
     EMPTY_STATE: 'partners-empty-state',
+    ERROR_CARD: 'partners-error-card',
     LIST_CARD: 'partners-list-card',
     INVITATIONS_CARD: 'partners-invitations-card',
 
