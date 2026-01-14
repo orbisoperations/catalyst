@@ -104,9 +104,41 @@ export const ProfileButton = (props: ProfileButtonProps) => {
                     ))}
                     <MenuItem
                         onClick={() => {
-                            if (typeof window !== 'undefined') {
-                                window.location.href = '/cdn-cgi/auth/logout';
+                            if (typeof window === 'undefined') return;
+
+                            /* 
+
+                            // ZITADEL LOGOUT STUFF
+
+                            const zitadelBase = process.env.NEXT_PUBLIC_ZITADEL_BASEURL;
+                            if (!zitadelBase) {
+                                console.error('NEXT_PUBLIC_ZITADEL_BASEURL is not defined');
+                                // Fallback to clearing only the Cloudflare Access cookie
+                                window.location.href = '/cdn-cgi/access/logout';
+                                return;
                             }
+
+                            const clientId = process.env.NEXT_PUBLIC_ZITADEL_CLIENT_ID;
+
+                            const cfLogout = `${window.location.origin}/cdn-cgi/access/logout?origin=${encodeURIComponent(window.location.origin)}`;
+
+                            // Build RP-initiated logout URL per OIDC spec
+                            const state = Math.random().toString(36).substring(2, 15);
+                            const params = new URLSearchParams({
+                                post_logout_redirect_uri: cfLogout,
+                                state,
+                            });
+                            if (clientId) {
+                                params.append('client_id', clientId);
+                            }
+
+                            const zitadelLogout = `${zitadelBase}/oidc/v1/end_session?${params.toString()}`;
+
+                            window.location.href = zitadelLogout;
+
+                            */
+
+                            window.location.href = '/cdn-cgi/access/logout';
                         }}
                     >
                         Logout

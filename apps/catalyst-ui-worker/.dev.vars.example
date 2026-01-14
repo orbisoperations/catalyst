@@ -1,0 +1,2 @@
+# Base URL of your Zitadel tenant without a trailing slash
+NEXT_PUBLIC_ZITADEL_BASEURL=https://auth.devintelops.io/
