@@ -26,7 +26,14 @@ export async function GET(request: NextRequest) {
         } else {
             return Response.json({ error: 'no user found' });
         }
-        return Response.json({ token: cfToken });
+        // Return user info WITHOUT the token (FR-001: token must not be exposed to JavaScript)
+        return Response.json({
+            userId: user.userId,
+            orgId: user.orgId,
+            roles: user.zitadelRoles,
+            isAdmin: user.zitadelRoles.includes('org-admin'),
+            isPlatformAdmin: user.zitadelRoles.includes('platform-admin'),
+        });
     } else {
         return Response.json({ error: 'no token found' });
     }
