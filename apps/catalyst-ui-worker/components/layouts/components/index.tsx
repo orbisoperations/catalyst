@@ -1,3 +1,5 @@
+'use client';
+
 import { useUser } from '@/components/contexts/User/UserContext';
 import { Box, Flex, Grid, PropsOf, Text, Image, Heading } from '@chakra-ui/react';
 import { BackButton, OrbisButton, ProfileButton } from '../../elements';
@@ -11,20 +13,23 @@ type TopBarProps = PropsOf<typeof Box> & {
 };
 
 export const TopBar = (props: TopBarProps) => {
-    'use client';
     const { actions, customActions, ...boxProps } = props;
     const { user } = useUser();
-    const [orgName, setOrgName] = useState<string>(
-        typeof window !== 'undefined' ? (window.localStorage.getItem('org') ?? '') : ''
-    );
+    const [orgName, setOrgName] = useState<string>('');
 
     useEffect(() => {
-        if (user) {
-            if (typeof window !== 'undefined') window.localStorage.setItem('org', String(user.custom.org));
-            setOrgName(String(user.custom.org));
-            if (typeof window !== 'undefined') {
-                window.localStorage.setItem('org', String(user.custom.org));
-            }
+        // Initialize from localStorage on mount (client-side only)
+        const storedOrg = localStorage.getItem('org');
+        if (storedOrg) {
+            setOrgName(storedOrg);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (user?.custom.org) {
+            const org = String(user.custom.org);
+            setOrgName(org);
+            localStorage.setItem('org', org);
         }
     }, [user?.custom.org]);
 
