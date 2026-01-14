@@ -29,10 +29,9 @@ type CreateTokensFormProps = {
         expiration: {
             value: number;
             unit: 'days' | 'weeks';
-        },
-        cfToken: string
+        }
     ) => Promise<JWTSigningResponse>;
-    listChannels: (token: string) => Promise<DataChannel[]>;
+    listChannels: () => Promise<DataChannel[]>;
 };
 
 // Constants for maximum expiration values
@@ -94,7 +93,7 @@ function buildJWTRequest(
 export default function CreateTokensForm({ signToken, listChannels }: CreateTokensFormProps) {
     const router = useRouter();
     const tokenConfirmation = useDisclosure();
-    const { user, token: cfToken } = useUser();
+    const { user } = useUser();
     const [channels, setChannels] = useState<DataChannel[]>([]);
     const [channelsResponse, setChannelsResponse] = useState<DataChannel[]>([]);
     const [selectedChannels, setSelectedChannels] = useState<number[]>([]);
@@ -108,19 +107,17 @@ export default function CreateTokensForm({ signToken, listChannels }: CreateToke
 
     function fetchChannels() {
         setHasError(false);
-        if (cfToken) {
-            listChannels(cfToken)
-                .then((channels) => {
-                    setChannels(channels);
-                    setChannelsResponse(channels);
-                })
-                .catch(() => {
-                    setHasError(true);
-                    setErrorMessage('An error occurred while fetching the channels. Please try again later.');
-                });
-        }
+        listChannels()
+            .then((channels) => {
+                setChannels(channels);
+                setChannelsResponse(channels);
+            })
+            .catch(() => {
+                setHasError(true);
+                setErrorMessage('An error occurred while fetching the channels. Please try again later.');
+            });
     }
-    useEffect(fetchChannels, [cfToken]);
+    useEffect(fetchChannels, []);
 
     // Validate expiration whenever expiration state changes
     useEffect(() => {
@@ -131,13 +128,10 @@ export default function CreateTokensForm({ signToken, listChannels }: CreateToke
 
     function createToken() {
         const jwtRequest = buildJWTRequest(channelsResponse, selectedChannels, user, apiKeyName, apiKeyDescription);
-        if (!cfToken) {
-            throw 'No cf token';
-        }
         if (!user) {
             throw 'No user';
         }
-        signToken(jwtRequest, expiration, cfToken!)
+        signToken(jwtRequest, expiration)
             .then(async (resp) => {
                 if (resp.success) {
                     setToken(resp.token);

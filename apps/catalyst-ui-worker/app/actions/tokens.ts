@@ -1,13 +1,9 @@
 'use server';
-import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { JWTRequest } from '../types';
-import { DEFAULT_STANDARD_DURATIONS, CloudflareEnv, getTokenAPI } from '@catalyst/schemas';
-
-function getEnv(): CloudflareEnv {
-    return getCloudflareContext().env as CloudflareEnv;
-}
+import { DEFAULT_STANDARD_DURATIONS, getTokenAPI } from '@catalyst/schemas';
+import { getCloudflareEnv, getCFAuthorizationToken } from '@/app/lib/server-utils';
 export async function getPublicKey() {
-    const env = getEnv();
+    const env = getCloudflareEnv();
     const tokens = getTokenAPI(env);
 
     return await tokens.getPublicKey();
@@ -16,10 +12,10 @@ export async function getPublicKey() {
 /*
  * WARNING - below is an admin function and will invalidate all active tokens
  */
-export async function rotateJWTKeyMaterial(cfToken: string) {
-    const env = getEnv();
+export async function rotateJWTKeyMaterial() {
+    const env = getCloudflareEnv();
     const tokenObject = {
-        cfToken: cfToken,
+        cfToken: await getCFAuthorizationToken(),
     };
     const tokens = getTokenAPI(env);
 
@@ -34,12 +30,11 @@ export async function signJWT(
     expiration: { value: number; unit: 'days' | 'weeks' } = {
         value: 7,
         unit: 'days',
-    },
-    cfToken: string
+    }
 ) {
-    const env = getEnv();
+    const env = getCloudflareEnv();
     const tokenObject = {
-        cfToken: cfToken,
+        cfToken: await getCFAuthorizationToken(),
     };
     const tokens = getTokenAPI(env);
     if (expiration.unit === 'days' && expiration.value > 365) {

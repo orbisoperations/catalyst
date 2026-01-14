@@ -1,16 +1,12 @@
 'use server';
-import { getCloudflareContext } from '@opennextjs/cloudflare';
-import { CloudflareEnv, getRegistrar, DataChannelInputSchema, DataChannel } from '@catalyst/schemas';
+import { getRegistrar, DataChannelInputSchema, DataChannel } from '@catalyst/schemas';
+import { getCloudflareEnv, getCFAuthorizationToken } from '@/app/lib/server-utils';
 
-function getEnv(): CloudflareEnv {
-    return getCloudflareContext().env as CloudflareEnv;
-}
-
-export async function createDataChannel(formData: FormData, token: string) {
-    const env = getEnv();
+export async function createDataChannel(formData: FormData) {
+    const env = getCloudflareEnv();
     const api = getRegistrar(env);
     const tokenObject = {
-        cfToken: token,
+        cfToken: await getCFAuthorizationToken(),
     };
 
     const data = {
@@ -67,12 +63,12 @@ export async function createDataChannel(formData: FormData, token: string) {
     };
 }
 
-export async function listChannels(token: string) {
-    const env = getEnv();
+export async function listChannels() {
+    const env = getCloudflareEnv();
     const api = getRegistrar(env);
 
     const tokenObject = {
-        cfToken: token,
+        cfToken: await getCFAuthorizationToken(),
     };
 
     const channels = await api.list('default', tokenObject);
@@ -82,16 +78,16 @@ export async function listChannels(token: string) {
     return channels.data as DataChannel[];
 }
 
-export async function listPartnersChannels(token: string, partnerId: string) {
-    const channelsResponse = await listChannels(token);
+export async function listPartnersChannels(partnerId: string) {
+    const channelsResponse = await listChannels();
     return channelsResponse.filter((channel) => channel.creatorOrganization === partnerId);
 }
 
-export async function getChannel(channelId: string, token: string) {
-    const env = getEnv();
+export async function getChannel(channelId: string) {
+    const env = getCloudflareEnv();
     const api = getRegistrar(env);
     const tokenObject = {
-        cfToken: token,
+        cfToken: await getCFAuthorizationToken(),
     };
 
     const channelResp = await api.read('default', channelId, tokenObject);
@@ -101,11 +97,11 @@ export async function getChannel(channelId: string, token: string) {
     return channelResp.data as DataChannel;
 }
 
-export async function updateChannel(formData: FormData, token: string) {
-    const env = getEnv();
+export async function updateChannel(formData: FormData) {
+    const env = getCloudflareEnv();
     const api = getRegistrar(env);
     const tokenObject = {
-        cfToken: token,
+        cfToken: await getCFAuthorizationToken(),
     };
     const dataChannel = {
         name: formData.get('name') as string,
@@ -160,27 +156,22 @@ export async function updateChannel(formData: FormData, token: string) {
     };
 }
 
-export async function checkChannelNameAvailability(
-    name: string,
-    organization: string,
-    token: string,
-    excludeChannelId?: string
-) {
-    const env = getEnv();
+export async function checkChannelNameAvailability(name: string, organization: string, excludeChannelId?: string) {
+    const env = getCloudflareEnv();
     const api = getRegistrar(env);
     const tokenObject = {
-        cfToken: token,
+        cfToken: await getCFAuthorizationToken(),
     };
 
     const response = await api.checkNameAvailability('default', name, organization, tokenObject, excludeChannelId);
     return response;
 }
 
-export async function handleSwitch(channelId: string, accessSwitch: boolean, token: string) {
-    const env = getEnv();
+export async function handleSwitch(channelId: string, accessSwitch: boolean) {
+    const env = getCloudflareEnv();
     const api = getRegistrar(env);
     const tokenObject = {
-        cfToken: token,
+        cfToken: await getCFAuthorizationToken(),
     };
     const channelResp = await api.read('default', channelId, tokenObject);
     if (!channelResp.success) {
@@ -195,11 +186,11 @@ export async function handleSwitch(channelId: string, accessSwitch: boolean, tok
     return updateOperation.data as DataChannel;
 }
 
-export async function deleteChannel(channelID: string, token: string) {
-    const env = getEnv();
+export async function deleteChannel(channelID: string) {
+    const env = getCloudflareEnv();
     const api = getRegistrar(env);
     const tokenObject = {
-        cfToken: token,
+        cfToken: await getCFAuthorizationToken(),
     };
     const deleteOperation = await api.remove('default', channelID, tokenObject);
     if (!deleteOperation.success) {
