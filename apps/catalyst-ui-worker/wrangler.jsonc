@@ -50,6 +50,11 @@
             "service": "data-channel-certifier",
         },
     ],
+    "vars": {
+        "ZITADEL_DOMAIN": "auth.devintelops.io",
+        "ZITADEL_CLIENT_ID": "322212504635775068",
+        "CF_ACCESS_TEAM_DOMAIN": "orbisops",
+    },
     "env": {
         "preview": {
             "routes": [

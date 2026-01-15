@@ -24,9 +24,9 @@ export async function GET(request: NextRequest) {
                 await authxAuthzed.addAdminToOrg(user.orgId, user.userId);
             }
         } else {
-            return Response.json({ error: 'no user found' });
+            return Response.json({ error: 'no user found' }, { status: 404 });
         }
-        // Return user info WITHOUT the token (FR-001: token must not be exposed to JavaScript)
+        // Return user info WITHOUT the token
         return Response.json({
             userId: user.userId,
             orgId: user.orgId,
@@ -35,6 +35,6 @@ export async function GET(request: NextRequest) {
             isPlatformAdmin: user.zitadelRoles.includes('platform-admin'),
         });
     } else {
-        return Response.json({ error: 'no token found' });
+        return Response.json({ error: 'no token found' }, { status: 401 });
     }
 }

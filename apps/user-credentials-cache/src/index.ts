@@ -131,6 +131,22 @@ export class UserCredsCache extends DurableObject<Env> {
 			}
 		}
 	}
+
+	/**
+	 * Deletes a user's cached credentials by token.
+	 * Used during logout to clear the session from cache.
+	 *
+	 * @param token - The Cloudflare Access token to delete from cache.
+	 * @returns true if the token was found and deleted, false otherwise.
+	 */
+	async deleteUser(token: string): Promise<boolean> {
+		const existed = await this.ctx.storage.get<User>(token);
+		if (existed) {
+			await this.ctx.storage.delete(token);
+			return true;
+		}
+		return false;
+	}
 }
 
 /**
@@ -155,5 +171,19 @@ export default class UserCredsCacheWorker extends WorkerEntrypoint<Env> {
 		const stub: DurableObjectStub<UserCredsCache> = this.env.CACHE.get(id);
 		const user = await stub.getUser(token);
 		return user;
+	}
+
+	/**
+	 * Deletes a user's cached credentials by token.
+	 * Called during logout to invalidate the cached session.
+	 *
+	 * @param token - The Cloudflare Access token to delete from cache.
+	 * @param cacheNamespace - A namespace string to determine which Durable Object instance to use. Defaults to 'default'.
+	 * @returns true if the token was found and deleted, false otherwise.
+	 */
+	async deleteUser(token: string, cacheNamespace: string = 'default'): Promise<boolean> {
+		const id = this.env.CACHE.idFromName(cacheNamespace);
+		const stub: DurableObjectStub<UserCredsCache> = this.env.CACHE.get(id);
+		return await stub.deleteUser(token);
 	}
 }
