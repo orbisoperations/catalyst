@@ -42,7 +42,7 @@
         "@emotion/react": "catalog:",
         "@emotion/styled": "^11.11.5",
         "@heroicons/react": "catalog:",
-        "@opennextjs/cloudflare": "1.0.0-beta.3",
+        "@opennextjs/cloudflare": "1.3.0",
         "next": "15.3.3",
         "react": "^19.1.0",
         "react-dom": "^19.1.0",
