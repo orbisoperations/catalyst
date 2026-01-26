@@ -105,7 +105,13 @@ export const ProfileButton = (props: ProfileButtonProps) => {
                     <MenuItem
                         onClick={() => {
                             if (typeof window !== 'undefined') {
-                                window.location.href = '/cdn-cgi/auth/logout';
+                                // Clear auth-related localStorage keys to prevent stale session data
+                                localStorage.removeItem('org');
+                                localStorage.removeItem('lastWorkspace');
+                                // Clear sessionStorage
+                                sessionStorage.clear();
+                                // Redirect to Cloudflare Access logout
+                                window.location.href = '/cdn-cgi/access/logout';
                             }
                         }}
                     >
