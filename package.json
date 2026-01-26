@@ -6,6 +6,7 @@
     "scripts": {
         "test": "turbo run test:workspace --filter='!./examples/**' --filter='!./apps/datachannel-next' --filter='!./apps/catalyst_cli'",
         "build": "turbo run build --filter='!./examples/**' --filter='!./apps/datachannel-next' --filter='!./apps/catalyst_cli'",
+        "build:ci": "turbo run build --filter=@catalyst/test-utils...",
         "dev": "turbo run dev --filter='!./examples/**' --filter='!./apps/datachannel-next' --filter='!./apps/catalyst_cli'",
         "kill-dev": "./scripts/kill-dev.sh",
         "lint": "turbo run lint --filter='!./examples/**' --filter='!./apps/datachannel-next' --filter='!./apps/catalyst_cli'",
