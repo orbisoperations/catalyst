@@ -1,17 +1,22 @@
 {
     "$schema": "https://turbo.build/schema.json",
     "ui": "tui",
+    "concurrency": "11",
     "tasks": {
+        "//#setup:authzed": {
+            "cache": false
+        },
+        "dev": {
+            "dependsOn": ["//#setup:authzed"],
+            "cache": false,
+            "persistent": true
+        },
         "build": {
             "dependsOn": ["^build"],
             "outputs": [".next/**", "!.next/cache/**", "dist/**", ".vercel/**"]
         },
         "@catalyst/test-utils#build": {
             "outputs": ["dist/**"]
-        },
-        "dev": {
-            "cache": false,
-            "persistent": true
         },
         "lint": {
             "dependsOn": ["^build"]
