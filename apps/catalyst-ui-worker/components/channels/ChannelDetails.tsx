@@ -27,10 +27,10 @@ import { DataChannel, DataChannelActionResponse } from '@catalyst/schemas';
 import { useUser } from '../contexts/User/UserContext';
 
 type DataChannelDetailsProps = {
-    channelDetails: (id: string, token: string) => Promise<DataChannel>;
-    updateChannel: (data: FormData, token: string) => Promise<DataChannelActionResponse>;
-    deleteChannel: (id: string, token: string) => Promise<DataChannel>;
-    handleSwitch: (channelId: string, accessSwitch: boolean, token: string) => Promise<DataChannel>;
+    channelDetails: (id: string) => Promise<DataChannel>;
+    updateChannel: (data: FormData) => Promise<DataChannelActionResponse>;
+    deleteChannel: (id: string) => Promise<DataChannel>;
+    handleSwitch: (channelId: string, accessSwitch: boolean) => Promise<DataChannel>;
 };
 
 export default function DataChannelDetailsComponent({
@@ -43,7 +43,7 @@ export default function DataChannelDetailsComponent({
     const editDisclosure = useDisclosure();
     const router = useRouter();
     const [gatewayUrl, setGatewayUrl] = useState<string>('https://gateway.catalyst.intelops.io/graphql');
-    const { user, token } = useUser();
+    const { user } = useUser();
     const { id } = useParams();
     const [channel, setChannel] = useState<DataChannel>();
     const [hasError, setHasError] = useState<boolean>(false);
@@ -56,8 +56,8 @@ export default function DataChannelDetailsComponent({
 
     function fetchChannelDetails() {
         setHasError(false);
-        if (id && typeof id === 'string' && token)
-            channelDetails(id, token)
+        if (id && typeof id === 'string')
+            channelDetails(id)
                 .then((data) => {
                     setChannel(data);
                     setEditChannel(data);
@@ -79,7 +79,7 @@ export default function DataChannelDetailsComponent({
             setGatewayUrl(url.replace('catalyst', 'gateway') + '/graphql');
         }
     }, []);
-    useEffect(fetchChannelDetails, [token]);
+    useEffect(fetchChannelDetails, []);
 
     return (
         <DetailedView
@@ -93,7 +93,7 @@ export default function DataChannelDetailsComponent({
                                 defaultChecked={channel?.accessSwitch ?? false}
                                 onChange={(e) => {
                                     if (channel) {
-                                        handleSwitch(channel.id, e.target.checked ? true : false, token ?? '')
+                                        handleSwitch(channel.id, e.target.checked ? true : false)
                                             .then(fetchChannelDetails)
                                             .catch(() => {
                                                 setHasError(true);
@@ -143,8 +143,8 @@ export default function DataChannelDetailsComponent({
                                         <OrbisButton
                                             colorScheme="red"
                                             onClick={() => {
-                                                if (id && typeof id === 'string' && token)
-                                                    deleteChannel(id, token)
+                                                if (id && typeof id === 'string')
+                                                    deleteChannel(id)
                                                         .then(() => {
                                                             onClose();
                                                             router.push('/channels');
@@ -177,12 +177,12 @@ export default function DataChannelDetailsComponent({
                                             setIsSubmitting(true);
                                             setNameError(''); // Clear previous errors
                                             const formData = new FormData(e.currentTarget);
-                                            if (editChannel && token) {
+                                            if (editChannel) {
                                                 formData.append('id', editChannel.id);
                                                 formData.append('organization', String(user?.custom.org));
                                                 // Send only the channel name without organization prefix
                                                 // The name is already extracted from the input field (without org prefix)
-                                                updateChannel(formData, token)
+                                                updateChannel(formData)
                                                     .then((result) => {
                                                         if (result.success) {
                                                             fetchChannelDetails();

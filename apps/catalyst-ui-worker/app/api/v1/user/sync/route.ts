@@ -1,18 +1,14 @@
-import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { NextRequest } from 'next/server';
 export const dynamic = 'force-dynamic'; // defaults to auto
-import { type User, CloudflareEnv, getUserCache, getAuthzed } from '@catalyst/schemas';
-
-function getEnv(): CloudflareEnv {
-    return getCloudflareContext().env as CloudflareEnv;
-}
+import { type User, getUserCache, getAuthzed } from '@catalyst/schemas';
+import { getCloudflareEnv } from '@/app/lib/server-utils';
 
 export async function GET(request: NextRequest) {
     // get CF token
     const cfToken = request.cookies.get('CF_Authorization')?.value;
     if (cfToken) {
         // validate CF token
-        const env = getEnv();
+        const env = getCloudflareEnv();
         const user_cache = getUserCache(env);
         const authxAuthzed = getAuthzed(env);
         const user: User | undefined = (await user_cache.getUser(cfToken)) as User | undefined;

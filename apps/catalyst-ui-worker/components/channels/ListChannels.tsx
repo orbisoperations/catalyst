@@ -38,8 +38,8 @@ import { useEffect, useState } from 'react';
 import { useUser } from '../contexts/User/UserContext';
 import { canUserValidateChannels } from '@/app/actions/validation';
 type ListChannelsProps = {
-    listChannels: (token: string) => Promise<DataChannel[]>;
-    deleteChannel: (channelId: string, token: string) => Promise<DataChannel>;
+    listChannels: () => Promise<DataChannel[]>;
+    deleteChannel: (channelId: string) => Promise<DataChannel>;
 };
 
 export default function DataChannelListComponents({ listChannels, deleteChannel }: ListChannelsProps) {
@@ -52,7 +52,7 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
     const [channelToDelete, setChannelToDelete] = useState<string | null>(null);
     const [canValidate, setCanValidate] = useState<boolean>(false);
     const { isOpen, onOpen, onClose } = useDisclosure();
-    const { token, user } = useUser();
+    const { user } = useUser();
     function filterChannels(filterMode: 'all' | 'subscribed' | 'owned' = 'all') {
         let filteredChannels = allChannels;
         if (filterMode === 'subscribed') {
@@ -70,18 +70,17 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
     function fetchChannels() {
         setIsLoading(true);
         setHasError(false);
-        if (token)
-            listChannels(token)
-                .then((data) => {
-                    setIsLoading(false);
-                    const response = (data as DataChannel[]).sort((a, b) => a.name.localeCompare(b.name));
-                    setAllChannels(response);
-                    setChannels(response);
-                })
-                .catch(() => {
-                    setIsLoading(false);
-                    setHasError(true);
-                });
+        listChannels()
+            .then((data) => {
+                setIsLoading(false);
+                const response = (data as DataChannel[]).sort((a, b) => a.name.localeCompare(b.name));
+                setAllChannels(response);
+                setChannels(response);
+            })
+            .catch(() => {
+                setIsLoading(false);
+                setHasError(true);
+            });
     }
 
     function handleDeleteChannel(channelId: string) {
@@ -90,9 +89,9 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
     }
 
     function confirmDeleteChannel() {
-        if (!token || !channelToDelete) return;
+        if (!channelToDelete) return;
 
-        deleteChannel(channelToDelete, token)
+        deleteChannel(channelToDelete)
             .then(() => {
                 onClose();
                 setChannelToDelete(null);
@@ -111,7 +110,7 @@ export default function DataChannelListComponents({ listChannels, deleteChannel 
         canUserValidateChannels()
             .then(setCanValidate)
             .catch(() => setCanValidate(false));
-    }, [token]);
+    }, []);
 
     // TODO: Update to use the dynamic organization id
     return (

@@ -1,21 +1,10 @@
 'use server';
-import { getCloudflareContext } from '@opennextjs/cloudflare';
-import {
-    type ValidationResult,
-    type User,
-    type CloudflareEnv,
-    getAuthzed,
-    getCertifier,
-    getUserCache,
-} from '@catalyst/schemas';
+import { type ValidationResult, type User, getAuthzed, getCertifier, getUserCache } from '@catalyst/schemas';
 import { cookies } from 'next/headers';
-
-function getEnv(): CloudflareEnv {
-    return getCloudflareContext().env as CloudflareEnv;
-}
+import { getCloudflareEnv } from '@/app/lib/server-utils';
 
 export async function canUserValidateChannels(): Promise<boolean> {
-    const env = getEnv();
+    const env = getCloudflareEnv();
 
     try {
         // Get the CF_Authorization token from cookies
@@ -44,7 +33,7 @@ export async function canUserValidateChannels(): Promise<boolean> {
 }
 
 export async function validateChannel(channelId: string, endpoint: string, organization: string) {
-    const env = getEnv();
+    const env = getCloudflareEnv();
 
     try {
         // Get the CF_Authorization token from cookies

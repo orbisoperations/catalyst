@@ -27,9 +27,9 @@ import { useEffect, useState } from 'react';
 import { useUser } from '../contexts/User/UserContext';
 import { OrgInvite } from '@catalyst/schemas';
 type PartnersListComponentProps = {
-    listInvites: (token: string) => Promise<OrgInvite[]>;
-    declineInvite: (inviteId: string, token: string) => Promise<OrgInvite>;
-    togglePartnership(orgId: string, token: string): Promise<OrgInvite>;
+    listInvites: () => Promise<OrgInvite[]>;
+    declineInvite: (inviteId: string) => Promise<OrgInvite>;
+    togglePartnership(orgId: string): Promise<OrgInvite>;
 };
 export default function PartnersListComponent({
     listInvites,
@@ -42,35 +42,33 @@ export default function PartnersListComponent({
     const [partners, setPartners] = useState<OrgInvite[]>([]);
     const [invitations, setInvitations] = useState<OrgInvite[]>([]);
     const [selectedPartner, setSelectedPartner] = useState<OrgInvite | null>(null);
-    const { token, user } = useUser();
+    const { user } = useUser();
     function fetchInvites() {
         setHasError(false);
-        if (token)
-            return listInvites(token)
-                .then((invites) => {
-                    const partners: OrgInvite[] = [];
-                    const invitations: OrgInvite[] = [];
-                    invites.forEach((invite) => {
-                        if (invite.status === 'accepted') {
-                            partners.push(invite);
-                        }
-                        if (invite.status === 'pending') {
-                            invitations.push(invite);
-                        }
-                    });
-                    setPartners(partners);
-                    setInvitations(invitations);
-                })
-                .catch(() => {
-                    setHasError(true);
-                    setErrorMessage('An error occurred while fetching the invites. Please try again later.');
+        return listInvites()
+            .then((invites) => {
+                const partners: OrgInvite[] = [];
+                const invitations: OrgInvite[] = [];
+                invites.forEach((invite) => {
+                    if (invite.status === 'accepted') {
+                        partners.push(invite);
+                    }
+                    if (invite.status === 'pending') {
+                        invitations.push(invite);
+                    }
                 });
-        return Promise.resolve();
+                setPartners(partners);
+                setInvitations(invitations);
+            })
+            .catch(() => {
+                setHasError(true);
+                setErrorMessage('An error occurred while fetching the invites. Please try again later.');
+            });
     }
 
     function deletePartner(inviteID: string) {
         onClose();
-        return declineInvite(inviteID, token ?? '')
+        return declineInvite(inviteID)
             .then(fetchInvites)
             .catch(() => {
                 setHasError(true);
@@ -79,7 +77,7 @@ export default function PartnersListComponent({
     }
     useEffect(() => {
         fetchInvites();
-    }, [token]);
+    }, []);
 
     const { isOpen, onOpen, onClose } = useDisclosure();
     return (
@@ -135,7 +133,7 @@ export default function PartnersListComponent({
                                                             colorScheme="green"
                                                             defaultChecked={partner.isActive}
                                                             onChange={() => {
-                                                                togglePartnership(partner.id, token ?? '')
+                                                                togglePartnership(partner.id)
                                                                     .then(fetchInvites)
                                                                     .catch(() => {
                                                                         setHasError(true);

@@ -10,13 +10,13 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 type DataChannelFormProps = {
-    createDataChannel: (fd: FormData, token: string) => Promise<DataChannelActionResponse>;
+    createDataChannel: (fd: FormData) => Promise<DataChannelActionResponse>;
 };
 
 export default function CreateChannelForm({ createDataChannel }: DataChannelFormProps) {
     const router = useRouter();
     const [hasError, setHasError] = useState<boolean>(false);
-    const { user, token } = useUser();
+    const { user } = useUser();
     const [dataChannel, setDataChannel] = useState<Omit<DataChannel, 'id'>>({
         name: '',
         description: '',
@@ -56,7 +56,7 @@ export default function CreateChannelForm({ createDataChannel }: DataChannelForm
                                 setIsSubmitting(true);
                                 setNameError(''); // Clear previous errors
                                 fd.set('organization', String(user?.custom.org));
-                                createDataChannel(fd, token ?? '')
+                                createDataChannel(fd)
                                     .then((result) => {
                                         if (result.success) {
                                             // Handle array response - get first channel if array, otherwise use directly

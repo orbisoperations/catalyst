@@ -20,9 +20,9 @@ import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useUser } from '../contexts/User/UserContext';
 type AcceptInviteComponentProps = {
-    acceptInvite: (inviteId: string, token: string) => Promise<OrgInvite>;
-    declineInvite: (inviteId: string, token: string) => Promise<OrgInvite>;
-    readInvite: (inviteId: string, token: string) => Promise<OrgInvite>;
+    acceptInvite: (inviteId: string) => Promise<OrgInvite>;
+    declineInvite: (inviteId: string) => Promise<OrgInvite>;
+    readInvite: (inviteId: string) => Promise<OrgInvite>;
 };
 export default function AcceptInviteComponent({ acceptInvite, declineInvite, readInvite }: AcceptInviteComponentProps) {
     const router = useRouter();
@@ -31,14 +31,14 @@ export default function AcceptInviteComponent({ acceptInvite, declineInvite, rea
     const [hasError, setHasError] = useState<boolean>(false);
     const [errorMessage, setErrorMessage] = useState<string>('');
     const [invite, setInvite] = useState<OrgInvite | undefined>(undefined);
-    const { token, user } = useUser();
+    const { user } = useUser();
     const [orgIsSender, setOrgIsSender] = useState<boolean>(false);
     function fetchInvite() {
         setHasError(false);
         const inviteId = params.id;
-        if (typeof inviteId === 'string' && token) {
+        if (typeof inviteId === 'string') {
             setId(inviteId);
-            readInvite(inviteId, token)
+            readInvite(inviteId)
                 .then((res) => {
                     setInvite(res);
                     setOrgIsSender(res?.sender === user?.custom.org);
@@ -52,7 +52,7 @@ export default function AcceptInviteComponent({ acceptInvite, declineInvite, rea
             setErrorMessage('An error occurred while fetching the invite. Please try again later.');
         }
     }
-    useEffect(fetchInvite, [params.id, token]);
+    useEffect(fetchInvite, [params.id]);
 
     const { isOpen, onOpen, onClose } = useDisclosure();
     return (
@@ -94,20 +94,18 @@ export default function AcceptInviteComponent({ acceptInvite, declineInvite, rea
                                             data-testid="invite-confirm-reject-button"
                                             colorScheme="red"
                                             onClick={() => {
-                                                if (token) {
-                                                    declineInvite(id, token)
-                                                        .then(async () => {
-                                                            onClose();
-                                                            router.back();
-                                                        })
-                                                        .catch(() => {
-                                                            onClose();
-                                                            setHasError(true);
-                                                            setErrorMessage(
-                                                                `An error occurred while ${orgIsSender ? 'cancelling' : 'rejecting'} the invite. Please try again later.`
-                                                            );
-                                                        });
-                                                }
+                                                declineInvite(id)
+                                                    .then(async () => {
+                                                        onClose();
+                                                        router.back();
+                                                    })
+                                                    .catch(() => {
+                                                        onClose();
+                                                        setHasError(true);
+                                                        setErrorMessage(
+                                                            `An error occurred while ${orgIsSender ? 'cancelling' : 'rejecting'} the invite. Please try again later.`
+                                                        );
+                                                    });
                                             }}
                                         >
                                             {orgIsSender ? 'Cancel' : 'Reject'}
@@ -131,15 +129,14 @@ export default function AcceptInviteComponent({ acceptInvite, declineInvite, rea
                                 <OrbisButton
                                     data-testid="invite-accept-button"
                                     onClick={() => {
-                                        if (token)
-                                            acceptInvite(id, token)
-                                                .then(router.back)
-                                                .catch(() => {
-                                                    setHasError(true);
-                                                    setErrorMessage(
-                                                        'An error occurred while accepting the invite. Please try again later.'
-                                                    );
-                                                });
+                                        acceptInvite(id)
+                                            .then(router.back)
+                                            .catch(() => {
+                                                setHasError(true);
+                                                setErrorMessage(
+                                                    'An error occurred while accepting the invite. Please try again later.'
+                                                );
+                                            });
                                     }}
                                 >
                                     Accept

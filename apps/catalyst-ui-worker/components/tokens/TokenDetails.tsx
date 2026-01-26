@@ -19,9 +19,9 @@ import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useUser } from '../contexts/User/UserContext';
 interface TokenDetailsProps {
-    deleteIJWTRegistry: (token: string, id: string) => Promise<boolean>;
-    getIJWTRegistry: (token: string, id: string) => Promise<IssuedJWTRegistry | undefined>;
-    listChannels: (token: string) => Promise<DataChannel[]>;
+    deleteIJWTRegistry: (id: string) => Promise<boolean>;
+    getIJWTRegistry: (id: string) => Promise<IssuedJWTRegistry | undefined>;
+    listChannels: () => Promise<DataChannel[]>;
 }
 type DisplayedJWTRegistry = {
     claims: { name: string; id: string; description: string }[];
@@ -37,7 +37,7 @@ export default function TokenDetailsComponent({
     listChannels,
 }: TokenDetailsProps) {
     const { isOpen, onOpen, onClose } = useDisclosure();
-    const { token, user } = useUser();
+    const { user } = useUser();
     const router = useRouter();
     const { id } = useParams();
     const [hasError, setHasError] = useState<boolean>(false);
@@ -45,10 +45,10 @@ export default function TokenDetailsComponent({
     const [iJWTRegistry, setIJWTRegistry] = useState<DisplayedJWTRegistry | undefined>(undefined);
     function fetchDetails() {
         setHasError(false);
-        if (token && id && typeof id === 'string') {
-            getIJWTRegistry(token, id)
+        if (id && typeof id === 'string') {
+            getIJWTRegistry(id)
                 .then((data) => {
-                    listChannels(token)
+                    listChannels()
                         .then((channels) => {
                             if (data) {
                                 const claims = channels.filter((channel) => {
@@ -72,7 +72,7 @@ export default function TokenDetailsComponent({
                 });
         }
     }
-    useEffect(fetchDetails, [token, id]);
+    useEffect(fetchDetails, [id]);
 
     return (
         <DetailedView
@@ -144,8 +144,8 @@ export default function TokenDetailsComponent({
                             <OrbisButton
                                 colorScheme="red"
                                 onClick={() => {
-                                    if (token && iJWTRegistry) {
-                                        deleteIJWTRegistry(token, iJWTRegistry.id)
+                                    if (iJWTRegistry) {
+                                        deleteIJWTRegistry(iJWTRegistry.id)
                                             .then(async () => {
                                                 onClose();
                                                 router.back();

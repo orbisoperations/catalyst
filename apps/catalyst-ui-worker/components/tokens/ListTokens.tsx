@@ -29,13 +29,13 @@ import { useEffect, useState } from 'react';
 import { useUser } from '../contexts/User/UserContext';
 
 type ListIssuedJWTRegistryProps = {
-    listIJWTRegistry: (token: string) => Promise<IssuedJWTRegistry[]>;
-    deleteIJWTRegistry: (token: string, id: string) => Promise<boolean>;
+    listIJWTRegistry: () => Promise<IssuedJWTRegistry[]>;
+    deleteIJWTRegistry: (id: string) => Promise<boolean>;
 };
 
 export default function APIKeysComponent({ listIJWTRegistry, deleteIJWTRegistry }: ListIssuedJWTRegistryProps) {
     const router = useRouter();
-    const { user, token } = useUser();
+    const { user } = useUser();
     const [adminFlag, setAdminFlag] = useState<boolean>(false);
     const [hasError, setHasError] = useState<boolean>(false);
     const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -47,23 +47,18 @@ export default function APIKeysComponent({ listIJWTRegistry, deleteIJWTRegistry 
     function fetchIssuedJWTRegistry() {
         setHasError(false);
         setIsLoading(true);
-        if (user !== undefined && token !== undefined) {
-            setAdminFlag(!!user?.custom.isPlatformAdmin);
-            listIJWTRegistry(token)
-                .then((data) => {
-                    setIsLoading(false);
-                    setIssuedJWTRegistry(data as IssuedJWTRegistry[]);
-                })
-                .catch((e) => {
-                    setIsLoading(false);
-                    setHasError(true);
-                    setErrorMessage('An error occurred while fetching the tokens. Please try again later.');
-                    console.error(e);
-                });
-        } else {
-            setIsLoading(false);
-            setAdminFlag(false);
-        }
+        setAdminFlag(!!user?.custom.isPlatformAdmin);
+        listIJWTRegistry()
+            .then((data) => {
+                setIsLoading(false);
+                setIssuedJWTRegistry(data as IssuedJWTRegistry[]);
+            })
+            .catch((e) => {
+                setIsLoading(false);
+                setHasError(true);
+                setErrorMessage('An error occurred while fetching the tokens. Please try again later.');
+                console.error(e);
+            });
     }
 
     function handleDeleteToken(tokenId: string) {
@@ -72,9 +67,9 @@ export default function APIKeysComponent({ listIJWTRegistry, deleteIJWTRegistry 
     }
 
     function confirmDeleteToken() {
-        if (!token || !tokenToDelete) return;
+        if (!tokenToDelete) return;
 
-        deleteIJWTRegistry(token, tokenToDelete)
+        deleteIJWTRegistry(tokenToDelete)
             .then(() => {
                 onClose();
                 setTokenToDelete(null);
@@ -89,7 +84,7 @@ export default function APIKeysComponent({ listIJWTRegistry, deleteIJWTRegistry 
             });
     }
 
-    useEffect(fetchIssuedJWTRegistry, [user, token]);
+    useEffect(fetchIssuedJWTRegistry, []);
 
     return (
         <>
@@ -150,8 +145,7 @@ export default function APIKeysComponent({ listIJWTRegistry, deleteIJWTRegistry 
                                         <OrbisButton
                                             data-testid="tokens-admin-rotate-button"
                                             onClick={async () => {
-                                                if (!token) return;
-                                                rotateJWTKeyMaterial(token)
+                                                rotateJWTKeyMaterial()
                                                     .then((res) => {
                                                         console.log(res);
                                                     })

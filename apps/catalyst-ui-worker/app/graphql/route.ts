@@ -1,14 +1,10 @@
-import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { NextRequest, NextResponse } from 'next/server';
-import { CloudflareEnv, getRegistrar } from '@catalyst/schemas';
-
-function getEnv(): CloudflareEnv {
-    return getCloudflareContext().env as CloudflareEnv;
-}
+import { getRegistrar } from '@catalyst/schemas';
+import { getCloudflareEnv } from '@/app/lib/server-utils';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function POST(req: NextRequest) {
-    const env = getEnv();
+    const env = getCloudflareEnv();
     const dataChannelRegistrar = getRegistrar(env);
     try {
         // Setting cfToken to undefined to avoid the error, was not originally provided

@@ -11,11 +11,11 @@ import { OrgIdSchema } from '@catalyst/schemas';
 import { SendInviteResult } from '@/app/actions/partners';
 
 type CreateInviteProps = {
-    sendInvite: (receivingOrg: string, token: string, message: string) => Promise<SendInviteResult>;
+    sendInvite: (receivingOrg: string, message: string) => Promise<SendInviteResult>;
 };
 export default function CreateInviteComponent({ sendInvite }: CreateInviteProps) {
     const router = useRouter();
-    const { token, user } = useUser();
+    const { user } = useUser();
     const [hasError, setHasError] = useState<boolean>(false);
     const [inviteState, setInviteState] = useState<{
         org: string;
@@ -88,12 +88,6 @@ export default function CreateInviteComponent({ sendInvite }: CreateInviteProps)
                                 return;
                             }
 
-                            // Validate that token exists
-                            if (!token) {
-                                setErrorMessage('Authentication token is missing. Please refresh the page.');
-                                return;
-                            }
-
                             // Safe formData handling
                             const orgRaw = formData.get('orgId');
                             const messageRaw = formData.get('message');
@@ -119,7 +113,6 @@ export default function CreateInviteComponent({ sendInvite }: CreateInviteProps)
 
                             const result = await sendInvite(
                                 org,
-                                token,
                                 message.trim() === '' ? `${user.custom.org} invited you to partner with them` : message
                             );
 
