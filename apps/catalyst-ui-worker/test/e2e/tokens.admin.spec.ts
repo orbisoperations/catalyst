@@ -15,9 +15,13 @@ test.describe('Platform Admin Key Rotation', () => {
         await page.getByTestId(NAVBAR.API_KEYS_LINK).click();
         await page.waitForURL('/tokens');
 
-        // Verify admin panel is visible for platform admin
+        // Wait for page to load and user context to be populated
+        // The admin panel renders conditionally based on user.custom.isPlatformAdmin
+        await page.waitForLoadState('networkidle');
+
+        // Verify admin panel is visible for platform admin (with extended timeout for state to settle)
         const adminPanel = page.getByTestId(TOKENS.ADMIN_PANEL);
-        await expect(adminPanel).toBeVisible();
+        await expect(adminPanel).toBeVisible({ timeout: 10000 });
 
         // Verify rotate button is visible and clickable
         const rotateButton = page.getByTestId(TOKENS.ADMIN_ROTATE_BUTTON);

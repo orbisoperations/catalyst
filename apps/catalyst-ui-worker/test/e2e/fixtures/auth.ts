@@ -197,5 +197,8 @@ export const test = base.extend<AuthFixtures>({
 
 export { expect };
 
+// Re-export Page type for use in test helpers
+export type { Page } from '@playwright/test';
+
 // Export TEST_USERS and ALL_TEST_USERS for use in tests that need user info
 export { TEST_USERS, ALL_TEST_USERS };
