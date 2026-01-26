@@ -103,16 +103,28 @@ export const ProfileButton = (props: ProfileButtonProps) => {
                         </MenuItem>
                     ))}
                     <MenuItem
-                        onClick={() => {
-                            if (typeof window !== 'undefined') {
-                                // Clear auth-related localStorage keys to prevent stale session data
-                                localStorage.removeItem('org');
-                                localStorage.removeItem('lastWorkspace');
-                                // Clear sessionStorage
-                                sessionStorage.clear();
-                                // Redirect to Cloudflare Access logout
-                                window.location.href = '/cdn-cgi/access/logout';
+                        onClick={async () => {
+                            // Clear auth-related localStorage keys to prevent stale session data
+                            localStorage.removeItem('org');
+                            localStorage.removeItem('lastWorkspace');
+                            // Clear sessionStorage
+                            sessionStorage.clear();
+                            // Clear server cache and get logout URL (Zitadel → CF Access chain)
+                            let logoutUrl = '/cdn-cgi/access/logout';
+                            try {
+                                const res = await fetch('/api/v1/user/logout', {
+                                    method: 'POST',
+                                    credentials: 'include',
+                                });
+                                const data = (await res.json()) as { logoutUrl?: string };
+                                if (data.logoutUrl) {
+                                    logoutUrl = data.logoutUrl;
+                                }
+                            } catch {
+                                // Use fallback URL if request fails
                             }
+                            // Redirect to logout (Zitadel end_session → CF Access logout)
+                            window.location.href = logoutUrl;
                         }}
                     >
                         Logout
