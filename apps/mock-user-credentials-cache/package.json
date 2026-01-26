@@ -10,8 +10,8 @@
         "deploy": "echo 'Mock worker should not be deployed'"
     },
     "devDependencies": {
-        "@cloudflare/workers-types": "^4.20250124.1",
-        "typescript": "^5.8.3",
-        "wrangler": "^4.17.0"
+        "@cloudflare/workers-types": "catalog:",
+        "typescript": "catalog:",
+        "wrangler": "catalog:"
     }
 }
