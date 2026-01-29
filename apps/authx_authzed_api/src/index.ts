@@ -1,4 +1,4 @@
-import { Catalyst, DataChannelId, OrgId, UserId } from '@catalyst/schema_zod';
+import { Catalyst, DataChannelId, OrgId, UserId } from '@catalyst/schemas';
 import { WorkerEntrypoint } from 'cloudflare:workers';
 import { AuthzedClient } from './authzed';
 
@@ -55,7 +55,7 @@ export default class AuthzedWorker extends WorkerEntrypoint<Env> {
 		const client = new AuthzedClient(this.env.AUTHZED_ENDPOINT, this.env.AUTHZED_KEY, this.env.AUTHZED_PREFIX);
 		const resp = await client.removeUserRoleFromOrganization(orgId, emailTob64(userId), Catalyst.RoleEnum.enum.data_custodian);
 		return {
-			entity: `${client.utils.schemaPrefix}organization:${orgId}#user@${client.utils.schemaPrefix}user:${emailTob64(userId)}`,
+			entity: `${client.utils.schemaPrefix}organization:${orgId}#data_custodian@${client.utils.schemaPrefix}user:${emailTob64(userId)}`,
 			...resp,
 		};
 	}
@@ -73,12 +73,12 @@ export default class AuthzedWorker extends WorkerEntrypoint<Env> {
 		const client = new AuthzedClient(this.env.AUTHZED_ENDPOINT, this.env.AUTHZED_KEY, this.env.AUTHZED_PREFIX);
 		const resp = await client.removeUserRoleFromOrganization(orgId, emailTob64(userId), Catalyst.RoleEnum.enum.admin);
 		return {
-			entity: `${client.utils.schemaPrefix}organization:${orgId}#user@${client.utils.schemaPrefix}user:${emailTob64(userId)}`,
+			entity: `${client.utils.schemaPrefix}organization:${orgId}#admin@${client.utils.schemaPrefix}user:${emailTob64(userId)}`,
 			...resp,
 		};
 	}
 
-	async listUsersInOrg(orgId: OrgId, userId?: UserId, roles?: Catalyst.RoleEnum[]) {
+	async listUsersInOrg(orgId: OrgId, userId?: UserId, roles?: Catalyst.RoleEnumType[]) {
 		const client = new AuthzedClient(this.env.AUTHZED_ENDPOINT, this.env.AUTHZED_KEY, this.env.AUTHZED_PREFIX);
 		const resp = await client.listUsersInOrganization(orgId, {
 			userId: userId ? emailTob64(userId) : undefined,

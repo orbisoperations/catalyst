@@ -4,32 +4,39 @@
 	"main": "index.ts",
 	"type": "module",
 	"scripts": {
-		"dev": "wrangler dev --port 5054",
+		"dev": "wrangler dev --port 4005 --inspector-port 6005",
 		"deploy:uxr": "wrangler deploy --env uxr",
 		"deploy:staging": "wrangler deploy --env staging",
 		"deploy:preview": "wrangler deploy --env preview",
 		"test": "vitest",
+		"test:unit": "vitest --project unit",
+		"test:integration": "vitest --project integration",
+		"test:watch": "vitest --project unit --watch",
 		"test:workspace": "vitest run --silent",
 		"test:coverage": "vitest --coverage",
+		"test:coverage:unit": "vitest --project unit --coverage",
+		"test:coverage:integration": "vitest --project integration --coverage",
+		"clean": "rm -rf dist .wrangler node_modules",
 		"lint": "eslint . --ext .ts",
 		"build": "wrangler build"
 	},
 	"devDependencies": {
-		"@cloudflare/vitest-pool-workers": "^0.8.23",
-		"@cloudflare/workers-types": "^4.20250525.0",
-		"@eslint/js": "^9.25.1",
-		"@typescript-eslint/eslint-plugin": "^8.29.1",
-		"@typescript-eslint/parser": "^8.29.1",
-		"@vitest/coverage-istanbul": "^3.1.4",
-		"eslint": "^9.25.1",
-		"prettier": "^3.5.3",
-		"tsx": "^4.19.4",
-		"typescript": "^5.8.3",
-		"vitest": "^3.1.4",
-		"wrangler": "^4.19.1"
+		"@catalyst/test-utils": "workspace:^",
+		"@cloudflare/vitest-pool-workers": "catalog:",
+		"@cloudflare/workers-types": "catalog:",
+		"@eslint/js": "catalog:",
+		"@typescript-eslint/eslint-plugin": "catalog:",
+		"@typescript-eslint/parser": "catalog:",
+		"@vitest/coverage-istanbul": "catalog:",
+		"eslint": "catalog:",
+		"prettier": "catalog:",
+		"tsx": "catalog:",
+		"typescript": "catalog:",
+		"vitest": "catalog:",
+		"wrangler": "catalog:"
 	},
 	"dependencies": {
-		"@catalyst/schema_zod": "workspace:*",
+		"@catalyst/schemas": "workspace:*",
 		"@catalyst/user-credentials-cache": "workspace:*"
 	}
 }

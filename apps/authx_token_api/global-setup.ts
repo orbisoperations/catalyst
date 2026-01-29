@@ -1,9 +1,11 @@
 import childProcess from 'node:child_process';
 import path from 'node:path';
+import { waitForSpiceDB, detectContainerRuntime, isSpiceDBRunning, stopSpiceDBContainer } from '@catalyst/test-utils/spicedb';
 
 // Global setup runs inside Node.js, not `workerd`
-export default function () {
+export default async function () {
 	// Build `api-service`'s dependencies
+	console.info('Starting Global Setup for authx_token_api');
 
 	// list of dependencies to compile
 	const dependencies = [
@@ -24,15 +26,28 @@ export default function () {
 		console.timeEnd(label);
 	}
 
-	console.info('Starting authzed podman container');
+	// Check if SpiceDB is already running
+	const alreadyRunning = await isSpiceDBRunning();
+	if (alreadyRunning) {
+		console.info('✓ SpiceDB is already running and healthy - reusing existing container');
+		console.info('✓ Global setup complete - SpiceDB is ready');
+		return;
+	}
 
-	// current when executing this file is apps/
-	// see execSync command below
-	const podmanCommand = [
-		'podman run --rm',
+	// Detect which container runtime is available
+	const runtime = detectContainerRuntime();
+	console.info(`Using container runtime: ${runtime}`);
+
+	console.info('Starting SpiceDB container...');
+
+	// Build the command for either docker or podman
+	const containerCommand = [
+		`${runtime} run`,
+		'--rm',
+		'-d', // Run in detached mode
+		'--name spicedb-test', // Name the container so we can stop it later
 		'-v ./authx_authzed_api/schema.zaml:/schema.zaml:ro',
 		'-p 8449:8443',
-		'-d',
 		'authzed/spicedb:latest',
 		'serve-testing',
 		'--http-enabled',
@@ -41,20 +56,28 @@ export default function () {
 		'--load-configs ./schema.zaml',
 	].join(' ');
 
-	// turn on podman container for authzed
-	childProcess.exec(
-		podmanCommand,
-		{
-			cwd: path.join(__dirname, '..'),
-		},
-		(err) => {
-			if (err && !err.message.includes('the container name "authzed-container" is already in use')) {
-				console.error('Error starting authzed podman container: Check status with `podman ps`', err);
-			} else {
-				console.info('Authzed podman container started successfully');
-			}
-		},
-	);
+	try {
+		// Stop any existing SpiceDB container with verification
+		stopSpiceDBContainer(runtime, 'spicedb-test');
 
-	console.info('Global setup complete');
+		// Start the SpiceDB container synchronously
+		childProcess.execSync(containerCommand, {
+			cwd: path.join(__dirname, '..'),
+			stdio: 'pipe',
+		});
+
+		console.info('SpiceDB container started, waiting for it to be ready...');
+
+		// Wait for SpiceDB to be healthy
+		await waitForSpiceDB('http://localhost:8449', 30000);
+
+		console.info('✓ Global setup complete - SpiceDB is ready');
+	} catch (error) {
+		console.error('❌ Failed to start SpiceDB:', error);
+		console.error(`\nTroubleshooting steps:`);
+		console.error(`1. Check if ${runtime} is running: ${runtime} ps`);
+		console.error(`2. Check container logs: ${runtime} logs spicedb-test`);
+		console.error(`3. Verify port 8449 is not in use: lsof -i :8449`);
+		throw error;
+	}
 }

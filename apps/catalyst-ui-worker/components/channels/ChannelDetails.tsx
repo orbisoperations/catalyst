@@ -6,6 +6,8 @@ import { Card, CardBody, CardHeader } from '@chakra-ui/card';
 import { Box, Flex, Grid, Heading, Stack, StackDivider, Text } from '@chakra-ui/layout';
 import {
     FormControl,
+    FormErrorMessage,
+    FormLabel,
     Input,
     InputGroup,
     InputLeftAddon,
@@ -21,14 +23,14 @@ import {
 } from '@chakra-ui/react';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { DataChannel } from '@catalyst/schema_zod';
+import { DataChannel, DataChannelActionResponse } from '@catalyst/schemas';
 import { useUser } from '../contexts/User/UserContext';
 
 type DataChannelDetailsProps = {
-    channelDetails: (id: string, token: string) => Promise<DataChannel>;
-    updateChannel: (data: FormData, token: string) => Promise<DataChannel>;
-    deleteChannel: (id: string, token: string) => Promise<DataChannel>;
-    handleSwitch: (channelId: string, accessSwitch: boolean, token: string) => Promise<DataChannel>;
+    channelDetails: (id: string) => Promise<DataChannel>;
+    updateChannel: (data: FormData) => Promise<DataChannelActionResponse>;
+    deleteChannel: (id: string) => Promise<DataChannel>;
+    handleSwitch: (channelId: string, accessSwitch: boolean) => Promise<DataChannel>;
 };
 
 export default function DataChannelDetailsComponent({
@@ -41,16 +43,21 @@ export default function DataChannelDetailsComponent({
     const editDisclosure = useDisclosure();
     const router = useRouter();
     const [gatewayUrl, setGatewayUrl] = useState<string>('https://gateway.catalyst.intelops.io/graphql');
-    const { user, token } = useUser();
+    const { user } = useUser();
     const { id } = useParams();
     const [channel, setChannel] = useState<DataChannel>();
     const [hasError, setHasError] = useState<boolean>(false);
     const [editChannel, setEditChannel] = useState<DataChannel>();
     const [errorMessage, setErrorMessage] = useState<string>('');
+
+    // Validation state for edit form
+    const [nameError, setNameError] = useState<string>('');
+    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
     function fetchChannelDetails() {
         setHasError(false);
-        if (id && typeof id === 'string' && token)
-            channelDetails(id, token)
+        if (id && typeof id === 'string')
+            channelDetails(id)
                 .then((data) => {
                     setChannel(data);
                     setEditChannel(data);
@@ -72,7 +79,7 @@ export default function DataChannelDetailsComponent({
             setGatewayUrl(url.replace('catalyst', 'gateway') + '/graphql');
         }
     }, []);
-    useEffect(fetchChannelDetails, [token]);
+    useEffect(fetchChannelDetails, []);
 
     return (
         <DetailedView
@@ -86,7 +93,7 @@ export default function DataChannelDetailsComponent({
                                 defaultChecked={channel?.accessSwitch ?? false}
                                 onChange={(e) => {
                                     if (channel) {
-                                        handleSwitch(channel.id, e.target.checked ? true : false, token ?? '')
+                                        handleSwitch(channel.id, e.target.checked ? true : false)
                                             .then(fetchChannelDetails)
                                             .catch(() => {
                                                 setHasError(true);
@@ -104,18 +111,14 @@ export default function DataChannelDetailsComponent({
                             <TrashButton onClick={onOpen} />
                         </Flex>
                     </Flex>
-                ) : (
-                    <></>
-                )
+                ) : undefined
             }
             headerTitle={{
                 adjacent:
+                    // TODO: Enable Shared with you badge
                     !channel?.creatorOrganization === (user?.custom.org || '') ? (
-                        // TODO: Enable Shared with you badge
                         <OrbisBadge> Shared with you </OrbisBadge>
-                    ) : (
-                        <></>
-                    ),
+                    ) : undefined,
                 text: channel ? 'Channel: ' + channel.name : '',
             }}
             subtitle={channel?.description}
@@ -140,8 +143,8 @@ export default function DataChannelDetailsComponent({
                                         <OrbisButton
                                             colorScheme="red"
                                             onClick={() => {
-                                                if (id && typeof id === 'string' && token)
-                                                    deleteChannel(id, token)
+                                                if (id && typeof id === 'string')
+                                                    deleteChannel(id)
                                                         .then(() => {
                                                             onClose();
                                                             router.push('/channels');
@@ -171,30 +174,68 @@ export default function DataChannelDetailsComponent({
                                     <form
                                         onSubmit={(e) => {
                                             e.preventDefault();
+                                            setIsSubmitting(true);
+                                            setNameError(''); // Clear previous errors
                                             const formData = new FormData(e.currentTarget);
-                                            if (editChannel && token) {
+                                            if (editChannel) {
                                                 formData.append('id', editChannel.id);
                                                 formData.append('organization', String(user?.custom.org));
-                                                formData.set(
-                                                    'name',
-
-                                                    user?.custom.org + '/' + formData.get('name')
-                                                );
-                                                updateChannel(formData, token)
-                                                    .then(fetchChannelDetails)
-                                                    .catch(() => {
+                                                // Send only the channel name without organization prefix
+                                                // The name is already extracted from the input field (without org prefix)
+                                                updateChannel(formData)
+                                                    .then((result) => {
+                                                        if (result.success) {
+                                                            fetchChannelDetails();
+                                                        } else {
+                                                            // Determine if it's a validation error from error message patterns
+                                                            const isValidationError =
+                                                                result.error.includes(
+                                                                    'already exists in your organization'
+                                                                ) ||
+                                                                result.error.includes('Invalid data channel') ||
+                                                                result.error.includes('Channel name') ||
+                                                                result.error.includes('cannot be only whitespace') ||
+                                                                result.error.includes(
+                                                                    'Only letters, numbers, and standard symbols'
+                                                                ) ||
+                                                                result.error.includes('cannot contain HTML') ||
+                                                                result.error.includes('cannot contain script') ||
+                                                                result.error.includes(
+                                                                    'contains potentially dangerous'
+                                                                ) ||
+                                                                result.error.includes('is required') ||
+                                                                result.error.includes('must be') ||
+                                                                result.error.includes('characters or less') ||
+                                                                result.error.includes('invalid characters');
+                                                            if (isValidationError) {
+                                                                setNameError(result.error);
+                                                            } else {
+                                                                editDisclosure.onClose();
+                                                                setHasError(true);
+                                                                setErrorMessage(
+                                                                    'An error occurred while updating the channel. Please try again later.'
+                                                                );
+                                                            }
+                                                        }
+                                                    })
+                                                    .catch((e) => {
+                                                        // Only catch unexpected errors (should not happen with result pattern)
+                                                        console.error('Unexpected error:', e);
                                                         editDisclosure.onClose();
                                                         setHasError(true);
                                                         setErrorMessage(
                                                             'An error occurred while updating the channel. Please try again later.'
                                                         );
+                                                    })
+                                                    .finally(() => {
+                                                        setIsSubmitting(false);
                                                     });
                                             }
                                         }}
                                     >
                                         <Grid gap={5}>
-                                            <FormControl display={'grid'} gap={2}>
-                                                <label htmlFor="name">Data Channel Name</label>
+                                            <FormControl display={'grid'} gap={2} isInvalid={!!nameError}>
+                                                <FormLabel htmlFor="name">Data Channel Name</FormLabel>
                                                 <InputGroup>
                                                     <InputLeftAddon>{`${user?.custom.org ?? ''}/`}</InputLeftAddon>
                                                     <Input
@@ -211,8 +252,11 @@ export default function DataChannelDetailsComponent({
                                                             }
                                                         }}
                                                         placeholder="Data Channel Name"
+                                                        maxLength={64}
+                                                        isDisabled={isSubmitting}
                                                     />
                                                 </InputGroup>
+                                                {nameError && <FormErrorMessage>{nameError}</FormErrorMessage>}
                                             </FormControl>
                                             <FormControl display={'grid'} gap={2}>
                                                 <label htmlFor="description">Description</label>
@@ -266,10 +310,17 @@ export default function DataChannelDetailsComponent({
                                                         editDisclosure.onClose();
                                                         setEditChannel(channel);
                                                     }}
+                                                    isDisabled={isSubmitting}
                                                 >
                                                     Cancel
                                                 </OrbisButton>
-                                                <OrbisButton type="submit">Save</OrbisButton>
+                                                <OrbisButton
+                                                    type="submit"
+                                                    isLoading={isSubmitting}
+                                                    loadingText="Saving..."
+                                                >
+                                                    Save
+                                                </OrbisButton>
                                             </Flex>
                                         </Grid>
                                     </form>
@@ -289,15 +340,13 @@ export default function DataChannelDetailsComponent({
                                     {gatewayUrl}
                                 </APIKeyText>
                             </FormControl>
-                            {channel?.creatorOrganization === user?.custom.org ? (
+                            {channel?.creatorOrganization === user?.custom.org && (
                                 <FormControl display={'grid'} gap={2}>
                                     <label htmlFor="endpoint">Source URL</label>
                                     <APIKeyText width={'100%'} allowCopy showAsClearText>
                                         {channel?.endpoint}
                                     </APIKeyText>
                                 </FormControl>
-                            ) : (
-                                <></>
                             )}
                             <FormControl display={'grid'} gap={2}>
                                 <label htmlFor="description">Channel ID</label>

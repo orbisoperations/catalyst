@@ -25,11 +25,11 @@ import {
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useUser } from '../contexts/User/UserContext';
-import { OrgInvite } from '@catalyst/schema_zod';
+import { OrgInvite } from '@catalyst/schemas';
 type PartnersListComponentProps = {
-    listInvites: (token: string) => Promise<OrgInvite[]>;
-    declineInvite: (inviteId: string, token: string) => Promise<OrgInvite>;
-    togglePartnership(orgId: string, token: string): Promise<OrgInvite>;
+    listInvites: () => Promise<OrgInvite[]>;
+    declineInvite: (inviteId: string) => Promise<OrgInvite>;
+    togglePartnership(orgId: string): Promise<OrgInvite>;
 };
 export default function PartnersListComponent({
     listInvites,
@@ -42,36 +42,33 @@ export default function PartnersListComponent({
     const [partners, setPartners] = useState<OrgInvite[]>([]);
     const [invitations, setInvitations] = useState<OrgInvite[]>([]);
     const [selectedPartner, setSelectedPartner] = useState<OrgInvite | null>(null);
-    const { token, user } = useUser();
+    const { user } = useUser();
     function fetchInvites() {
         setHasError(false);
-        if (token)
-            return listInvites(token)
-                .then((invites) => {
-                    const partners: OrgInvite[] = [];
-                    const invitations: OrgInvite[] = [];
-                    invites.forEach((invite) => {
-                        if (invite.status === 'accepted') {
-                            partners.push(invite);
-                        }
-                        if (invite.status === 'pending') {
-                            invitations.push(invite);
-                        }
-                    });
-                    setPartners(partners);
-                    setInvitations(invitations);
-                })
-                .catch((e) => {
-                    setHasError(true);
-                    setErrorMessage('An error occurred while fetching the invites. Please try again later.');
-                    console.error(e);
+        return listInvites()
+            .then((invites) => {
+                const partners: OrgInvite[] = [];
+                const invitations: OrgInvite[] = [];
+                invites.forEach((invite) => {
+                    if (invite.status === 'accepted') {
+                        partners.push(invite);
+                    }
+                    if (invite.status === 'pending') {
+                        invitations.push(invite);
+                    }
                 });
-        return Promise.resolve();
+                setPartners(partners);
+                setInvitations(invitations);
+            })
+            .catch(() => {
+                setHasError(true);
+                setErrorMessage('An error occurred while fetching the invites. Please try again later.');
+            });
     }
 
     function deletePartner(inviteID: string) {
         onClose();
-        return declineInvite(inviteID, token ?? '')
+        return declineInvite(inviteID)
             .then(fetchInvites)
             .catch(() => {
                 setHasError(true);
@@ -80,20 +77,23 @@ export default function PartnersListComponent({
     }
     useEffect(() => {
         fetchInvites();
-    }, [token]);
+    }, []);
 
     const { isOpen, onOpen, onClose } = useDisclosure();
     return (
         <ListView
             topbaractions={navigationItems}
             actions={
-                <Flex gap={5}>
-                    <CreateButton
-                        onClick={() => {
-                            router.push('/partners/invite');
-                        }}
-                    />
-                </Flex>
+                user?.custom.isAdmin ? (
+                    <Flex gap={5}>
+                        <CreateButton
+                            data-testid="partners-create-button"
+                            onClick={() => {
+                                router.push('/partners/invite');
+                            }}
+                        />
+                    </Flex>
+                ) : undefined
             }
             headerTitle={{
                 text: 'Partners',
@@ -105,12 +105,12 @@ export default function PartnersListComponent({
                     <ErrorCard title="Error" message={errorMessage} retry={fetchInvites} />
                 ) : (
                     <Flex gap={5}>
-                        <OrbisCard header={'Partners'} pb={0} flex={3} h="min-content">
+                        <OrbisCard header={'Partners'} pb={0} flex={3} h="min-content" data-testid="partners-list-card">
                             {partners.length > 0 ? (
                                 <OrbisTable
                                     headers={['Partner']}
                                     rows={partners.map((partner) => [
-                                        <Box key={partner.id}>
+                                        <Box key={partner.id} data-testid={`partners-row-${partner.id}`}>
                                             <Flex justifyContent={'space-between'}>
                                                 <OpenButton
                                                     onClick={() =>
@@ -126,28 +126,32 @@ export default function PartnersListComponent({
                                                         ? partner.receiver
                                                         : partner.sender}
                                                 </OpenButton>
-                                                <Flex gap={10} align={'center'}>
-                                                    <Switch
-                                                        colorScheme="green"
-                                                        defaultChecked={partner.isActive}
-                                                        onChange={() => {
-                                                            togglePartnership(partner.id, token ?? '')
-                                                                .then(fetchInvites)
-                                                                .catch(() => {
-                                                                    setHasError(true);
-                                                                    setErrorMessage(
-                                                                        'An error occurred while toggling the partner. Please try again later.'
-                                                                    );
-                                                                });
-                                                        }}
-                                                    />
-                                                    <TrashButton
-                                                        onClick={() => {
-                                                            setSelectedPartner(partner);
-                                                            onOpen();
-                                                        }}
-                                                    />
-                                                </Flex>
+                                                {user?.custom.isAdmin ? (
+                                                    <Flex gap={10} align={'center'}>
+                                                        <Switch
+                                                            data-testid={`partners-row-${partner.id}-toggle`}
+                                                            colorScheme="green"
+                                                            defaultChecked={partner.isActive}
+                                                            onChange={() => {
+                                                                togglePartnership(partner.id)
+                                                                    .then(fetchInvites)
+                                                                    .catch(() => {
+                                                                        setHasError(true);
+                                                                        setErrorMessage(
+                                                                            'An error occurred while toggling the partner. Please try again later.'
+                                                                        );
+                                                                    });
+                                                            }}
+                                                        />
+                                                        <TrashButton
+                                                            data-testid={`partners-row-${partner.id}-delete`}
+                                                            onClick={() => {
+                                                                setSelectedPartner(partner);
+                                                                onOpen();
+                                                            }}
+                                                        />
+                                                    </Flex>
+                                                ) : null}
                                             </Flex>
                                         </Box>,
                                     ])}
@@ -157,7 +161,12 @@ export default function PartnersListComponent({
                                 <Text my={5}>No Partners</Text>
                             )}
                         </OrbisCard>
-                        <OrbisCard header={`Invitations (${invitations.length})`} h={'min-content'} flex={2}>
+                        <OrbisCard
+                            header={`Invitations (${invitations.length})`}
+                            h={'min-content'}
+                            flex={2}
+                            data-testid="partners-invitations-card"
+                        >
                             {invitations.length > 0 ? (
                                 <Stack divider={<StackDivider />}>
                                     {invitations.map((invitation) => (
@@ -185,7 +194,7 @@ export default function PartnersListComponent({
             <Modal isOpen={isOpen} onClose={onClose}>
                 <ModalOverlay />
                 <ModalContent>
-                    <ModalHeader>Cancel Parnership</ModalHeader>
+                    <ModalHeader>Cancel Partnership</ModalHeader>
                     <ModalCloseButton />
                     <ModalBody>
                         <p>Are you sure you want to cancel this partnership? This action cannot be undone.</p>

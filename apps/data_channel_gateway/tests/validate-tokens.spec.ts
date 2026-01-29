@@ -1,4 +1,4 @@
-import { DataChannel } from '@catalyst/schema_zod';
+import { DataChannel, JWTAudience } from '@catalyst/schemas';
 import { env, SELF } from 'cloudflare:test';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { TEST_ORG, TEST_USER, generateCatalystToken } from './testUtils';
@@ -76,7 +76,12 @@ describe('validate endpoint tests', () => {
     });
 
     it('should validate a single valid claim', async (testContext) => {
-        const token = await generateCatalystToken(TEST_ORG, ['airplanes1'], testContext);
+        const token = await generateCatalystToken(
+            TEST_ORG,
+            ['airplanes1'],
+            JWTAudience.enum['catalyst:gateway'],
+            testContext
+        );
 
         const response = await SELF.fetch('https://data-channel-gateway/validate-tokens', {
             method: 'POST',
@@ -104,7 +109,12 @@ describe('validate endpoint tests', () => {
     });
 
     it('should validate multiple claims', async (testContext) => {
-        const token = await generateCatalystToken(TEST_ORG, ['airplanes1', 'airplanes2'], testContext);
+        const token = await generateCatalystToken(
+            TEST_ORG,
+            ['airplanes1', 'airplanes2'],
+            JWTAudience.enum['catalyst:gateway'],
+            testContext
+        );
 
         const response = await SELF.fetch('https://data-channel-gateway/validate-tokens', {
             method: 'POST',
@@ -163,13 +173,18 @@ describe('validate endpoint tests', () => {
                 claimId: 'airplanes1',
                 catalystToken: invalidToken,
                 valid: false,
-                error: 'no data channels found for token',
+                error: 'Invalid token format',
             },
         ]);
     });
 
     it('should handle non-existent claim IDs', async (testContext) => {
-        const token = await generateCatalystToken(TEST_ORG, ['airplanes1'], testContext);
+        const token = await generateCatalystToken(
+            TEST_ORG,
+            ['airplanes1'],
+            JWTAudience.enum['catalyst:gateway'],
+            testContext
+        );
 
         const response = await SELF.fetch('https://data-channel-gateway/validate-tokens', {
             method: 'POST',
@@ -197,7 +212,12 @@ describe('validate endpoint tests', () => {
     });
 
     it('should handle mixed valid and invalid claims', async (testContext) => {
-        const token = await generateCatalystToken(TEST_ORG, ['airplanes1'], testContext);
+        const token = await generateCatalystToken(
+            TEST_ORG,
+            ['airplanes1'],
+            JWTAudience.enum['catalyst:gateway'],
+            testContext
+        );
         const invalidToken = 'invalid-token';
 
         const response = await SELF.fetch('https://data-channel-gateway/validate-tokens', {
@@ -240,8 +260,45 @@ describe('validate endpoint tests', () => {
                 claimId: 'airplanes2',
                 catalystToken: invalidToken,
                 valid: false,
-                error: 'no data channels found for token',
+                error: 'Invalid token format',
             },
         ]);
+    });
+
+    it('should reject single-use tokens through validation endpoint', async () => {
+        // Create a gateway token first
+        const gatewayToken = await generateCatalystToken(
+            TEST_ORG,
+            ['airplanes1'],
+            JWTAudience.enum['catalyst:gateway']
+        );
+
+        // Create single-use token directly via authx token API
+        const singleUseToken = await env.AUTHX_TOKEN_API.signSingleUseJWT(
+            'airplanes1',
+            { catalystToken: gatewayToken },
+            'default'
+        );
+
+        expect(singleUseToken.success).toBe(true);
+
+        // The validation endpoint should reject single-use tokens (only gateway tokens allowed)
+        const response = await SELF.fetch('https://data-channel-gateway/validate-tokens', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify([
+                {
+                    claimId: 'airplanes1',
+                    catalystToken: singleUseToken.token,
+                },
+            ]),
+        });
+
+        expect(response.status).toBe(200);
+        const data = await response.json();
+        expect(data[0].valid).toBe(false);
+        expect(data[0].error).toBe('Token audience is not valid for gateway access');
     });
 });

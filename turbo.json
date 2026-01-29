@@ -1,0 +1,70 @@
+{
+    "$schema": "https://turbo.build/schema.json",
+    "ui": "tui",
+    "concurrency": "11",
+    "tasks": {
+        "//#setup:authzed": {
+            "cache": false
+        },
+        "dev": {
+            "dependsOn": ["//#setup:authzed"],
+            "cache": false,
+            "persistent": true
+        },
+        "build": {
+            "dependsOn": ["^build"],
+            "outputs": [".next/**", "!.next/cache/**", "dist/**", ".vercel/**"]
+        },
+        "@catalyst/test-utils#build": {
+            "outputs": ["dist/**"]
+        },
+        "lint": {
+            "dependsOn": ["^build"]
+        },
+        "test": {
+            "dependsOn": ["^build"],
+            "outputs": ["coverage/**"],
+            "cache": false
+        },
+        "test:workspace": {
+            "dependsOn": ["^build"],
+            "outputs": ["coverage/**"],
+            "cache": false
+        },
+        "test:unit": {
+            "dependsOn": ["^build"],
+            "outputs": ["coverage/**"],
+            "cache": true
+        },
+        "test:integration": {
+            "dependsOn": ["^build"],
+            "outputs": ["coverage/**"],
+            "cache": false
+        },
+        "test:coverage": {
+            "dependsOn": ["^build"],
+            "outputs": ["coverage/**"],
+            "cache": true
+        },
+        "test:coverage:unit": {
+            "dependsOn": ["^build"],
+            "outputs": ["coverage/**"],
+            "cache": true
+        },
+        "test:coverage:integration": {
+            "dependsOn": ["^build"],
+            "outputs": ["coverage/**"],
+            "cache": false
+        },
+        "test:all": {
+            "dependsOn": ["^build"],
+            "outputs": ["coverage/**"],
+            "cache": false
+        },
+        "test:watch": {
+            "dependsOn": ["^build"],
+            "cache": false,
+            "persistent": true
+        }
+    }
+}

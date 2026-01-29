@@ -1,0 +1,17 @@
+{
+    "name": "@catalyst/mock-user-credentials-cache",
+    "version": "1.0.0",
+    "private": true,
+    "description": "Mock user-credentials-cache worker for E2E testing",
+    "type": "module",
+    "scripts": {
+        "dev": "wrangler dev --port 4003",
+        "build": "echo 'No build needed for mock worker'",
+        "deploy": "echo 'Mock worker should not be deployed'"
+    },
+    "devDependencies": {
+        "@cloudflare/workers-types": "catalog:",
+        "typescript": "catalog:",
+        "wrangler": "catalog:"
+    }
+}

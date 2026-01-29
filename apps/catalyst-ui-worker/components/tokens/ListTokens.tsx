@@ -3,7 +3,7 @@ import { rotateJWTKeyMaterial } from '@/app/actions/tokens';
 import { CreateButton, ErrorCard, OpenButton, OrbisButton, OrbisCard, OrbisTable } from '@/components/elements';
 import { ListView } from '@/components/layouts';
 import { navigationItems } from '@/utils/nav.utils';
-import { IssuedJWTRegistry } from '@catalyst/schema_zod';
+import { IssuedJWTRegistry } from '@catalyst/schemas';
 import { Box, Flex } from '@chakra-ui/layout';
 import {
     Card,
@@ -29,13 +29,13 @@ import { useEffect, useState } from 'react';
 import { useUser } from '../contexts/User/UserContext';
 
 type ListIssuedJWTRegistryProps = {
-    listIJWTRegistry: (token: string) => Promise<IssuedJWTRegistry[]>;
-    deleteIJWTRegistry: (token: string, id: string) => Promise<boolean>;
+    listIJWTRegistry: () => Promise<IssuedJWTRegistry[]>;
+    deleteIJWTRegistry: (id: string) => Promise<boolean>;
 };
 
 export default function APIKeysComponent({ listIJWTRegistry, deleteIJWTRegistry }: ListIssuedJWTRegistryProps) {
     const router = useRouter();
-    const { user, token } = useUser();
+    const { user } = useUser();
     const [adminFlag, setAdminFlag] = useState<boolean>(false);
     const [hasError, setHasError] = useState<boolean>(false);
     const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -47,23 +47,18 @@ export default function APIKeysComponent({ listIJWTRegistry, deleteIJWTRegistry 
     function fetchIssuedJWTRegistry() {
         setHasError(false);
         setIsLoading(true);
-        if (user !== undefined && token !== undefined) {
-            setAdminFlag(!!user?.custom.isPlatformAdmin);
-            listIJWTRegistry(token)
-                .then((data) => {
-                    setIsLoading(false);
-                    setIssuedJWTRegistry(data as IssuedJWTRegistry[]);
-                })
-                .catch((e) => {
-                    setIsLoading(false);
-                    setHasError(true);
-                    setErrorMessage('An error occurred while fetching the tokens. Please try again later.');
-                    console.error(e);
-                });
-        } else {
-            setIsLoading(false);
-            setAdminFlag(false);
-        }
+        setAdminFlag(!!user?.custom.isPlatformAdmin);
+        listIJWTRegistry()
+            .then((data) => {
+                setIsLoading(false);
+                setIssuedJWTRegistry(data as IssuedJWTRegistry[]);
+            })
+            .catch((e) => {
+                setIsLoading(false);
+                setHasError(true);
+                setErrorMessage('An error occurred while fetching the tokens. Please try again later.');
+                console.error(e);
+            });
     }
 
     function handleDeleteToken(tokenId: string) {
@@ -72,9 +67,9 @@ export default function APIKeysComponent({ listIJWTRegistry, deleteIJWTRegistry 
     }
 
     function confirmDeleteToken() {
-        if (!token || !tokenToDelete) return;
+        if (!tokenToDelete) return;
 
-        deleteIJWTRegistry(token, tokenToDelete)
+        deleteIJWTRegistry(tokenToDelete)
             .then(() => {
                 onClose();
                 setTokenToDelete(null);
@@ -89,23 +84,29 @@ export default function APIKeysComponent({ listIJWTRegistry, deleteIJWTRegistry 
             });
     }
 
-    useEffect(fetchIssuedJWTRegistry, [user, token]);
+    useEffect(fetchIssuedJWTRegistry, []);
 
     return (
         <>
             <Modal isOpen={isOpen} onClose={onClose}>
                 <ModalOverlay />
-                <ModalContent>
-                    <ModalHeader>Are you sure you want to delete this API key?</ModalHeader>
-                    <ModalBody>
+                <ModalContent data-testid="modal-confirm-delete">
+                    <ModalHeader data-testid="modal-confirm-delete-title">
+                        Are you sure you want to delete this API key?
+                    </ModalHeader>
+                    <ModalBody data-testid="modal-confirm-delete-body">
                         <Text>Deleting this API key will revoke access for any applications using it</Text>
                     </ModalBody>
                     <ModalFooter>
                         <Flex gap={5}>
-                            <OrbisButton colorScheme="gray" onClick={onClose}>
+                            <OrbisButton data-testid="modal-cancel-button" colorScheme="gray" onClick={onClose}>
                                 Cancel
                             </OrbisButton>
-                            <OrbisButton colorScheme="red" onClick={confirmDeleteToken}>
+                            <OrbisButton
+                                data-testid="modal-confirm-button"
+                                colorScheme="red"
+                                onClick={confirmDeleteToken}
+                            >
                                 Delete
                             </OrbisButton>
                         </Flex>
@@ -117,6 +118,7 @@ export default function APIKeysComponent({ listIJWTRegistry, deleteIJWTRegistry 
                     !hasError ? (
                         <Flex gap={5}>
                             <CreateButton
+                                data-testid="tokens-create-button"
                                 onClick={() => {
                                     router.push('/tokens/create');
                                 }}
@@ -138,12 +140,12 @@ export default function APIKeysComponent({ listIJWTRegistry, deleteIJWTRegistry 
                         <Box>
                             {adminFlag && (
                                 <>
-                                    <OrbisCard title="JWT Admin Pannel" mb={5}>
+                                    <OrbisCard title="JWT Admin Pannel" mb={5} data-testid="tokens-admin-panel">
                                         <Text>JWT Admin Actions</Text>
                                         <OrbisButton
+                                            data-testid="tokens-admin-rotate-button"
                                             onClick={async () => {
-                                                if (!token) return;
-                                                rotateJWTKeyMaterial(token)
+                                                rotateJWTKeyMaterial()
                                                     .then((res) => {
                                                         console.log(res);
                                                     })
@@ -163,7 +165,11 @@ export default function APIKeysComponent({ listIJWTRegistry, deleteIJWTRegistry 
                             )}
                             {isLoading || issuedJWTRegistry === null ? (
                                 <Card sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                                    <Spinner color="blue.500" sx={{ margin: '1em' }} />
+                                    <Spinner
+                                        color="blue.500"
+                                        sx={{ margin: '1em' }}
+                                        data-testid="tokens-loading-spinner"
+                                    />
                                 </Card>
                             ) : issuedJWTRegistry.length > 0 ? (
                                 <Card variant={'outline'} shadow={'md'}>
@@ -182,17 +188,30 @@ export default function APIKeysComponent({ listIJWTRegistry, deleteIJWTRegistry 
                                                 index: number
                                             ) => {
                                                 return [
-                                                    <Flex key={jwt.id} justifyContent={'space-between'}>
-                                                        <OpenButton onClick={() => router.push('/tokens/' + jwt.id)}>
+                                                    <Flex
+                                                        key={jwt.id}
+                                                        justifyContent={'space-between'}
+                                                        data-testid={`tokens-row-${jwt.id}`}
+                                                    >
+                                                        <OpenButton
+                                                            onClick={() => router.push('/tokens/' + jwt.id)}
+                                                            data-testid={`tokens-row-${jwt.id}-name`}
+                                                        >
                                                             {jwt.name}
                                                         </OpenButton>
                                                     </Flex>,
-                                                    jwt.description,
+                                                    <span
+                                                        key={`${jwt.id}-desc`}
+                                                        data-testid={`tokens-row-${jwt.id}-description`}
+                                                    >
+                                                        {jwt.description}
+                                                    </span>,
                                                     jwt.expiry.toLocaleDateString(),
                                                     jwt.organization,
                                                     <Menu key={index + '-menu'}>
                                                         <MenuButton
                                                             as={IconButton}
+                                                            data-testid={`tokens-row-${jwt.id}-menu-button`}
                                                             icon={<EllipsisVerticalIcon width={16} height={16} />}
                                                             variant="ghost"
                                                             size="sm"
@@ -200,6 +219,7 @@ export default function APIKeysComponent({ listIJWTRegistry, deleteIJWTRegistry 
                                                         />
                                                         <MenuList>
                                                             <MenuItem
+                                                                data-testid={`tokens-row-${jwt.id}-delete-button`}
                                                                 icon={<TrashIcon width={16} height={16} />}
                                                                 color="red.500"
                                                                 onClick={() => handleDeleteToken(jwt.id)}
@@ -215,7 +235,7 @@ export default function APIKeysComponent({ listIJWTRegistry, deleteIJWTRegistry 
                                 </Card>
                             ) : (
                                 <Card>
-                                    <CardBody>
+                                    <CardBody data-testid="tokens-empty-state">
                                         No tokens exist for{' '}
                                         {user !== undefined ? (user.custom.org as string) : 'this user'}!
                                     </CardBody>

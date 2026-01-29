@@ -1,9 +1,10 @@
 import { grabTokenInHeader } from '@catalyst/jwt';
-import { Token } from '@catalyst/schema_zod';
+import { TokenSchema, JWTAudience } from '@catalyst/schemas';
+import { decodeJwt } from 'jose';
 import { stitchSchemas } from '@graphql-tools/stitch';
 import { stitchingDirectives } from '@graphql-tools/stitching-directives';
 import { AsyncExecutor, isAsyncIterable, type Executor } from '@graphql-tools/utils';
-import { buildSchema, parse, print } from 'graphql';
+import { buildSchema, parse, print, GraphQLError } from 'graphql';
 import { createYoga } from 'graphql-yoga';
 import { Context, Hono, Next } from 'hono';
 import { Env } from './env';
@@ -115,8 +116,17 @@ export async function makeGatewaySchema(
                 .map((result) => (result as PromiseFulfilledResult<any>).value)
         );
     });
+
+    const filteredSubschemas = await subschemas;
+
+    // Security: Return error if all channels failed during schema fetching
+    // This makes unresponsive channels indistinguishable from unshared channels (both return 503)
+    if (filteredSubschemas.length === 0) {
+        throw new Error('All data channels unavailable during schema fetch');
+    }
+
     return stitchSchemas({
-        subschemas: await subschemas,
+        subschemas: filteredSubschemas,
         subschemaConfigTransforms: [stitchingDirectivesTransformer],
         typeDefs: 'type Query { health: String! }',
         resolvers: {
@@ -143,6 +153,22 @@ app.get('/.well-known/jwks.json', async (c) => {
     return c.json(jwks, 200);
 });
 
+const validateGatewayAudience = (token: string) => {
+    try {
+        const payload = decodeJwt(token); // No signature validation, just decode
+        const audience = payload.aud;
+
+        // Audience validation - only allow gateway tokens
+        if (audience !== JWTAudience.enum['catalyst:gateway']) {
+            return { valid: false, error: 'Token audience is not valid for gateway access' };
+        }
+
+        return { valid: true, audience };
+    } catch {
+        return { valid: false, error: 'Invalid token format' };
+    }
+};
+
 // Add bulk validation endpoint
 app.post('/validate-tokens', async (ctx) => {
     const requests = await ctx.req.json();
@@ -158,7 +184,7 @@ app.post('/validate-tokens', async (ctx) => {
 
     const results = await Promise.all(
         requests.map(async (request: ValidateTokenRequest): Promise<ValidateTokenResponse> => {
-            const token = Token.safeParse(request);
+            const token = TokenSchema.safeParse(request);
 
             if (!token.success || !token.data.catalystToken) {
                 return {
@@ -166,6 +192,17 @@ app.post('/validate-tokens', async (ctx) => {
                     catalystToken: request.catalystToken,
                     valid: false,
                     error: 'invalid token',
+                };
+            }
+
+            // Check audience only - let registrar handle full JWT validation
+            const audienceValidation = validateGatewayAudience(token.data.catalystToken);
+            if (!audienceValidation.valid) {
+                return {
+                    claimId: request.claimId,
+                    catalystToken: request.catalystToken,
+                    valid: false,
+                    error: audienceValidation.error || 'invalid audience',
                 };
             }
 
@@ -216,109 +253,214 @@ app.post('/validate-tokens', async (ctx) => {
 });
 
 /**
+ * Helper to create a GraphQL Yoga instance with the gateway schema
+ * @param endpoints - Array of data channel endpoints with single-use tokens
+ * @returns Configured Yoga instance
+ */
+const createGatewayYoga = async (endpoints: { token: string; endpoint: string }[]) => {
+    return createYoga({
+        schema: await makeGatewaySchema(endpoints),
+        graphiql: false, // Disable GraphQL playground for security
+        maskedErrors: {
+            maskError: (error: unknown): Error => {
+                // Type guard: ensure error is an Error instance
+                if (!(error instanceof Error)) {
+                    return new Error(String(error));
+                }
+                // Only mask data channel errors (errors from remote schema fetching)
+                // Allow all GraphQL Yoga validation errors to pass through unchanged
+                const isDataChannelError =
+                    error.message.includes('error fetching remote schema') ||
+                    error.message.includes('Failed to parse JSON response') ||
+                    error.message.includes('Network connection lost') ||
+                    error.message.includes('Timeout');
+
+                if (isDataChannelError) {
+                    // Mask data channel errors to prevent information disclosure
+                    // Log the actual error for debugging, but return generic message to client
+                    console.warn('GraphQL error masked:', error.message);
+
+                    // Preserve path and locations from original error if it's a GraphQLError
+                    if (error instanceof GraphQLError) {
+                        return new GraphQLError('One or more channels currently unavailable for synchronization.', {
+                            path: error.path,
+                            nodes: error.nodes,
+                            positions: error.positions,
+                        });
+                    }
+
+                    return new GraphQLError('One or more channels currently unavailable for synchronization.');
+                }
+
+                // Allow all other errors (GraphQL validation, etc.) to pass through
+                return error;
+            },
+        },
+    });
+};
+
+/**
+ * Helper to execute a Yoga GraphQL instance with Hono context
+ * Uses yoga.fetch(request, env) pattern recommended by Hono + GraphQL Yoga integration
+ * @param yoga - The Yoga GraphQL instance to execute
+ * @param ctx - The Hono context object
+ * @returns The response from the Yoga instance
+ */
+const executeYogaWithContext = (
+    yoga: ReturnType<typeof createYoga>,
+    ctx: Context<{ Bindings: Env; Variables: Variables }>
+) => {
+    // Yoga's fetch() expects (Request, env) - see https://github.com/orgs/honojs/discussions/1063
+    return yoga(ctx.req.raw, ctx.env);
+};
+
+/**
  * Middleware to authenticate requests
- * TODO: separate this into a separate file, with better logic
  *
- * Separating into its own handler fixes a weird case where app.use does a app.all('*', for all routes, and we only need auth for /graphql
- * Use in specific routes that need auth
+ * This middleware extracts and validates tokens but does NOT return error responses.
+ * Instead, it sets empty claims/tokens on validation failure, allowing the gateway
+ * to return an empty schema (best-effort stitching approach).
  *
  * @param c - The context object
  * @param next - The next middleware function
- * @returns A JSON response with an error message if the token is invalid
  */
 const authenticateRequestMiddleware = async (c: Context<{ Bindings: Env; Variables: Variables }>, next: Next) => {
     const [token, error] = grabTokenInHeader(c.req.header('Authorization'));
     if (error) {
-        return c.json(
-            {
-                error: error.msg,
-            },
-            400
-        );
+        console.warn('Token extraction error:', error.msg);
+        c.set('claims', []);
+        c.set('catalyst-token', '');
+        await next();
+        return;
     }
     if (!token) {
-        return c.json(
-            {
-                error: 'JWT Invalid',
-            },
-            403
-        );
+        console.warn('No token provided');
+        c.set('claims', []);
+        c.set('catalyst-token', '');
+        await next();
+        return;
     }
 
     const { valid, claims, jwtId, error: ValidError } = await c.env.AUTHX_TOKEN_API.validateToken(token);
     if (!valid || ValidError || !jwtId) {
-        return c.json({ message: 'Token validation failed' }, 403);
+        console.warn('Token validation failed:', ValidError);
+        c.set('claims', []);
+        c.set('catalyst-token', '');
+        await next();
+        return;
     }
 
     // Check if the JWT token is invalid (revoked or deleted)
     if (await c.env.ISSUED_JWT_REGISTRY.isInvalid(jwtId)) {
-        return c.json({ message: 'Token has been revoked' }, 403);
+        console.warn('Token has been revoked:', jwtId);
+        c.set('claims', []);
+        c.set('catalyst-token', '');
+        await next();
+        return;
     }
 
     c.set('claims', claims);
     c.set('catalyst-token', token);
-    // we good
     await next();
-
-    // we can add claims but do not need to enforce them here
 };
 
 app.use('/graphql', authenticateRequestMiddleware, async (ctx) => {
-    const token = Token.safeParse({
+    // Auth guard: Validate token schema
+    const token = TokenSchema.safeParse({
         catalystToken: ctx.get('catalyst-token'),
     });
-
     if (!token.success) {
-        console.error(token.error);
-        return ctx.json(
-            {
-                error: 'invalid token',
-            },
-            403
-        );
-    }
-    if (!token.data.catalystToken) console.error('catalyst token is undefined when building gateway');
-    const claims = ctx.get('claims');
-    if (!claims) {
-        console.error('no claims found');
-        return ctx.json(
-            {
-                error: 'no claims found',
-            },
-            403
-        );
+        // Expected auth failure - client provided invalid token format
+        console.info('Invalid token format');
+        return ctx.json({ errors: [{ message: 'Unauthorized: Invalid or missing authentication token' }] }, 401);
     }
 
+    // Auth guard: Verify claims exist
+    const claims = ctx.get('claims');
+    if (!claims || claims.length === 0) {
+        // Expected auth failure - no claims found (handled by auth middleware)
+        console.info('No claims found');
+        return ctx.json({ errors: [{ message: 'Unauthorized: Invalid or missing authentication token' }] }, 401);
+    }
+
+    // Auth guard: Split token into single-use tokens
     const channelAccessPermissions = await ctx.env.AUTHX_TOKEN_API.splitTokenIntoSingleUseTokens(
-        token.data.catalystToken!,
+        token.data.catalystToken,
         'default'
     );
-
     if (!channelAccessPermissions.success) {
-        return ctx.json(
-            {
-                error: channelAccessPermissions.error,
-            },
-            403
-        );
+        // Check if failure is due to no accessible channels vs system error
+        if (channelAccessPermissions.error === 'no resources found') {
+            // Valid token but no accessible channels
+            console.info('No accessible channels');
+            return ctx.json(
+                {
+                    errors: [
+                        {
+                            message: 'One or more channels currently unavailable for synchronization.',
+                        },
+                    ],
+                },
+                503
+            );
+        }
+        // System issue - token splitting failed for other reasons
+        console.warn('Failed to split token into single-use tokens:', channelAccessPermissions.error);
+        return ctx.json({ errors: [{ message: 'Unauthorized: Failed to verify channel access' }] }, 401);
     }
 
-    // filter out failed signed tokens
-    // map to endpoints
+    // Filter successful channel permissions and map to endpoints
+    // Type guard: filter ensures only success cases, then we can safely access dataChannel
     const endpoints = channelAccessPermissions.channelPermissions
-        .filter((dataChannelPermission) => dataChannelPermission.success)
+        .filter((permission): permission is Extract<typeof permission, { success: true }> => {
+            if (!permission.success) {
+                // Expected - individual channel permission failed
+                console.info('Skipping failed channel permission');
+                return false;
+            }
+            return true;
+        })
         .map(({ dataChannel, singleUseToken }) => ({
             token: singleUseToken,
             endpoint: dataChannel.endpoint,
         }));
 
-    const yoga = createYoga({
-        schema: await makeGatewaySchema(endpoints),
-    });
+    if (endpoints.length === 0) {
+        console.info('No accessible channels');
+        return ctx.json(
+            {
+                errors: [
+                    {
+                        message: 'One or more channels currently unavailable for synchronization.',
+                    },
+                ],
+            },
+            503
+        );
+    }
 
-    // @ts-expect-error: for some reason TS is not happy with the yoga function receiving the raw request
-    // ignore for now, fix later
-    return yoga(ctx.req.raw, ctx.env);
+    try {
+        const yoga = await createGatewayYoga(endpoints);
+        return executeYogaWithContext(yoga, ctx);
+    } catch (error) {
+        // Catch errors from schema creation (all channels failed during fetch)
+        // Return 503 to make unresponsive channels indistinguishable from unshared channels
+        if (error instanceof Error && error.message.includes('All data channels unavailable')) {
+            console.warn('All data channels failed during schema fetch');
+            return ctx.json(
+                {
+                    errors: [
+                        {
+                            message: 'One or more channels currently unavailable for synchronization.',
+                        },
+                    ],
+                },
+                503
+            );
+        }
+        // Re-throw unexpected errors
+        throw error;
+    }
 });
 
 export default app;

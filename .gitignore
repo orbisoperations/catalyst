@@ -4,6 +4,9 @@
 .wrangler/
 .dev.vars
 
+# Playwright auth state
+.auth/
+
 # Logs
 
 logs
@@ -67,6 +70,7 @@ web_modules/
 
 \*.tsbuildinfo
 
+*.tsbuildinfo
 # Optional npm cache directory
 
 .npm
@@ -188,3 +192,8 @@ packages/schema/flatten_migrations/
 
 .turbo
 .vscode/
+
+# Backup files
+*.bak
+*~
+*.swp

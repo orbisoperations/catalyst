@@ -1,0 +1,12 @@
+{
+    "$schema": "./node_modules/wrangler/config-schema.json",
+    // Use same name as real worker so service bindings work
+    "name": "user-credentials-cache",
+    "main": "src/index.ts",
+    "compatibility_flags": ["nodejs_compat"],
+    "compatibility_date": "2025-04-01",
+    "workers_dev": false,
+    "preview_urls": false,
+    "tsconfig": "tsconfig.json",
+    "minify": false,
+}

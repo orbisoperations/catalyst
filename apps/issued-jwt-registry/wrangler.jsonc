@@ -12,6 +12,16 @@
 	"send_metrics": false,
 	"observability": {
 		"enabled": true,
+		"traces": {
+			"enabled": true,
+		},
+	},
+
+	// Cron trigger for scheduled cleanup
+	// Runs every 15 minutes (:00, :15, :30, :45 UTC)
+	// Cleans up single-use tokens to prevent memory overflow in Durable Object storage
+	"triggers": {
+		"crons": ["*/15 * * * *"],
 	},
 
 	// Service bindings for inter-worker communication
@@ -76,23 +86,6 @@
 				},
 			],
 		},
-		// Demo environment
-		// "demo": {
-		//   "durable_objects": {
-		//     "bindings": [
-		//       {
-		//         "name": "ISSUED_JWT_REGISTRY_DO",
-		//         "class_name": "I_JWT_Registry_DO"
-		//       }
-		//     ]
-		//   },
-		//   "services": [
-		//     {
-		//       "binding": "USERCACHE",
-		//       "service": "user-credentials-cache-demo"
-		//     }
-		//   ]
-		// },
 		// UXR environment
 		"uxr": {
 			"durable_objects": {

@@ -10,6 +10,9 @@
 	"preview_urls": false,
 	"observability": {
 		"enabled": true,
+		"traces": {
+			"enabled": true,
+		},
 	},
 	"tsconfig": "tsconfig.json",
 	"minify": true,

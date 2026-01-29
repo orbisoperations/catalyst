@@ -1,69 +1,13 @@
-import { defineWorkersConfig } from '@cloudflare/vitest-pool-workers/config';
-import path from 'node:path';
+import { createSimpleWorkerTestConfig, STANDARD_WORKERS } from '@catalyst/test-utils';
 
-export default defineWorkersConfig({
-	test: {
-		globalSetup: './global-setup.ts',
-		poolOptions: {
-			workers: {
-				wrangler: { configPath: './wrangler.jsonc' },
-				singleWorker: false,
-				isolatedStorage: false,
-
-				miniflare: {
-					unsafeEphemeralDurableObjects: true,
-					durable_objects: {
-						bindings: [
-							{
-								name: 'ORG_MATCHMAKING',
-								class_name: 'OrganizationMatchmakingDO',
-							},
-						],
-					},
-					workers: [
-						{
-							name: 'user-credentials-cache',
-							modules: true,
-							modulesRoot: path.resolve('../user-credentials-cache'),
-							scriptPath: path.resolve('../user-credentials-cache/dist/index.js'),
-							compatibilityDate: '2025-04-01',
-							compatibilityFlags: ['nodejs_compat'],
-							entrypoint: 'UserCredsCacheWorker',
-							durableObjects: {
-								CACHE: 'UserCredsCache',
-							},
-						},
-						{
-							name: 'authx_authzed_api',
-							modules: true,
-							modulesRoot: path.resolve('../authx_authzed_api'),
-							scriptPath: path.resolve('../authx_authzed_api/dist/index.js'),
-							compatibilityDate: '2025-04-01',
-							compatibilityFlags: ['nodejs_compat'],
-							entrypoint: 'AuthzedWorker',
-							bindings: {
-								AUTHZED_ENDPOINT: 'http://localhost:8449',
-								AUTHZED_KEY: 'atoken',
-								AUTHZED_PREFIX: 'orbisops_catalyst_dev/',
-							},
-						},
-					],
-				},
-			},
-		},
-		coverage: {
-			provider: 'istanbul',
-			reporter: ['text', 'json', 'html'],
-			exclude: [
-				'**/node_modules/**',
-				'**/dist/**',
-				'**/test/**',
-				'**/*.{test,spec}.?(c|m)[jt]s?(x)',
-				'**/wrangler.jsonc',
-				'**/vitest.config.*',
-				'**/.wrangler/**',
-				'**/global-setup.ts',
-			],
-		},
+export default createSimpleWorkerTestConfig({
+	wranglerConfigPath: './wrangler.jsonc',
+	singleWorker: false,
+	isolatedStorage: false,
+	globalSetup: './global-setup.ts',
+	durableObjects: {
+		ORG_MATCHMAKING: 'OrganizationMatchmakingDO',
 	},
+	unsafeEphemeralDurableObjects: true,
+	auxiliaryWorkers: [STANDARD_WORKERS.userCredentialsCache(), STANDARD_WORKERS.authxAuthzedApi()],
 });

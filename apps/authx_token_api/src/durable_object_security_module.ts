@@ -1,6 +1,6 @@
 import { JSONWebKeySet, JWTPayload, createLocalJWKSet, decodeJwt, jwtVerify } from 'jose';
 import { DurableObject } from 'cloudflare:workers';
-import { DEFAULT_STANDARD_DURATIONS, JWTParsingResponse, JWTSigningRequest } from '@catalyst/schema_zod';
+import { DEFAULT_STANDARD_DURATIONS, JWTParsingResponse, JWTParsingResponseSchema, JWTSigningRequest } from '@catalyst/schemas';
 import { JWT } from './jwt';
 import { KeyState, KeyStateSerialized } from './keystate';
 
@@ -56,9 +56,15 @@ export class JWTKeyProvider extends DurableObject {
 		return true;
 	}
 
-	async signJWT(req: JWTSigningRequest, expiresIn: number) {
+	async signJWT(req: JWTSigningRequest & { jti?: string }, expiresIn: number) {
 		await this.key();
-		const jwt = new JWT(req.entity, req.claims, 'catalyst:system:jwt:latest');
+		// Create JWT with provided jti if available, otherwise generate new one
+		// Use provided audience or default to 'catalyst:gateway' for consistency
+		const audience = req.audience || ('catalyst:gateway' as const);
+		const jwt = new JWT(req.entity, req.claims, 'catalyst:system:jwt:latest', audience);
+		if (req.jti) {
+			jwt.jti = req.jti; // Use the provided jti
+		}
 		const newToken = await this.currentKey!.sign(jwt, expiresIn);
 		const payload = decodeJwt(newToken);
 		const expiration = (payload.exp as number) * DEFAULT_STANDARD_DURATIONS.S;
@@ -82,12 +88,12 @@ export class JWTKeyProvider extends DurableObject {
 		};
 	}
 
-	async validateToken(token: string): Promise<JWTParsingResponse> {
+	async validateToken(token: string, clockTolerance: string = '5 minutes'): Promise<JWTParsingResponse> {
 		await this.key();
 		try {
 			const pub = this.currentSerializedKey?.public;
 			if (!pub) {
-				const resp = JWTParsingResponse.parse({
+				const resp = JWTParsingResponseSchema.parse({
 					valid: false,
 					entity: undefined,
 					claims: [],
@@ -98,17 +104,18 @@ export class JWTKeyProvider extends DurableObject {
 			}
 			const jwkPub = createLocalJWKSet(await this.getJWKS());
 
-			const { payload } = await jwtVerify(token, jwkPub, { clockTolerance: '5 minutes' });
-			const resp = JWTParsingResponse.parse({
+			const { payload } = await jwtVerify(token, jwkPub, { clockTolerance });
+			const resp = JWTParsingResponseSchema.parse({
 				valid: true,
 				entity: payload.sub,
 				claims: payload.claims,
 				jwtId: payload.jti,
+				audience: payload.aud,
 			});
 			return resp;
 		} catch (e: unknown) {
 			console.error('error validating token', e);
-			return JWTParsingResponse.parse({
+			return JWTParsingResponseSchema.parse({
 				valid: false,
 				entity: undefined,
 				claims: [],

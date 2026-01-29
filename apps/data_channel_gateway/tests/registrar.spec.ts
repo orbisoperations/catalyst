@@ -100,7 +100,7 @@ describe('registrar integration tests', async () => {
             endpoint: 'https://example.com/graphql',
             accessSwitch: true,
             description: '',
-            creatorOrganization: '',
+            creatorOrganization: 'test_org',
         };
 
         const savedDC = await stub.create(newDC);
@@ -110,7 +110,7 @@ describe('registrar integration tests', async () => {
             endpoint: 'https://example.com/graphql',
             accessSwitch: false,
             description: '',
-            creatorOrganization: '',
+            creatorOrganization: 'test_org',
         });
         expect(await stub.list()).toHaveLength(2);
 

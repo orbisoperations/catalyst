@@ -4,34 +4,39 @@
 	"private": true,
 	"type": "module",
 	"scripts": {
-		"deploymentDemo": "yes | wrangler deploy --minify --keep-vars --env demo",
-		"deploymentStaging": "yes | wrangler deploy --keep-vars --env staging",
-		"dev": "wrangler dev --port 5051",
-		"deploy:uxr": "wrangler deploy --env uxr",
-		"deploy:staging": "wrangler deploy --env staging",
-		"deploy:preview": "wrangler deploy --env preview",
+		"dev": "wrangler dev --port 4002 --inspector-port 6002",
+		"deploy:uxr": "wrangler deploy --keep-vars --env uxr",
+		"deploy:staging": "wrangler deploy --keep-vars --env staging",
+		"deploy:preview": "wrangler deploy --keep-vars --env preview",
 		"test": "vitest",
+		"test:unit": "vitest run --project unit",
+		"test:integration": "vitest run --project integration",
+		"test:all": "vitest run",
+		"test:coverage": "vitest run --coverage",
+		"test:coverage:unit": "vitest run --project unit --coverage",
+		"test:coverage:integration": "vitest run --project integration --coverage",
 		"test:workspace": "vitest run --silent",
-		"test:coverage": "vitest --coverage",
+		"clean": "rm -rf dist .wrangler node_modules",
 		"lint": "eslint . --ext .ts",
 		"build": "wrangler build",
-		"postinstall": "pnpm build"
+		"postinstall": "pnpm build",
+		"cf-typegen": "wrangler types"
 	},
 	"dependencies": {
-		"@catalyst/schema_zod": "workspace:*"
+		"@catalyst/schemas": "workspace:*"
 	},
 	"devDependencies": {
-		"@cloudflare/vitest-pool-workers": "^0.8.23",
-		"@cloudflare/workers-types": "^4.20250525.0",
-		"@eslint/js": "^9.25.1",
-		"@types/uuid": "^9.0.8",
-		"@vitest/coverage-istanbul": "^3.1.4",
-		"base64url": "^3.0.1",
-		"bun": "^1.1.7",
+		"@catalyst/test-utils": "workspace:^",
+		"@cloudflare/vitest-pool-workers": "catalog:",
+		"@cloudflare/workers-types": "catalog:",
+		"@eslint/js": "catalog:",
+		"@types/uuid": "catalog:",
+		"@vitest/coverage-istanbul": "catalog:",
+		"base64url": "catalog:",
 		"jose": "^5.10.0",
-		"typescript": "^5.8.3",
-		"uuid": "^9.0.1",
-		"vitest": "^3.1.4",
-		"wrangler": "^4.19.1"
+		"typescript": "catalog:",
+		"uuid": "catalog:",
+		"vitest": "catalog:",
+		"wrangler": "catalog:"
 	}
 }

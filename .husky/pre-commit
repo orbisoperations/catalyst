@@ -1,13 +1,3 @@
-# Just run for all the apps right now
-pnpm syncpack:fix --source apps/authx_authzed_api/package.json 
-pnpm syncpack:fix --source apps/authx_token_api/package.json 
-pnpm syncpack:fix --source apps/data_channel_gateway/package.json 
-pnpm syncpack:fix --source apps/data_channel_registrar/package.json 
-pnpm syncpack:fix --source apps/issued-jwt-registry/package.json 
-pnpm syncpack:fix --source apps/organization_matchmaking/package.json 
-pnpm syncpack:fix --source apps/user-credentials-cache/package.json
-pnpm syncpack:fix --source apps/catalyst-ui-worker/package.json
-
 pnpm lint-staged
 
 pnpm test

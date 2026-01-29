@@ -1,6 +1,6 @@
 import { env, SELF } from 'cloudflare:test';
 import { expect } from 'vitest';
-import { DataChannel } from '../../../../packages/schema_zod';
+import { DataChannel, JWTAudience } from '@catalyst/schemas';
 import { TEST_ORG_ID, validUsers } from './authUtils';
 
 export { TEST_ORG_ID, validUsers };
@@ -51,21 +51,28 @@ export async function custodianCreatesDataChannel(dataChannel: DataChannel) {
   expect(createResponse).toBeDefined();
   expect(createResponse.success).toBe(true);
 
-  // add the data channel to the org
-  const addDataChannelToOrg = await env.AUTHZED.addDataChannelToOrg(TEST_ORG_ID, dataChannel.id);
+  if (!createResponse.success) {
+    throw new Error(`Failed to create data channel: ${createResponse.error}`);
+  }
+
+  // Get the created channel's ID (not the input channel's dummy ID)
+  const createdChannel = Array.isArray(createResponse.data)
+    ? createResponse.data[0]
+    : createResponse.data;
+  const createdChannelId = createdChannel.id;
+
+  // add the data channel to the org using the actual created channel ID
+  const addDataChannelToOrg = await env.AUTHZED.addDataChannelToOrg(TEST_ORG_ID, createdChannelId);
   // add the org to the data channel
-  const addOrgToDataChannel = await env.AUTHZED.addOrgToDataChannel(dataChannel.id, TEST_ORG_ID);
+  const addOrgToDataChannel = await env.AUTHZED.addOrgToDataChannel(createdChannelId, TEST_ORG_ID);
+  // also add user to the org (in case they weren't already)
+  const addUserToOrg = await env.AUTHZED.addUserToOrg(TEST_ORG_ID, user.email);
 
   expect(addDataChannelToOrg).toBeDefined();
   expect(addOrgToDataChannel).toBeDefined();
+  expect(addUserToOrg).toBeDefined();
 
-  expect(createResponse.success).toBe(true);
-
-  if (!createResponse.success) {
-    throw new Error('Failed to create data channel');
-  }
-
-  return Array.isArray(createResponse.data) ? createResponse.data[0] : createResponse.data;
+  return createdChannel;
 }
 
 export function getOrgId(cfToken: string) {
@@ -81,18 +88,29 @@ export function getOrgId(cfToken: string) {
 
 export async function getCatalystToken(cfToken: string, claims: string[]) {
   const user = validUsers[cfToken];
-  // always use the default as DO Namespace
-  const id = env.KEY_PROVIDER.idFromName('default');
-  const stub = env.KEY_PROVIDER.get(id);
-  const token = stub.signJWT(
+
+  // Use the authx_token_api service to sign JWTs
+  // This ensures tokens are properly registered
+  const response = await env.AUTHX_TOKEN_API.signJWT(
     {
-      entity: `${getOrgId(cfToken)}/${user.email}`,
+      entity: user.email,
       claims,
-      expiresIn: 3600,
+      audience: JWTAudience.enum['catalyst:gateway'],
+      expiresIn: 3600, // Used by JWT.payloadRaw() to set internal expiration
     },
-    3600,
+    3600 * 1000, // 1 hour in milliseconds - actual token lifetime for signJWT
+    { cfToken },
+    'default',
   );
-  return token;
+
+  if (!response.success) {
+    throw new Error(`Failed to create catalyst token: ${response.error}`);
+  }
+
+  return {
+    token: response.token,
+    expiration: response.expiration,
+  };
 }
 
 export async function clearAllAuthzedRoles() {

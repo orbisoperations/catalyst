@@ -1,0 +1,39 @@
+{
+    "name": "@catalyst/test-utils",
+    "version": "0.0.1",
+    "private": true,
+    "type": "module",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "default": "./dist/index.js"
+        },
+        "./spicedb": {
+            "types": "./dist/spicedb-health.d.ts",
+            "default": "./dist/spicedb-health.js"
+        },
+        "./vitest-config": {
+            "types": "./dist/vitest-config.d.ts",
+            "default": "./dist/vitest-config.js"
+        },
+        "./fixtures": {
+            "types": "./dist/fixtures/index.d.ts",
+            "default": "./dist/fixtures/index.js"
+        }
+    },
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "scripts": {
+        "build": "tsc",
+        "typecheck": "tsc --noEmit"
+    },
+    "dependencies": {
+        "@catalyst/schemas": "workspace:*"
+    },
+    "devDependencies": {
+        "@cloudflare/vitest-pool-workers": "catalog:",
+        "@cloudflare/workers-types": "catalog:",
+        "typescript": "catalog:",
+        "vitest": "catalog:"
+    }
+}

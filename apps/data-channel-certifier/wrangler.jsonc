@@ -1,0 +1,59 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "data-channel-certifier",
+  "compatibility_date": "2025-04-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "./src/worker.ts",
+  "workers_dev": false,
+  "preview_urls": false,
+  "minify": true,
+  "keep_vars": false,
+  "send_metrics": false,
+  "triggers": {
+    "crons": ["*/15 * * * *"],
+  },
+  // wrangler v3.78.6^
+  "observability": {
+    "enabled": true,
+    "traces": {
+      "enabled": true,
+    },
+  },
+
+  "services": [
+    { "binding": "DATA_CHANNEL_REGISTRAR", "service": "data_channel_registrar" },
+    { "binding": "AUTHX_TOKEN_API", "service": "authx_token_api" },
+    { "binding": "ISSUED_JWT_REGISTRY", "service": "issued-jwt-registry" },
+  ],
+
+  "env": {
+    "preview": {
+      "services": [
+        { "binding": "DATA_CHANNEL_REGISTRAR", "service": "data_channel_registrar-preview" },
+        { "binding": "AUTHX_TOKEN_API", "service": "authx_token_api-preview" },
+        { "binding": "ISSUED_JWT_REGISTRY", "service": "issued-jwt-registry-preview" },
+      ],
+    },
+    "staging": {
+      "services": [
+        { "binding": "DATA_CHANNEL_REGISTRAR", "service": "data_channel_registrar-staging" },
+        { "binding": "AUTHX_TOKEN_API", "service": "authx_token_api-staging" },
+        { "binding": "ISSUED_JWT_REGISTRY", "service": "issued-jwt-registry-staging" },
+      ],
+    },
+    "uxr": {
+      "services": [
+        { "binding": "DATA_CHANNEL_REGISTRAR", "service": "data_channel_registrar-uxr" },
+        { "binding": "AUTHX_TOKEN_API", "service": "authx_token_api-uxr" },
+        { "binding": "ISSUED_JWT_REGISTRY", "service": "issued-jwt-registry-uxr" },
+      ],
+    },
+    "production": {
+      "services": [
+        { "binding": "DATA_CHANNEL_REGISTRAR", "service": "data_channel_registrar-production" },
+        { "binding": "AUTHX_TOKEN_API", "service": "authx_token_api-production" },
+        { "binding": "ISSUED_JWT_REGISTRY", "service": "issued-jwt-registry-production" },
+      ],
+    },
+  },
+}

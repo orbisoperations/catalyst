@@ -12,16 +12,16 @@ import {
 } from '@/components/elements';
 import { DetailedView } from '@/components/layouts';
 import { navigationItems } from '@/utils/nav.utils';
-import { DataChannel, IssuedJWTRegistry } from '@catalyst/schema_zod';
+import { DataChannel, IssuedJWTRegistry } from '@catalyst/schemas';
 import { Box, Flex } from '@chakra-ui/layout';
 import { Card, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Text, useDisclosure } from '@chakra-ui/react';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useUser } from '../contexts/User/UserContext';
 interface TokenDetailsProps {
-    deleteIJWTRegistry: (token: string, id: string) => Promise<boolean>;
-    getIJWTRegistry: (token: string, id: string) => Promise<IssuedJWTRegistry | undefined>;
-    listChannels: (token: string) => Promise<DataChannel[]>;
+    deleteIJWTRegistry: (id: string) => Promise<boolean>;
+    getIJWTRegistry: (id: string) => Promise<IssuedJWTRegistry | undefined>;
+    listChannels: () => Promise<DataChannel[]>;
 }
 type DisplayedJWTRegistry = {
     claims: { name: string; id: string; description: string }[];
@@ -37,7 +37,7 @@ export default function TokenDetailsComponent({
     listChannels,
 }: TokenDetailsProps) {
     const { isOpen, onOpen, onClose } = useDisclosure();
-    const { token, user } = useUser();
+    const { user } = useUser();
     const router = useRouter();
     const { id } = useParams();
     const [hasError, setHasError] = useState<boolean>(false);
@@ -45,10 +45,10 @@ export default function TokenDetailsComponent({
     const [iJWTRegistry, setIJWTRegistry] = useState<DisplayedJWTRegistry | undefined>(undefined);
     function fetchDetails() {
         setHasError(false);
-        if (token && id && typeof id === 'string') {
-            getIJWTRegistry(token, id)
+        if (id && typeof id === 'string') {
+            getIJWTRegistry(id)
                 .then((data) => {
-                    listChannels(token)
+                    listChannels()
                         .then((channels) => {
                             if (data) {
                                 const claims = channels.filter((channel) => {
@@ -72,7 +72,7 @@ export default function TokenDetailsComponent({
                 });
         }
     }
-    useEffect(fetchDetails, [token, id]);
+    useEffect(fetchDetails, [id]);
 
     return (
         <DetailedView
@@ -106,11 +106,7 @@ export default function TokenDetailsComponent({
                                 variant: 'enclosed',
                                 colorScheme: 'blue',
                             }}
-                            tabs={[
-                                'Scopes',
-                                // TODO: Enable Audit Log
-                                //, "Audit Log"
-                            ]}
+                            tabs={['Scopes']}
                             content={[
                                 <Box key={1}>
                                     <OrbisCard header={'Key Scopes'}>
@@ -131,20 +127,6 @@ export default function TokenDetailsComponent({
                                         />
                                     </OrbisCard>
                                 </Box>,
-                                // TODO: Enable Audit Log
-                                // <OrbisCard key={2} paddingSize="none">
-                                //   <OrbisTable
-                                //     tableProps={{ variant: "simple" }}
-                                //     headers={["Action", "Actor", "IP Address", "Event Date"]}
-                                //     rows={[
-                                //       ["Created", "Mario", "127.0.0.1", "2/2/2024"],
-                                //       ["Created", "Mario", "127.0.0.1", "2/2/2024"],
-                                //       ["Created", "Mario", "127.0.0.1", "2/2/2024"],
-                                //       ["Created", "Mario", "127.0.0.1", "2/2/2024"],
-                                //       ["Created", "Mario", "127.0.0.1", "2/2/2024"],
-                                //     ]}
-                                //   ></OrbisTable>
-                                // </OrbisCard>,
                             ]}
                         />
                     </Box>
@@ -162,10 +144,8 @@ export default function TokenDetailsComponent({
                             <OrbisButton
                                 colorScheme="red"
                                 onClick={() => {
-                                    if (token && iJWTRegistry) {
-                                        console.log('deleting iJWTRegistry');
-                                        console.log(iJWTRegistry, token);
-                                        deleteIJWTRegistry(token, iJWTRegistry.id)
+                                    if (iJWTRegistry) {
+                                        deleteIJWTRegistry(iJWTRegistry.id)
                                             .then(async () => {
                                                 onClose();
                                                 router.back();

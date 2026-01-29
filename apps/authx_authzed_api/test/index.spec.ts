@@ -24,6 +24,50 @@ describe('Authzed Integration via TRPC', () => {
 		expect(resp).instanceOf(Array);
 	});
 
+	describe('partner_update permission checks', () => {
+		const testOrgId = 'test-org-partner-perms';
+		const adminUserId = 'test-admin-user';
+		const dataCustodianUserId = 'test-data-custodian-user';
+
+		it('should return true for admin user with partner_update permission', async () => {
+			// Add admin to org
+			await SELF.addAdminToOrg(testOrgId, adminUserId);
+
+			// Check permission
+			const hasPermission = await SELF.canUpdateOrgPartnersInOrg(testOrgId, adminUserId);
+			expect(hasPermission).toBe(true);
+
+			// Cleanup
+			await SELF.deleteAdminFromOrg(testOrgId, adminUserId);
+		});
+
+		it('should return false for data custodian user without partner_update permission', async () => {
+			// Add data custodian to org
+			await SELF.addDataCustodianToOrg(testOrgId, dataCustodianUserId);
+
+			// Check permission - should be false after schema update
+			const hasPermission = await SELF.canUpdateOrgPartnersInOrg(testOrgId, dataCustodianUserId);
+			expect(hasPermission).toBe(false);
+
+			// Cleanup
+			await SELF.deleteDataCustodianFromOrg(testOrgId, dataCustodianUserId);
+		});
+
+		it('should return false for regular user without partner_update permission', async () => {
+			const regularUserId = 'test-regular-user';
+
+			// Add regular user to org
+			await SELF.addUserToOrg(testOrgId, regularUserId);
+
+			// Check permission - should be false
+			const hasPermission = await SELF.canUpdateOrgPartnersInOrg(testOrgId, regularUserId);
+			expect(hasPermission).toBe(false);
+
+			// Cleanup
+			await SELF.deleteUserFromOrg(testOrgId, regularUserId);
+		});
+	});
+
 	// it('should add user to org', async () => {
 	// 	const org1 = generateOrgs(1)[0];
 

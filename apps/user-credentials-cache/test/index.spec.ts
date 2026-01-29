@@ -1,6 +1,6 @@
 import { env, runInDurableObject } from 'cloudflare:test';
 import { afterAll, describe, expect, it, vi } from 'vitest';
-import { User } from '../../../packages/schema_zod/types';
+import { User } from '@catalyst/schemas';
 
 import { UserCredsCache, getOrgFromRoles } from '../src';
 

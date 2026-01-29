@@ -1,5 +1,6 @@
 'use client';
 import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import type { UserRole } from '@catalyst/schemas';
 
 export type CloudflareUser = {
     id: string;
@@ -29,7 +30,6 @@ export type CloudflareUser = {
 
 type UserContextType = {
     user?: CloudflareUser;
-    token?: string;
 };
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -39,25 +39,21 @@ type UserProviderProps = {
 };
 
 function getOrgFromRoles(roles: Record<string, Record<string, string>>): string | undefined {
-    const roleKeys = Object.keys(roles);
-    const key = roleKeys.find((key) => key === 'platform-admin' || key === 'org-admin' || key === 'org-user') as
-        | 'platform-admin'
-        | 'org-admin'
-        | 'org-user'
-        | undefined;
+    const roleKeys = Object.keys(roles) as UserRole[];
+    const key = roleKeys.find(
+        (key) => key === 'platform-admin' || key === 'org-admin' || key === 'data-custodian' || key === 'org-user'
+    );
 
     if (!key) return undefined;
 
-    if (roleKeys.includes(key)) {
-        const role = roles[key];
-        const orgKeys = Object.keys(role);
-        if (orgKeys.length > 0) {
-            const org = orgKeys[0];
-            return role[org].split('.')[0];
-        } else {
-            return undefined;
-        }
+    const role = roles[key];
+    const orgKeys = Object.keys(role);
+    if (orgKeys.length > 0) {
+        const org = orgKeys[0];
+        return role[org].split('.')[0];
     }
+
+    return undefined;
 }
 
 function getIdentity() {
@@ -68,20 +64,25 @@ function getIdentity() {
     });
 }
 
+type SyncUserResponse = {
+    userId: string;
+    orgId: string;
+    roles: string[];
+    isAdmin: boolean;
+    isPlatformAdmin: boolean;
+} | { error: string };
+
 function syncUser() {
     return fetch('/api/v1/user/sync', {
         method: 'GET',
         credentials: 'include',
     }).then((res) => {
-        return res.json() as Promise<{ token: string } | { error: string }>;
+        return res.json() as Promise<SyncUserResponse>;
     });
 }
 
 export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
-    // const router = useRouter();
-
     const [user, setUser] = useState<CloudflareUser | undefined>();
-    const [token, setToken] = useState<string | undefined>();
 
     useEffect(() => {
         getIdentity().then((res) => {
@@ -92,14 +93,11 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
             setUser(res);
         });
 
-        syncUser().then((res) => {
-            if ('token' in res) {
-                setToken(res.token);
-            }
-        });
-    }, []); //removed router from dependency array - put back if needed
+        // Sync user with backend (triggers role sync in authzed)
+        syncUser();
+    }, []);
 
-    return <UserContext.Provider value={{ user, token }}>{children}</UserContext.Provider>;
+    return <UserContext.Provider value={{ user }}>{children}</UserContext.Provider>;
 };
 
 export const useUser = () => {

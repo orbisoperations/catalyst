@@ -1,0 +1,7 @@
+{
+    "extends": "../tsconfig.json",
+    "compilerOptions": {
+        "types": ["node", "@cloudflare/vitest-pool-workers", "@playwright/test"]
+    },
+    "include": ["./**/*.ts"]
+}

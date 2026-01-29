@@ -1,59 +1,23 @@
-import { defineWorkersConfig } from '@cloudflare/vitest-pool-workers/config';
-import path from 'node:path';
+import { createStandardTestConfig, STANDARD_TEST_PATTERNS, STANDARD_WORKERS } from '@catalyst/test-utils';
+import type { DurableObjectBinding } from '@catalyst/test-utils';
+import path from 'path';
 
-export default defineWorkersConfig({
-	esbuild: {
-		target: 'ES2022',
+export default createStandardTestConfig({
+	unit: {
+		name: 'unit',
+		include: [STANDARD_TEST_PATTERNS.unit],
+		main: 'src/index.ts',
+		durableObjects: [{ name: 'ISSUED_JWT_REGISTRY_DO', className: 'I_JWT_Registry_DO' }] as DurableObjectBinding[],
+		serviceBindings: [{ name: 'USERCACHE', workerName: 'mock-usercache' }],
+		auxiliaryWorkers: [STANDARD_WORKERS.mockUsercache(path.resolve('./test/unit/__mocks__/usercache.js'))],
 	},
-	optimizeDeps: {
-		entries: ['@graphql-tools/executor-http'],
-	},
-	clearScreen: false,
-	logLevel: 'info',
-	test: {
+	integration: {
+		name: 'integration',
+		include: [STANDARD_TEST_PATTERNS.integration],
 		globalSetup: './global-setup.ts',
-		poolOptions: {
-			workers: {
-				singleWorker: true,
-				wrangler: { configPath: './wrangler.jsonc' },
-				miniflare: {
-					unsafeEphemeralDurableObjects: true,
-					workers: [
-						{
-							name: 'user-credentials-cache',
-							modules: true,
-							modulesRoot: path.resolve('../user-credentials-cache'),
-							scriptPath: path.resolve('../user-credentials-cache/dist/index.js'),
-							compatibilityDate: '2025-04-01',
-							compatibilityFlags: ['nodejs_compat'],
-							entrypoint: 'UserCredsCacheWorker',
-							unsafeEphemeralDurableObjects: true,
-							durableObjects: {
-								CACHE: 'UserCredsCache',
-							},
-						},
-					],
-				},
-			},
-		},
-		coverage: {
-			provider: 'istanbul', // Specified istanbul
-			reporter: ['text', 'html', 'json-summary', 'lcov'], // Added lcov for external services
-			reportsDirectory: './coverage', // Default output directory
-			include: ['src/**/*.{ts,js}'], // Adjust if your source files are elsewhere
-			exclude: [
-				// Common exclusions
-				'**/node_modules/**',
-				'**/dist/**',
-				'**/test/**',
-				'**/tests/**',
-				'**/*.{test,spec}.?(c|m)[jt]s?(x)', // Exclude test file patterns
-				'**/wrangler.jsonc',
-				'**/vitest.config.*',
-				'**/.wrangler/**',
-				'**/env.d.ts',
-				'**/global-setup.ts',
-			],
-		},
+		main: 'src/index.ts',
+		wranglerConfigPath: './wrangler.jsonc',
+		durableObjects: [{ name: 'ISSUED_JWT_REGISTRY_DO', className: 'I_JWT_Registry_DO' }] as DurableObjectBinding[],
+		auxiliaryWorkers: [STANDARD_WORKERS.userCredentialsCache()],
 	},
 });

@@ -3,36 +3,37 @@
 import { APIKeyText, ErrorCard, OpenButton, OrbisCard, OrbisTable } from '@/components/elements';
 import { DetailedView } from '@/components/layouts';
 import { navigationItems } from '@/utils/nav.utils';
-import { DataChannel } from '@catalyst/schema_zod';
+import { DataChannel } from '@catalyst/schemas';
 import { Flex } from '@chakra-ui/layout';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { useUser } from '../contexts/User/UserContext';
 import { Text } from '@chakra-ui/layout';
 type PartnerDetailedComponentProps = {
-    listPartnersChannels: (token: string, partnerId: string) => Promise<DataChannel[]>;
+    listPartnersChannels: (partnerId: string) => Promise<DataChannel[]>;
 };
 export default function PartnerDetailedComponent({ listPartnersChannels }: PartnerDetailedComponentProps) {
     const router = useRouter();
     const params = useParams();
-    const { token } = useUser();
     const [hasError, setHasError] = useState<boolean>(false);
     const [channels, setChannels] = useState<DataChannel[]>([]);
+    const [isLoading, setIsLoading] = useState<boolean>(true);
     function fetchChannels() {
         setHasError(false);
-        if (params.id && typeof params.id === 'string' && token) {
-            listPartnersChannels(token, params.id)
+        setIsLoading(true);
+        if (params.id && typeof params.id === 'string') {
+            listPartnersChannels(params.id)
                 .then(setChannels)
                 .catch(() => {
                     setHasError(true);
-                });
+                })
+                .finally(() => setIsLoading(false));
         }
     }
-    useEffect(fetchChannels, [params.id, token]);
+    useEffect(fetchChannels, [params.id]);
     return (
         <DetailedView
             topbaractions={navigationItems}
-            showspinner={!token && !hasError}
+            showspinner={isLoading && !hasError}
             actions={<></>}
             headerTitle={{
                 text: (params.id as string) ?? '',

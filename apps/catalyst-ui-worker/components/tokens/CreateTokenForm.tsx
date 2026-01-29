@@ -3,7 +3,7 @@ import { JWTRequest } from '@/app/types';
 import { APIKeyText, ErrorCard, OrbisButton, OrbisCard, SelectableTable } from '@/components/elements';
 import { DetailedView } from '@/components/layouts';
 import { navigationItems } from '@/utils/nav.utils';
-import { DataChannel, IssuedJWTRegistry, JWTSigningResponse } from '@catalyst/schema_zod';
+import { DataChannel, JWTAudience, JWTSigningResponse } from '@catalyst/schemas';
 import { Box, Flex } from '@chakra-ui/layout';
 import {
     FormControl,
@@ -29,11 +29,9 @@ type CreateTokensFormProps = {
         expiration: {
             value: number;
             unit: 'days' | 'weeks';
-        },
-        cfToken: string
+        }
     ) => Promise<JWTSigningResponse>;
-    listChannels: (token: string) => Promise<DataChannel[]>;
-    createIJWTRegistry: (token: string, data: Omit<IssuedJWTRegistry, 'id'>) => Promise<IssuedJWTRegistry | undefined>;
+    listChannels: () => Promise<DataChannel[]>;
 };
 
 // Constants for maximum expiration values
@@ -75,18 +73,27 @@ function getExpirationHelpText(expiration: { unit: 'days' | 'weeks' }) {
 // UserLike type for buildJWTRequest
 type UserLike = { custom: { org?: string }; email: string } | undefined;
 
-// JWT request builder
-function buildJWTRequest(channelsResponse: DataChannel[], selectedChannels: number[], user: UserLike): JWTRequest {
+// JWT request builder with metadata
+function buildJWTRequest(
+    channelsResponse: DataChannel[],
+    selectedChannels: number[],
+    user: UserLike,
+    name?: string,
+    description?: string
+): JWTRequest {
     return {
         claims: channelsResponse.filter((_, i) => selectedChannels.includes(i)).map((channel) => channel.id),
         entity: (user && user.custom.org && `${user.custom.org}/${user.email}`) || 'default',
+        audience: JWTAudience.enum['catalyst:gateway'],
+        ...(name && { name }),
+        ...(description && { description }),
     };
 }
 
-export default function CreateTokensForm({ signToken, listChannels, createIJWTRegistry }: CreateTokensFormProps) {
+export default function CreateTokensForm({ signToken, listChannels }: CreateTokensFormProps) {
     const router = useRouter();
     const tokenConfirmation = useDisclosure();
-    const { user, token: cfToken } = useUser();
+    const { user } = useUser();
     const [channels, setChannels] = useState<DataChannel[]>([]);
     const [channelsResponse, setChannelsResponse] = useState<DataChannel[]>([]);
     const [selectedChannels, setSelectedChannels] = useState<number[]>([]);
@@ -100,19 +107,17 @@ export default function CreateTokensForm({ signToken, listChannels, createIJWTRe
 
     function fetchChannels() {
         setHasError(false);
-        if (cfToken) {
-            listChannels(cfToken)
-                .then((channels) => {
-                    setChannels(channels);
-                    setChannelsResponse(channels);
-                })
-                .catch(() => {
-                    setHasError(true);
-                    setErrorMessage('An error occurred while fetching the channels. Please try again later.');
-                });
-        }
+        listChannels()
+            .then((channels) => {
+                setChannels(channels);
+                setChannelsResponse(channels);
+            })
+            .catch(() => {
+                setHasError(true);
+                setErrorMessage('An error occurred while fetching the channels. Please try again later.');
+            });
     }
-    useEffect(fetchChannels, [cfToken]);
+    useEffect(fetchChannels, []);
 
     // Validate expiration whenever expiration state changes
     useEffect(() => {
@@ -122,32 +127,17 @@ export default function CreateTokensForm({ signToken, listChannels, createIJWTRe
     }, [expiration.value, expiration.unit]);
 
     function createToken() {
-        const jwtRequest = buildJWTRequest(channelsResponse, selectedChannels, user);
-        if (!cfToken) {
-            throw 'No cf token';
-        }
+        const jwtRequest = buildJWTRequest(channelsResponse, selectedChannels, user, apiKeyName, apiKeyDescription);
         if (!user) {
             throw 'No user';
         }
-        signToken(jwtRequest, expiration, cfToken!)
+        signToken(jwtRequest, expiration)
             .then(async (resp) => {
                 if (resp.success) {
                     setToken(resp.token);
                     tokenConfirmation.onOpen();
-                    const issuedJWTRegistryEntry = {
-                        name: apiKeyName,
-                        description: apiKeyDescription,
-                        claims: jwtRequest.claims,
-                        expiry: new Date(resp.expiration),
-                        organization: user.custom.org || 'default',
-                    } as Omit<IssuedJWTRegistry, 'id'>;
-                    const iJWTRegistryEntry = await createIJWTRegistry(cfToken, issuedJWTRegistryEntry).catch(() => {
-                        setHasError(true);
-                        setErrorMessage('An error occurred while creating the token. Please try again later.');
-                    });
-                    if (iJWTRegistryEntry) {
-                        console.log('created iJWTRegistryEntry', iJWTRegistryEntry);
-                    }
+                    // Token is now automatically registered with the provided name and description
+                    // No need for separate createIJWTRegistry call
                 }
             })
             .catch(() => {

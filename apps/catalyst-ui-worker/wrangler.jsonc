@@ -11,6 +11,9 @@
     },
     "observability": {
         "enabled": true,
+        "traces": {
+            "enabled": true,
+        },
     },
     "minify": true,
     "services": [
@@ -19,7 +22,7 @@
             "service": "catalyst-ui-worker",
         },
         {
-            "binding": "ISSUED_JWT_WORKER",
+            "binding": "ISSUED_JWT_REGISTRY",
             "service": "issued-jwt-registry",
         },
         {
@@ -42,7 +45,16 @@
             "binding": "ORGANIZATION_MATCHMAKING",
             "service": "organization-matchmaking",
         },
+        {
+            "binding": "DATA_CHANNEL_CERTIFIER",
+            "service": "data-channel-certifier",
+        },
     ],
+    "vars": {
+        "ZITADEL_DOMAIN": "auth.devintelops.io",
+        "ZITADEL_CLIENT_ID": "322212504635775068",
+        "CF_ACCESS_TEAM_DOMAIN": "orbisops",
+    },
     "env": {
         "preview": {
             "routes": [
@@ -57,7 +69,7 @@
                     "service": "catalyst-ui-worker-preview",
                 },
                 {
-                    "binding": "ISSUED_JWT_WORKER",
+                    "binding": "ISSUED_JWT_REGISTRY",
                     "service": "issued-jwt-registry-preview",
                 },
                 {
@@ -80,6 +92,10 @@
                     "binding": "ORGANIZATION_MATCHMAKING",
                     "service": "organization-matchmaking-preview",
                 },
+                {
+                    "binding": "DATA_CHANNEL_CERTIFIER",
+                    "service": "data-channel-certifier-preview",
+                },
             ],
         },
         "staging": {
@@ -95,7 +111,7 @@
                     "service": "catalyst-ui-worker-staging",
                 },
                 {
-                    "binding": "ISSUED_JWT_WORKER",
+                    "binding": "ISSUED_JWT_REGISTRY",
                     "service": "issued-jwt-registry-staging",
                 },
                 {
@@ -106,6 +122,7 @@
                 { "binding": "AUTHX_AUTHZED_API", "service": "authx_authzed_api-staging" },
                 { "binding": "USER_CREDS_CACHE", "service": "user-credentials-cache-staging" },
                 { "binding": "ORGANIZATION_MATCHMAKING", "service": "organization-matchmaking-staging" },
+                { "binding": "DATA_CHANNEL_CERTIFIER", "service": "data-channel-certifier-staging" },
             ],
         },
         // "demo": {
@@ -121,7 +138,7 @@
         //             "service": "catalyst-ui-worker-demo",
         //         },
 
-        //     { "binding": "ISSUED_JWT_WORKER", "service": "issued-jwt-registry-demo" },
+        //     { "binding": "ISSUED_JWT_REGISTRY", "service": "issued-jwt-registry-demo" },
         //     { "binding": "CATALYST_DATA_CHANNEL_REGISTRAR_API", "service": "data_channel_registrar-demo" },
         //     { "binding": "AUTHX_TOKEN_API", "service": "authx_token_api-demo" },
         //     { "binding": "AUTHX_AUTHZED_API", "service": "authx_authzed_api-demo" },
@@ -142,7 +159,7 @@
                     "service": "catalyst-ui-worker-uxr",
                 },
                 {
-                    "binding": "ISSUED_JWT_WORKER",
+                    "binding": "ISSUED_JWT_REGISTRY",
                     "service": "issued-jwt-registry-uxr",
                 },
                 {
@@ -165,6 +182,10 @@
                     "binding": "ORGANIZATION_MATCHMAKING",
                     "service": "organization-matchmaking-uxr",
                 },
+                {
+                    "binding": "DATA_CHANNEL_CERTIFIER",
+                    "service": "data-channel-certifier-uxr",
+                },
             ],
         },
         "production": {
@@ -180,7 +201,7 @@
                     "service": "catalyst-ui-worker-production",
                 },
                 {
-                    "binding": "ISSUED_JWT_WORKER",
+                    "binding": "ISSUED_JWT_REGISTRY",
                     "service": "issued-jwt-registry-production",
                 },
                 { "binding": "CATALYST_DATA_CHANNEL_REGISTRAR_API", "service": "data_channel_registrar-production" },
@@ -188,6 +209,7 @@
                 { "binding": "AUTHX_AUTHZED_API", "service": "authx_authzed_api-production" },
                 { "binding": "USER_CREDS_CACHE", "service": "user-credentials-cache-production" },
                 { "binding": "ORGANIZATION_MATCHMAKING", "service": "organization-matchmaking-production" },
+                { "binding": "DATA_CHANNEL_CERTIFIER", "service": "data-channel-certifier-production" },
             ],
         },
     },

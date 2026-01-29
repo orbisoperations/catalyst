@@ -1,5 +1,7 @@
+'use client';
+
 import { useUser } from '@/components/contexts/User/UserContext';
-import { Box, Flex, Grid, PropsOf, Text, Image } from '@chakra-ui/react';
+import { Box, Flex, Grid, PropsOf, Text, Image, Heading } from '@chakra-ui/react';
 import { BackButton, OrbisButton, ProfileButton } from '../../elements';
 import { useEffect, useState } from 'react';
 
@@ -11,32 +13,40 @@ type TopBarProps = PropsOf<typeof Box> & {
 };
 
 export const TopBar = (props: TopBarProps) => {
-    'use client';
     const { actions, customActions, ...boxProps } = props;
     const { user } = useUser();
-    const [orgName, setOrgName] = useState<string>(
-        typeof window !== 'undefined' ? (window.localStorage.getItem('org') ?? '') : ''
-    );
+    const [orgName, setOrgName] = useState<string>('');
 
     useEffect(() => {
-        if (user) {
-            if (typeof window !== 'undefined') window.localStorage.setItem('org', String(user.custom.org));
-            setOrgName(String(user.custom.org));
-            if (typeof window !== 'undefined') {
-                window.localStorage.setItem('org', String(user.custom.org));
-            }
+        // Initialize from localStorage on mount (client-side only)
+        const storedOrg = localStorage.getItem('org');
+        if (storedOrg) {
+            setOrgName(storedOrg);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (user?.custom.org) {
+            const org = String(user.custom.org);
+            setOrgName(org);
+            localStorage.setItem('org', org);
         }
     }, [user?.custom.org]);
 
     return (
         <Box position={'sticky'} top={0} bg={'white'} zIndex={10}>
             <Flex {...boxProps} shadow={'md'} padding={'1em'} justifyContent={'end'} alignItems={'center'} zIndex={10}>
-                <Image src="/catalyst-logo.svg" w="140px" alt="Catalyst Logo" mr="auto" />
+                <Image src="/catalyst-logo.svg" w="140px" alt="Catalyst Logo" mr="auto" data-testid="navbar-logo" />
                 {(actions || customActions) && (
                     <Flex gap={5} alignItems={'center'} pr="2%">
                         {actions &&
                             actions.map((action, index) => (
-                                <a href={action.path} key={index} className="">
+                                <a
+                                    href={action.path}
+                                    key={index}
+                                    className=""
+                                    data-testid={`navbar-${action.display.toLowerCase().replace(/\s+/g, '-')}-link`}
+                                >
                                     <OrbisButton variant={'ghost'}>{action.display}</OrbisButton>
                                 </a>
                             ))}
@@ -85,14 +95,15 @@ export const DetailedHeader = ({
                             {title && (
                                 <Box>
                                     {title.text && (
-                                        <Text
+                                        <Heading
+                                            as="h1"
                                             fontSize={'2xl'}
                                             fontWeight={'bold'}
                                             color={'gray.800'}
                                             textTransform={'uppercase'}
                                         >
                                             {title.text}
-                                        </Text>
+                                        </Heading>
                                     )}
                                     {title.adjacent && <Box>{title.adjacent}</Box>}
                                 </Box>
@@ -128,14 +139,15 @@ export const ListedHeader = ({
                         <Box>
                             <Flex gap={5} align={'center'}>
                                 {title.text && (
-                                    <Text
+                                    <Heading
+                                        as="h1"
                                         fontSize={'2xl'}
                                         fontWeight={'bold'}
                                         color={'gray.800'}
                                         textTransform={'uppercase'}
                                     >
                                         {title.text}
-                                    </Text>
+                                    </Heading>
                                 )}
                                 {title.adjacent && <Box>{title.adjacent}</Box>}
                             </Flex>

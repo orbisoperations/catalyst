@@ -1,4 +1,4 @@
-import { DEFAULT_STANDARD_DURATIONS } from '@catalyst/schema_zod';
+import { DEFAULT_STANDARD_DURATIONS, JWTAudience } from '@catalyst/schemas';
 import { env } from 'cloudflare:test';
 import { createLocalJWKSet, jwtVerify } from 'jose';
 import { describe, expect, it } from 'vitest';
@@ -31,6 +31,7 @@ describe('jwt integration tests', () => {
         const jwtRequest = {
             entity: 'testuser',
             claims: ['testclaim'],
+            audience: JWTAudience.enum['catalyst:datachannel'],
         };
         const jwtDoId = env.JWT_TOKEN_DO.idFromName('newtest');
         const jwtStub = env.JWT_TOKEN_DO.get(jwtDoId);
@@ -56,6 +57,7 @@ describe('jwt integration tests', () => {
         const jwtRequest = {
             entity: 'testuser',
             claims: ['testclaim'],
+            audience: JWTAudience.enum['catalyst:datachannel'],
         };
         const jwtToken = await jwtStub.signJWT(jwtRequest, 360 * DEFAULT_STANDARD_DURATIONS.S);
 
@@ -63,13 +65,14 @@ describe('jwt integration tests', () => {
 
         await jwtVerify(jwtToken.token, jwkPub, {
             issuer: 'catalyst:system:jwt:latest',
-            audience: 'catalyst:system:datachannels',
+            audience: JWTAudience.enum['catalyst:datachannel'],
         });
     });
     it('expired token does not validate', async () => {
         const jwtRequest = {
             entity: 'testuser',
             claims: ['testclaim'],
+            audience: JWTAudience.enum['catalyst:datachannel'],
         };
         const jwtDoId = env.JWT_TOKEN_DO.idFromName('newtest');
         const jwtStub = env.JWT_TOKEN_DO.get(jwtDoId);

@@ -1,67 +1,68 @@
 'use server';
-import { OrgInvite } from '@catalyst/schema_zod';
-import { getCloudflareContext } from '@opennextjs/cloudflare';
+import { getMatchmaking, OrgInvite, OrgInviteSchema } from '@catalyst/schemas';
+import { getCloudflareEnv, getCFAuthorizationToken } from '@/app/lib/server-utils';
 
-function getEnv() {
-    return getCloudflareContext().env as CloudflareEnv;
-}
-
-function getMatcher() {
-    return getEnv().ORGANIZATION_MATCHMAKING;
-}
-
-export async function listInvites(token: string) {
-    const matcher = getMatcher();
-    const result = await matcher.listInvites({ cfToken: token });
+export async function listInvites(): Promise<OrgInvite[]> {
+    const env = getCloudflareEnv();
+    const matcher = getMatchmaking(env);
+    const result = await matcher.listInvites({ cfToken: await getCFAuthorizationToken() });
     if (!result.success) {
         throw new Error(result.error);
     }
-    return result.invite as OrgInvite[];
+    return OrgInviteSchema.array().parse(result.data);
 }
 
-export async function sendInvite(receivingOrg: string, token: string, message: string) {
-    const matcher = getMatcher();
-    const result = await matcher.sendInvite(receivingOrg, { cfToken: token }, message);
+export type SendInviteResult = { success: true; data: OrgInvite } | { success: false; error: string };
+
+export async function sendInvite(receivingOrg: string, message: string): Promise<SendInviteResult> {
+    const env = getCloudflareEnv();
+    const matcher = getMatchmaking(env);
+    const result = await matcher.sendInvite(receivingOrg, { cfToken: await getCFAuthorizationToken() }, message);
     if (!result.success) {
-        throw new Error('Sending Invite Failed');
+        // Return error as data instead of throwing - Next.js server actions redact thrown error messages
+        return { success: false, error: result.error || 'Sending Invite Failed' };
     }
-    return result.invite as OrgInvite;
+
+    return { success: true, data: OrgInviteSchema.parse(result.data) };
 }
 
-export async function readInvite(inviteId: string, token: string) {
-    const matcher = getMatcher();
-    const result = await matcher.readInvite(inviteId, { cfToken: token });
+export async function readInvite(inviteId: string): Promise<OrgInvite> {
+    const env = getCloudflareEnv();
+    const matcher = getMatchmaking(env);
+    const result = await matcher.readInvite(inviteId, { cfToken: await getCFAuthorizationToken() });
     if (!result.success) {
         throw new Error('Reading Invite Failed');
     }
-    return result.invite as OrgInvite;
+    return OrgInviteSchema.parse(result.data);
 }
 
-export async function declineInvite(inviteId: string, token: string) {
-    const matcher = getMatcher();
-    console.log({ inviteId, token });
-    const result = await matcher.declineInvite(inviteId, { cfToken: token });
+export async function declineInvite(inviteId: string): Promise<OrgInvite> {
+    const env = getCloudflareEnv();
+    const matcher = getMatchmaking(env);
+    const result = await matcher.declineInvite(inviteId, { cfToken: await getCFAuthorizationToken() });
     if (!result.success) {
         throw new Error('Declining Invite Failed');
     }
-    return result.invite as OrgInvite;
+    return OrgInviteSchema.parse(result.data);
 }
 
-export async function acceptInvite(inviteId: string, token: string) {
-    const matcher = getMatcher();
-    const result = await matcher.acceptInvite(inviteId, { cfToken: token });
+export async function acceptInvite(inviteId: string): Promise<OrgInvite> {
+    const env = getCloudflareEnv();
+    const matcher = getMatchmaking(env);
+    const result = await matcher.acceptInvite(inviteId, { cfToken: await getCFAuthorizationToken() });
 
     if (!result.success) {
         throw new Error('Accepting Invite Failed');
     }
-    return result.invite as OrgInvite;
+    return OrgInviteSchema.parse(result.data);
 }
 
-export async function togglePartnership(orgId: string, token: string) {
-    const matcher = getMatcher();
-    const result = await matcher.togglePartnership(orgId, { cfToken: token });
+export async function togglePartnership(inviteId: string): Promise<OrgInvite> {
+    const env = getCloudflareEnv();
+    const matcher = getMatchmaking(env);
+    const result = await matcher.togglePartnership(inviteId, { cfToken: await getCFAuthorizationToken() });
     if (!result.success) {
         throw new Error('Toggling Partnership Failed');
     }
-    return result.invite as OrgInvite;
+    return OrgInviteSchema.parse(result.data);
 }

@@ -1,17 +1,7 @@
-import { defineWorkersConfig } from '@cloudflare/vitest-pool-workers/config';
+import { createSimpleWorkerTestConfig } from '@catalyst/test-utils';
 
-export default defineWorkersConfig({
-	test: {
-		poolOptions: {
-			workers: {
-				wrangler: { configPath: './wrangler.jsonc' },
-				singleWorker: false,
-				isolatedStorage: false,
-			},
-		},
-		coverage: {
-			provider: 'istanbul',
-			reporter: ['text', 'json', 'html'],
-		},
-	},
+export default createSimpleWorkerTestConfig({
+	wranglerConfigPath: './wrangler.jsonc',
+	singleWorker: false,
+	isolatedStorage: false,
 });

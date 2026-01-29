@@ -1,6 +1,6 @@
 import { env } from 'cloudflare:test';
 import { expect } from 'vitest';
-import { DataChannel } from '@catalyst/schema_zod';
+import { DataChannel, JWTAudience } from '@catalyst/schemas';
 import { TEST_ORG_ID, validUsers } from './authUtils';
 
 export { TEST_ORG_ID, validUsers };
@@ -51,21 +51,23 @@ export async function custodianCreatesDataChannel(dataChannel: DataChannel) {
 	expect(createResponse).toBeDefined();
 	expect(createResponse.success).toBe(true);
 
-	// add the data channel to the org
-	const addDataChannelToOrg = await env.AUTHZED.addDataChannelToOrg(TEST_ORG_ID, dataChannel.id);
+	if (!createResponse.success) {
+		throw new Error(`Failed to create data channel: ${createResponse.error}`);
+	}
+
+	// Get the created channel's ID (not the input channel's dummy ID)
+	const createdChannel = Array.isArray(createResponse.data) ? createResponse.data[0] : createResponse.data;
+	const createdChannelId = createdChannel.id;
+
+	// add the data channel to the org using the actual created channel ID
+	const addDataChannelToOrg = await env.AUTHZED.addDataChannelToOrg(TEST_ORG_ID, createdChannelId);
 	// add the org to the data channel
-	const addOrgToDataChannel = await env.AUTHZED.addOrgToDataChannel(dataChannel.id, TEST_ORG_ID);
+	const addOrgToDataChannel = await env.AUTHZED.addOrgToDataChannel(createdChannelId, TEST_ORG_ID);
 
 	expect(addDataChannelToOrg).toBeDefined();
 	expect(addOrgToDataChannel).toBeDefined();
 
-	expect(createResponse.success).toBe(true);
-
-	if (!createResponse.success) {
-		throw new Error('Failed to create data channel');
-	}
-
-	return Array.isArray(createResponse.data) ? createResponse.data[0] : createResponse.data;
+	return createdChannel;
 }
 
 /**
@@ -94,11 +96,32 @@ export async function getCatalystToken(cfToken: string, claims: string[]) {
 		{
 			entity: `${getOrgId(cfToken)}/${user.email}`,
 			claims,
+			audience: JWTAudience.enum['catalyst:datachannel'],
 			expiresIn: Date.now() + 3600,
 		},
 		Date.now() + 3600,
 	);
 	return token;
+}
+
+/**
+ * Type guard to assert and narrow success responses
+ * Use this after expect(response.success).toBe(true) to help TypeScript narrow the type
+ */
+export function assertSuccess<T extends { success: boolean }>(response: T): asserts response is Extract<T, { success: true }> {
+	if (!response.success) {
+		throw new Error('Expected success response');
+	}
+}
+
+/**
+ * Type guard to assert and narrow valid responses
+ * Use this after expect(response.valid).toBe(true) to help TypeScript narrow the type
+ */
+export function assertValid<T extends { valid: boolean }>(response: T): asserts response is Extract<T, { valid: true }> {
+	if (!response.valid) {
+		throw new Error('Expected valid response');
+	}
 }
 
 export async function clearAllAuthzedRoles() {
@@ -114,5 +137,23 @@ export async function clearAllAuthzedRoles() {
 		expect(addDataChannelToOrg).toBeDefined();
 		const addOrgToDataChannel = await env.AUTHZED.deleteUserFromOrg(TEST_ORG_ID, userId);
 		expect(addOrgToDataChannel).toBeDefined();
+	}
+}
+
+/**
+ * Clean up any existing data channels to avoid name conflicts in tests
+ */
+export async function cleanupDataChannels() {
+	const listResponse = await env.DATA_CHANNEL_REGISTRAR.list('default', {
+		cfToken: 'cf-custodian-token',
+	});
+	if (listResponse.success && listResponse.data) {
+		const channels = Array.isArray(listResponse.data) ? listResponse.data : [listResponse.data];
+		const removals = channels.map((channel: DataChannel) =>
+			env.DATA_CHANNEL_REGISTRAR.remove('default', channel.id, {
+				cfToken: 'cf-custodian-token',
+			}),
+		);
+		await Promise.allSettled(removals);
 	}
 }

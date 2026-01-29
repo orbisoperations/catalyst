@@ -2,11 +2,16 @@
     "name": "catalyst",
     "version": "1.0.0",
     "private": true,
+    "packageManager": "pnpm@10.18.0",
     "scripts": {
-        "test": "pnpm run -r test:workspace",
-        "build": "pnpm run -r build",
-        "dev": "pnpm run -r dev",
-        "lint": "pnpm run -r lint",
+        "test": "turbo run test:workspace --filter='!./examples/**' --filter='!./apps/datachannel-next' --filter='!./apps/catalyst_cli'",
+        "build": "turbo run build --filter='!./examples/**' --filter='!./apps/datachannel-next' --filter='!./apps/catalyst_cli'",
+        "build:ci": "turbo run build --filter=@catalyst/test-utils...",
+        "setup:authzed": "[ -f apps/authx_authzed_api/.dev.vars ] || (echo '⚠️  Creating .dev.vars from .dev.vars.example - please review!' && cp apps/authx_authzed_api/.dev.vars.example apps/authx_authzed_api/.dev.vars); curl -sf http://localhost:8449/healthz > /dev/null && echo '✓ Authzed already running' || (podman stop spicedb-dev 2>/dev/null; podman rm spicedb-dev 2>/dev/null; podman run -d --name spicedb-dev -v ./apps/authx_authzed_api/schema.zaml:/schema.zaml:ro -p 8449:8443 -p 50052:50051 authzed/spicedb:latest serve-testing --http-enabled --skip-release-check=true --load-configs /schema.zaml)",
+        "dev": "turbo run dev --filter='!./examples/**' --filter='!./apps/datachannel-next' --filter='!./apps/catalyst_cli' --filter='!./apps/mock-user-credentials-cache'",
+        "kill-dev": "./scripts/kill-dev.sh",
+        "lint": "turbo run lint --filter='!./examples/**' --filter='!./apps/datachannel-next' --filter='!./apps/catalyst_cli'",
+        "typecheck": "echo 'Typecheck is performed during build and test'",
         "clean": "pnpm run -r clean",
         "sim": "pnpm run -r sim",
         "prepare": "husky",
@@ -19,10 +24,14 @@
     "keywords": [],
     "author": "",
     "license": "Elastic-2.0",
+    "engines": {
+        "node": ">=20.0.0 <23.0.0"
+    },
     "devDependencies": {
         "@commitlint/cli": "^19.8.0",
         "@commitlint/config-conventional": "^19.8.0",
         "@eslint/js": "^9.25.1",
+        "@next/bundle-analyzer": "^16.0.0",
         "@types/node": "^20.11.24",
         "bun": "^1.1.7",
         "eslint": "^9.25.1",
@@ -34,6 +43,7 @@
         "prettier": "^3.5.3",
         "syncpack": "14.0.0-alpha.13",
         "tsx": "^4.9.4",
+        "turbo": "^2.5.8",
         "typescript": "^5.8.3",
         "typescript-eslint": "^8.28.0"
     },

@@ -2,7 +2,7 @@
 name = "datachannel_tak"
 main = "src/index.ts"
 compatibility_date = "2024-04-05"
-node_compat = true
+compatibility_flags = ["nodejs_compat"]
 account_id = "3be6f7bb0cc73869d555e1156586c1f2"
 workers_dev = false
 
