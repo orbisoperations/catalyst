@@ -14,7 +14,7 @@
 		"@graphql-tools/stitching-directives": "^3.0.2",
 		"geo-route-generator": "catalog:",
 		"graphql-yoga": "^5.3.1",
-		"hono": "^4.3.3",
+		"hono": "^4.11.7",
 		"jose": "^5.2.4",
 		"xml-js": "catalog:"
 	},
