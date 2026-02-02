@@ -32,6 +32,7 @@ function generateInvites(maxCount?: number) {
 			receiver: `test-receiver-org-${i + 1}`,
 			message: `test-message ${i + 1}`,
 			isActive: true,
+			disabledBy: null,
 			createdAt: now + daysOffset * 24 * 60 * 60 * 1000 + hoursOffset * 60 * 60 * 1000,
 			updatedAt: now + daysOffset * 24 * 60 * 60 * 1000 + hoursOffset * 60 * 60 * 1000,
 		};
@@ -221,8 +222,8 @@ describe('organization matchmaking worker', () => {
 		}
 	});
 
-	// be able to toggle an invite
-	it('should be able to toggle an invite', async () => {
+	// be able to toggle an invite (must be accepted first)
+	it('should be able to toggle an accepted invite', async () => {
 		const id = env.ORG_MATCHMAKING.idFromName('default');
 		const stub = env.ORG_MATCHMAKING.get(id);
 
@@ -240,15 +241,18 @@ describe('organization matchmaking worker', () => {
 		);
 		expect(createdInvite).toBeDefined();
 
-		// get the invite from the sender's mailbox
-		// validate that status is pending
-		const readInvite: OrgInvite = await stub.read(inviteToSend.sender, createdInvite.id);
-		expect(readInvite.status).toBe(OrgInviteStatusSchema.enum.pending);
+		// Accept the invite first (receiver accepts)
+		const acceptedInvite: OrgInvite = await stub.respond(
+			inviteToSend.receiver,
+			createdInvite.id,
+			OrgInviteStatusSchema.enum.accepted
+		);
+		expect(acceptedInvite.status).toBe('accepted');
 
 		const toggledInvite: OrgInvite = await stub.togglePartnership('default', createdInvite.id);
 
-		// validate that the invite is toggled
-		expect(toggledInvite.isActive).toBe(!readInvite.isActive);
+		// validate that the invite is toggled (starts inactive after accept, toggles to active)
+		expect(toggledInvite.isActive).toBe(!acceptedInvite.isActive);
 	});
 
 	it('should return appropriate error when invite is not found', async () => {
@@ -333,6 +337,11 @@ describe('organization matchmaking worker', () => {
 		for (const invite of invites) {
 			const createdInvite: OrgInvite = await stub.send(invite.sender, invite.receiver, invite.message);
 			sentInvites.push(createdInvite);
+		}
+
+		// Accept all invites (receiver accepts) so they can be toggled
+		for (let i = 0; i < sentInvites.length; i++) {
+			await stub.respond(invites[i].receiver, sentInvites[i].id, OrgInviteStatusSchema.enum.accepted);
 		}
 
 		// Get the invite from both mailboxes before toggle
@@ -555,7 +564,7 @@ describe('organization matchmaking worker', () => {
 			});
 		});
 
-		it('should successfully toggle an invite from active to inactive', async () => {
+		it('should successfully toggle an accepted invite from inactive to active', async () => {
 			const id = env.ORG_MATCHMAKING.idFromName('default');
 			const stub = env.ORG_MATCHMAKING.get(id);
 
@@ -567,6 +576,9 @@ describe('organization matchmaking worker', () => {
 				inviteToSend.message
 			);
 			expect(createdInvite).toBeDefined();
+
+			// Accept the invite first (receiver accepts)
+			await stub.respond(inviteToSend.receiver, createdInvite.id, OrgInviteStatusSchema.enum.accepted);
 
 			// Mock the USERCACHE binding with a user
 			const mockUser = {
@@ -587,7 +599,7 @@ describe('organization matchmaking worker', () => {
 				throw new Error('Failed to toggle invite');
 			}
 
-			// Verify the toggle (starts false, toggles to true)
+			// Verify the toggle (starts false after accept, toggles to true)
 			const toggledInvite = response.data as OrgInvite;
 			expect(toggledInvite.isActive).toBe(true);
 		});
@@ -662,6 +674,124 @@ describe('organization matchmaking worker', () => {
 				expect(response.error).toContain('not found');
 			}
 		});
+	});
+
+	// Bug 4: Status guard — toggle should only work on accepted partnerships
+	it('should reject toggle on non-accepted invite', async () => {
+		const id = env.ORG_MATCHMAKING.idFromName('default');
+		const stub = env.ORG_MATCHMAKING.get(id);
+
+		// clear the storage
+		await runInDurableObject(stub, async (_: unknown, state: DurableObjectState) => {
+			await state.storage.deleteAll();
+		});
+
+		const inviteToSend = generateInvites(1)[0];
+		const createdInvite: OrgInvite = await stub.send(
+			inviteToSend.sender,
+			inviteToSend.receiver,
+			inviteToSend.message
+		);
+		expect(createdInvite).toBeDefined();
+		expect(createdInvite.status).toBe('pending');
+
+		// Attempt to toggle a pending invite — should throw
+		try {
+			await stub.togglePartnership('default', createdInvite.id);
+			expect.fail('Should have thrown InvalidOperationError for pending invite');
+		} catch (error) {
+			expect(error).toBeDefined();
+			expect((error as Error).message).toContain('Can only toggle accepted partnerships');
+		}
+	});
+
+	// Bug 5: Tug of war — only the disabling org can re-enable
+	it('should prevent other org from re-enabling a disabled partnership', async () => {
+		const id = env.ORG_MATCHMAKING.idFromName('default');
+		const stub = env.ORG_MATCHMAKING.get(id);
+
+		// clear the storage
+		await runInDurableObject(stub, async (_: unknown, state: DurableObjectState) => {
+			await state.storage.deleteAll();
+		});
+
+		const inviteToSend = generateInvites(1)[0];
+		const createdInvite: OrgInvite = await stub.send(
+			inviteToSend.sender,
+			inviteToSend.receiver,
+			inviteToSend.message
+		);
+
+		// Accept the invite (receiver accepts)
+		await stub.respond(inviteToSend.receiver, createdInvite.id, OrgInviteStatusSchema.enum.accepted);
+
+		// Sender enables the partnership
+		const enabledInvite: OrgInvite = await stub.togglePartnership(inviteToSend.sender, createdInvite.id);
+		expect(enabledInvite.isActive).toBe(true);
+		expect(enabledInvite.disabledBy).toBeNull();
+
+		// Sender disables the partnership
+		const disabledInvite: OrgInvite = await stub.togglePartnership(inviteToSend.sender, createdInvite.id);
+		expect(disabledInvite.isActive).toBe(false);
+		expect(disabledInvite.disabledBy).toBe(inviteToSend.sender);
+
+		// Receiver tries to re-enable — should throw
+		try {
+			await stub.togglePartnership(inviteToSend.receiver, createdInvite.id);
+			expect.fail('Should have thrown error when other org tries to re-enable');
+		} catch (error) {
+			expect(error).toBeDefined();
+			expect((error as Error).message).toContain('Only the organization that disabled');
+		}
+
+		// Sender re-enables — should succeed
+		const reenabledInvite: OrgInvite = await stub.togglePartnership(inviteToSend.sender, createdInvite.id);
+		expect(reenabledInvite.isActive).toBe(true);
+		expect(reenabledInvite.disabledBy).toBeNull();
+	});
+
+	// Bug 3: Atomic toggle — both mailboxes must be consistent
+	it('should handle toggle atomically across both mailboxes', async () => {
+		const id = env.ORG_MATCHMAKING.idFromName('default');
+		const stub = env.ORG_MATCHMAKING.get(id);
+
+		// clear the storage
+		await runInDurableObject(stub, async (_: unknown, state: DurableObjectState) => {
+			await state.storage.deleteAll();
+		});
+
+		const inviteToSend = generateInvites(1)[0];
+		const createdInvite: OrgInvite = await stub.send(
+			inviteToSend.sender,
+			inviteToSend.receiver,
+			inviteToSend.message
+		);
+
+		// Accept the invite
+		await stub.respond(inviteToSend.receiver, createdInvite.id, OrgInviteStatusSchema.enum.accepted);
+
+		// Toggle ON
+		await stub.togglePartnership(inviteToSend.sender, createdInvite.id);
+
+		// Verify both mailboxes are consistent
+		const senderInvite: OrgInvite = await stub.read(inviteToSend.sender, createdInvite.id);
+		const receiverInvite: OrgInvite = await stub.read(inviteToSend.receiver, createdInvite.id);
+
+		expect(senderInvite.isActive).toBe(receiverInvite.isActive);
+		expect(senderInvite.disabledBy).toBe(receiverInvite.disabledBy);
+		expect(senderInvite.isActive).toBe(true);
+		expect(senderInvite.disabledBy).toBeNull();
+
+		// Toggle OFF
+		await stub.togglePartnership(inviteToSend.sender, createdInvite.id);
+
+		const senderAfterOff: OrgInvite = await stub.read(inviteToSend.sender, createdInvite.id);
+		const receiverAfterOff: OrgInvite = await stub.read(inviteToSend.receiver, createdInvite.id);
+
+		expect(senderAfterOff.isActive).toBe(receiverAfterOff.isActive);
+		expect(senderAfterOff.disabledBy).toBe(receiverAfterOff.disabledBy);
+		expect(senderAfterOff.isActive).toBe(false);
+		expect(senderAfterOff.disabledBy).toBe(inviteToSend.sender);
 	});
 });
 

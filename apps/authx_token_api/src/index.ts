@@ -93,7 +93,10 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 		if (success) {
 			return JWTRotateResponseSchema.parse({ success: success });
 		} else {
-			return JWTRotateResponseSchema.parse({ success: success, error: 'catalyst experienced and error rotating the key' });
+			return JWTRotateResponseSchema.parse({
+				success: success,
+				error: 'catalyst experienced and error rotating the key',
+			});
 		}
 	}
 
@@ -136,7 +139,7 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 						claim: claim,
 						check: await this.env.AUTHZED.canReadFromDataChannel(claim, userParse.data.userId),
 					};
-				}),
+				})
 			)
 		).filter((check) => {
 			return !check.check;
@@ -166,7 +169,7 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 					audience: audience, // Use the resolved audience
 					jti: jwt.jti, // Pass the jti we generated
 				},
-				expiresIn,
+				expiresIn
 			);
 
 			// Register the token AFTER signing with the actual expiry
@@ -180,7 +183,8 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 				id: jwt.jti, // Critical: Use JWT's jti as the registry ID
 				name: (jwtRequest.name && jwtRequest.name.trim()) || `User token for ${emailForDisplay}`,
 				description:
-					(jwtRequest.description && jwtRequest.description.trim()) || `User token with ${jwtRequest.claims.length} data channel claims`,
+					(jwtRequest.description && jwtRequest.description.trim()) ||
+					`User token with ${jwtRequest.claims.length} data channel claims`,
 				claims: jwt.claims,
 				expiry: new Date(signedJwt.expiration), // Use actual JWT expiry
 				organization: userParse.data.orgId,
@@ -230,7 +234,9 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 		const stub = this.env.KEY_PROVIDER.get(id);
 
 		// decode the CT token
-		const decodedToken: { success: boolean; payload: CatalystJWTPayload } = await stub.decodeToken(token.catalystToken);
+		const decodedToken: { success: boolean; payload: CatalystJWTPayload } = await stub.decodeToken(
+			token.catalystToken
+		);
 		if (!decodedToken?.payload || !decodedToken.payload.claims) {
 			return JWTSigningResponseSchema.parse({
 				success: false,
@@ -256,7 +262,12 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 		}
 
 		// Create the JWT object first to get the JTI
-		const jwt = new JWT(decodedToken.payload.sub!, [claim], 'catalyst:system:jwt:latest', JWTAudience.enum['catalyst:datachannel']);
+		const jwt = new JWT(
+			decodedToken.payload.sub!,
+			[claim],
+			'catalyst:system:jwt:latest',
+			JWTAudience.enum['catalyst:datachannel']
+		);
 
 		const expiresIn = 5 * DEFAULT_STANDARD_DURATIONS.M; // 5 minutes
 
@@ -270,7 +281,7 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 					audience: JWTAudience.enum['catalyst:datachannel'],
 					jti: jwt.jti, // Pass the jti we generated
 				},
-				expiresIn,
+				expiresIn
 			);
 
 			return JWTSigningResponseSchema.parse({
@@ -301,7 +312,10 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 	 * @param keyNamespace The namespace for signing keys (defaults to 'default')
 	 * @returns Promise containing a response with access tokens for each data channel
 	 */
-	async splitTokenIntoSingleUseTokens(catalystToken: string, keyNamespace: string = 'default'): Promise<DataChannelMultiAccessResponse> {
+	async splitTokenIntoSingleUseTokens(
+		catalystToken: string,
+		keyNamespace: string = 'default'
+	): Promise<DataChannelMultiAccessResponse> {
 		const parsedTokenResult = await this.validateToken(catalystToken, keyNamespace);
 		// only propagate the error if the catalyst token is invalid
 		if (!parsedTokenResult.valid) {
@@ -323,7 +337,10 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 		const result = DataChannelStoredSchema.array().safeParse(allChannels);
 		if (!result.success) {
 			console.error('[splitTokenIntoSingleUseTokens] Failed to parse array of data channels');
-			console.error('[splitTokenIntoSingleUseTokens] Validation errors:', JSON.stringify(result.error.format(), null, 2));
+			console.error(
+				'[splitTokenIntoSingleUseTokens] Validation errors:',
+				JSON.stringify(result.error.format(), null, 2)
+			);
 			console.error('[splitTokenIntoSingleUseTokens] Raw channel data:', JSON.stringify(allChannels, null, 2));
 
 			// Try parsing each channel individually to identify which one(s) fail
@@ -337,7 +354,10 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 				}
 			});
 
-			return DataChannelMultiAccessResponseSchema.parse({ success: false, error: 'internal error processing channel information' });
+			return DataChannelMultiAccessResponseSchema.parse({
+				success: false,
+				error: 'internal error processing channel information',
+			});
 		}
 
 		console.log('[splitTokenIntoSingleUseTokens] Successfully parsed channels:', result.data.length);
@@ -354,6 +374,10 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 			});
 		}
 
+		// Extract userId from entity (format: "orgId/email")
+		const entityParts = parsedTokenResult.entity.split('/');
+		const userId = entityParts[entityParts.length - 1];
+
 		const singleUseTokens: DataChannelAccessToken[] = [];
 		for (const claim of parsedTokenResult.claims) {
 			// Check if this claim has a corresponding channel
@@ -365,6 +389,27 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 					success: false,
 					claim: claim,
 					error: 'Channel not found or not accessible',
+				});
+				continue;
+			}
+
+			// Re-check AuthZed permission at split time (Bug 6: revoked partnerships)
+			try {
+				const hasPermission = await this.env.AUTHZED.canReadFromDataChannel(claim, userId);
+				if (!hasPermission) {
+					singleUseTokens.push({
+						success: false,
+						claim: claim,
+						error: 'Permission denied for data channel',
+					});
+					continue;
+				}
+			} catch (permError) {
+				console.error(`Failed to verify permission for claim ${claim}:`, permError);
+				singleUseTokens.push({
+					success: false,
+					claim: claim,
+					error: 'Permission verification failed',
 				});
 				continue;
 			}
@@ -430,7 +475,10 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 		// Check registry status for gateway tokens (Deleted tokens MUST fail authentication)
 		try {
 			// Use validateToken method which performs atomic validation
-			const registryValidation = await this.env.ISSUED_JWT_REGISTRY.validateToken(validationResult.jwtId, keyNamespace);
+			const registryValidation = await this.env.ISSUED_JWT_REGISTRY.validateToken(
+				validationResult.jwtId,
+				keyNamespace
+			);
 
 			if (!registryValidation.valid) {
 				// Token is either not found, revoked, deleted, or expired in registry
@@ -477,11 +525,15 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 			purpose: string;
 			duration?: number; // Duration in seconds
 		},
-		keyNamespace: string = 'default',
+		keyNamespace: string = 'default'
 	): Promise<JWTSigningResponse> {
 		// Validate calling service
 		// TODO: move this to a configurable list
-		const ALLOWED_SYSTEM_SERVICES: CatalystSystemService[] = ['data-channel-certifier', 'scheduled-validator', 'gateway-single-use-token'];
+		const ALLOWED_SYSTEM_SERVICES: CatalystSystemService[] = [
+			'data-channel-certifier',
+			'scheduled-validator',
+			'gateway-single-use-token',
+		];
 
 		if (!request.callingService || request.callingService.trim() === '') {
 			return JWTSigningResponseSchema.parse({
@@ -525,7 +577,12 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 		const expiresIn = duration * 1000;
 
 		// Create the JWT object first to get the JTI
-		const jwt = new JWT(`system-${request.callingService}`, claims, 'catalyst:system:jwt:latest', JWTAudience.enum['catalyst:datachannel']);
+		const jwt = new JWT(
+			`system-${request.callingService}`,
+			claims,
+			'catalyst:system:jwt:latest',
+			JWTAudience.enum['catalyst:datachannel']
+		);
 
 		try {
 			// Sign the JWT first to get the exact expiry timestamp
@@ -539,17 +596,21 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 					audience: JWTAudience.enum['catalyst:datachannel'],
 					jti: jwt.jti, // Pass the jti we generated
 				},
-				expiresIn,
+				expiresIn
 			);
 
 			// Skip registry storage for validation service tokens (ephemeral, high-frequency)
 			// These tokens are short-lived (5 min) and created frequently for validation purposes
 			// Both data-channel-certifier and scheduled-validator create many tokens per day
-			const EPHEMERAL_SERVICES: CatalystSystemService[] = ['data-channel-certifier', 'scheduled-validator', 'gateway-single-use-token'];
+			const EPHEMERAL_SERVICES: CatalystSystemService[] = [
+				'data-channel-certifier',
+				'scheduled-validator',
+				'gateway-single-use-token',
+			];
 			if (EPHEMERAL_SERVICES.includes(request.callingService)) {
 				// Log for audit trail without storing in registry
 				console.log(
-					`Ephemeral system JWT created for service: ${request.callingService}, purpose: ${request.purpose}, claims: ${claims.join(',')}`,
+					`Ephemeral system JWT created for service: ${request.callingService}, purpose: ${request.purpose}, claims: ${claims.join(',')}`
 				);
 
 				return JWTSigningResponseSchema.parse({
@@ -574,7 +635,9 @@ export default class JWTWorker extends WorkerEntrypoint<Env> {
 			await this.env.ISSUED_JWT_REGISTRY.createSystem(registryEntry, 'authx_token_api', keyNamespace);
 
 			// Log system token creation for audit
-			console.log(`System JWT created for service: ${request.callingService}, purpose: ${request.purpose}, claims: ${claims.join(',')}`);
+			console.log(
+				`System JWT created for service: ${request.callingService}, purpose: ${request.purpose}, claims: ${claims.join(',')}`
+			);
 
 			// Return properly formatted response matching JWTSigningResponse schema
 			return JWTSigningResponseSchema.parse({

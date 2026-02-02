@@ -42,6 +42,7 @@ export default function PartnersListComponent({
     const [partners, setPartners] = useState<OrgInvite[]>([]);
     const [invitations, setInvitations] = useState<OrgInvite[]>([]);
     const [selectedPartner, setSelectedPartner] = useState<OrgInvite | null>(null);
+    const [togglingId, setTogglingId] = useState<string | null>(null);
     const { user } = useUser();
     function fetchInvites() {
         setHasError(false);
@@ -72,7 +73,7 @@ export default function PartnersListComponent({
             .then(fetchInvites)
             .catch(() => {
                 setHasError(true);
-                setErrorMessage('An error occurred while accepting the invite. Please try again later.');
+                setErrorMessage('An error occurred while removing the partner. Please try again later.');
             });
     }
     useEffect(() => {
@@ -131,8 +132,10 @@ export default function PartnersListComponent({
                                                         <Switch
                                                             data-testid={`partners-row-${partner.id}-toggle`}
                                                             colorScheme="green"
-                                                            defaultChecked={partner.isActive}
+                                                            isChecked={partner.isActive}
+                                                            isDisabled={togglingId === partner.id}
                                                             onChange={() => {
+                                                                setTogglingId(partner.id);
                                                                 togglePartnership(partner.id)
                                                                     .then(fetchInvites)
                                                                     .catch(() => {
@@ -140,7 +143,8 @@ export default function PartnersListComponent({
                                                                         setErrorMessage(
                                                                             'An error occurred while toggling the partner. Please try again later.'
                                                                         );
-                                                                    });
+                                                                    })
+                                                                    .finally(() => setTogglingId(null));
                                                             }}
                                                         />
                                                         <TrashButton
