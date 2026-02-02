@@ -2,7 +2,13 @@ import { env, SELF } from 'cloudflare:test';
 import { decodeJwt } from 'jose';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { DEFAULT_STANDARD_DURATIONS, JWTAudience } from '@catalyst/schemas';
-import { clearAllAuthzedRoles, custodianCreatesDataChannel, generateDataChannels, TEST_ORG_ID, validUsers } from '../utils/testUtils';
+import {
+	clearAllAuthzedRoles,
+	custodianCreatesDataChannel,
+	generateDataChannels,
+	TEST_ORG_ID,
+	validUsers,
+} from '../utils/testUtils';
 
 /**
  * Integration Tests: Catalyst Token Splitting
@@ -33,7 +39,7 @@ describe('Integration: Catalyst Token Splitting Workflows', () => {
 					claims: channelIds,
 				},
 				3600 * 1000, // 1 hour
-				{ cfToken: CUSTODIAN_CF_TOKEN },
+				{ cfToken: CUSTODIAN_CF_TOKEN }
 			);
 
 			expect(catalystTokenResponse.success).toBe(true);
@@ -99,7 +105,7 @@ describe('Integration: Catalyst Token Splitting Workflows', () => {
 						entity: `${TEST_ORG_ID}/${CUSTODIAN_USER.email}`,
 						claims: channelIds,
 					},
-					3600 * 1000,
+					3600 * 1000
 				);
 			})();
 
@@ -110,7 +116,7 @@ describe('Integration: Catalyst Token Splitting Workflows', () => {
 				{
 					catalystToken: catalystToken.token,
 				},
-				'default',
+				'default'
 			);
 
 			expect(singleUseResponse.success).toBe(true);
@@ -163,7 +169,7 @@ describe('Integration: Catalyst Token Splitting Workflows', () => {
 					claims: allClaims,
 				},
 				3600 * 1000,
-				{ cfToken: CUSTODIAN_CF_TOKEN },
+				{ cfToken: CUSTODIAN_CF_TOKEN }
 			);
 
 			expect(catalystTokenResponse.success).toBe(true);
@@ -212,7 +218,7 @@ describe('Integration: Catalyst Token Splitting Workflows', () => {
 					claims: channelIds,
 				},
 				3600 * 1000,
-				{ cfToken: CUSTODIAN_CF_TOKEN },
+				{ cfToken: CUSTODIAN_CF_TOKEN }
 			);
 
 			expect(catalystTokenResponse.success).toBe(true);
@@ -261,6 +267,49 @@ describe('Integration: Catalyst Token Splitting Workflows', () => {
 		});
 	});
 
+	describe('AuthZed Permission Revocation During Token Splitting', () => {
+		it('should deny single-use token when AuthZed permission is revoked after catalyst token creation', async () => {
+			await env.AUTHZED.addDataCustodianToOrg(TEST_ORG_ID, CUSTODIAN_USER.email);
+
+			const channels = generateDataChannels(2);
+			const createdChannels = await Promise.all(channels.map((ch) => custodianCreatesDataChannel(ch)));
+			const channelIds = createdChannels.map((ch) => ch.id);
+
+			// Sign a catalyst token with both channel claims
+			const catalystTokenResponse = await SELF.signJWT(
+				{
+					entity: `${TEST_ORG_ID}/${CUSTODIAN_USER.email}`,
+					claims: channelIds,
+				},
+				3600 * 1000,
+				{ cfToken: CUSTODIAN_CF_TOKEN }
+			);
+
+			expect(catalystTokenResponse.success).toBe(true);
+			const catalystToken = catalystTokenResponse.token!;
+
+			// Revoke org's access to channel 0 via AuthZed
+			await env.AUTHZED.deleteOrgInDataChannel(channelIds[0], TEST_ORG_ID);
+
+			// Split the token — channel 0 should fail, channel 1 should succeed
+			const splitResponse = await SELF.splitTokenIntoSingleUseTokens(catalystToken);
+
+			expect(splitResponse.success).toBe(true);
+			expect(splitResponse.channelPermissions).toBeDefined();
+			expect(splitResponse.channelPermissions).toHaveLength(2);
+
+			const channel0Result = splitResponse.channelPermissions!.find((p) => p.claim === channelIds[0]);
+			expect(channel0Result).toBeDefined();
+			expect(channel0Result!.success).toBe(false);
+			expect(channel0Result!.error).toContain('Permission denied');
+
+			const channel1Result = splitResponse.channelPermissions!.find((p) => p.claim === channelIds[1]);
+			expect(channel1Result).toBeDefined();
+			expect(channel1Result!.success).toBe(true);
+			expect(channel1Result!.singleUseToken).toBeDefined();
+		});
+	});
+
 	describe('Error Handling in Token Splitting', () => {
 		it('should handle catalyst token with empty claims array', async () => {
 			const catalystToken = await (async () => {
@@ -271,7 +320,7 @@ describe('Integration: Catalyst Token Splitting Workflows', () => {
 						entity: `${TEST_ORG_ID}/${CUSTODIAN_USER.email}`,
 						claims: [],
 					},
-					3600 * 1000,
+					3600 * 1000
 				);
 			})();
 
@@ -290,7 +339,7 @@ describe('Integration: Catalyst Token Splitting Workflows', () => {
 						entity: `${TEST_ORG_ID}/${CUSTODIAN_USER.email}`,
 						claims: [''], // Empty string claim
 					},
-					3600 * 1000,
+					3600 * 1000
 				);
 			})();
 

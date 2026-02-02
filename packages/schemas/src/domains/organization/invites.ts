@@ -23,6 +23,7 @@ export const OrgInviteInputSchema = z.object({
     receiver: OrgIdSchema,
     message: safeMessage(),
     isActive: z.boolean(),
+    disabledBy: OrgIdSchema.nullable().default(null),
     createdAt: timestamp(),
     updatedAt: timestamp(),
 });
@@ -35,6 +36,7 @@ export const OrgInviteStoredSchema = z.object({
     receiver: OrgIdSchema,
     message: z.string().max(1000), // Lenient message validation
     isActive: z.boolean(),
+    disabledBy: z.string().min(1).max(100).nullable().optional().default(null),
     createdAt: z.number().int().positive(),
     updatedAt: z.number().int().positive(),
 });
