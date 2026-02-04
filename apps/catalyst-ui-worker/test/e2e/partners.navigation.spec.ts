@@ -59,7 +59,7 @@ test.describe('Partners Navigation', () => {
         await navigateToPartnersPage(page);
 
         // Check if error state is shown (backend may fail in test env)
-        const errorCard = page.getByTestId(PARTNERS.ERROR_CARD);
+        const errorCard = page.getByText('An error occurred while fetching the invites');
         const hasError = await errorCard.isVisible().catch(() => false);
         if (hasError) {
             return;
