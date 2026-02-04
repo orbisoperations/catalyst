@@ -1,6 +1,6 @@
 import { test, expect } from './fixtures/auth';
-import type { Page } from '@playwright/test';
 import { PARTNERS, INVITE } from './utils/test-id-constants';
+import { cleanupPartnershipState } from './utils/partners-utils';
 
 /**
  * Partnership Workflow E2E Tests
@@ -19,104 +19,6 @@ import { PARTNERS, INVITE } from './utils/test-id-constants';
  * to handle cases where a previous run failed mid-way.
  */
 
-/**
- * Clean up any existing partnerships or pending invites between alpha and beta.
- * Runs at the start of each test to ensure clean state.
- *
- * Key insight: Invitations card shows INBOUND invites (from other orgs).
- * - Alpha's invitations show invites FROM others (not TO others)
- * - Beta's invitations show invites FROM Alpha
- * So we primarily clean up by having Beta decline invites from Alpha.
- */
-async function cleanupPartnershipState(alphaPage: Page, betaPage: Page): Promise<void> {
-    // Step 1: Delete any existing partnership (from Alpha's side)
-    await alphaPage.goto('/partners');
-    await expect(alphaPage.getByTestId(PARTNERS.LIST_CARD)).toBeVisible();
-
-    const alphaPartnersCard = alphaPage.getByTestId(PARTNERS.LIST_CARD);
-    const betaPartnerRow = alphaPartnersCard
-        .locator('[data-testid^="partners-row-"]')
-        .filter({ hasText: 'test-org-beta' });
-
-    if ((await betaPartnerRow.count()) > 0) {
-        const deleteButton = betaPartnerRow.locator('[data-testid*="-delete"]');
-        await deleteButton.click();
-        const confirmButton = alphaPage.getByRole('button', { name: /cancel partnership/i });
-        await confirmButton.click();
-        await expect(alphaPartnersCard).not.toContainText('test-org-beta');
-    }
-
-    // Step 2: Beta declines any pending invites FROM Alpha
-    // This is where invites from Alpha will appear
-    await betaPage.goto('/partners');
-    // Wait for partners page to load (list card is always visible)
-    await expect(betaPage.getByTestId(PARTNERS.LIST_CARD)).toBeVisible();
-
-    // Invitations card may not be visible if there are no invitations - check gracefully
-    let betaInvitationsCard = betaPage.getByTestId(PARTNERS.INVITATIONS_CARD);
-    let invitationsVisible = await betaInvitationsCard.isVisible().catch(() => false);
-    let pendingFromAlpha = betaInvitationsCard.getByText('test-org-alpha');
-    let count = invitationsVisible ? await pendingFromAlpha.count() : 0;
-
-    while (count > 0) {
-        await pendingFromAlpha.first().click();
-        await expect(betaPage).toHaveURL(/\/partners\/invite\/accept\/.+/);
-
-        // Beta is receiver, so "Reject" button is visible
-        const rejectButton = betaPage.getByTestId(INVITE.REJECT_BUTTON);
-        await expect(rejectButton).toBeVisible();
-        await rejectButton.click();
-
-        const confirmReject = betaPage.getByTestId(INVITE.CONFIRM_REJECT_BUTTON);
-        await expect(confirmReject).toBeVisible();
-        await confirmReject.click();
-
-        // Navigate back and re-query
-        await betaPage.goto('/partners');
-        await expect(betaPage.getByTestId(PARTNERS.LIST_CARD)).toBeVisible();
-
-        // Re-query the locators after page navigation
-        betaInvitationsCard = betaPage.getByTestId(PARTNERS.INVITATIONS_CARD);
-        invitationsVisible = await betaInvitationsCard.isVisible().catch(() => false);
-        pendingFromAlpha = betaInvitationsCard.getByText('test-org-alpha');
-        count = invitationsVisible ? await pendingFromAlpha.count() : 0;
-    }
-
-    // Step 3: Also check if Alpha has any pending invites showing Beta
-    // (in case the UI shows outbound invites too)
-    await alphaPage.goto('/partners');
-    await expect(alphaPage.getByTestId(PARTNERS.LIST_CARD)).toBeVisible();
-
-    // Invitations card may not be visible if there are no invitations - check gracefully
-    let alphaInvitationsCard = alphaPage.getByTestId(PARTNERS.INVITATIONS_CARD);
-    invitationsVisible = await alphaInvitationsCard.isVisible().catch(() => false);
-    let pendingWithBeta = alphaInvitationsCard.getByText('test-org-beta');
-    count = invitationsVisible ? await pendingWithBeta.count() : 0;
-
-    while (count > 0) {
-        await pendingWithBeta.first().click();
-        await expect(alphaPage).toHaveURL(/\/partners\/invite\/accept\/.+/);
-
-        // Alpha is sender, button might say "Cancel"
-        const cancelButton = alphaPage.getByTestId(INVITE.REJECT_BUTTON);
-        if (await cancelButton.isVisible()) {
-            await cancelButton.click();
-            const confirmReject = alphaPage.getByTestId(INVITE.CONFIRM_REJECT_BUTTON);
-            if (await confirmReject.isVisible()) {
-                await confirmReject.click();
-            }
-        }
-
-        await alphaPage.goto('/partners');
-        await expect(alphaPage.getByTestId(PARTNERS.LIST_CARD)).toBeVisible();
-
-        alphaInvitationsCard = alphaPage.getByTestId(PARTNERS.INVITATIONS_CARD);
-        invitationsVisible = await alphaInvitationsCard.isVisible().catch(() => false);
-        pendingWithBeta = alphaInvitationsCard.getByText('test-org-beta');
-        count = invitationsVisible ? await pendingWithBeta.count() : 0;
-    }
-}
-
 test.describe('Partnership Lifecycle', () => {
     // CRITICAL: These tests MUST run serially because they share test-org-alpha/test-org-beta state.
     // Parallel execution across browser projects causes race conditions.
@@ -126,7 +28,10 @@ test.describe('Partnership Lifecycle', () => {
     // eslint-disable-next-line no-empty-pattern
     test.beforeEach(async ({}, testInfo) => {
         // Skip for non-chromium projects (mobile-chrome, tablet, etc.)
-        test.skip(testInfo.project.name !== 'chromium', 'Partnership workflow tests only run on chromium project');
+        test.skip(
+            !testInfo.project.name.startsWith('chromium'),
+            'Partnership workflow tests only run on chromium projects'
+        );
     });
 
     test('Full partnership lifecycle: create → accept → toggle → delete', async ({
@@ -186,9 +91,13 @@ test.describe('Partnership Lifecycle', () => {
             await alphaPage.goto('/partners');
 
             const partnersCard = alphaPage.getByTestId(PARTNERS.LIST_CARD);
+            // Use .last() to select the most recently created partnership entry.
+            // The DO may retain stale entries from interrupted previous test runs;
+            // .last() ensures we operate on the current entry.
             const partnerRow = partnersCard
                 .locator('[data-testid^="partners-row-"]')
-                .filter({ hasText: 'test-org-beta' });
+                .filter({ hasText: 'test-org-beta' })
+                .last();
             const toggle = partnerRow.locator('[data-testid*="-toggle"]');
 
             await expect(toggle).toBeVisible();
@@ -208,7 +117,8 @@ test.describe('Partnership Lifecycle', () => {
             const partnersCard = alphaPage.getByTestId(PARTNERS.LIST_CARD);
             const partnerRow = partnersCard
                 .locator('[data-testid^="partners-row-"]')
-                .filter({ hasText: 'test-org-beta' });
+                .filter({ hasText: 'test-org-beta' })
+                .last();
             const deleteButton = partnerRow.locator('[data-testid*="-delete"]');
 
             await expect(deleteButton).toBeVisible();
