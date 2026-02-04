@@ -96,21 +96,15 @@ test.describe('Partnership Toggle Bug Fixes', () => {
 
         await test.step('Step 6: Beta cannot re-enable (tug-of-war prevention)', async () => {
             const toggle = getPartnerToggle(betaPage, 'test-org-alpha');
-            await toggle.click();
 
-            // Server rejects with InvalidOperationError → ErrorCard replaces the table
-            const errorCard = betaPage.getByText('An error occurred while toggling the partner');
-            await expect(errorCard).toBeVisible({ timeout: 10000 });
+            // Toggle should be disabled — Beta cannot re-enable what Alpha disabled
+            await expect(toggle).toBeDisabled();
+            await expect(toggle).not.toBeChecked();
 
-            // Click Retry to reload the partners list
-            const retryButton = betaPage.getByRole('button', { name: 'Retry' });
-            await expect(retryButton).toBeVisible();
-            await retryButton.click();
-
-            // After reload, toggle should still be unchecked
-            const toggleAfterRetry = getPartnerToggle(betaPage, 'test-org-alpha');
-            await expect(toggleAfterRetry).toBeVisible();
-            await expect(toggleAfterRetry).not.toBeChecked();
+            // Hover over the toggle's wrapper to trigger the tooltip
+            await toggle.hover();
+            const tooltip = betaPage.getByText('Only test-org-alpha can re-enable this partnership');
+            await expect(tooltip).toBeVisible({ timeout: 5000 });
         });
 
         await test.step('Step 7: Alpha re-enables the partnership', async () => {

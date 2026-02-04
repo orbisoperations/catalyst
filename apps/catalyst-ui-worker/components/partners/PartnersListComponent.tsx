@@ -20,6 +20,7 @@ import {
     ModalHeader,
     ModalOverlay,
     Switch,
+    Tooltip,
     useDisclosure,
 } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
@@ -129,24 +130,47 @@ export default function PartnersListComponent({
                                                 </OpenButton>
                                                 {user?.custom.isAdmin ? (
                                                     <Flex gap={10} align={'center'}>
-                                                        <Switch
-                                                            data-testid={`partners-row-${partner.id}-toggle`}
-                                                            colorScheme="green"
-                                                            isChecked={partner.isActive}
-                                                            isDisabled={togglingId === partner.id}
-                                                            onChange={() => {
-                                                                setTogglingId(partner.id);
-                                                                togglePartnership(partner.id)
-                                                                    .then(fetchInvites)
-                                                                    .catch(() => {
-                                                                        setHasError(true);
-                                                                        setErrorMessage(
-                                                                            'An error occurred while toggling the partner. Please try again later.'
-                                                                        );
-                                                                    })
-                                                                    .finally(() => setTogglingId(null));
-                                                            }}
-                                                        />
+                                                        {(() => {
+                                                            const isDisabledByOtherOrg =
+                                                                !partner.isActive &&
+                                                                partner.disabledBy !== null &&
+                                                                partner.disabledBy !== user?.custom.org;
+                                                            return (
+                                                                <Tooltip
+                                                                    hasArrow
+                                                                    label={
+                                                                        isDisabledByOtherOrg
+                                                                            ? `Only ${partner.disabledBy} can re-enable this partnership`
+                                                                            : undefined
+                                                                    }
+                                                                    isDisabled={!isDisabledByOtherOrg}
+                                                                >
+                                                                    <Box as="span">
+                                                                        <Switch
+                                                                            data-testid={`partners-row-${partner.id}-toggle`}
+                                                                            colorScheme="green"
+                                                                            isChecked={partner.isActive}
+                                                                            isDisabled={
+                                                                                togglingId === partner.id ||
+                                                                                isDisabledByOtherOrg
+                                                                            }
+                                                                            onChange={() => {
+                                                                                setTogglingId(partner.id);
+                                                                                togglePartnership(partner.id)
+                                                                                    .then(fetchInvites)
+                                                                                    .catch(() => {
+                                                                                        setHasError(true);
+                                                                                        setErrorMessage(
+                                                                                            'An error occurred while toggling the partner. Please try again later.'
+                                                                                        );
+                                                                                    })
+                                                                                    .finally(() => setTogglingId(null));
+                                                                            }}
+                                                                        />
+                                                                    </Box>
+                                                                </Tooltip>
+                                                            );
+                                                        })()}
                                                         <TrashButton
                                                             data-testid={`partners-row-${partner.id}-delete`}
                                                             onClick={() => {
