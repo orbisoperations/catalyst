@@ -35,6 +35,7 @@ async function testCanViewPartnersPage(page: Page) {
     const isLoaded = await isPartnersPageLoaded(page);
     if (!isLoaded) {
         // Backend API may fail in test environment - verify error state is shown
+        // Backend API may fail in test environment - verify error state is shown
         const errorCard = page.getByTestId(PARTNERS.ERROR_CARD);
         const hasError = await errorCard.isVisible().catch(() => false);
         if (hasError) {
@@ -53,6 +54,7 @@ async function testCanViewInvitationsSection(page: Page) {
     // Check if page loaded successfully or shows error state
     const isLoaded = await isPartnersPageLoaded(page);
     if (!isLoaded) {
+        // Backend API may fail - verify error state is shown instead
         // Backend API may fail - verify error state is shown instead
         const errorCard = page.getByTestId(PARTNERS.ERROR_CARD);
         const hasError = await errorCard.isVisible().catch(() => false);
