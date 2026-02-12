@@ -7,7 +7,7 @@
     "@oclif/core": "catalog:",
     "@oclif/plugin-help": "catalog:",
     "@oclif/plugin-plugins": "catalog:",
-    "axios": "^1.6.8",
+    "axios": "^1.13.5",
     "graphql-request": "catalog:"
   },
   "description": "Catalyst CLI",
