@@ -92,11 +92,27 @@ export default defineConfig({
         {
             name: 'chromium',
             testMatch: /e2e\/.*\.spec\.ts/,
+            testIgnore: /partners\.(toggle|workflow)\.spec\.ts/,
             dependencies: ['auth-setup'],
             use: {
                 ...devices['Desktop Chrome'],
                 viewport: { width: 1280, height: 720 },
                 // Default storage state - tests can override per-fixture
+                storageState: AUTH_FILES['data-custodian'],
+            },
+        },
+
+        // Partnership mutation tests run serially — both toggle and workflow specs
+        // create partnerships between alpha↔beta, so concurrent runs cause conflicts.
+        {
+            name: 'chromium-partnerships',
+            testMatch: /partners\.(toggle|workflow)\.spec\.ts/,
+            dependencies: ['auth-setup'],
+            workers: 1,
+            fullyParallel: false,
+            use: {
+                ...devices['Desktop Chrome'],
+                viewport: { width: 1280, height: 720 },
                 storageState: AUTH_FILES['data-custodian'],
             },
         },

@@ -36,7 +36,6 @@ type ListIssuedJWTRegistryProps = {
 export default function APIKeysComponent({ listIJWTRegistry, deleteIJWTRegistry }: ListIssuedJWTRegistryProps) {
     const router = useRouter();
     const { user } = useUser();
-    const [adminFlag, setAdminFlag] = useState<boolean>(false);
     const [hasError, setHasError] = useState<boolean>(false);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [errorMessage, setErrorMessage] = useState<string>('');
@@ -47,7 +46,6 @@ export default function APIKeysComponent({ listIJWTRegistry, deleteIJWTRegistry 
     function fetchIssuedJWTRegistry() {
         setHasError(false);
         setIsLoading(true);
-        setAdminFlag(!!user?.custom.isPlatformAdmin);
         listIJWTRegistry()
             .then((data) => {
                 setIsLoading(false);
@@ -138,7 +136,7 @@ export default function APIKeysComponent({ listIJWTRegistry, deleteIJWTRegistry 
                         <ErrorCard title="Error" message={errorMessage} retry={fetchIssuedJWTRegistry} />
                     ) : (
                         <Box>
-                            {adminFlag && (
+                            {!!user?.custom.isPlatformAdmin && (
                                 <>
                                     <OrbisCard title="JWT Admin Pannel" mb={5} data-testid="tokens-admin-panel">
                                         <Text>JWT Admin Actions</Text>
