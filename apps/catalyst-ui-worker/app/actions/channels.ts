@@ -2,6 +2,23 @@
 import { getRegistrar, DataChannelInputSchema, DataChannel } from '@catalyst/schemas';
 import { getCloudflareEnv, getCFAuthorizationToken } from '@/app/lib/server-utils';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function formatZodError(error: { issues: any[] }): string {
+    // Prioritize name field errors as they're most user-facing
+    const nameErrors = error.issues
+        .filter((issue) => issue.path?.includes('name'))
+        .map((issue) => issue.message as string);
+
+    if (nameErrors.length > 0) {
+        return nameErrors[0];
+    }
+
+    // Format other validation errors
+    const fieldErrors = error.issues.map((err) => `${err.path?.join('.') ?? ''}: ${err.message}`).join(', ');
+
+    return `Invalid data channel - ${fieldErrors || 'Unknown validation error'}`;
+}
+
 export async function createDataChannel(formData: FormData) {
     const env = getCloudflareEnv();
     const api = getRegistrar(env);
@@ -20,31 +37,9 @@ export async function createDataChannel(formData: FormData) {
     const parsed = DataChannelInputSchema.omit({ id: true }).safeParse(data);
 
     if (!parsed.success) {
-        console.error('Validation failed for data:', data);
-        console.error('Full error object:', JSON.stringify(parsed.error, null, 2));
-
-        // Use Zod's error formatting to extract name field errors specifically
-        const nameErrors = parsed.error.issues
-            .filter((issue) => issue.path.includes('name'))
-            .map((issue) => issue.message);
-
-        // If there are name-specific errors, return validation error result
-        if (nameErrors.length > 0) {
-            return {
-                success: false as const,
-                error: nameErrors[0],
-            };
-        }
-
-        // Format other validation errors using Zod's issue structure
-        const fieldErrors =
-            parsed.error.issues?.map((err) => `${err.path.join('.')}: ${err.message}`).join(', ') ||
-            'Unknown validation error';
-        console.error('Validation errors:', fieldErrors);
-        return {
-            success: false as const,
-            error: `Invalid data channel - ${fieldErrors}`,
-        };
+        const errorMessage = formatZodError(parsed.error);
+        console.error('Validation failed:', errorMessage);
+        return { success: false as const, error: errorMessage };
     }
     const newChannel = await api.create('default', parsed.data, tokenObject);
     if (!newChannel.success) {
@@ -114,31 +109,9 @@ export async function updateChannel(formData: FormData) {
 
     const parsed = DataChannelInputSchema.safeParse(dataChannel);
     if (!parsed.success) {
-        console.error('Validation failed for data:', dataChannel);
-        console.error('Full error object:', JSON.stringify(parsed.error, null, 2));
-
-        // Use Zod's error formatting to extract name field errors specifically
-        const nameErrors = parsed.error.issues
-            .filter((issue) => issue.path.includes('name'))
-            .map((issue) => issue.message);
-
-        // If there are name-specific errors, return validation error result
-        if (nameErrors.length > 0) {
-            return {
-                success: false as const,
-                error: nameErrors[0],
-            };
-        }
-
-        // Format other validation errors using Zod's issue structure
-        const fieldErrors =
-            parsed.error.issues?.map((err) => `${err.path.join('.')}: ${err.message}`).join(', ') ||
-            'Unknown validation error';
-        console.error('Validation errors:', fieldErrors);
-        return {
-            success: false as const,
-            error: `Invalid data channel - ${fieldErrors}`,
-        };
+        const errorMessage = formatZodError(parsed.error);
+        console.error('Validation failed:', errorMessage);
+        return { success: false as const, error: errorMessage };
     }
     const updateOperation = await api.update('default', parsed.data, tokenObject);
     if (!updateOperation.success) {
