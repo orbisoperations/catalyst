@@ -1,31 +1,16 @@
 'use server';
-import { type ValidationResult, type User, getAuthzed, getCertifier, getUserCache } from '@catalyst/schemas';
-import { cookies } from 'next/headers';
-import { getCloudflareEnv } from '@/app/lib/server-utils';
+import { type ValidationResult, getAuthzed, getCertifier } from '@catalyst/schemas';
+import { getCloudflareEnv, getAuthenticatedUser } from '@/app/lib/server-utils';
 
 export async function canUserValidateChannels(): Promise<boolean> {
-    const env = getCloudflareEnv();
-
     try {
-        // Get the CF_Authorization token from cookies
-        const cfToken = (await cookies()).get('CF_Authorization')?.value;
-        if (!cfToken) {
-            return false;
-        }
-
-        // Validate the token and get user details
-        const userCache = getUserCache(env);
-        const user: User | undefined = (await userCache.getUser(cfToken)) as User | undefined;
+        const user = await getAuthenticatedUser();
         if (!user) {
             return false;
         }
 
-        // Check if user has data_channel_update permission (data custodian or admin)
-        // This checks create, update, and delete permissions
-        const authzed = getAuthzed(env);
-        const hasPermission = await authzed.canCreateUpdateDeleteDataChannel(user.orgId, user.userId);
-
-        return hasPermission;
+        const authzed = getAuthzed(getCloudflareEnv());
+        return await authzed.canCreateUpdateDeleteDataChannel(user.orgId, user.userId);
     } catch (error) {
         console.error('Failed to check user permissions:', error);
         return false;
@@ -36,17 +21,9 @@ export async function validateChannel(channelId: string, endpoint: string, organ
     const env = getCloudflareEnv();
 
     try {
-        // Get the CF_Authorization token from cookies
-        const cfToken = (await cookies()).get('CF_Authorization')?.value;
-        if (!cfToken) {
-            throw new Error('Unauthorized: No authentication token found');
-        }
-
-        // Validate the token and get user details
-        const userCache = getUserCache(env);
-        const user: User | undefined = (await userCache.getUser(cfToken)) as User | undefined;
+        const user = await getAuthenticatedUser();
         if (!user) {
-            throw new Error('Unauthorized: Invalid authentication token');
+            throw new Error('Unauthorized: Authentication required');
         }
 
         // Check if user has data_channel_update permission (data custodian or admin)
