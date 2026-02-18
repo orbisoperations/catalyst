@@ -41,6 +41,7 @@ export class OrganizationMatchmakingDO extends DurableObject {
 			status: 'pending',
 			message,
 			isActive: false,
+			disabledBy: null,
 			createdAt: Date.now(),
 			updatedAt: Date.now(),
 		};
@@ -114,30 +115,58 @@ export class OrganizationMatchmakingDO extends DurableObject {
 	 * ```
 	 */
 	async togglePartnership(orgId: OrgId, inviteId: string): Promise<OrgInvite> {
+		// Pre-validate outside blockConcurrencyWhile to avoid durableObjectReset on expected errors.
+		// Throwing inside blockConcurrencyWhile resets the DO's in-memory state.
 		const orgMailbox = (await this.ctx.storage.get<OrgInvite[]>(orgId)) ?? [];
-
 		const invite = orgMailbox.find((inv) => inv.id === inviteId);
 
 		if (!invite) {
 			throw new InviteNotFoundError(inviteId);
 		}
 
-		const otherOrg = invite.sender === orgId ? invite.receiver : invite.sender;
+		if (invite.status !== 'accepted') {
+			throw new InvalidOperationError('Can only toggle accepted partnerships');
+		}
 
+		const otherOrg = invite.sender === orgId ? invite.receiver : invite.sender;
 		const otherMailbox = (await this.ctx.storage.get<OrgInvite[]>(otherOrg)) ?? [];
 
 		if (!otherMailbox.find((inv) => inv.id === inviteId)) {
 			throw new InviteNotFoundError(inviteId);
 		}
 
-		const updatedInvite: OrgInvite = { ...invite, isActive: !invite.isActive, updatedAt: Date.now() };
+		if (!invite.isActive && invite.disabledBy !== null && invite.disabledBy !== orgId) {
+			throw new InvalidOperationError('Only the organization that disabled this partnership can re-enable it');
+		}
+
+		// Mutation inside blockConcurrencyWhile with fresh reads for atomicity.
+		// The pre-validation above is a fast-reject gate; the critical section
+		// re-reads storage so it never writes against stale data.
+		let updatedInvite!: OrgInvite;
 
 		await this.ctx.blockConcurrencyWhile(async () => {
-			const updatedOrgMailbox = orgMailbox.map((inv) => (inv.id === inviteId ? updatedInvite : inv));
-			const updatedOtherMailbox = otherMailbox.map((inv) => (inv.id === inviteId ? updatedInvite : inv));
+			const freshOrgMailbox = (await this.ctx.storage.get<OrgInvite[]>(orgId)) ?? [];
+			const freshOtherMailbox = (await this.ctx.storage.get<OrgInvite[]>(otherOrg)) ?? [];
+			const freshInvite = freshOrgMailbox.find((inv) => inv.id === inviteId);
 
-			await this.ctx.storage.put(orgId, updatedOrgMailbox);
-			await this.ctx.storage.put(otherOrg, updatedOtherMailbox);
+			if (!freshInvite) {
+				throw new InviteNotFoundError(inviteId);
+			}
+
+			if (freshInvite.isActive) {
+				updatedInvite = { ...freshInvite, isActive: false, disabledBy: orgId, updatedAt: Date.now() };
+			} else {
+				updatedInvite = { ...freshInvite, isActive: true, disabledBy: null, updatedAt: Date.now() };
+			}
+
+			await this.ctx.storage.put(
+				orgId,
+				freshOrgMailbox.map((inv) => (inv.id === inviteId ? updatedInvite : inv))
+			);
+			await this.ctx.storage.put(
+				otherOrg,
+				freshOtherMailbox.map((inv) => (inv.id === inviteId ? updatedInvite : inv))
+			);
 		});
 
 		return updatedInvite;
@@ -263,9 +292,15 @@ export default class OrganizationMatchmakingWorker extends WorkerEntrypoint<Env>
 			const partner = user.orgId === invite.sender ? invite.receiver : invite.sender;
 
 			if (invite.isActive) {
-				await this.env.AUTHZED.addPartnerToOrg(user.orgId, partner);
+				await Promise.all([
+					this.env.AUTHZED.addPartnerToOrg(user.orgId, partner),
+					this.env.AUTHZED.addPartnerToOrg(partner, user.orgId),
+				]);
 			} else {
-				await this.env.AUTHZED.deletePartnerInOrg(user.orgId, partner);
+				await Promise.all([
+					this.env.AUTHZED.deletePartnerInOrg(user.orgId, partner),
+					this.env.AUTHZED.deletePartnerInOrg(partner, user.orgId),
+				]);
 			}
 
 			return OrgInviteStoredResponseSchema.parse({ success: true, data: invite });
