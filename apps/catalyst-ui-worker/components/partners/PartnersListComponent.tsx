@@ -24,7 +24,7 @@ import {
     useDisclosure,
 } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useUser } from '../contexts/User/UserContext';
 import { OrgInvite } from '@catalyst/schemas';
 type PartnersListComponentProps = {
@@ -45,7 +45,9 @@ export default function PartnersListComponent({
     const [selectedPartner, setSelectedPartner] = useState<OrgInvite | null>(null);
     const [togglingId, setTogglingId] = useState<string | null>(null);
     const { user } = useUser();
-    function fetchInvites() {
+    const { isOpen, onOpen, onClose } = useDisclosure();
+
+    const fetchInvites = useCallback(() => {
         setHasError(false);
         return listInvites()
             .then((invites) => {
@@ -66,22 +68,25 @@ export default function PartnersListComponent({
                 setHasError(true);
                 setErrorMessage('An error occurred while fetching the invites. Please try again later.');
             });
-    }
+    }, [listInvites]);
 
-    function deletePartner(inviteID: string) {
-        onClose();
-        return declineInvite(inviteID)
-            .then(fetchInvites)
-            .catch(() => {
-                setHasError(true);
-                setErrorMessage('An error occurred while removing the partner. Please try again later.');
-            });
-    }
+    const deletePartner = useCallback(
+        (inviteID: string) => {
+            onClose();
+            return declineInvite(inviteID)
+                .then(fetchInvites)
+                .catch(() => {
+                    setHasError(true);
+                    setErrorMessage('An error occurred while cancelling the partnership. Please try again later.');
+                });
+        },
+        [declineInvite, fetchInvites, onClose]
+    );
+
     useEffect(() => {
         fetchInvites();
-    }, []);
+    }, [fetchInvites]);
 
-    const { isOpen, onOpen, onClose } = useDisclosure();
     return (
         <ListView
             topbaractions={navigationItems}
@@ -232,7 +237,9 @@ export default function PartnersListComponent({
                             <OrbisButton
                                 colorScheme="red"
                                 onClick={() => {
-                                    deletePartner(selectedPartner?.id ?? '');
+                                    if (selectedPartner?.id) {
+                                        deletePartner(selectedPartner.id);
+                                    }
                                 }}
                             >
                                 Cancel Partnership
@@ -248,14 +255,10 @@ export default function PartnersListComponent({
     );
 }
 
-const OrgInviteMessage = ({ invite, org }: { invite: OrgInvite; org: string }) => {
-    const [message, setMessage] = useState<string>();
-    useEffect(() => {
-        if (invite.sender === org) {
-            setMessage(`You invited ${invite.receiver} to partner with your organization.`);
-        } else {
-            setMessage(`${invite.sender} invited your organization to partner with them.`);
-        }
-    }, [invite, org]);
-    return <Text>{message}</Text>;
-};
+const OrgInviteMessage = ({ invite, org }: { invite: OrgInvite; org: string }) => (
+    <Text>
+        {invite.sender === org
+            ? `You invited ${invite.receiver} to partner with your organization.`
+            : `${invite.sender} invited your organization to partner with them.`}
+    </Text>
+);
