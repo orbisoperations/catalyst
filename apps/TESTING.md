@@ -5,31 +5,31 @@
 Before running tests or developing locally, make sure to start the local development environment by running:
 
 ```bash
-./run_local_dev.sh
+pnpm dev
 ```
 
-This script starts the necessary services including the Authzed container required for testing and development. The Authzed container is essential for running tests that involve permissions and authorization.
+This uses Turborepo to start SpiceDB and all app dev servers. To stop, run `pnpm kill-dev`.
 
 **Requirements:**
 
-- [Podman](https://podman.io/docs/installation) must be installed on your system to run the AuthZed containers
-- Running `pnpm test` for any app requires Podman to be installed and functioning correctly
+- [Docker](https://docs.docker.com/get-docker/) (recommended) or [Podman](https://podman.io/docs/installation) must be installed to run the AuthZed containers
+- Running `pnpm test` for any app requires Docker or Podman to be installed and functioning correctly
 
-## Global App Setup and Podman Automation
+## Global App Setup and Container Runtime Automation
 
 Each app in our system uses a `global-setup.ts` file to configure the test environment before running tests. This file serves several important purposes:
 
 1. **Dependency Compilation**: Automatically builds required dependencies for the app under test
-2. **Container Management**: Spins up necessary services in containers using Podman
+2. **Container Management**: Spins up necessary services in containers using Docker (or Podman as fallback)
 3. **Environment Initialization**: Sets up any other requirements for testing
 
 ### Dependency Compilation
 
 The global setup automatically compiles all dependencies needed by the application.
 
-### Automated Podman Container Setup
+### Automated Container Setup
 
-The global setup automatically handles spinning up the Authzed container using Podman for permission testing.
+The global setup automatically handles spinning up the Authzed container using the detected runtime (Docker or Podman) for permission testing.
 
 This automation:
 
@@ -38,7 +38,7 @@ This automation:
 3. Runs SpiceDB in testing mode with HTTP enabled
 4. Handles errors gracefully, including cases where the container is already running
 
-> **Important**: Podman must be installed on your system for the unit tests to run successfully with `pnpm test`. If you see errors about container creation failures, verify your Podman installation with `podman --version` and ensure it's running correctly.
+> **Important**: Docker or Podman must be installed on your system for the unit tests to run successfully with `pnpm test`. Docker is preferred and detected first. If you see errors about container creation failures, verify your installation with `docker --version` (or `podman --version`) and ensure the daemon is running.
 
 ### Benefits of the Global Setup
 

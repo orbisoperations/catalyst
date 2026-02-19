@@ -90,9 +90,13 @@ Catalyst is built with security as a foundational principle:
 
 ## Startup
 
-To spin the app up, it's recommended to use the `run_local_dev.sh` script found in the root of the repository. This will loop through the various containers found in the apps directory and spin each one up via podman. The script can be run with the following flags:
+To spin the app up, run `pnpm dev` from the root of the repository. This uses Turborepo to start SpiceDB (via Docker or Podman) and all app dev servers concurrently. To stop everything, run `pnpm kill-dev`.
 
-- `--no-ui`: avoids running the client and instead run all of the backend services standalone.
+To run without the UI worker:
+
+```bash
+pnpm dev --filter='!./apps/catalyst-ui-worker'
+```
 
 ## Learn More
 
@@ -100,7 +104,7 @@ For detailed information about each component, please refer to the individual RE
 
 ## Local Port Mapping
 
-When running the local development environment using `./run_local_dev.sh`, the following services are started on their respective ports:
+When running `pnpm dev`, the following services are started on their respective ports:
 
 | Service                    | Port | Inspector Port | Description                                                 |
 | -------------------------- | ---- | -------------- | ----------------------------------------------------------- |
@@ -114,9 +118,9 @@ When running the local development environment using `./run_local_dev.sh`, the f
 | `organization_matchmaking` | 4007 | 6007           | Manages organization partnerships and invitations.          |
 | `data-channel-certifier`   | 4008 | 6008           | Certifies data channel endpoints (cron + service bindings). |
 
-Authzed container (if used locally):
+SpiceDB container (started by `pnpm dev`):
 
-| Service                    | Port  |
-| -------------------------- | ----- |
-| `authzed-container` (gRPC) | 50051 |
-| `authzed-container` (HTTP) | 8449  |
+| Service              | Port  |
+| -------------------- | ----- |
+| `spicedb-dev` (gRPC) | 50052 |
+| `spicedb-dev` (HTTP) | 8449  |

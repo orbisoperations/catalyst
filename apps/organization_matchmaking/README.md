@@ -54,10 +54,10 @@ pnpm run dev
 
 ## Testing
 
-Before running tests, ensure you have [Podman](https://podman.io/docs/installation) installed on your system. The test suite uses Podman to automatically launch an AuthZed container during test execution.
+Before running tests, ensure you have [Docker](https://docs.docker.com/get-docker/) (recommended) or [Podman](https://podman.io/docs/installation) installed on your system. The test suite auto-detects Docker or Podman to launch an AuthZed container during test execution.
 
 ```
 pnpm test
 ```
 
-If tests fail with container errors, verify your Podman installation with `podman --version`.
+If tests fail with container errors, verify your Docker installation with `docker --version` (or `podman --version`).

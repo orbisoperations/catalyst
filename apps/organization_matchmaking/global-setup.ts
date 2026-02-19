@@ -1,66 +1,14 @@
 import childProcess from 'node:child_process';
 import path from 'node:path';
-
-/**
- * Check if SpiceDB is already running
- */
-async function isSpiceDBRunning(): Promise<boolean> {
-	try {
-		const response = await fetch('http://localhost:8449/healthz');
-		return response.ok;
-	} catch {
-		return false;
-	}
-}
-
-/**
- * Detects which container runtime is available
- */
-function detectContainerRuntime(): 'docker' | 'podman' {
-	try {
-		childProcess.execSync('docker --version', { stdio: 'ignore' });
-		return 'docker';
-	} catch {
-		try {
-			childProcess.execSync('podman --version', { stdio: 'ignore' });
-			return 'podman';
-		} catch {
-			throw new Error(
-				'Neither Docker nor Podman found. Please install one of them:\n' +
-					'  Docker: https://docs.docker.com/get-docker/\n' +
-					'  Podman: https://podman.io/getting-started/installation',
-			);
-		}
-	}
-}
-
-/**
- * Waits for SpiceDB to be healthy
- */
-async function waitForSpiceDB(endpoint: string = 'http://localhost:8449', maxWaitMs: number = 30000): Promise<void> {
-	const startTime = Date.now();
-	let currentInterval = 500;
-
-	while (Date.now() - startTime < maxWaitMs) {
-		const isHealthy = await isSpiceDBRunning();
-
-		if (isHealthy) {
-			console.log(`✓ SpiceDB is ready at ${endpoint}`);
-			return;
-		}
-
-		console.log(`Waiting for SpiceDB to be ready... (${Math.round((Date.now() - startTime) / 1000)}s)`);
-
-		await new Promise((resolve) => setTimeout(resolve, currentInterval));
-		currentInterval = Math.min(currentInterval * 1.5, 2000);
-	}
-
-	throw new Error(`SpiceDB did not become healthy within ${maxWaitMs}ms`);
-}
+import {
+	waitForSpiceDB,
+	detectContainerRuntime,
+	isSpiceDBRunning,
+	stopSpiceDBContainer,
+} from '@catalyst/test-utils/spicedb';
 
 // Global setup runs inside Node.js, not `workerd`
 export default async function () {
-	// Build `api-service`'s dependencies
 	console.info('Starting Global Setup for organization_matchmaking');
 
 	// list of dependencies to compile
@@ -107,14 +55,8 @@ export default async function () {
 	].join(' ');
 
 	try {
-		// First, try to stop any existing container with the same name
-		try {
-			childProcess.execSync(`${runtime} stop spicedb-test 2>/dev/null || true`, {
-				stdio: 'ignore',
-			});
-		} catch {
-			// Ignore errors - container might not exist
-		}
+		// Stop any existing SpiceDB container with verification
+		stopSpiceDBContainer(runtime, 'spicedb-test');
 
 		// Start the SpiceDB container synchronously
 		childProcess.execSync(containerCommand, {

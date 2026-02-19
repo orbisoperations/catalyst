@@ -1,8 +1,5 @@
 // test/index.spec.ts
 
-// RUN THIS TO GET IT WORKING
-// podman run -v "$(pwd)"/schema.zaml:/schema.zaml:ro  -p 8449:8443 authzed/spicedb serve-testing --http-enabled --skip-release-check=true --log-level debug --load-configs /schema.zaml
-
 import { SELF, env } from 'cloudflare:test';
 import { describe, expect, it } from 'vitest';
 
