@@ -21,7 +21,7 @@
         "@monaco-editor/react": "catalog:",
         "axios": "^1.6.8",
         "bun": "^1.1.7",
-        "express": "catalog:",
+        "express": "4.22.0",
         "framer-motion": "catalog:",
         "graphql-yoga": "^5.3.1",
         "listhen": "catalog:",
