@@ -20,7 +20,6 @@ import {
     ModalHeader,
     ModalOverlay,
     Switch,
-    Tooltip,
     useDisclosure,
 } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
@@ -118,64 +117,51 @@ export default function PartnersListComponent({
                                     headers={['Partner']}
                                     rows={partners.map((partner) => [
                                         <Box key={partner.id} data-testid={`partners-row-${partner.id}`}>
-                                            <Flex justifyContent={'space-between'}>
-                                                <OpenButton
-                                                    onClick={() =>
-                                                        router.push(
-                                                            '/partners/' +
-                                                                (partner.sender === user?.custom.org
-                                                                    ? partner.receiver
-                                                                    : partner.sender)
-                                                        )
-                                                    }
-                                                >
-                                                    {partner.sender === user?.custom.org
-                                                        ? partner.receiver
-                                                        : partner.sender}
-                                                </OpenButton>
+                                            <Flex justifyContent={'space-between'} align={'center'}>
+                                                <Box>
+                                                    <OpenButton
+                                                        onClick={() =>
+                                                            router.push(
+                                                                '/partners/' +
+                                                                    (partner.sender === user?.custom.org
+                                                                        ? partner.receiver
+                                                                        : partner.sender)
+                                                            )
+                                                        }
+                                                    >
+                                                        {partner.sender === user?.custom.org
+                                                            ? partner.receiver
+                                                            : partner.sender}
+                                                    </OpenButton>
+                                                    <PartnerSharingStatus
+                                                        partner={partner}
+                                                        currentOrg={user?.custom.org as string | undefined}
+                                                    />
+                                                </Box>
                                                 {user?.custom.isAdmin ? (
                                                     <Flex gap={10} align={'center'}>
-                                                        {(() => {
-                                                            const isDisabledByOtherOrg =
-                                                                !partner.isActive &&
-                                                                partner.disabledBy !== null &&
-                                                                partner.disabledBy !== user?.custom.org;
-                                                            return (
-                                                                <Tooltip
-                                                                    hasArrow
-                                                                    label={
-                                                                        isDisabledByOtherOrg
-                                                                            ? `Only ${partner.disabledBy} can re-enable this partnership`
-                                                                            : undefined
-                                                                    }
-                                                                    isDisabled={!isDisabledByOtherOrg}
-                                                                >
-                                                                    <Box as="span">
-                                                                        <Switch
-                                                                            data-testid={`partners-row-${partner.id}-toggle`}
-                                                                            colorScheme="green"
-                                                                            isChecked={partner.isActive}
-                                                                            isDisabled={
-                                                                                togglingId === partner.id ||
-                                                                                isDisabledByOtherOrg
-                                                                            }
-                                                                            onChange={() => {
-                                                                                setTogglingId(partner.id);
-                                                                                togglePartnership(partner.id)
-                                                                                    .then(fetchInvites)
-                                                                                    .catch(() => {
-                                                                                        setHasError(true);
-                                                                                        setErrorMessage(
-                                                                                            'An error occurred while toggling the partner. Please try again later.'
-                                                                                        );
-                                                                                    })
-                                                                                    .finally(() => setTogglingId(null));
-                                                                            }}
-                                                                        />
-                                                                    </Box>
-                                                                </Tooltip>
-                                                            );
-                                                        })()}
+                                                        <Switch
+                                                            data-testid={`partners-row-${partner.id}-toggle`}
+                                                            colorScheme="green"
+                                                            isChecked={
+                                                                partner.sender === user?.custom.org
+                                                                    ? partner.senderEnabled
+                                                                    : partner.receiverEnabled
+                                                            }
+                                                            isDisabled={togglingId === partner.id}
+                                                            onChange={() => {
+                                                                setTogglingId(partner.id);
+                                                                togglePartnership(partner.id)
+                                                                    .then(fetchInvites)
+                                                                    .catch(() => {
+                                                                        setHasError(true);
+                                                                        setErrorMessage(
+                                                                            'An error occurred while toggling the partner. Please try again later.'
+                                                                        );
+                                                                    })
+                                                                    .finally(() => setTogglingId(null));
+                                                            }}
+                                                        />
                                                         <TrashButton
                                                             data-testid={`partners-row-${partner.id}-delete`}
                                                             onClick={() => {
@@ -254,6 +240,18 @@ export default function PartnersListComponent({
         </ListView>
     );
 }
+
+const PartnerSharingStatus = ({ partner, currentOrg }: { partner: OrgInvite; currentOrg?: string }) => {
+    const isSender = partner.sender === currentOrg;
+    const partnerIsSharing = isSender ? partner.receiverEnabled : partner.senderEnabled;
+    const partnerName = isSender ? partner.receiver : partner.sender;
+
+    return (
+        <Text fontSize="xs" color={partnerIsSharing ? 'green.500' : 'gray.500'} mt={1}>
+            {partnerIsSharing ? `${partnerName} is sharing with you` : `${partnerName} is not sharing with you`}
+        </Text>
+    );
+};
 
 const OrgInviteMessage = ({ invite, org }: { invite: OrgInvite; org: string }) => (
     <Text>

@@ -1,7 +1,7 @@
 // test/index.spec.ts
 import { env, runInDurableObject, SELF } from 'cloudflare:test';
-import { describe, expect, it, beforeEach, afterEach } from 'vitest';
-import { OrgInvite, OrgInviteStatusSchema, User } from '@catalyst/schemas';
+import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
+import { OrgInvite, OrgInviteStatusSchema, OrgInviteStoredSchema, User } from '@catalyst/schemas';
 
 const SENDER_ORGANIZATION = 'default';
 
@@ -10,6 +10,27 @@ const SENDER_ORGANIZATION = 'default';
  * @param appendCount - The number of invites to append to the existing invites
  * @returns A list of invites
  */
+function createOldFormatInvite(overrides: {
+	id?: string;
+	sender: string;
+	receiver: string;
+	status?: string;
+	isActive: boolean;
+	disabledBy?: string | null;
+}) {
+	return {
+		id: overrides.id ?? `old-invite-${crypto.randomUUID().slice(0, 8)}`,
+		status: overrides.status ?? 'accepted',
+		sender: overrides.sender,
+		receiver: overrides.receiver,
+		message: 'legacy invite',
+		isActive: overrides.isActive,
+		disabledBy: overrides.disabledBy ?? null,
+		createdAt: Date.now(),
+		updatedAt: Date.now(),
+	};
+}
+
 function generateInvites(maxCount?: number) {
 	// one pending and one accepted
 	// offset by 7 and 10 days respectively
@@ -31,8 +52,8 @@ function generateInvites(maxCount?: number) {
 			sender: 'default',
 			receiver: `test-receiver-org-${i + 1}`,
 			message: `test-message ${i + 1}`,
-			isActive: true,
-			disabledBy: null,
+			senderEnabled: false,
+			receiverEnabled: false,
 			createdAt: now + daysOffset * 24 * 60 * 60 * 1000 + hoursOffset * 60 * 60 * 1000,
 			updatedAt: now + daysOffset * 24 * 60 * 60 * 1000 + hoursOffset * 60 * 60 * 1000,
 		};
@@ -249,10 +270,12 @@ describe('organization matchmaking worker', () => {
 		);
 		expect(acceptedInvite.status).toBe('accepted');
 
+		// Sender toggles their sharing on
 		const toggledInvite: OrgInvite = await stub.togglePartnership('default', createdInvite.id);
 
-		// validate that the invite is toggled (starts inactive after accept, toggles to active)
-		expect(toggledInvite.isActive).toBe(!acceptedInvite.isActive);
+		// Sender's flag flipped, receiver's unchanged
+		expect(toggledInvite.senderEnabled).toBe(true);
+		expect(toggledInvite.receiverEnabled).toBe(false);
 	});
 
 	it('should return appropriate error when invite is not found', async () => {
@@ -347,12 +370,13 @@ describe('organization matchmaking worker', () => {
 		// Get the invite from both mailboxes before toggle
 		const senderReadInvite: OrgInvite = await stub.read(invites[1].sender, sentInvites[1].id);
 		const receiverReadInvite: OrgInvite = await stub.read(invites[1].receiver, sentInvites[1].id);
-		expect(senderReadInvite.isActive).toBe(false);
-		expect(receiverReadInvite.isActive).toBe(false);
+		expect(senderReadInvite.senderEnabled).toBe(false);
+		expect(receiverReadInvite.senderEnabled).toBe(false);
 
-		// Toggle the invite
+		// Sender toggles their sharing on for the second invite
 		const toggledInvite: OrgInvite = await stub.togglePartnership(invites[1].sender, sentInvites[1].id);
-		expect(toggledInvite.isActive).toBe(true);
+		expect(toggledInvite.senderEnabled).toBe(true);
+		expect(toggledInvite.receiverEnabled).toBe(false);
 
 		// Verify the toggle in sender's mailbox (has all 3 invites)
 		const senderMailboxInvites: OrgInvite[] = await stub.list(invites[1].sender);
@@ -361,16 +385,16 @@ describe('organization matchmaking worker', () => {
 		// Check that only the target invite was updated
 		for (const invite of senderMailboxInvites) {
 			if (invite.id === sentInvites[1].id) {
-				expect(invite.isActive).toBe(true);
+				expect(invite.senderEnabled).toBe(true);
 			} else {
-				expect(invite.isActive).toBe(false);
+				expect(invite.senderEnabled).toBe(false);
 			}
 		}
 
 		// Verify in receiver's mailbox (has only 1 invite)
 		const receiverMailboxInvites: OrgInvite[] = await stub.list(invites[1].receiver);
 		expect(receiverMailboxInvites.length).toBe(1);
-		expect(receiverMailboxInvites[0].isActive).toBe(true);
+		expect(receiverMailboxInvites[0].senderEnabled).toBe(true);
 	});
 
 	it('should return error when invite not found in respond', async () => {
@@ -599,9 +623,10 @@ describe('organization matchmaking worker', () => {
 				throw new Error('Failed to toggle invite');
 			}
 
-			// Verify the toggle (starts false after accept, toggles to true)
+			// Verify the toggle — sender toggled, so senderEnabled flipped to true
 			const toggledInvite = response.data as OrgInvite;
-			expect(toggledInvite.isActive).toBe(true);
+			expect(toggledInvite.senderEnabled).toBe(true);
+			expect(toggledInvite.receiverEnabled).toBe(false);
 		});
 
 		it('should return error when token is missing', async () => {
@@ -705,12 +730,11 @@ describe('organization matchmaking worker', () => {
 		}
 	});
 
-	// Bug 5: Tug of war — only the disabling org can re-enable
-	it('should prevent other org from re-enabling a disabled partnership', async () => {
+	// Per-org toggle: sender toggle only flips senderEnabled
+	it('should only flip senderEnabled when sender toggles', async () => {
 		const id = env.ORG_MATCHMAKING.idFromName('default');
 		const stub = env.ORG_MATCHMAKING.get(id);
 
-		// clear the storage
 		await runInDurableObject(stub, async (_: unknown, state: DurableObjectState) => {
 			await state.storage.deleteAll();
 		});
@@ -722,40 +746,89 @@ describe('organization matchmaking worker', () => {
 			inviteToSend.message
 		);
 
-		// Accept the invite (receiver accepts)
 		await stub.respond(inviteToSend.receiver, createdInvite.id, OrgInviteStatusSchema.enum.accepted);
 
-		// Sender enables the partnership
-		const enabledInvite: OrgInvite = await stub.togglePartnership(inviteToSend.sender, createdInvite.id);
-		expect(enabledInvite.isActive).toBe(true);
-		expect(enabledInvite.disabledBy).toBeNull();
+		// Sender enables sharing
+		const afterSenderOn: OrgInvite = await stub.togglePartnership(inviteToSend.sender, createdInvite.id);
+		expect(afterSenderOn.senderEnabled).toBe(true);
+		expect(afterSenderOn.receiverEnabled).toBe(false);
 
-		// Sender disables the partnership
-		const disabledInvite: OrgInvite = await stub.togglePartnership(inviteToSend.sender, createdInvite.id);
-		expect(disabledInvite.isActive).toBe(false);
-		expect(disabledInvite.disabledBy).toBe(inviteToSend.sender);
-
-		// Receiver tries to re-enable — should throw
-		try {
-			await stub.togglePartnership(inviteToSend.receiver, createdInvite.id);
-			expect.fail('Should have thrown error when other org tries to re-enable');
-		} catch (error) {
-			expect(error).toBeDefined();
-			expect((error as Error).message).toContain('Only the organization that disabled');
-		}
-
-		// Sender re-enables — should succeed
-		const reenabledInvite: OrgInvite = await stub.togglePartnership(inviteToSend.sender, createdInvite.id);
-		expect(reenabledInvite.isActive).toBe(true);
-		expect(reenabledInvite.disabledBy).toBeNull();
+		// Sender disables sharing
+		const afterSenderOff: OrgInvite = await stub.togglePartnership(inviteToSend.sender, createdInvite.id);
+		expect(afterSenderOff.senderEnabled).toBe(false);
+		expect(afterSenderOff.receiverEnabled).toBe(false);
 	});
 
-	// Bug 3: Atomic toggle — both mailboxes must be consistent
+	// Per-org toggle: receiver toggle only flips receiverEnabled
+	it('should only flip receiverEnabled when receiver toggles', async () => {
+		const id = env.ORG_MATCHMAKING.idFromName('default');
+		const stub = env.ORG_MATCHMAKING.get(id);
+
+		await runInDurableObject(stub, async (_: unknown, state: DurableObjectState) => {
+			await state.storage.deleteAll();
+		});
+
+		const inviteToSend = generateInvites(1)[0];
+		const createdInvite: OrgInvite = await stub.send(
+			inviteToSend.sender,
+			inviteToSend.receiver,
+			inviteToSend.message
+		);
+
+		await stub.respond(inviteToSend.receiver, createdInvite.id, OrgInviteStatusSchema.enum.accepted);
+
+		// Receiver enables sharing
+		const afterReceiverOn: OrgInvite = await stub.togglePartnership(inviteToSend.receiver, createdInvite.id);
+		expect(afterReceiverOn.senderEnabled).toBe(false);
+		expect(afterReceiverOn.receiverEnabled).toBe(true);
+
+		// Receiver disables sharing
+		const afterReceiverOff: OrgInvite = await stub.togglePartnership(inviteToSend.receiver, createdInvite.id);
+		expect(afterReceiverOff.senderEnabled).toBe(false);
+		expect(afterReceiverOff.receiverEnabled).toBe(false);
+	});
+
+	// Per-org toggle: both orgs toggle independently
+	it('should allow sender and receiver to toggle independently', async () => {
+		const id = env.ORG_MATCHMAKING.idFromName('default');
+		const stub = env.ORG_MATCHMAKING.get(id);
+
+		await runInDurableObject(stub, async (_: unknown, state: DurableObjectState) => {
+			await state.storage.deleteAll();
+		});
+
+		const inviteToSend = generateInvites(1)[0];
+		const createdInvite: OrgInvite = await stub.send(
+			inviteToSend.sender,
+			inviteToSend.receiver,
+			inviteToSend.message
+		);
+
+		await stub.respond(inviteToSend.receiver, createdInvite.id, OrgInviteStatusSchema.enum.accepted);
+
+		// Sender enables
+		await stub.togglePartnership(inviteToSend.sender, createdInvite.id);
+		// Receiver enables
+		const bothOn: OrgInvite = await stub.togglePartnership(inviteToSend.receiver, createdInvite.id);
+		expect(bothOn.senderEnabled).toBe(true);
+		expect(bothOn.receiverEnabled).toBe(true);
+
+		// Sender disables — receiver stays on
+		const senderOff: OrgInvite = await stub.togglePartnership(inviteToSend.sender, createdInvite.id);
+		expect(senderOff.senderEnabled).toBe(false);
+		expect(senderOff.receiverEnabled).toBe(true);
+
+		// Receiver disables
+		const bothOff: OrgInvite = await stub.togglePartnership(inviteToSend.receiver, createdInvite.id);
+		expect(bothOff.senderEnabled).toBe(false);
+		expect(bothOff.receiverEnabled).toBe(false);
+	});
+
+	// Atomic toggle — both mailboxes must be consistent for per-org fields
 	it('should handle toggle atomically across both mailboxes', async () => {
 		const id = env.ORG_MATCHMAKING.idFromName('default');
 		const stub = env.ORG_MATCHMAKING.get(id);
 
-		// clear the storage
 		await runInDurableObject(stub, async (_: unknown, state: DurableObjectState) => {
 			await state.storage.deleteAll();
 		});
@@ -767,31 +840,30 @@ describe('organization matchmaking worker', () => {
 			inviteToSend.message
 		);
 
-		// Accept the invite
 		await stub.respond(inviteToSend.receiver, createdInvite.id, OrgInviteStatusSchema.enum.accepted);
 
-		// Toggle ON
+		// Sender toggles ON
 		await stub.togglePartnership(inviteToSend.sender, createdInvite.id);
 
 		// Verify both mailboxes are consistent
 		const senderInvite: OrgInvite = await stub.read(inviteToSend.sender, createdInvite.id);
 		const receiverInvite: OrgInvite = await stub.read(inviteToSend.receiver, createdInvite.id);
 
-		expect(senderInvite.isActive).toBe(receiverInvite.isActive);
-		expect(senderInvite.disabledBy).toBe(receiverInvite.disabledBy);
-		expect(senderInvite.isActive).toBe(true);
-		expect(senderInvite.disabledBy).toBeNull();
+		expect(senderInvite.senderEnabled).toBe(receiverInvite.senderEnabled);
+		expect(senderInvite.receiverEnabled).toBe(receiverInvite.receiverEnabled);
+		expect(senderInvite.senderEnabled).toBe(true);
+		expect(senderInvite.receiverEnabled).toBe(false);
 
-		// Toggle OFF
-		await stub.togglePartnership(inviteToSend.sender, createdInvite.id);
+		// Receiver toggles ON
+		await stub.togglePartnership(inviteToSend.receiver, createdInvite.id);
 
-		const senderAfterOff: OrgInvite = await stub.read(inviteToSend.sender, createdInvite.id);
-		const receiverAfterOff: OrgInvite = await stub.read(inviteToSend.receiver, createdInvite.id);
+		const senderAfter: OrgInvite = await stub.read(inviteToSend.sender, createdInvite.id);
+		const receiverAfter: OrgInvite = await stub.read(inviteToSend.receiver, createdInvite.id);
 
-		expect(senderAfterOff.isActive).toBe(receiverAfterOff.isActive);
-		expect(senderAfterOff.disabledBy).toBe(receiverAfterOff.disabledBy);
-		expect(senderAfterOff.isActive).toBe(false);
-		expect(senderAfterOff.disabledBy).toBe(inviteToSend.sender);
+		expect(senderAfter.senderEnabled).toBe(receiverAfter.senderEnabled);
+		expect(senderAfter.receiverEnabled).toBe(receiverAfter.receiverEnabled);
+		expect(senderAfter.senderEnabled).toBe(true);
+		expect(senderAfter.receiverEnabled).toBe(true);
 	});
 });
 
@@ -836,7 +908,8 @@ describe('Invite Management', () => {
 			expect(invite.receiver).toBe(inviteToSend.receiver);
 			expect(invite.message).toBe(inviteToSend.message);
 			expect(invite.status).toBe('pending');
-			expect(invite.isActive).toBe(false);
+			expect(invite.senderEnabled).toBe(false);
+			expect(invite.receiverEnabled).toBe(false);
 		});
 
 		it('should return error when token is missing', async () => {
@@ -1121,6 +1194,259 @@ describe('Invite Management', () => {
 		});
 	});
 
+	describe('SpiceDB calls on toggle', () => {
+		it('should call addPartnerToOrg(sender, receiver) when sender enables', async () => {
+			const worker = SELF;
+			const senderUser = createMockUser('default');
+			const receiverOrg = 'test-receiver-org-1';
+
+			await env.AUTHZED.addUserToOrg(senderUser.orgId, senderUser.userId);
+
+			// Send invite as sender
+			mockGetUser(senderUser);
+			env.AUTHZED.canUpdateOrgPartnersInOrg = async () => true;
+			const sendResponse = await worker.sendInvite(receiverOrg, { cfToken: 'valid-token' }, 'test');
+			expect(sendResponse.success).toBe(true);
+			const invite = sendResponse.data as OrgInvite;
+
+			// Accept as receiver
+			const receiverUser = createMockUser(receiverOrg);
+			await env.AUTHZED.addUserToOrg(receiverUser.orgId, receiverUser.userId);
+			mockGetUser(receiverUser);
+			await worker.acceptInvite(invite.id, { cfToken: 'valid-token' });
+
+			// Spy on SpiceDB calls
+			const addSpy = vi.fn(async () => {});
+			const deleteSpy = vi.fn(async () => {});
+			env.AUTHZED.addPartnerToOrg = addSpy;
+			env.AUTHZED.deletePartnerInOrg = deleteSpy;
+
+			// Sender toggles ON
+			mockGetUser(senderUser);
+			const toggleResponse = await worker.togglePartnership(invite.id, { cfToken: 'valid-token' });
+			expect(toggleResponse.success).toBe(true);
+
+			// Only addPartnerToOrg(sender, receiver) called
+			expect(addSpy).toHaveBeenCalledOnce();
+			expect(addSpy).toHaveBeenCalledWith('default', receiverOrg);
+			expect(deleteSpy).not.toHaveBeenCalled();
+		});
+
+		it('should call addPartnerToOrg(receiver, sender) when receiver enables', async () => {
+			const worker = SELF;
+			const senderUser = createMockUser('default');
+			const receiverOrg = 'test-receiver-org-1';
+
+			await env.AUTHZED.addUserToOrg(senderUser.orgId, senderUser.userId);
+
+			// Send and accept
+			mockGetUser(senderUser);
+			env.AUTHZED.canUpdateOrgPartnersInOrg = async () => true;
+			const sendResponse = await worker.sendInvite(receiverOrg, { cfToken: 'valid-token' }, 'test');
+			const invite = sendResponse.data as OrgInvite;
+
+			const receiverUser = createMockUser(receiverOrg);
+			await env.AUTHZED.addUserToOrg(receiverUser.orgId, receiverUser.userId);
+			mockGetUser(receiverUser);
+			await worker.acceptInvite(invite.id, { cfToken: 'valid-token' });
+
+			// Spy on SpiceDB calls
+			const addSpy = vi.fn(async () => {});
+			const deleteSpy = vi.fn(async () => {});
+			env.AUTHZED.addPartnerToOrg = addSpy;
+			env.AUTHZED.deletePartnerInOrg = deleteSpy;
+
+			// Receiver toggles ON
+			mockGetUser(receiverUser);
+			const toggleResponse = await worker.togglePartnership(invite.id, { cfToken: 'valid-token' });
+			expect(toggleResponse.success).toBe(true);
+
+			// Only addPartnerToOrg(receiver, sender) called
+			expect(addSpy).toHaveBeenCalledOnce();
+			expect(addSpy).toHaveBeenCalledWith(receiverOrg, 'default');
+			expect(deleteSpy).not.toHaveBeenCalled();
+		});
+
+		it('should call deletePartnerInOrg when sender disables', async () => {
+			const worker = SELF;
+			const senderUser = createMockUser('default');
+			const receiverOrg = 'test-receiver-org-1';
+
+			await env.AUTHZED.addUserToOrg(senderUser.orgId, senderUser.userId);
+
+			// Send and accept
+			mockGetUser(senderUser);
+			env.AUTHZED.canUpdateOrgPartnersInOrg = async () => true;
+			const sendResponse = await worker.sendInvite(receiverOrg, { cfToken: 'valid-token' }, 'test');
+			const invite = sendResponse.data as OrgInvite;
+
+			const receiverUser = createMockUser(receiverOrg);
+			await env.AUTHZED.addUserToOrg(receiverUser.orgId, receiverUser.userId);
+			mockGetUser(receiverUser);
+			await worker.acceptInvite(invite.id, { cfToken: 'valid-token' });
+
+			// Sender toggles ON first
+			env.AUTHZED.addPartnerToOrg = async () => {};
+			env.AUTHZED.deletePartnerInOrg = async () => {};
+			mockGetUser(senderUser);
+			await worker.togglePartnership(invite.id, { cfToken: 'valid-token' });
+
+			// Now spy and toggle OFF
+			const addSpy = vi.fn(async () => {});
+			const deleteSpy = vi.fn(async () => {});
+			env.AUTHZED.addPartnerToOrg = addSpy;
+			env.AUTHZED.deletePartnerInOrg = deleteSpy;
+
+			const toggleResponse = await worker.togglePartnership(invite.id, { cfToken: 'valid-token' });
+			expect(toggleResponse.success).toBe(true);
+
+			expect(deleteSpy).toHaveBeenCalledOnce();
+			expect(deleteSpy).toHaveBeenCalledWith('default', receiverOrg);
+			expect(addSpy).not.toHaveBeenCalled();
+		});
+
+		it('should rollback DO state when SpiceDB addPartnerToOrg fails', async () => {
+			const worker = SELF;
+			const senderUser = createMockUser('default');
+			const receiverOrg = 'test-receiver-org-1';
+
+			await env.AUTHZED.addUserToOrg(senderUser.orgId, senderUser.userId);
+
+			// Send and accept
+			mockGetUser(senderUser);
+			env.AUTHZED.canUpdateOrgPartnersInOrg = async () => true;
+			const sendResponse = await worker.sendInvite(receiverOrg, { cfToken: 'valid-token' }, 'test');
+			const invite = sendResponse.data as OrgInvite;
+
+			const receiverUser = createMockUser(receiverOrg);
+			await env.AUTHZED.addUserToOrg(receiverUser.orgId, receiverUser.userId);
+			mockGetUser(receiverUser);
+			await worker.acceptInvite(invite.id, { cfToken: 'valid-token' });
+
+			// Make SpiceDB throw on addPartnerToOrg
+			env.AUTHZED.addPartnerToOrg = async () => {
+				throw new Error('SpiceDB unavailable');
+			};
+			env.AUTHZED.deletePartnerInOrg = async () => {};
+
+			// Sender toggles ON — SpiceDB fails, DO should rollback
+			mockGetUser(senderUser);
+			const toggleResponse = await worker.togglePartnership(invite.id, { cfToken: 'valid-token' });
+			expect(toggleResponse.success).toBe(false);
+
+			// Verify DO state was reverted — both flags should be back to false
+			const id = env.ORG_MATCHMAKING.idFromName('default');
+			const stub = env.ORG_MATCHMAKING.get(id);
+			const afterRollback = await stub.read(senderUser.orgId, invite.id);
+			expect(afterRollback.senderEnabled).toBe(false);
+			expect(afterRollback.receiverEnabled).toBe(false);
+		});
+
+		it('should call deletePartnerInOrg(receiver, sender) when receiver disables', async () => {
+			const worker = SELF;
+			const senderUser = createMockUser('default');
+			const receiverOrg = 'test-receiver-org-1';
+
+			await env.AUTHZED.addUserToOrg(senderUser.orgId, senderUser.userId);
+
+			// Send and accept
+			mockGetUser(senderUser);
+			env.AUTHZED.canUpdateOrgPartnersInOrg = async () => true;
+			const sendResponse = await worker.sendInvite(receiverOrg, { cfToken: 'valid-token' }, 'test');
+			const invite = sendResponse.data as OrgInvite;
+
+			const receiverUser = createMockUser(receiverOrg);
+			await env.AUTHZED.addUserToOrg(receiverUser.orgId, receiverUser.userId);
+			mockGetUser(receiverUser);
+			await worker.acceptInvite(invite.id, { cfToken: 'valid-token' });
+
+			// Receiver toggles ON first
+			env.AUTHZED.addPartnerToOrg = async () => {};
+			env.AUTHZED.deletePartnerInOrg = async () => {};
+			mockGetUser(receiverUser);
+			await worker.togglePartnership(invite.id, { cfToken: 'valid-token' });
+
+			// Now spy and toggle OFF
+			const addSpy = vi.fn(async () => {});
+			const deleteSpy = vi.fn(async () => {});
+			env.AUTHZED.addPartnerToOrg = addSpy;
+			env.AUTHZED.deletePartnerInOrg = deleteSpy;
+
+			const toggleResponse = await worker.togglePartnership(invite.id, { cfToken: 'valid-token' });
+			expect(toggleResponse.success).toBe(true);
+
+			// deletePartnerInOrg(receiver, sender) — receiver's data no longer shared with sender
+			expect(deleteSpy).toHaveBeenCalledOnce();
+			expect(deleteSpy).toHaveBeenCalledWith(receiverOrg, 'default');
+			expect(addSpy).not.toHaveBeenCalled();
+		});
+
+		it('should not call addPartnerToOrg on accept', async () => {
+			const worker = SELF;
+			const senderUser = createMockUser('default');
+			const receiverOrg = 'test-receiver-org-1';
+
+			await env.AUTHZED.addUserToOrg(senderUser.orgId, senderUser.userId);
+
+			mockGetUser(senderUser);
+			env.AUTHZED.canUpdateOrgPartnersInOrg = async () => true;
+			const sendResponse = await worker.sendInvite(receiverOrg, { cfToken: 'valid-token' }, 'test');
+			const invite = sendResponse.data as OrgInvite;
+
+			// Spy on SpiceDB calls
+			const addSpy = vi.fn(async () => {});
+			env.AUTHZED.addPartnerToOrg = addSpy;
+
+			const receiverUser = createMockUser(receiverOrg);
+			await env.AUTHZED.addUserToOrg(receiverUser.orgId, receiverUser.userId);
+			mockGetUser(receiverUser);
+
+			const acceptResponse = await worker.acceptInvite(invite.id, { cfToken: 'valid-token' });
+			expect(acceptResponse.success).toBe(true);
+
+			// No SpiceDB calls on accept
+			expect(addSpy).not.toHaveBeenCalled();
+		});
+
+		it('should unconditionally clean up both directions on decline', async () => {
+			const worker = SELF;
+			const senderUser = createMockUser('default');
+			const receiverOrg = 'test-receiver-org-1';
+
+			await env.AUTHZED.addUserToOrg(senderUser.orgId, senderUser.userId);
+
+			// Send, accept, then sender enables
+			mockGetUser(senderUser);
+			env.AUTHZED.canUpdateOrgPartnersInOrg = async () => true;
+			const sendResponse = await worker.sendInvite(receiverOrg, { cfToken: 'valid-token' }, 'test');
+			const invite = sendResponse.data as OrgInvite;
+
+			const receiverUser = createMockUser(receiverOrg);
+			await env.AUTHZED.addUserToOrg(receiverUser.orgId, receiverUser.userId);
+			mockGetUser(receiverUser);
+			await worker.acceptInvite(invite.id, { cfToken: 'valid-token' });
+
+			// Sender enables (only sender direction open)
+			env.AUTHZED.addPartnerToOrg = async () => {};
+			env.AUTHZED.deletePartnerInOrg = async () => {};
+			mockGetUser(senderUser);
+			await worker.togglePartnership(invite.id, { cfToken: 'valid-token' });
+
+			// Now spy and decline
+			const deleteSpy = vi.fn(async () => {});
+			env.AUTHZED.deletePartnerInOrg = deleteSpy;
+
+			mockGetUser(senderUser);
+			const declineResponse = await worker.declineInvite(invite.id, { cfToken: 'valid-token' });
+			expect(declineResponse.success).toBe(true);
+
+			// Both directions cleaned up unconditionally (deletePartnerInOrg is idempotent)
+			expect(deleteSpy).toHaveBeenCalledTimes(2);
+			expect(deleteSpy).toHaveBeenCalledWith('default', receiverOrg);
+			expect(deleteSpy).toHaveBeenCalledWith(receiverOrg, 'default');
+		});
+	});
+
 	describe('listInvites', () => {
 		it('should list all invites for an organization', async () => {
 			const worker = SELF;
@@ -1153,7 +1479,8 @@ describe('Invite Management', () => {
 				expect(listedInvites[i].receiver).toBe(invites[i].receiver);
 				expect(listedInvites[i].message).toBe(invites[i].message);
 				expect(listedInvites[i].status).toBe('pending');
-				expect(listedInvites[i].isActive).toBe(false);
+				expect(listedInvites[i].senderEnabled).toBe(false);
+				expect(listedInvites[i].receiverEnabled).toBe(false);
 			}
 		});
 
@@ -1430,5 +1757,623 @@ describe('Data Custodian Partner Update Restrictions', () => {
 
 		// Cleanup
 		await env.AUTHZED.deleteAdminFromOrg(testOrgId, adminUser.userId);
+	});
+});
+
+describe('DO storage migration (old-format data)', () => {
+	it('should migrate old-format isActive/disabledBy data on list and read', async () => {
+		const id = env.ORG_MATCHMAKING.idFromName('default');
+		const stub = env.ORG_MATCHMAKING.get(id);
+
+		const oldFormatInvite = {
+			id: 'old-format-invite-1',
+			status: 'accepted',
+			sender: 'org-alpha',
+			receiver: 'org-beta',
+			message: 'legacy invite',
+			isActive: true,
+			disabledBy: null,
+			createdAt: Date.now(),
+			updatedAt: Date.now(),
+		};
+
+		// Seed old-format data directly into DO storage
+		await runInDurableObject(stub, async (_: unknown, state: DurableObjectState) => {
+			await state.storage.deleteAll();
+			await state.storage.put('org-alpha', [oldFormatInvite]);
+			await state.storage.put('org-beta', [oldFormatInvite]);
+		});
+
+		// list() should return migrated data
+		const listed = await stub.list('org-alpha');
+		expect(listed).toHaveLength(1);
+		expect(listed[0].senderEnabled).toBe(true);
+		expect(listed[0].receiverEnabled).toBe(true);
+		expect(listed[0]).not.toHaveProperty('isActive');
+		expect(listed[0]).not.toHaveProperty('disabledBy');
+
+		// read() should return migrated data
+		const read = await stub.read('org-alpha', 'old-format-invite-1');
+		expect(read.senderEnabled).toBe(true);
+		expect(read.receiverEnabled).toBe(true);
+	});
+
+	it('should migrate old-format isActive: false to both disabled', async () => {
+		const id = env.ORG_MATCHMAKING.idFromName('default');
+		const stub = env.ORG_MATCHMAKING.get(id);
+
+		const oldFormatInvite = {
+			id: 'old-format-invite-2',
+			status: 'accepted',
+			sender: 'org-alpha',
+			receiver: 'org-beta',
+			message: 'disabled legacy invite',
+			isActive: false,
+			disabledBy: 'org-alpha',
+			createdAt: Date.now(),
+			updatedAt: Date.now(),
+		};
+
+		await runInDurableObject(stub, async (_: unknown, state: DurableObjectState) => {
+			await state.storage.deleteAll();
+			await state.storage.put('org-alpha', [oldFormatInvite]);
+		});
+
+		const listed = await stub.list('org-alpha');
+		expect(listed).toHaveLength(1);
+		expect(listed[0].senderEnabled).toBe(false);
+		expect(listed[0].receiverEnabled).toBe(false);
+	});
+});
+
+describe('Old-format data: write operations and SpiceDB integration', () => {
+	const SENDER = 'org-sender';
+	const RECEIVER = 'org-receiver';
+
+	beforeEach(async () => {
+		const id = env.ORG_MATCHMAKING.idFromName('default');
+		const stub = env.ORG_MATCHMAKING.get(id);
+
+		await runInDurableObject(stub, async (_: unknown, state: DurableObjectState) => {
+			await state.storage.deleteAll();
+		});
+
+		delete (env.AUTHZED as Record<string, unknown>).canUpdateOrgPartnersInOrg;
+	});
+
+	// Test 1: Sender toggles off on isActive: true
+	it('sender toggles off on isActive: true → deletePartnerInOrg(sender, receiver)', async () => {
+		const worker = SELF;
+		const senderUser = createMockUser(SENDER);
+		const invite = createOldFormatInvite({ id: 'old-1', sender: SENDER, receiver: RECEIVER, isActive: true });
+
+		const id = env.ORG_MATCHMAKING.idFromName('default');
+		const stub = env.ORG_MATCHMAKING.get(id);
+
+		await runInDurableObject(stub, async (_: unknown, state: DurableObjectState) => {
+			await state.storage.put(SENDER, [invite]);
+			await state.storage.put(RECEIVER, [invite]);
+		});
+
+		await env.AUTHZED.addUserToOrg(senderUser.orgId, senderUser.userId);
+		mockGetUser(senderUser);
+		env.AUTHZED.canUpdateOrgPartnersInOrg = async () => true;
+
+		const addSpy = vi.fn(async () => {});
+		const deleteSpy = vi.fn(async () => {});
+		env.AUTHZED.addPartnerToOrg = addSpy;
+		env.AUTHZED.deletePartnerInOrg = deleteSpy;
+
+		const response = await worker.togglePartnership('old-1', { cfToken: 'valid-token' });
+		expect(response.success).toBe(true);
+
+		const toggled = (response as { success: true; data: OrgInvite }).data;
+		expect(toggled.senderEnabled).toBe(false);
+		expect(toggled.receiverEnabled).toBe(true);
+
+		expect(deleteSpy).toHaveBeenCalledOnce();
+		expect(deleteSpy).toHaveBeenCalledWith(SENDER, RECEIVER);
+		expect(addSpy).not.toHaveBeenCalled();
+	});
+
+	// Test 2: Receiver toggles off on isActive: true
+	it('receiver toggles off on isActive: true → deletePartnerInOrg(receiver, sender)', async () => {
+		const worker = SELF;
+		const receiverUser = createMockUser(RECEIVER);
+		const invite = createOldFormatInvite({ id: 'old-2', sender: SENDER, receiver: RECEIVER, isActive: true });
+
+		const id = env.ORG_MATCHMAKING.idFromName('default');
+		const stub = env.ORG_MATCHMAKING.get(id);
+
+		await runInDurableObject(stub, async (_: unknown, state: DurableObjectState) => {
+			await state.storage.put(SENDER, [invite]);
+			await state.storage.put(RECEIVER, [invite]);
+		});
+
+		await env.AUTHZED.addUserToOrg(receiverUser.orgId, receiverUser.userId);
+		mockGetUser(receiverUser);
+		env.AUTHZED.canUpdateOrgPartnersInOrg = async () => true;
+
+		const addSpy = vi.fn(async () => {});
+		const deleteSpy = vi.fn(async () => {});
+		env.AUTHZED.addPartnerToOrg = addSpy;
+		env.AUTHZED.deletePartnerInOrg = deleteSpy;
+
+		const response = await worker.togglePartnership('old-2', { cfToken: 'valid-token' });
+		expect(response.success).toBe(true);
+
+		const toggled = (response as { success: true; data: OrgInvite }).data;
+		expect(toggled.senderEnabled).toBe(true);
+		expect(toggled.receiverEnabled).toBe(false);
+
+		expect(deleteSpy).toHaveBeenCalledOnce();
+		expect(deleteSpy).toHaveBeenCalledWith(RECEIVER, SENDER);
+		expect(addSpy).not.toHaveBeenCalled();
+	});
+
+	// Test 3: Sender toggles on from isActive: false, disabledBy: sender
+	it('sender toggles on from isActive: false, disabledBy: sender → addPartnerToOrg(sender, receiver)', async () => {
+		const worker = SELF;
+		const senderUser = createMockUser(SENDER);
+		const invite = createOldFormatInvite({
+			id: 'old-3',
+			sender: SENDER,
+			receiver: RECEIVER,
+			isActive: false,
+			disabledBy: SENDER,
+		});
+
+		const id = env.ORG_MATCHMAKING.idFromName('default');
+		const stub = env.ORG_MATCHMAKING.get(id);
+
+		await runInDurableObject(stub, async (_: unknown, state: DurableObjectState) => {
+			await state.storage.put(SENDER, [invite]);
+			await state.storage.put(RECEIVER, [invite]);
+		});
+
+		await env.AUTHZED.addUserToOrg(senderUser.orgId, senderUser.userId);
+		mockGetUser(senderUser);
+		env.AUTHZED.canUpdateOrgPartnersInOrg = async () => true;
+
+		const addSpy = vi.fn(async () => {});
+		const deleteSpy = vi.fn(async () => {});
+		env.AUTHZED.addPartnerToOrg = addSpy;
+		env.AUTHZED.deletePartnerInOrg = deleteSpy;
+
+		const response = await worker.togglePartnership('old-3', { cfToken: 'valid-token' });
+		expect(response.success).toBe(true);
+
+		const toggled = (response as { success: true; data: OrgInvite }).data;
+		expect(toggled.senderEnabled).toBe(true);
+		expect(toggled.receiverEnabled).toBe(false);
+
+		expect(addSpy).toHaveBeenCalledOnce();
+		expect(addSpy).toHaveBeenCalledWith(SENDER, RECEIVER);
+		expect(deleteSpy).not.toHaveBeenCalled();
+	});
+
+	// Test 4: Tug-of-war liberation — receiver toggles on from isActive: false, disabledBy: sender
+	it('tug-of-war liberation: receiver toggles on from isActive: false, disabledBy: sender', async () => {
+		const worker = SELF;
+		const receiverUser = createMockUser(RECEIVER);
+		const invite = createOldFormatInvite({
+			id: 'old-4',
+			sender: SENDER,
+			receiver: RECEIVER,
+			isActive: false,
+			disabledBy: SENDER,
+		});
+
+		const id = env.ORG_MATCHMAKING.idFromName('default');
+		const stub = env.ORG_MATCHMAKING.get(id);
+
+		await runInDurableObject(stub, async (_: unknown, state: DurableObjectState) => {
+			await state.storage.put(SENDER, [invite]);
+			await state.storage.put(RECEIVER, [invite]);
+		});
+
+		await env.AUTHZED.addUserToOrg(receiverUser.orgId, receiverUser.userId);
+		mockGetUser(receiverUser);
+		env.AUTHZED.canUpdateOrgPartnersInOrg = async () => true;
+
+		const addSpy = vi.fn(async () => {});
+		const deleteSpy = vi.fn(async () => {});
+		env.AUTHZED.addPartnerToOrg = addSpy;
+		env.AUTHZED.deletePartnerInOrg = deleteSpy;
+
+		const response = await worker.togglePartnership('old-4', { cfToken: 'valid-token' });
+		expect(response.success).toBe(true);
+
+		const toggled = (response as { success: true; data: OrgInvite }).data;
+		expect(toggled.receiverEnabled).toBe(true);
+
+		expect(addSpy).toHaveBeenCalledOnce();
+		expect(addSpy).toHaveBeenCalledWith(RECEIVER, SENDER);
+		expect(deleteSpy).not.toHaveBeenCalled();
+	});
+
+	// Test 5: Decline on isActive: true triggers bidirectional cleanup
+	it('decline on isActive: true triggers bidirectional SpiceDB cleanup', async () => {
+		const worker = SELF;
+		const senderUser = createMockUser(SENDER);
+		const invite = createOldFormatInvite({ id: 'old-5', sender: SENDER, receiver: RECEIVER, isActive: true });
+
+		const id = env.ORG_MATCHMAKING.idFromName('default');
+		const stub = env.ORG_MATCHMAKING.get(id);
+
+		await runInDurableObject(stub, async (_: unknown, state: DurableObjectState) => {
+			await state.storage.put(SENDER, [invite]);
+			await state.storage.put(RECEIVER, [invite]);
+		});
+
+		await env.AUTHZED.addUserToOrg(senderUser.orgId, senderUser.userId);
+		mockGetUser(senderUser);
+		env.AUTHZED.canUpdateOrgPartnersInOrg = async () => true;
+
+		const deleteSpy = vi.fn(async () => {});
+		env.AUTHZED.deletePartnerInOrg = deleteSpy;
+
+		const response = await worker.declineInvite('old-5', { cfToken: 'valid-token' });
+		expect(response.success).toBe(true);
+
+		const declined = (response as { success: true; data: OrgInvite }).data;
+		expect(declined.status).toBe('declined');
+
+		expect(deleteSpy).toHaveBeenCalledTimes(2);
+		expect(deleteSpy).toHaveBeenCalledWith(SENDER, RECEIVER);
+		expect(deleteSpy).toHaveBeenCalledWith(RECEIVER, SENDER);
+
+		// Verify mailboxes are empty
+		const senderList = await stub.list(SENDER);
+		const receiverList = await stub.list(RECEIVER);
+		expect(senderList).toHaveLength(0);
+		expect(receiverList).toHaveLength(0);
+	});
+
+	// Test 6: Decline on isActive: false still cleans up (idempotent)
+	it('decline on isActive: false still cleans up both SpiceDB directions', async () => {
+		const worker = SELF;
+		const receiverUser = createMockUser(RECEIVER);
+		const invite = createOldFormatInvite({
+			id: 'old-6',
+			sender: SENDER,
+			receiver: RECEIVER,
+			isActive: false,
+			disabledBy: SENDER,
+		});
+
+		const id = env.ORG_MATCHMAKING.idFromName('default');
+		const stub = env.ORG_MATCHMAKING.get(id);
+
+		await runInDurableObject(stub, async (_: unknown, state: DurableObjectState) => {
+			await state.storage.put(SENDER, [invite]);
+			await state.storage.put(RECEIVER, [invite]);
+		});
+
+		await env.AUTHZED.addUserToOrg(receiverUser.orgId, receiverUser.userId);
+		mockGetUser(receiverUser);
+		env.AUTHZED.canUpdateOrgPartnersInOrg = async () => true;
+
+		const deleteSpy = vi.fn(async () => {});
+		env.AUTHZED.deletePartnerInOrg = deleteSpy;
+
+		const response = await worker.declineInvite('old-6', { cfToken: 'valid-token' });
+		expect(response.success).toBe(true);
+
+		expect(deleteSpy).toHaveBeenCalledTimes(2);
+		expect(deleteSpy).toHaveBeenCalledWith(SENDER, RECEIVER);
+		expect(deleteSpy).toHaveBeenCalledWith(RECEIVER, SENDER);
+
+		const senderList = await stub.list(SENDER);
+		const receiverList = await stub.list(RECEIVER);
+		expect(senderList).toHaveLength(0);
+		expect(receiverList).toHaveLength(0);
+	});
+
+	// Test 7: Mixed mailbox — old + new format invites coexist
+	it('mixed mailbox: old-format invite toggled correctly, new-format invite untouched', async () => {
+		const worker = SELF;
+		const senderUser = createMockUser(SENDER);
+
+		const oldInvite = createOldFormatInvite({ id: 'old-7', sender: SENDER, receiver: RECEIVER, isActive: true });
+		const newInvite: OrgInvite = {
+			id: 'new-7',
+			status: 'accepted',
+			sender: SENDER,
+			receiver: 'org-other',
+			message: 'new format',
+			senderEnabled: true,
+			receiverEnabled: false,
+			createdAt: Date.now(),
+			updatedAt: Date.now(),
+		};
+
+		const id = env.ORG_MATCHMAKING.idFromName('default');
+		const stub = env.ORG_MATCHMAKING.get(id);
+
+		await runInDurableObject(stub, async (_: unknown, state: DurableObjectState) => {
+			await state.storage.put(SENDER, [oldInvite, newInvite]);
+			await state.storage.put(RECEIVER, [oldInvite]);
+		});
+
+		await env.AUTHZED.addUserToOrg(senderUser.orgId, senderUser.userId);
+		mockGetUser(senderUser);
+		env.AUTHZED.canUpdateOrgPartnersInOrg = async () => true;
+
+		const addSpy = vi.fn(async () => {});
+		const deleteSpy = vi.fn(async () => {});
+		env.AUTHZED.addPartnerToOrg = addSpy;
+		env.AUTHZED.deletePartnerInOrg = deleteSpy;
+
+		// Toggle the old invite (sender toggles off from migrated isActive: true)
+		const response = await worker.togglePartnership('old-7', { cfToken: 'valid-token' });
+		expect(response.success).toBe(true);
+
+		const toggled = (response as { success: true; data: OrgInvite }).data;
+		expect(toggled.senderEnabled).toBe(false);
+		expect(toggled.receiverEnabled).toBe(true);
+
+		// Verify the new-format invite is untouched
+		const afterList = await stub.list(SENDER);
+		const untouched = afterList.find((i) => i.id === 'new-7');
+		expect(untouched).toBeDefined();
+		expect(untouched!.senderEnabled).toBe(true);
+		expect(untouched!.receiverEnabled).toBe(false);
+	});
+
+	// Test 8: Sequential toggle round-trip on old data
+	it('sequential toggle round-trip on old data produces correct SpiceDB calls', async () => {
+		const worker = SELF;
+		const senderUser = createMockUser(SENDER);
+		const receiverUser = createMockUser(RECEIVER);
+		const invite = createOldFormatInvite({ id: 'old-8', sender: SENDER, receiver: RECEIVER, isActive: true });
+
+		const id = env.ORG_MATCHMAKING.idFromName('default');
+		const stub = env.ORG_MATCHMAKING.get(id);
+
+		await runInDurableObject(stub, async (_: unknown, state: DurableObjectState) => {
+			await state.storage.put(SENDER, [invite]);
+			await state.storage.put(RECEIVER, [invite]);
+		});
+
+		await env.AUTHZED.addUserToOrg(senderUser.orgId, senderUser.userId);
+		await env.AUTHZED.addUserToOrg(receiverUser.orgId, receiverUser.userId);
+		env.AUTHZED.canUpdateOrgPartnersInOrg = async () => true;
+
+		// Step 1: Sender toggles OFF (from migrated true,true → false,true)
+		let addSpy = vi.fn(async () => {});
+		let deleteSpy = vi.fn(async () => {});
+		env.AUTHZED.addPartnerToOrg = addSpy;
+		env.AUTHZED.deletePartnerInOrg = deleteSpy;
+
+		mockGetUser(senderUser);
+		const step1 = await worker.togglePartnership('old-8', { cfToken: 'valid-token' });
+		expect(step1.success).toBe(true);
+		expect((step1 as { success: true; data: OrgInvite }).data.senderEnabled).toBe(false);
+		expect((step1 as { success: true; data: OrgInvite }).data.receiverEnabled).toBe(true);
+		expect(deleteSpy).toHaveBeenCalledWith(SENDER, RECEIVER);
+
+		// Step 2: Receiver toggles OFF (false,true → false,false)
+		addSpy = vi.fn(async () => {});
+		deleteSpy = vi.fn(async () => {});
+		env.AUTHZED.addPartnerToOrg = addSpy;
+		env.AUTHZED.deletePartnerInOrg = deleteSpy;
+
+		mockGetUser(receiverUser);
+		const step2 = await worker.togglePartnership('old-8', { cfToken: 'valid-token' });
+		expect(step2.success).toBe(true);
+		expect((step2 as { success: true; data: OrgInvite }).data.senderEnabled).toBe(false);
+		expect((step2 as { success: true; data: OrgInvite }).data.receiverEnabled).toBe(false);
+		expect(deleteSpy).toHaveBeenCalledWith(RECEIVER, SENDER);
+
+		// Step 3: Sender toggles ON (false,false → true,false)
+		addSpy = vi.fn(async () => {});
+		deleteSpy = vi.fn(async () => {});
+		env.AUTHZED.addPartnerToOrg = addSpy;
+		env.AUTHZED.deletePartnerInOrg = deleteSpy;
+
+		mockGetUser(senderUser);
+		const step3 = await worker.togglePartnership('old-8', { cfToken: 'valid-token' });
+		expect(step3.success).toBe(true);
+		expect((step3 as { success: true; data: OrgInvite }).data.senderEnabled).toBe(true);
+		expect((step3 as { success: true; data: OrgInvite }).data.receiverEnabled).toBe(false);
+		expect(addSpy).toHaveBeenCalledWith(SENDER, RECEIVER);
+
+		// Step 4: Receiver toggles ON (true,false → true,true)
+		addSpy = vi.fn(async () => {});
+		deleteSpy = vi.fn(async () => {});
+		env.AUTHZED.addPartnerToOrg = addSpy;
+		env.AUTHZED.deletePartnerInOrg = deleteSpy;
+
+		mockGetUser(receiverUser);
+		const step4 = await worker.togglePartnership('old-8', { cfToken: 'valid-token' });
+		expect(step4.success).toBe(true);
+		expect((step4 as { success: true; data: OrgInvite }).data.senderEnabled).toBe(true);
+		expect((step4 as { success: true; data: OrgInvite }).data.receiverEnabled).toBe(true);
+		expect(addSpy).toHaveBeenCalledWith(RECEIVER, SENDER);
+
+		// Verify final state via DO read
+		const final = await stub.read(SENDER, 'old-8');
+		expect(final.senderEnabled).toBe(true);
+		expect(final.receiverEnabled).toBe(true);
+	});
+
+	// Test 9: SpiceDB rollback on old isActive: false data
+	it('SpiceDB add failure on old isActive: false data rolls back senderEnabled', async () => {
+		const worker = SELF;
+		const senderUser = createMockUser(SENDER);
+		const invite = createOldFormatInvite({
+			id: 'old-9',
+			sender: SENDER,
+			receiver: RECEIVER,
+			isActive: false,
+			disabledBy: SENDER,
+		});
+
+		const id = env.ORG_MATCHMAKING.idFromName('default');
+		const stub = env.ORG_MATCHMAKING.get(id);
+
+		await runInDurableObject(stub, async (_: unknown, state: DurableObjectState) => {
+			await state.storage.put(SENDER, [invite]);
+			await state.storage.put(RECEIVER, [invite]);
+		});
+
+		await env.AUTHZED.addUserToOrg(senderUser.orgId, senderUser.userId);
+		mockGetUser(senderUser);
+		env.AUTHZED.canUpdateOrgPartnersInOrg = async () => true;
+
+		env.AUTHZED.addPartnerToOrg = async () => {
+			throw new Error('SpiceDB unavailable');
+		};
+		env.AUTHZED.deletePartnerInOrg = async () => {};
+
+		const response = await worker.togglePartnership('old-9', { cfToken: 'valid-token' });
+		expect(response.success).toBe(false);
+
+		// DO state should be reverted — senderEnabled back to false
+		const afterRollback = await stub.read(SENDER, 'old-9');
+		expect(afterRollback.senderEnabled).toBe(false);
+		expect(afterRollback.receiverEnabled).toBe(false);
+	});
+
+	// Test 10: SpiceDB rollback on old isActive: true data
+	it('SpiceDB delete failure on old isActive: true data rolls back senderEnabled', async () => {
+		const worker = SELF;
+		const senderUser = createMockUser(SENDER);
+		const invite = createOldFormatInvite({ id: 'old-10', sender: SENDER, receiver: RECEIVER, isActive: true });
+
+		const id = env.ORG_MATCHMAKING.idFromName('default');
+		const stub = env.ORG_MATCHMAKING.get(id);
+
+		await runInDurableObject(stub, async (_: unknown, state: DurableObjectState) => {
+			await state.storage.put(SENDER, [invite]);
+			await state.storage.put(RECEIVER, [invite]);
+		});
+
+		await env.AUTHZED.addUserToOrg(senderUser.orgId, senderUser.userId);
+		mockGetUser(senderUser);
+		env.AUTHZED.canUpdateOrgPartnersInOrg = async () => true;
+
+		env.AUTHZED.addPartnerToOrg = async () => {};
+		env.AUTHZED.deletePartnerInOrg = async () => {
+			throw new Error('SpiceDB unavailable');
+		};
+
+		// Sender toggles OFF on migrated isActive: true — SpiceDB delete fails
+		const response = await worker.togglePartnership('old-10', { cfToken: 'valid-token' });
+		expect(response.success).toBe(false);
+
+		// DO state should be reverted — senderEnabled back to true
+		const afterRollback = await stub.read(SENDER, 'old-10');
+		expect(afterRollback.senderEnabled).toBe(true);
+		expect(afterRollback.receiverEnabled).toBe(true);
+	});
+});
+
+describe('declineInvite SpiceDB fault tolerance', () => {
+	beforeEach(async () => {
+		const id = env.ORG_MATCHMAKING.idFromName('default');
+		const stub = env.ORG_MATCHMAKING.get(id);
+
+		await runInDurableObject(stub, async (_: unknown, state: DurableObjectState) => {
+			await state.storage.deleteAll();
+		});
+
+		delete (env.AUTHZED as Record<string, unknown>).canUpdateOrgPartnersInOrg;
+	});
+
+	it('should return success even when SpiceDB deletePartnerInOrg throws', async () => {
+		const worker = SELF;
+		const senderUser = createMockUser('default');
+		const receiverOrg = 'test-receiver-org-1';
+
+		await env.AUTHZED.addUserToOrg(senderUser.orgId, senderUser.userId);
+
+		// Send invite
+		mockGetUser(senderUser);
+		env.AUTHZED.canUpdateOrgPartnersInOrg = async () => true;
+		const sendResponse = await worker.sendInvite(receiverOrg, { cfToken: 'valid-token' }, 'test');
+		expect(sendResponse.success).toBe(true);
+		const invite = sendResponse.data as OrgInvite;
+
+		// Accept as receiver
+		const receiverUser = createMockUser(receiverOrg);
+		await env.AUTHZED.addUserToOrg(receiverUser.orgId, receiverUser.userId);
+		mockGetUser(receiverUser);
+		await worker.acceptInvite(invite.id, { cfToken: 'valid-token' });
+
+		// Make SpiceDB throw on deletePartnerInOrg
+		env.AUTHZED.deletePartnerInOrg = async () => {
+			throw new Error('SpiceDB unavailable');
+		};
+
+		// Decline should still succeed (DO deletion is source of truth)
+		mockGetUser(receiverUser);
+		const declineResponse = await worker.declineInvite(invite.id, { cfToken: 'valid-token' });
+		expect(declineResponse.success).toBe(true);
+		if (declineResponse.success) {
+			const declinedInvite = declineResponse.data as OrgInvite;
+			expect(declinedInvite.status).toBe('declined');
+		}
+	});
+});
+
+describe('OrgInviteStoredSchema migration', () => {
+	const base = {
+		id: 'test-id',
+		status: 'accepted' as const,
+		sender: 'org-a',
+		receiver: 'org-b',
+		message: 'hello',
+		createdAt: Date.now(),
+		updatedAt: Date.now(),
+	};
+
+	it('should migrate old format isActive: true to both enabled', () => {
+		const result = OrgInviteStoredSchema.parse({ ...base, isActive: true });
+		expect(result.senderEnabled).toBe(true);
+		expect(result.receiverEnabled).toBe(true);
+	});
+
+	it('should migrate old format isActive: false to both disabled', () => {
+		const result = OrgInviteStoredSchema.parse({ ...base, isActive: false });
+		expect(result.senderEnabled).toBe(false);
+		expect(result.receiverEnabled).toBe(false);
+	});
+
+	it('should pass through new format values unchanged', () => {
+		const result = OrgInviteStoredSchema.parse({ ...base, senderEnabled: true, receiverEnabled: false });
+		expect(result.senderEnabled).toBe(true);
+		expect(result.receiverEnabled).toBe(false);
+	});
+
+	it('should default missing field to false in partial migration', () => {
+		const result = OrgInviteStoredSchema.parse({ ...base, senderEnabled: true });
+		expect(result.senderEnabled).toBe(true);
+		expect(result.receiverEnabled).toBe(false);
+	});
+
+	it('should default to both disabled when no toggle fields present', () => {
+		const result = OrgInviteStoredSchema.parse({ ...base });
+		expect(result.senderEnabled).toBe(false);
+		expect(result.receiverEnabled).toBe(false);
+	});
+
+	it('should prefer new fields over isActive when both are present', () => {
+		const result = OrgInviteStoredSchema.parse({
+			...base,
+			isActive: true,
+			senderEnabled: false,
+			receiverEnabled: false,
+		});
+		expect(result.senderEnabled).toBe(false);
+		expect(result.receiverEnabled).toBe(false);
+	});
+
+	it('should discard disabledBy even when isActive is true', () => {
+		const result = OrgInviteStoredSchema.parse({ ...base, isActive: true, disabledBy: 'org-x' });
+		expect(result.senderEnabled).toBe(true);
+		expect(result.receiverEnabled).toBe(true);
+		expect(result).not.toHaveProperty('disabledBy');
 	});
 });

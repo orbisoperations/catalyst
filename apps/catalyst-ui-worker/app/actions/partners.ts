@@ -1,5 +1,5 @@
 'use server';
-import { getMatchmaking, OrgInvite, OrgInviteSchema } from '@catalyst/schemas';
+import { getMatchmaking, OrgInvite, OrgInviteSchema, parseStoredInvite, parseStoredInvites } from '@catalyst/schemas';
 import { getCloudflareEnv, getCFAuthorizationToken } from '@/app/lib/server-utils';
 
 export async function listInvites(): Promise<OrgInvite[]> {
@@ -9,7 +9,7 @@ export async function listInvites(): Promise<OrgInvite[]> {
     if (!result.success) {
         throw new Error(result.error);
     }
-    return OrgInviteSchema.array().parse(result.data);
+    return parseStoredInvites(result.data);
 }
 
 export type SendInviteResult = { success: true; data: OrgInvite } | { success: false; error: string };
@@ -33,7 +33,7 @@ export async function readInvite(inviteId: string): Promise<OrgInvite> {
     if (!result.success) {
         throw new Error('Reading Invite Failed');
     }
-    return OrgInviteSchema.parse(result.data);
+    return parseStoredInvite(result.data);
 }
 
 export async function declineInvite(inviteId: string): Promise<OrgInvite> {
@@ -43,7 +43,7 @@ export async function declineInvite(inviteId: string): Promise<OrgInvite> {
     if (!result.success) {
         throw new Error('Declining Invite Failed');
     }
-    return OrgInviteSchema.parse(result.data);
+    return parseStoredInvite(result.data);
 }
 
 export async function acceptInvite(inviteId: string): Promise<OrgInvite> {
@@ -54,7 +54,7 @@ export async function acceptInvite(inviteId: string): Promise<OrgInvite> {
     if (!result.success) {
         throw new Error('Accepting Invite Failed');
     }
-    return OrgInviteSchema.parse(result.data);
+    return parseStoredInvite(result.data);
 }
 
 export async function togglePartnership(inviteId: string): Promise<OrgInvite> {
@@ -64,5 +64,5 @@ export async function togglePartnership(inviteId: string): Promise<OrgInvite> {
     if (!result.success) {
         throw new Error('Toggling Partnership Failed');
     }
-    return OrgInviteSchema.parse(result.data);
+    return parseStoredInvite(result.data);
 }
