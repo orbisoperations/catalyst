@@ -1,22 +1,14 @@
 'use server';
+import { z } from 'zod';
 import { getRegistrar, DataChannelInputSchema, DataChannel } from '@catalyst/schemas';
 import { getCloudflareEnv, getCFAuthorizationToken } from '@/app/lib/server-utils';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function formatZodError(error: { issues: any[] }): string {
-    // Prioritize name field errors as they're most user-facing
-    const nameErrors = error.issues
-        .filter((issue) => issue.path?.includes('name'))
-        .map((issue) => issue.message as string);
-
-    if (nameErrors.length > 0) {
-        return nameErrors[0];
+function formatZodError(error: z.ZodError): string {
+    if (!error) {
+        return 'Unknown validation error';
     }
-
-    // Format other validation errors
-    const fieldErrors = error.issues.map((err) => `${err.path?.join('.') ?? ''}: ${err.message}`).join(', ');
-
-    return `Invalid data channel - ${fieldErrors || 'Unknown validation error'}`;
+    const fieldErrors = error.issues.map((err) => `[field:${err.path?.join('.') ?? ''}](${err.message})`).join(' + ');
+    return `[ParsingError] DataChannel: ${fieldErrors || 'Unknown validation error'}`;
 }
 
 export async function createDataChannel(formData: FormData) {
