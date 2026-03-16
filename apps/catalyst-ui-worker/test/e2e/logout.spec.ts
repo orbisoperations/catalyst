@@ -21,6 +21,21 @@ import { NAVBAR } from './utils/test-id-constants';
  * JavaScript redirect in the response body instead.
  */
 async function mockCloudflareAccessLogout(page: Page) {
+    // Mock the logout API to return a localhost-relative URL
+    // Without this, the real backend returns an external Zitadel OIDC URL
+    // which gets blocked by enforceOfflineMode in the auth fixture
+    await page.route('**/api/v1/user/logout', async (route) => {
+        await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+                success: true,
+                cacheCleared: true,
+                logoutUrl: '/cdn-cgi/access/logout',
+            }),
+        });
+    });
+
     await page.route('**/cdn-cgi/access/logout', async (route) => {
         // WebKit doesn't support 302 in route.fulfill, use JS redirect instead
         await route.fulfill({
@@ -126,6 +141,12 @@ test.describe('Logout Functionality', () => {
 
         // Wait for navigation to the CF Access login page
         await page.waitForURL('**/cdn-cgi/access/login');
+
+        // Simulate cleared CF_Authorization cookie: the identity endpoint should
+        // now fail, preventing the app from re-populating localStorage on reload.
+        await page.route('**/cdn-cgi/access/get-identity', async (route) => {
+            await route.fulfill({ status: 401, body: 'Unauthorized' });
+        });
 
         // Go back to the app (simulating user pressing browser back button)
         await page.goBack();

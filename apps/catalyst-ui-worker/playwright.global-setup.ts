@@ -174,11 +174,17 @@ async function setupSpiceDBRoles(): Promise<void> {
         }
     }
 
+    // Sync platform-admin user (platform-org)
+    await syncTestUser('platform-admin', TEST_USERS['platform-admin']);
+
     // Sync data-custodian user
     await syncTestUser('data-custodian', TEST_USERS['data-custodian']);
 
     // Sync org-admin user (test-org-alpha)
     await syncTestUser('org-admin', TEST_USERS['org-admin']);
+
+    // Sync org-user (test-org-alpha) - for non-admin access control testing
+    await syncTestUser('org-user', TEST_USERS['org-user']);
 
     // Sync org-admin-beta user (test-org-beta) - for cross-org partnership testing
     await syncTestUser('org-admin-beta', TEST_USER_BETA);
