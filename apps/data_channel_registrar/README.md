@@ -61,7 +61,7 @@ This service is a critical component in the Catalyst ecosystem:
 
 ## Testing Requirements
 
-For running tests locally, **Podman** ([https://podman.io](https://podman.io)) must be installed on your machine. Podman is used to manage containers required for integration testing.
+For running tests locally, **Docker** ([https://docs.docker.com/get-docker/](https://docs.docker.com/get-docker/)) or **Podman** ([https://podman.io](https://podman.io)) must be installed on your machine. Docker is preferred and auto-detected first; Podman is used as a fallback.
 
 To run the tests, use:
 
@@ -86,18 +86,18 @@ Tests utilize predefined user credentials with specific roles:
 // Example user token configuration from vitest.config.ts
 // data format returned by cloudflare access
 const validUsers = {
-  'admin-cf-token': {
-    id: btoa('test-user@email.com'),
-    email: 'test-user@email.com',
-    custom: {
-      'urn:zitadel:iam:org:project:roles': {
-        'data-custodian': {
-          '1234567890098765432': 'localdevorg.provider.io',
+    'admin-cf-token': {
+        id: btoa('test-user@email.com'),
+        email: 'test-user@email.com',
+        custom: {
+            'urn:zitadel:iam:org:project:roles': {
+                'data-custodian': {
+                    '1234567890098765432': 'localdevorg.provider.io',
+                },
+                // other roles...
+            },
         },
-        // other roles...
-      },
     },
-  },
 };
 ```
 
@@ -106,14 +106,14 @@ When writing integration tests, use these predefined credentials to authenticate
 ```typescript
 // Example from integration.spec.ts
 const user = {
-  org: 'localdevorg',
-  email: 'test-user@email.com',
-  token: 'admin-cf-token',
+    org: 'localdevorg',
+    email: 'test-user@email.com',
+    token: 'admin-cf-token',
 };
 
 // Create a test data channel with auth token
 const createResponse = await SELF.create('default1', dataChannel, {
-  cfToken: user.token,
+    cfToken: user.token,
 });
 ```
 

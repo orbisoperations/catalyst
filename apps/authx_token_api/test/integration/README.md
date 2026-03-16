@@ -2,7 +2,7 @@
 
 This directory contains integration tests that verify `authx_token_api` works correctly with REAL service bindings and infrastructure. Integration tests use:
 
-- ✅ Real AuthZed container (via Podman)
+- ✅ Real AuthZed container (via Docker or Podman)
 - ✅ Real UserCache service
 - ✅ Real Data Channel Registrar
 - ✅ Real KEY_PROVIDER Durable Object
@@ -30,9 +30,9 @@ Integration tests are organized by **workflow** rather than by method:
 
 ### Prerequisites
 
-1. **Podman must be installed** - AuthZed container runs in Podman
+1. **Docker or Podman must be installed** - AuthZed container runs in Docker (preferred) or Podman
 2. **Dependencies must be built** - Global setup builds required services
-3. **Local development environment** - `./run_local_dev.sh` should work
+3. **Local development environment** - `pnpm dev` should work
 
 ### Run All Integration Tests
 
@@ -314,21 +314,21 @@ pnpm vitest run --project integration --reporter=default
 
 ```bash
 # Is container running?
-podman ps
+docker ps
 
 # View container logs
-podman logs authzed-container
+docker logs spicedb-test
 
 # Restart container
-podman restart authzed-container
+docker restart spicedb-test
 ```
 
 ### Common Issues
 
 **❌ Test fails: "AUTHZED unavailable"**
 
-- Solution: Ensure Podman container is running (`podman ps`)
-- Restart: `podman restart authzed-container`
+- Solution: Ensure container is running (`docker ps` or `podman ps`)
+- Restart: `docker restart spicedb-test`
 
 **❌ Test fails: "User not found"**
 

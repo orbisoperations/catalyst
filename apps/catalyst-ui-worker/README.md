@@ -58,14 +58,14 @@ The UI Worker integrates with multiple Catalyst services:
 
 3. **Using the full development environment:**
 
-    For the complete Catalyst ecosystem, use the root-level development script:
+    For the complete Catalyst ecosystem, run from the root directory:
 
     ```bash
     # From the root catalyst directory
-    ./run_local_dev.sh
+    pnpm dev
     ```
 
-    This will start all Catalyst services in the correct dependency order, including the UI worker.
+    This uses Turborepo to start all Catalyst services concurrently, including the UI worker.
 
 ### Available Scripts
 

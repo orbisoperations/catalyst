@@ -73,73 +73,73 @@ Used by the following services:
 
 1. **Environment Variables Setup**
 
-   Copy the example environment file and configure it:
+    Copy the example environment file and configure it:
 
-   ```bash
-   cd apps/authx_authzed_api
-   cp .dev.vars.example .dev.vars
-   ```
+    ```bash
+    cd apps/authx_authzed_api
+    cp .dev.vars.example .dev.vars
+    ```
 
-   The `.dev.vars` file should contain:
+    The `.dev.vars` file should contain:
 
-   ```env
-   AUTHZED_ENDPOINT="http://localhost:8449"
-   AUTHZED_KEY="atoken"
-   AUTHZED_PREFIX="orbisops_catalyst_dev/"
-   ```
+    ```env
+    AUTHZED_ENDPOINT="http://localhost:8449"
+    AUTHZED_KEY="atoken"
+    AUTHZED_PREFIX="orbisops_catalyst_dev/"
+    ```
 
-   > **Important**: Always copy `.dev.vars.example` to `.dev.vars` and update the values as needed for your local or remote AuthZed instance. The `.dev.vars` file is gitignored and contains your local configuration.
+    > **Important**: Always copy `.dev.vars.example` to `.dev.vars` and update the values as needed for your local or remote AuthZed instance. The `.dev.vars` file is gitignored and contains your local configuration.
 
 2. **Start AuthZed/SpiceDB Container**
 
-   You can either:
+    You can either:
 
-   **Option A**: Use the root development script (recommended):
+    **Option A**: Use the root dev command (recommended):
 
-   ```bash
-   # From the root catalyst directory
-   ./run_local_dev.sh
-   ```
+    ```bash
+    # From the root catalyst directory
+    pnpm dev
+    ```
 
-   This automatically starts AuthZed along with all other services.
+    This uses Turborepo to automatically start AuthZed along with all other services.
 
-   **Option B**: Run AuthZed manually:
+    **Option B**: Run SpiceDB manually:
 
-   ```bash
-   # From the root catalyst directory
-   podman run --rm \
-     -v ./apps/authx_authzed_api/schema.zaml:/schema.zaml:ro \
-     -p 8449:8443 \
-     -p 50051:50051 \
-     --detach \
-     --name authzed-container \
-     authzed/spicedb:latest \
-     serve-testing \
-     --http-enabled \
-     --skip-release-check=true \
-     --log-level debug \
-     --load-configs ./schema.zaml
-   ```
+    ```bash
+    # From the root catalyst directory
+    docker run --rm \
+      -v ./apps/authx_authzed_api/schema.zaml:/schema.zaml:ro \
+      -p 8449:8443 \
+      -p 50052:50051 \
+      --detach \
+      --name spicedb-dev \
+      authzed/spicedb:latest \
+      serve-testing \
+      --http-enabled \
+      --skip-release-check=true \
+      --log-level debug \
+      --load-configs ./schema.zaml
+    ```
 
-   **Port Mapping**:
+    **Port Mapping**:
 
-   - `8449`: HTTP API endpoint (used by Catalyst services)
-   - `50051`: gRPC endpoint (for `zed` CLI tool)
+    - `8449`: HTTP API endpoint (used by Catalyst services)
+    - `50052`: gRPC endpoint (for `zed` CLI tool)
 
-   > **Note**: For unit testing, AuthZed is automatically started by `global-setup.ts`. Manual startup is only needed for local development.
+    > **Note**: For unit testing, AuthZed is automatically started by `global-setup.ts`. Manual startup is only needed for local development.
 
 3. **Start the Worker Locally**
 
-   ```bash
-   cd apps/authx_authzed_api
-   pnpm dev
-   ```
+    ```bash
+    cd apps/authx_authzed_api
+    pnpm dev
+    ```
 
-   Or with specific environment and variables:
+    Or with specific environment and variables:
 
-   ```bash
-   npx wrangler dev --env preview --var-file .dev.vars
-   ```
+    ```bash
+    npx wrangler dev --env preview --var-file .dev.vars
+    ```
 
 See the `wrangler.jsonc` file for more configuration options and environment-specific settings.
 
@@ -160,69 +160,69 @@ See the `wrangler.jsonc` file for more configuration options and environment-spe
 
 1. **Schema Development**
 
-   - The schema and default relationships (along with some valistions) are defined in `schema.zaml` in this directory
-   - Use the [SpiceDB Playground](https://play.authzed.com/) to test and validate your schema changes
-   - Key concepts to understand:
-     - **Definitions**: Define your resource types and their relations
-     - **Relations**: Define how resources relate to each other and to subjects
-     - **Permissions**: Define computed permissions based on relations
+    - The schema and default relationships (along with some valistions) are defined in `schema.zaml` in this directory
+    - Use the [SpiceDB Playground](https://play.authzed.com/) to test and validate your schema changes
+    - Key concepts to understand:
+        - **Definitions**: Define your resource types and their relations
+        - **Relations**: Define how resources relate to each other and to subjects
+        - **Permissions**: Define computed permissions based on relations
 
 2. **Schema Validation**
 
-   - After making changes to `schema.zaml`, validate it using the `zed` CLI:
+    - After making changes to `schema.zaml`, validate it using the `zed` CLI:
 
-     ```sh
-     zed validate schema.zaml
-     ```
+        ```sh
+        zed validate schema.zaml
+        ```
 
 3. **Testing Relationships**
 
-   - Use the `zed` CLI to test relationships:
+    - Use the `zed` CLI to test relationships:
 
-     Instroscpect the schema on `SpiceDB`:
+        Instroscpect the schema on `SpiceDB`:
 
-     ```sh
-     # when running `serve-testing` to need to send token
-     zed schema read --insecure
-     ```
+        ```sh
+        # when running `serve-testing` to need to send token
+        zed schema read --insecure
+        ```
 
-     Create new relationship:
+        Create new relationship:
 
-     ```sh
-     zed relationship create orbisops_catalyst_dev/organization:localorg data_custodian orbisops_catalyst_dev/user:myNewUser
-     ```
+        ```sh
+        zed relationship create orbisops_catalyst_dev/organization:localorg data_custodian orbisops_catalyst_dev/user:myNewUser
+        ```
 
-     Query created relationship:
+        Query created relationship:
 
-     ```sh
-     zed relationship read orbisops_catalyst_dev/organization
-     ```
+        ```sh
+        zed relationship read orbisops_catalyst_dev/organization
+        ```
 
 4. **Common Development Patterns**
 
-   - When adding new resources:
-     1. Define the resource type in `schema.zaml`
-     2. Add relations and permissions
-     3. Update the `AuthzedClient` to support the new resource
-     4. Add tests in `authzed-client.test.ts`
-   - When modifying permissions:
-     1. Update the schema
-     2. Test the changes in the SpiceDB Playground
-     3. Update any affected client code
-     4. Add migration tests
+    - When adding new resources:
+        1. Define the resource type in `schema.zaml`
+        2. Add relations and permissions
+        3. Update the `AuthzedClient` to support the new resource
+        4. Add tests in `authzed-client.test.ts`
+    - When modifying permissions:
+        1. Update the schema
+        2. Test the changes in the SpiceDB Playground
+        3. Update any affected client code
+        4. Add migration tests
 
 5. **Debugging Tips**
 
-   - Enable debug logging in SpiceDB with `--log-level trace`. Trace will print each request.
-   - Use the SpiceDB CLI to inspect relationships:
+    - Enable debug logging in SpiceDB with `--log-level trace`. Trace will print each request.
+    - Use the SpiceDB CLI to inspect relationships:
 
-     For making aure a proper schema is loaded
+        For making aure a proper schema is loaded
 
-     ```sh
-     zed schema read
-     ```
+        ```sh
+        zed schema read
+        ```
 
-   - Check the `SpiceDB` logs for detailed information about permission checks
+    - Check the `SpiceDB` logs for detailed information about permission checks
 
 ## Testing
 
@@ -234,13 +234,13 @@ pnpm test
 
 **Prerequisites:**
 
-- [Podman](https://podman.io/docs/installation) must be installed on your system
-- The tests automatically start an AuthZed container using Podman via the `global-setup.ts` script
+- [Docker](https://docs.docker.com/get-docker/) (recommended) or [Podman](https://podman.io/docs/installation) must be installed on your system
+- The tests automatically start a SpiceDB container via the `global-setup.ts` script
 
-If you encounter issues with container creation during tests, verify your Podman installation:
+If you encounter issues with container creation during tests, verify your installation:
 
 ```sh
-podman --version
+docker --version  # or: podman --version
 ```
 
 ## Deployment

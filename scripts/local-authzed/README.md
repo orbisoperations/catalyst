@@ -20,14 +20,16 @@ The script will:
 
 ## ⚠️ Important Note
 
-**This script is typically launched automatically by the `./run_local_dev.sh` script as part of the local development setup.**
+**For daily development, use `pnpm dev` which runs a lightweight SpiceDB container automatically. This script is for first-time onboarding with the full Authzed stack (Postgres, schema loading, user creation).**
 
 ## Stopping Containers
 
 To stop the local Authzed containers:
 
 ```sh
-podman compose -f scripts/local-authzed/docker-compose.authzed.yml down
+docker compose -f scripts/local-authzed/docker-compose.authzed.yml down
+# Or if using Podman:
+# podman compose -f scripts/local-authzed/docker-compose.authzed.yml down
 ```
 
 ## Resetting Local Data
@@ -36,7 +38,9 @@ To completely reset the local Authzed instance (removes all data):
 
 ```sh
 # Stop containers and remove volumes (resetting your local authzed schema/relationships)
-podman compose -f scripts/local-authzed/docker-compose.authzed.yml down --volumes
+docker compose -f scripts/local-authzed/docker-compose.authzed.yml down --volumes
+# Or if using Podman:
+# podman compose -f scripts/local-authzed/docker-compose.authzed.yml down --volumes
 
 # Then run the setup script again
 bash scripts/local-authzed/setup-local-authzed.sh
@@ -52,4 +56,4 @@ bash scripts/local-authzed/setup-local-authzed.sh
 
 - The setup script handles all container management automatically
 - Designed for local development only
-- Uses Podman by default (Docker also works)
+- Uses Docker by default (falls back to Podman automatically)

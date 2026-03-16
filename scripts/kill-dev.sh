@@ -3,7 +3,7 @@
 # Kill all dev processes
 # This script stops all Catalyst development servers
 
-set -e
+set +e
 
 echo "🛑 Stopping all Catalyst dev services..."
 
@@ -23,6 +23,11 @@ pkill -f "workerd serve" 2>/dev/null || true
 # Kill any turbo processes
 echo "  → Killing turbo processes..."
 pkill -f "turbo run dev" 2>/dev/null || true
+
+# Stop SpiceDB dev container
+echo "  → Stopping SpiceDB container..."
+docker stop spicedb-dev 2>/dev/null || podman stop spicedb-dev 2>/dev/null || true
+docker rm spicedb-dev 2>/dev/null || podman rm spicedb-dev 2>/dev/null || true
 
 # Wait a moment for processes to die
 sleep 1

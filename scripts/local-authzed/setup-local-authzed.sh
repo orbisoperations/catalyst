@@ -20,8 +20,8 @@ DATA_CUSTODIAN_REL="data_custodian"
 MEMBER_REL="member"
 
 # Timeout and retry constants
-PODMAN_READY_ATTEMPTS=15
-PODMAN_READY_SLEEP=2
+RUNTIME_READY_ATTEMPTS=15
+RUNTIME_READY_SLEEP=2
 AUTHZED_READY_ATTEMPTS=5
 AUTHZED_READY_SLEEP=2
 SCHEMA_AVAILABLE_ATTEMPTS=20
@@ -56,42 +56,88 @@ if [[ ! -f "package.json" ]] || [[ ! -f "pnpm-workspace.yaml" ]]; then
 fi
 
 
-# Check and start Podman machine if needed
-log_info "🔧 Checking Podman machine status..."
-
-# Check if Podman is responding
-if podman version >/dev/null 2>&1; then
-    log_success "Podman machine is ready"
-else
-    # Podman not responding, try to start it
-    log_info "Podman not responding, attempting to start machine..."
-    
-    # Check if machine exists, create if not
-    if ! podman machine list --format=json 2>/dev/null | jq -e '.[] | select(.Name == "podman-machine-default")' >/dev/null 2>&1; then
-        log_warn "Podman machine not found, initializing..."
-        podman machine init
+# ──────────────────────────────────────────────
+# Runtime detection: Docker first, Podman fallback
+# ──────────────────────────────────────────────
+detect_runtime() {
+    # Try Docker first
+    if docker version >/dev/null 2>&1; then
+        RUNTIME="docker"
+        log_success "Docker is ready"
+        return
     fi
-    
-    # Try to start the machine
-    log_info "Starting Podman machine..."
-    podman machine start
-    
-    # Verify Podman is actually ready and responding
-    log_info "Verifying Podman is ready..."
-    for ((i=1; i<=PODMAN_READY_ATTEMPTS; i++)); do
-        if podman version >/dev/null 2>&1; then
-            log_success "Podman machine is ready"
-            break
+
+    # Docker binary exists but daemon is not running — try to start it
+    if command -v docker >/dev/null 2>&1; then
+        log_info "Docker found but daemon not responding, attempting to start..."
+        if [[ "$(uname)" == "Darwin" ]]; then
+            open -a Docker 2>/dev/null || true
+        else
+            systemctl start docker 2>/dev/null || service docker start 2>/dev/null || true
         fi
-        log_info "Waiting for Podman to be ready... (attempt $i/$PODMAN_READY_ATTEMPTS)"
-        sleep $PODMAN_READY_SLEEP
-        if [[ $i -eq $PODMAN_READY_ATTEMPTS ]]; then
-            log_error "Podman machine failed to start within $((PODMAN_READY_ATTEMPTS * PODMAN_READY_SLEEP)) seconds"
-            log_error "Try running: podman machine stop && podman machine start"
+        for ((i=1; i<=RUNTIME_READY_ATTEMPTS; i++)); do
+            if docker version >/dev/null 2>&1; then
+                RUNTIME="docker"
+                log_success "Docker daemon started"
+                return
+            fi
+            log_info "Waiting for Docker daemon... (attempt $i/$RUNTIME_READY_ATTEMPTS)"
+            sleep $RUNTIME_READY_SLEEP
+        done
+        log_warn "Docker daemon failed to start, trying Podman..."
+    fi
+
+    # Try Podman
+    if podman version >/dev/null 2>&1; then
+        RUNTIME="podman"
+        log_success "Podman is ready"
+        return
+    fi
+
+    # Podman binary exists but not responding — try to start the machine
+    if command -v podman >/dev/null 2>&1; then
+        log_info "Podman found but not responding, attempting to start machine..."
+        if ! podman machine list --format=json 2>/dev/null | jq -e '.[] | select(.Name == "podman-machine-default")' >/dev/null 2>&1; then
+            log_warn "Podman machine not found, initializing..."
+            podman machine init
+        fi
+        podman machine start 2>/dev/null || true
+        for ((i=1; i<=RUNTIME_READY_ATTEMPTS; i++)); do
+            if podman version >/dev/null 2>&1; then
+                RUNTIME="podman"
+                log_success "Podman machine started"
+                return
+            fi
+            log_info "Waiting for Podman... (attempt $i/$RUNTIME_READY_ATTEMPTS)"
+            sleep $RUNTIME_READY_SLEEP
+        done
+    fi
+
+    log_error "Neither Docker nor Podman found. Please install one of them:"
+    echo "  Docker: https://docs.docker.com/get-docker/"
+    echo "  Podman: https://podman.io/getting-started/installation"
+    exit 1
+}
+
+detect_compose_cmd() {
+    if [[ "$RUNTIME" == "docker" ]]; then
+        if docker compose version >/dev/null 2>&1; then
+            COMPOSE_CMD="docker compose"
+        elif command -v docker-compose >/dev/null 2>&1; then
+            COMPOSE_CMD="docker-compose"
+        else
+            log_error "Docker Compose not found. Please install Docker Compose."
             exit 1
         fi
-    done
-fi
+    else
+        COMPOSE_CMD="podman compose"
+    fi
+    log_success "Using compose command: $COMPOSE_CMD"
+}
+
+log_info "Detecting container runtime..."
+detect_runtime
+detect_compose_cmd
 
 # Check if zed CLI is installed
 if ! command -v zed &> /dev/null; then
@@ -102,9 +148,9 @@ fi
 
 # Check for and clean up conflicting containers
 log_info "🧹 Checking for conflicting containers..."
-CONFLICTING_CONTAINERS=$(podman ps -a --format "{{.Names}}" | grep -E "(authzed|spicedb)" || true)
+CONFLICTING_CONTAINERS=$($RUNTIME ps -a --format "{{.Names}}" | grep -E "(authzed|spicedb)" || true)
 # Also check for containers using the authzed/spicedb image
-CONFLICTING_IMAGE_CONTAINERS=$(podman ps -a --filter "ancestor=authzed/spicedb" --format "{{.Names}}" || true)
+CONFLICTING_IMAGE_CONTAINERS=$($RUNTIME ps -a --filter "ancestor=authzed/spicedb" --format "{{.Names}}" || true)
 # Combine both lists
 ALL_CONFLICTING_CONTAINERS=$(echo -e "${CONFLICTING_CONTAINERS}\n${CONFLICTING_IMAGE_CONTAINERS}" | sort -u | grep -v '^$' || true)
 
@@ -115,7 +161,7 @@ if [[ -n "$ALL_CONFLICTING_CONTAINERS" ]]; then
     echo "$ALL_CONFLICTING_CONTAINERS" | while read -r container; do
         if [[ -n "$container" ]]; then
             log_info "Stopping container: $container"
-            podman stop "$container" 2>/dev/null || true
+            $RUNTIME stop "$container" 2>/dev/null || true
         fi
     done
     
@@ -124,7 +170,7 @@ fi
 
 # 1. Start fresh containers
 log_info "🔄 Starting fresh Authzed/SpiceDB containers..."
-podman compose -f scripts/local-authzed/docker-compose.authzed.yml up -d
+$COMPOSE_CMD -f scripts/local-authzed/docker-compose.authzed.yml up -d
 
 # Wait for containers to be ready
 log_info "⏳ Waiting for Authzed to be ready..."
@@ -245,4 +291,4 @@ for ((attempt=1; attempt<=PERMISSION_CHECK_ATTEMPTS; attempt++)); do
 done
 
 log_success "🎉 Local Authzed setup complete!"
-log_info "💡 To reset the local Authzed database, run: podman compose -f scripts/local-authzed/docker-compose.authzed.yml down --volumes" 
+log_info "💡 To reset the local Authzed database, run: $COMPOSE_CMD -f scripts/local-authzed/docker-compose.authzed.yml down --volumes"
