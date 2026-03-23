@@ -1,6 +1,7 @@
 import { DurableObject, WorkerEntrypoint } from 'cloudflare:workers';
 import {
 	OrgInviteStoredResponseSchema,
+	parseStoredInvite,
 	OrgInvite,
 	OrgInviteStatusSchema,
 	OrgInviteStatus,
@@ -18,6 +19,21 @@ import {
 	OrgIdSchema,
 } from '@catalyst/schemas';
 import { Env } from './env';
+
+function parseMailbox(raw: unknown): OrgInvite[] {
+	if (!Array.isArray(raw)) return [];
+	return raw.map((item) => parseStoredInvite(item));
+}
+
+function clientErrorMessage(error: unknown): string {
+	if (error instanceof CatalystError) return error.message;
+	// Errors thrown inside blockConcurrencyWhile or across the DO-Worker RPC boundary
+	// lose their CatalystError prototype but retain the original message.
+	if (error instanceof Error && error.message.startsWith('CatalystError:')) {
+		return error.message.replace(/^CatalystError:\s*/, '');
+	}
+	return 'An internal error occurred';
+}
 
 /*
 	when an invite is created it is set to pending
@@ -40,15 +56,15 @@ export class OrganizationMatchmakingDO extends DurableObject {
 			receiver,
 			status: 'pending',
 			message,
-			isActive: false,
-			disabledBy: null,
+			senderEnabled: false,
+			receiverEnabled: false,
 			createdAt: Date.now(),
 			updatedAt: Date.now(),
 		};
 
 		await this.ctx.blockConcurrencyWhile(async () => {
-			const senderMailbox = (await this.ctx.storage.get<OrgInvite[]>(sender)) ?? [];
-			const receiverMailbox = (await this.ctx.storage.get<OrgInvite[]>(receiver)) ?? [];
+			const senderMailbox = parseMailbox(await this.ctx.storage.get(sender));
+			const receiverMailbox = parseMailbox(await this.ctx.storage.get(receiver));
 
 			// BIDIRECTIONAL CHECK: Only one pending invite allowed between any org pair
 			// Check if sender already has a pending invite TO receiver
@@ -78,8 +94,7 @@ export class OrganizationMatchmakingDO extends DurableObject {
 	}
 
 	async list(orgId: OrgId): Promise<OrgInvite[]> {
-		const mailbox = (await this.ctx.storage.get<OrgInvite[]>(orgId)) ?? [];
-		return mailbox;
+		return parseMailbox(await this.ctx.storage.get(orgId));
 	}
 
 	/**
@@ -90,7 +105,7 @@ export class OrganizationMatchmakingDO extends DurableObject {
 	 * @throws {InviteNotFoundError} If invite is not found
 	 */
 	async read(orgId: OrgId, inviteId: string): Promise<OrgInvite> {
-		const mailbox = (await this.ctx.storage.get<OrgInvite[]>(orgId)) ?? [];
+		const mailbox = parseMailbox(await this.ctx.storage.get(orgId));
 		const invite = mailbox.find((inv) => inv.id === inviteId);
 
 		if (!invite) {
@@ -101,23 +116,79 @@ export class OrganizationMatchmakingDO extends DurableObject {
 	}
 
 	/**
-	 * Toggles the active status of a partnership invite between organizations.
+	 * Toggles the caller's data-sharing flag on a partnership invite.
+	 * If the caller is the sender, flips `senderEnabled`.
+	 * If the caller is the receiver, flips `receiverEnabled`.
 	 *
-	 * @param orgId - The ID of the organization whose mailbox contains the invite
+	 * @param orgId - The ID of the organization toggling their sharing
 	 * @param inviteId - The unique identifier of the invite to toggle
 	 * @returns The updated invite
 	 * @throws {InviteNotFoundError} If invite is not found in either mailbox
-	 *
-	 * @example
-	 * ```typescript
-	 * const invite = await durableObject.togglePartnership('org-123', 'invite-456');
-	 * console.log('Invite status toggled:', invite.isActive);
-	 * ```
 	 */
 	async togglePartnership(orgId: OrgId, inviteId: string): Promise<OrgInvite> {
 		// Pre-validate outside blockConcurrencyWhile to avoid durableObjectReset on expected errors.
-		// Throwing inside blockConcurrencyWhile resets the DO's in-memory state.
-		const orgMailbox = (await this.ctx.storage.get<OrgInvite[]>(orgId)) ?? [];
+		const orgMailbox = parseMailbox(await this.ctx.storage.get(orgId));
+		const invite = orgMailbox.find((inv) => inv.id === inviteId);
+
+		if (!invite) {
+			throw new InviteNotFoundError(inviteId);
+		}
+
+		const otherOrg = invite.sender === orgId ? invite.receiver : invite.sender;
+		const otherMailbox = parseMailbox(await this.ctx.storage.get(otherOrg));
+
+		if (!otherMailbox.find((inv) => inv.id === inviteId)) {
+			throw new InviteNotFoundError(inviteId);
+		}
+
+		// Mutation inside blockConcurrencyWhile with fresh reads for atomicity.
+		let updatedInvite!: OrgInvite;
+
+		await this.ctx.blockConcurrencyWhile(async () => {
+			const freshOrgMailbox = parseMailbox(await this.ctx.storage.get(orgId));
+			const freshOtherMailbox = parseMailbox(await this.ctx.storage.get(otherOrg));
+			const freshInvite = freshOrgMailbox.find((inv) => inv.id === inviteId);
+
+			if (!freshInvite) {
+				throw new InviteNotFoundError(inviteId);
+			}
+
+			if (freshInvite.status !== 'accepted') {
+				throw new InvalidOperationError('Can only toggle accepted partnerships');
+			}
+
+			const isSender = freshInvite.sender === orgId;
+
+			if (isSender) {
+				updatedInvite = { ...freshInvite, senderEnabled: !freshInvite.senderEnabled, updatedAt: Date.now() };
+			} else {
+				updatedInvite = {
+					...freshInvite,
+					receiverEnabled: !freshInvite.receiverEnabled,
+					updatedAt: Date.now(),
+				};
+			}
+
+			await this.ctx.storage.put(
+				orgId,
+				freshOrgMailbox.map((inv) => (inv.id === inviteId ? updatedInvite : inv))
+			);
+			await this.ctx.storage.put(
+				otherOrg,
+				freshOtherMailbox.map((inv) => (inv.id === inviteId ? updatedInvite : inv))
+			);
+		});
+
+		return updatedInvite;
+	}
+
+	async setPartnershipFlags(
+		orgId: OrgId,
+		inviteId: string,
+		senderEnabled: boolean,
+		receiverEnabled: boolean
+	): Promise<OrgInvite> {
+		const orgMailbox = parseMailbox(await this.ctx.storage.get(orgId));
 		const invite = orgMailbox.find((inv) => inv.id === inviteId);
 
 		if (!invite) {
@@ -125,39 +196,23 @@ export class OrganizationMatchmakingDO extends DurableObject {
 		}
 
 		if (invite.status !== 'accepted') {
-			throw new InvalidOperationError('Can only toggle accepted partnerships');
+			throw new InvalidOperationError('Can only set flags on accepted partnerships');
 		}
 
 		const otherOrg = invite.sender === orgId ? invite.receiver : invite.sender;
-		const otherMailbox = (await this.ctx.storage.get<OrgInvite[]>(otherOrg)) ?? [];
 
-		if (!otherMailbox.find((inv) => inv.id === inviteId)) {
-			throw new InviteNotFoundError(inviteId);
-		}
-
-		if (!invite.isActive && invite.disabledBy !== null && invite.disabledBy !== orgId) {
-			throw new InvalidOperationError('Only the organization that disabled this partnership can re-enable it');
-		}
-
-		// Mutation inside blockConcurrencyWhile with fresh reads for atomicity.
-		// The pre-validation above is a fast-reject gate; the critical section
-		// re-reads storage so it never writes against stale data.
 		let updatedInvite!: OrgInvite;
 
 		await this.ctx.blockConcurrencyWhile(async () => {
-			const freshOrgMailbox = (await this.ctx.storage.get<OrgInvite[]>(orgId)) ?? [];
-			const freshOtherMailbox = (await this.ctx.storage.get<OrgInvite[]>(otherOrg)) ?? [];
+			const freshOrgMailbox = parseMailbox(await this.ctx.storage.get(orgId));
+			const freshOtherMailbox = parseMailbox(await this.ctx.storage.get(otherOrg));
 			const freshInvite = freshOrgMailbox.find((inv) => inv.id === inviteId);
 
 			if (!freshInvite) {
 				throw new InviteNotFoundError(inviteId);
 			}
 
-			if (freshInvite.isActive) {
-				updatedInvite = { ...freshInvite, isActive: false, disabledBy: orgId, updatedAt: Date.now() };
-			} else {
-				updatedInvite = { ...freshInvite, isActive: true, disabledBy: null, updatedAt: Date.now() };
-			}
+			updatedInvite = { ...freshInvite, senderEnabled, receiverEnabled, updatedAt: Date.now() };
 
 			await this.ctx.storage.put(
 				orgId,
@@ -176,7 +231,7 @@ export class OrganizationMatchmakingDO extends DurableObject {
 		// Validate external input at boundary
 		const validatedStatus = OrgInviteStatusSchema.parse(status);
 
-		const responder = (await this.ctx.storage.get<OrgInvite[]>(orgId)) ?? [];
+		const responder = parseMailbox(await this.ctx.storage.get(orgId));
 
 		const invite = responder.find((inv) => inv.id === inviteId);
 
@@ -186,7 +241,7 @@ export class OrganizationMatchmakingDO extends DurableObject {
 
 		const otherOrg = invite.sender === orgId ? invite.receiver : invite.sender;
 
-		const otherMailbox = (await this.ctx.storage.get<OrgInvite[]>(otherOrg)) ?? [];
+		const otherMailbox = parseMailbox(await this.ctx.storage.get(otherOrg));
 
 		if (!otherMailbox.find((inv) => inv.id === inviteId)) {
 			throw new InviteNotFoundError(inviteId);
@@ -255,12 +310,7 @@ export default class OrganizationMatchmakingWorker extends WorkerEntrypoint<Env>
 			// Validate error response
 			return OrgInviteResponseSchema.parse({
 				success: false,
-				error:
-					error instanceof CatalystError
-						? error.message
-						: error instanceof Error
-							? error.message
-							: 'Unknown error',
+				error: clientErrorMessage(error),
 			});
 		}
 	}
@@ -287,32 +337,56 @@ export default class OrganizationMatchmakingWorker extends WorkerEntrypoint<Env>
 			const id = this.env.ORG_MATCHMAKING.idFromName(doNamespace);
 			const stub = this.env.ORG_MATCHMAKING.get(id);
 
+			const preToggle = await stub.read(user.orgId, inviteId);
 			const invite = await stub.togglePartnership(user.orgId, inviteId);
 
-			const partner = user.orgId === invite.sender ? invite.receiver : invite.sender;
+			const isSender = user.orgId === invite.sender;
 
-			if (invite.isActive) {
-				await Promise.all([
-					this.env.AUTHZED.addPartnerToOrg(user.orgId, partner),
-					this.env.AUTHZED.addPartnerToOrg(partner, user.orgId),
-				]);
-			} else {
-				await Promise.all([
-					this.env.AUTHZED.deletePartnerInOrg(user.orgId, partner),
-					this.env.AUTHZED.deletePartnerInOrg(partner, user.orgId),
-				]);
+			// Unidirectional: addPartnerToOrg(sharer, reader) means reader can see sharer's data
+			try {
+				if (isSender) {
+					if (invite.senderEnabled) {
+						await this.env.AUTHZED.addPartnerToOrg(invite.sender, invite.receiver);
+					} else {
+						await this.env.AUTHZED.deletePartnerInOrg(invite.sender, invite.receiver);
+					}
+				} else {
+					if (invite.receiverEnabled) {
+						await this.env.AUTHZED.addPartnerToOrg(invite.receiver, invite.sender);
+					} else {
+						await this.env.AUTHZED.deletePartnerInOrg(invite.receiver, invite.sender);
+					}
+				}
+			} catch (spiceDbError) {
+				// Rollback only the caller's flag — preserve the other org's flag from the
+				// post-toggle invite to avoid overwriting a concurrent partner's toggle.
+				try {
+					await stub.setPartnershipFlags(
+						user.orgId,
+						inviteId,
+						isSender ? preToggle.senderEnabled : invite.senderEnabled,
+						isSender ? invite.receiverEnabled : preToggle.receiverEnabled
+					);
+				} catch (rollbackError) {
+					console.error('[togglePartnership] rollback failed', {
+						inviteId,
+						orgId: user.orgId,
+						original: spiceDbError instanceof Error ? spiceDbError.message : 'Unknown',
+						rollback: rollbackError instanceof Error ? rollbackError.message : 'Unknown',
+					});
+				}
+				throw spiceDbError;
 			}
 
 			return OrgInviteStoredResponseSchema.parse({ success: true, data: invite });
 		} catch (error) {
+			console.error('[togglePartnership] failed', {
+				inviteId,
+				error: error instanceof Error ? error.message : 'Unknown',
+			});
 			return OrgInviteResponseSchema.parse({
 				success: false,
-				error:
-					error instanceof CatalystError
-						? error.message
-						: error instanceof Error
-							? error.message
-							: 'Unknown error',
+				error: clientErrorMessage(error),
 			});
 		}
 	}
@@ -360,12 +434,7 @@ export default class OrganizationMatchmakingWorker extends WorkerEntrypoint<Env>
 			// Validate error response
 			return OrgInviteResponseSchema.parse({
 				success: false,
-				error:
-					error instanceof CatalystError
-						? error.message
-						: error instanceof Error
-							? error.message
-							: 'Unknown error',
+				error: clientErrorMessage(error),
 			});
 		}
 	}
@@ -389,10 +458,7 @@ export default class OrganizationMatchmakingWorker extends WorkerEntrypoint<Env>
 			const stub = this.env.ORG_MATCHMAKING.get(id);
 			const invite = await stub.respond(user.orgId, inviteId, 'accepted');
 
-			await Promise.all([
-				this.env.AUTHZED.addPartnerToOrg(invite.sender, invite.receiver),
-				this.env.AUTHZED.addPartnerToOrg(invite.receiver, invite.sender),
-			]);
+			// No SpiceDB calls on accept — data sharing is controlled per-org via toggle
 
 			// Validate response at Worker boundary
 			return OrgInviteResponseSchema.parse({ success: true, data: invite });
@@ -400,12 +466,7 @@ export default class OrganizationMatchmakingWorker extends WorkerEntrypoint<Env>
 			// Validate error response
 			return OrgInviteResponseSchema.parse({
 				success: false,
-				error:
-					error instanceof CatalystError
-						? error.message
-						: error instanceof Error
-							? error.message
-							: 'Unknown error',
+				error: clientErrorMessage(error),
 			});
 		}
 	}
@@ -429,23 +490,33 @@ export default class OrganizationMatchmakingWorker extends WorkerEntrypoint<Env>
 			const stub = this.env.ORG_MATCHMAKING.get(id);
 			const invite = await stub.respond(user.orgId, inviteId, 'declined');
 
-			await Promise.all([
-				this.env.AUTHZED.deletePartnerInOrg(invite.sender, invite.receiver),
-				this.env.AUTHZED.deletePartnerInOrg(invite.receiver, invite.sender),
-			]);
+			// Unconditionally delete both directions — deletePartnerInOrg is idempotent.
+			// DO deletion is the source of truth; SpiceDB failure is logged but not fatal.
+			try {
+				await Promise.all([
+					this.env.AUTHZED.deletePartnerInOrg(invite.sender, invite.receiver),
+					this.env.AUTHZED.deletePartnerInOrg(invite.receiver, invite.sender),
+				]);
+			} catch (spiceDbError) {
+				console.error('[declineInvite] SpiceDB cleanup failed', {
+					inviteId,
+					sender: invite.sender,
+					receiver: invite.receiver,
+					error: spiceDbError instanceof Error ? spiceDbError.message : 'Unknown',
+				});
+			}
 
 			// Validate response at Worker boundary
 			return OrgInviteResponseSchema.parse({ success: true, data: invite });
 		} catch (error) {
+			console.error('[declineInvite] failed', {
+				inviteId,
+				error: error instanceof Error ? error.message : 'Unknown',
+			});
 			// Validate error response
 			return OrgInviteResponseSchema.parse({
 				success: false,
-				error:
-					error instanceof CatalystError
-						? error.message
-						: error instanceof Error
-							? error.message
-							: 'Unknown error',
+				error: clientErrorMessage(error),
 			});
 		}
 	}
@@ -475,12 +546,7 @@ export default class OrganizationMatchmakingWorker extends WorkerEntrypoint<Env>
 			// Validate error response
 			return OrgInviteResponseSchema.parse({
 				success: false,
-				error:
-					error instanceof CatalystError
-						? error.message
-						: error instanceof Error
-							? error.message
-							: 'Unknown error',
+				error: clientErrorMessage(error),
 			});
 		}
 	}
