@@ -1,5 +1,8 @@
 # CATALYST
 
+> [!WARNING]
+> This project is retired. It is kept for posterity.
+
 Catalyst is a federated data grid that facilitates sharing between organizations, teams, and products through the use of standard, open source, secure, and tested technology.
 
 Catalyst was borne through the realization that many excellent data exchange platforms exist but they all require some level of onboarding into their platform. We wanted to build something that could achieve internet scale without having to be tied to a certain cloud provider, certain type of data storage, or any system where you lose custody of your data to make it "accessible".
